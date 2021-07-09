@@ -479,14 +479,14 @@ func hashimotoFull(dataset []uint32, hash []byte, nonce uint64) ([]byte, []byte)
 	seed = append(seed, nonceBytes...)
 
 	ticket := crypto.Keccak256(seed)
-	dataSize := len(dataset) / hashWords
+	dataSize := len(dataset) / 8
 
 	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
 
 	result := make([]byte, 32)
 	for i := 0; i < loopAccesses; i++ {
 		datasetItemSlice := make([]byte, 256)
-		for i := 0; i < hashWords; i++ {
+		for i := 0; i < 8; i++ {
 			binary.LittleEndian.PutUint32(datasetItemSlice[i*4:], dataset[i+int(id)])
 		}
 		result = crypto.Keccak256(new(big.Int).Xor( new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
