@@ -328,24 +328,56 @@ func (ethash *Ethash) CalcDifficulty(chain consensus.ChainHeaderReader, time uin
 // the difficulty that a new block should have when created at time
 // given the parent block's time and difficulty.
 func CalcDifficulty(config *params.ChainConfig, time uint64, parent *types.Header) *big.Int {
-	next := new(big.Int).Add(parent.Number, big1)
-	switch {
-	case config.IsCatalyst(next):
-		return big.NewInt(1)
-	case config.IsLondon(next):
-		return calcDifficultyEip3554(time, parent)
-	case config.IsMuirGlacier(next):
-		return calcDifficultyEip2384(time, parent)
-	case config.IsConstantinople(next):
-		return calcDifficultyConstantinople(time, parent)
-	case config.IsByzantium(next):
-		return calcDifficultyByzantium(time, parent)
-	case config.IsHomestead(next):
-		return calcDifficultyHomestead(time, parent)
-	default:
-		return calcDifficultyFrontier(time, parent)
-	}
+	return calcDifficultyDefault(time, parent)
+	//next := new(big.Int).Add(parent.Number, big1)
+	//switch {
+	//case config.IsCatalyst(next):
+	//	return big.NewInt(1)
+	//case config.IsLondon(next):
+	//	return calcDifficultyEip3554(time, parent)
+	//case config.IsMuirGlacier(next):
+	//	return calcDifficultyEip2384(time, parent)
+	//case config.IsConstantinople(next):
+	//	return calcDifficultyConstantinople(time, parent)
+	//case config.IsByzantium(next):
+	//	return calcDifficultyByzantium(time, parent)
+	//case config.IsHomestead(next):
+	//	return calcDifficultyHomestead(time, parent)
+	//default:
+	//	return calcDifficultyDefault(time, parent)
+	//}
+}
 
+func calcDifficultyDefault(time uint64, parent *types.Header) *big.Int {
+	bigTime := new(big.Int).SetUint64(time)
+	bigParentTime := new(big.Int).SetUint64(parent.Time)
+
+	// holds intermediate values to make the algo easier to read & audit
+	x := new(big.Int)
+	y := new(big.Int)
+
+	// (2 if len(parent_uncles) else 1) - (block_timestamp - parent_timestamp) // 10
+	x.Sub(bigTime, bigParentTime)
+	x.Div(x, big.NewInt(10))
+	if parent.UncleHash == types.EmptyUncleHash {
+		x.Sub(big1, x)
+	} else {
+		x.Sub(big2, x)
+	}
+	// max((2 if len(parent_uncles) else 1) - (block_timestamp - parent_timestamp) // 10, -10)
+	if x.Cmp(big.NewInt(-10)) < 0 {
+		x.Set(big.NewInt(-10))
+	}
+	// parent_diff + (parent_diff / 1024 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) ÷ 10), -10))
+	y.Div(parent.Difficulty, big.NewInt(1024))
+	x.Mul(y, x)
+	x.Add(parent.Difficulty, x)
+
+	// minimum difficulty can ever be (before exponential factor)
+	//if x.Cmp(big.NewInt(1048576)) < 0 {
+	//	x.Set(big.NewInt(1048576))
+	//}
+	return x
 }
 
 // Some weird constants to avoid constant memory allocs for them.
