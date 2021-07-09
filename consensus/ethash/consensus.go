@@ -345,6 +345,7 @@ func CalcDifficulty(config *params.ChainConfig, time uint64, parent *types.Heade
 	default:
 		return calcDifficultyFrontier(time, parent)
 	}
+
 }
 
 // Some weird constants to avoid constant memory allocs for them.
@@ -556,7 +557,7 @@ func (ethash *Ethash) verifySeal(chain consensus.ChainHeaderReader, header *type
 		if ethash.config.PowMode == ModeTest {
 			size = 32 * 1024
 		}
-		digest, result = hashimotoLight(size, cache.cache, ethash.SealHash(header).Bytes(), header.Nonce.Uint64())
+		digest, result = hashimotoLight(size, cache.cache, ethash.SealHash(header).Bytes(), header.Nonce.Uint64(), header.Number.Uint64())
 
 		// Caches are unmapped in a finalizer. Ensure that the cache stays alive
 		// until after the call to hashimotoLight so it's not unmapped while being used.

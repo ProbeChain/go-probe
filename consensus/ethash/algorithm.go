@@ -18,6 +18,7 @@ package ethash
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"hash"
 	"math/big"
 	"reflect"
@@ -421,30 +422,77 @@ func hashimoto(hash []byte, nonce uint64, size uint64, lookup func(index uint32)
 // hashimotoLight aggregates data from the full dataset (using only a small
 // in-memory cache) in order to produce our final value for a particular header
 // hash and nonce.
-func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64) ([]byte, []byte) {
+func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64, number uint64) ([]byte, []byte) {
+	//keccak512 := makeHasher(sha3.NewLegacyKeccak512())
+	//
+	//lookup := func(index uint32) []uint32 {
+	//	rawData := generateDatasetItem(cache, index, keccak512)
+	//
+	//	data := make([]uint32, len(rawData)/4)
+	//	for i := 0; i < len(data); i++ {
+	//		data[i] = binary.LittleEndian.Uint32(rawData[i*4:])
+	//	}
+	//	return data
+	//}
+	//return hashimoto(hash, nonce, size, lookup)
+	// @todo 后面根据实际情况更新dposAddress
 	keccak512 := makeHasher(sha3.NewLegacyKeccak512())
+	dposAddress, _ := hex.DecodeString("296e781bbb0179b032cbcc31e4b6cdab724b2773")
+	nonceBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonceBytes, nonce)
+	seed := make([]byte, 0)
+	seed = append(seed, hash...)
+	seed = append(seed, dposAddress...)
+	seed = append(seed, nonceBytes...)
 
-	lookup := func(index uint32) []uint32 {
-		rawData := generateDatasetItem(cache, index, keccak512)
+	ticket := crypto.Keccak256(seed)
+	dataSize := datasetSize(number) / datasetParents
 
-		data := make([]uint32, len(rawData)/4)
-		for i := 0; i < len(data); i++ {
-			data[i] = binary.LittleEndian.Uint32(rawData[i*4:])
-		}
-		return data
+	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
+
+	result := make([]byte, 32)
+	for i := 0; i < loopAccesses; i++ {
+		datasetItemSlice := generateDatasetItem(cache, uint32(id), keccak512)
+		result = crypto.Keccak256(new(big.Int).Xor( new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
+		id = new(big.Int).Mod(new(big.Int).SetBytes(result), new(big.Int).SetInt64(int64(dataSize))).Int64()
 	}
-	return hashimoto(hash, nonce, size, lookup)
+	return result, result
 }
 
 // hashimotoFull aggregates data from the full dataset (using the full in-memory
 // dataset) in order to produce our final value for a particular header hash and
 // nonce.
 func hashimotoFull(dataset []uint32, hash []byte, nonce uint64) ([]byte, []byte) {
-	lookup := func(index uint32) []uint32 {
-		offset := index * hashWords
-		return dataset[offset : offset+hashWords]
+	//lookup := func(index uint32) []uint32 {
+	//	offset := index * hashWords
+	//	return dataset[offset : offset+hashWords]
+	//}
+	//return hashimoto(hash, nonce, uint64(len(dataset))*4, lookup)
+
+	// @todo 后面根据实际情况更新dposAddress
+	dposAddress, _ := hex.DecodeString("296e781bbb0179b032cbcc31e4b6cdab724b2773")
+	nonceBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(nonceBytes, nonce)
+	seed := make([]byte, 0)
+	seed = append(seed, hash...)
+	seed = append(seed, dposAddress...)
+	seed = append(seed, nonceBytes...)
+
+	ticket := crypto.Keccak256(seed)
+	dataSize := len(dataset) / hashWords
+
+	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
+
+	result := make([]byte, 32)
+	for i := 0; i < loopAccesses; i++ {
+		datasetItemSlice := make([]byte, 256)
+		for i := 0; i < hashWords; i++ {
+			binary.LittleEndian.PutUint32(datasetItemSlice[i*4:], dataset[i+int(id)])
+		}
+		result = crypto.Keccak256(new(big.Int).Xor( new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
+		id = new(big.Int).Mod(new(big.Int).SetBytes(result), new(big.Int).SetInt64(int64(dataSize))).Int64()
 	}
-	return hashimoto(hash, nonce, uint64(len(dataset))*4, lookup)
+	return result, result
 }
 
 const maxEpoch = 2048
