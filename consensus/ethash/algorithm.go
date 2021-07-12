@@ -422,7 +422,7 @@ func hashimoto(hash []byte, nonce uint64, size uint64, lookup func(index uint32)
 // hashimotoLight aggregates data from the full dataset (using only a small
 // in-memory cache) in order to produce our final value for a particular header
 // hash and nonce.
-func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64, number uint64) ([]byte, []byte) {
+func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64) ([]byte, []byte) {
 	//keccak512 := makeHasher(sha3.NewLegacyKeccak512())
 	//
 	//lookup := func(index uint32) []uint32 {
@@ -446,7 +446,7 @@ func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64, numb
 	seed = append(seed, nonceBytes...)
 
 	ticket := crypto.Keccak256(seed)
-	dataSize := datasetSize(number) / datasetParents
+	dataSize := size * 8 / 512
 
 	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
 
@@ -479,15 +479,15 @@ func hashimotoFull(dataset []uint32, hash []byte, nonce uint64) ([]byte, []byte)
 	seed = append(seed, nonceBytes...)
 
 	ticket := crypto.Keccak256(seed)
-	dataSize := len(dataset) / 8
+	dataSize := len(dataset) * 4 * 8 / 512
 
 	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
-
+	
 	result := make([]byte, 32)
 	for i := 0; i < loopAccesses; i++ {
-		datasetItemSlice := make([]byte, 256)
-		for i := 0; i < 8; i++ {
-			binary.LittleEndian.PutUint32(datasetItemSlice[i*4:], dataset[i+int(id)])
+		datasetItemSlice := make([]byte, 64)
+		for i := 0; i < 16; i++ {
+			binary.LittleEndian.PutUint32(datasetItemSlice[i*4:], dataset[i+int(id)*16])
 		}
 		result = crypto.Keccak256(new(big.Int).Xor( new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
 		id = new(big.Int).Mod(new(big.Int).SetBytes(result), new(big.Int).SetInt64(int64(dataSize))).Int64()

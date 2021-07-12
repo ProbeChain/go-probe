@@ -19,16 +19,17 @@ package ethash
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"io/ioutil"
 	"math/big"
+	"math/rand"
 	"os"
 	"reflect"
 	"sync"
 	"testing"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
+	"unsafe"
 )
 
 // prepare converts an ethash cache or dataset from a byte stream into the internal
@@ -692,6 +693,32 @@ func TestHashimoto(t *testing.T) {
 	}
 	if !bytes.Equal(result, wantResult) {
 		t.Errorf("full hashimoto result mismatch: have %x, want %x", result, wantResult)
+	}
+}
+
+func TestHashimotoLight(t *testing.T) {
+	// Create the verification cache and mining dataset
+	cache := make([]uint32, 1024/4)
+	generateCache(cache, 0, make([]byte, 32))
+
+	dest := make([]uint32, 32*1024/4)
+
+	var dataset []byte
+	datasetHdr := (*reflect.SliceHeader)(unsafe.Pointer(&dataset))
+	destHdr := (*reflect.SliceHeader)(unsafe.Pointer(&dest))
+	datasetHdr.Data = destHdr.Data
+	datasetHdr.Len = destHdr.Len * 4
+	datasetHdr.Cap = destHdr.Cap * 4
+	generateDataset(dest, 0, cache)
+
+	// Create a block to verify
+	hash := hexutil.MustDecode("0xc9149cc0386e689d789a1c2f3d5d169a61a6218ed30e74414dc736e442ef3d1f")
+	nonce := uint64(rand.Int())
+	_, ret1 := hashimotoLight(32*1024, cache, hash, nonce)
+	_, ret2 := hashimotoFull(dest, hash, nonce)
+
+	if !bytes.Equal(ret1, ret2) {
+		t.Errorf("full hashimoto digest mismatch: have %x, want %x", ret1, ret2)
 	}
 }
 
