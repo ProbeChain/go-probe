@@ -29,6 +29,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"time"
 	"unsafe"
 )
 
@@ -696,7 +697,7 @@ func TestHashimoto(t *testing.T) {
 	}
 }
 
-func TestHashimotoLight(t *testing.T) {
+func TestHashimotoFullLight(t *testing.T) {
 	// Create the verification cache and mining dataset
 	cache := make([]uint32, 1024/4)
 	generateCache(cache, 0, make([]byte, 32))
@@ -713,12 +714,14 @@ func TestHashimotoLight(t *testing.T) {
 
 	// Create a block to verify
 	hash := hexutil.MustDecode("0xc9149cc0386e689d789a1c2f3d5d169a61a6218ed30e74414dc736e442ef3d1f")
+	rand.Seed(time.Now().UnixNano())
 	nonce := uint64(rand.Int())
 	_, ret1 := hashimotoLight(32*1024, cache, hash, nonce)
 	_, ret2 := hashimotoFull(dest, hash, nonce)
-
 	if !bytes.Equal(ret1, ret2) {
 		t.Errorf("full hashimoto digest mismatch: have %x, want %x", ret1, ret2)
+	} else {
+		t.Logf("success: nonce %d", nonce)
 	}
 }
 

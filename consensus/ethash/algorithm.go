@@ -446,14 +446,19 @@ func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64) ([]b
 	seed = append(seed, nonceBytes...)
 
 	ticket := crypto.Keccak256(seed)
-	dataSize := size * 8 / 512
+	dataSize := size * 8 / 256
 
 	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
 
 	result := make([]byte, 32)
 	for i := 0; i < loopAccesses; i++ {
-		datasetItemSlice := generateDatasetItem(cache, uint32(id), keccak512)
-		result = crypto.Keccak256(new(big.Int).Xor( new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
+		datasetItemSlice := generateDatasetItem(cache, uint32(id) / 2, keccak512)
+		if  uint32(id) % 2 == 0 {
+			datasetItemSlice = datasetItemSlice[0:32]
+		} else {
+			datasetItemSlice = datasetItemSlice[32:]
+		}
+		result = crypto.Keccak256(new(big.Int).Xor(new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
 		id = new(big.Int).Mod(new(big.Int).SetBytes(result), new(big.Int).SetInt64(int64(dataSize))).Int64()
 	}
 	return result, result
@@ -479,15 +484,15 @@ func hashimotoFull(dataset []uint32, hash []byte, nonce uint64) ([]byte, []byte)
 	seed = append(seed, nonceBytes...)
 
 	ticket := crypto.Keccak256(seed)
-	dataSize := len(dataset) * 4 * 8 / 512
+	dataSize := len(dataset) * 4 * 8 / 256
 
 	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
-	
+
 	result := make([]byte, 32)
 	for i := 0; i < loopAccesses; i++ {
-		datasetItemSlice := make([]byte, 64)
-		for i := 0; i < 16; i++ {
-			binary.LittleEndian.PutUint32(datasetItemSlice[i*4:], dataset[i+int(id)*16])
+		datasetItemSlice := make([]byte, 256 / 8)
+		for i := 0; i < 8; i++ {
+			binary.LittleEndian.PutUint32(datasetItemSlice[i*4:], dataset[i+int(id)*8])
 		}
 		result = crypto.Keccak256(new(big.Int).Xor( new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
 		id = new(big.Int).Mod(new(big.Int).SetBytes(result), new(big.Int).SetInt64(int64(dataSize))).Int64()
