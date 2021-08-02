@@ -18,7 +18,9 @@ package trie
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	"io"
+	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -71,6 +73,20 @@ func (n *fullNode) EncodeRLP(w io.Writer) error {
 		}
 	}
 	return rlp.Encode(w, nodes)
+}
+
+// Hash 计算一个叶子节点的哈希值
+// @todo 后续可拆分叶子节点里面的值，只有需要计算才去进行哈希计算，否则使用缓存的哈希值
+func (n *binaryLeaf) Hash() []byte {
+	num := big.NewInt(0) // 利用 x ⊕ 0 == x
+	for _, node := range *n {
+		// @todo 这里需要分别处理大端小端的问题
+		curNum := new(big.Int).SetBytes(crypto.Keccak256(append(node.Key, node.Val...)))
+		num = new(big.Int).Xor(curNum, num)
+	}
+	hash := make([]byte, 32, 64) // 哈希出来的长度为32byte
+	hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
+	return hash[32:64]
 }
 
 func (n *fullNode) copy() *fullNode   { copy := *n; return &copy }

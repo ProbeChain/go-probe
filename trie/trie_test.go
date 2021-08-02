@@ -206,6 +206,9 @@ func TestBinaryInsert(t *testing.T) {
 	trie.TryDelete(key)
 	value, _ = trie.TryGet(key)
 	t.Logf("value %s", value)
+
+	stateRoot := trie.Hash()
+	t.Logf("value %s", stateRoot)
 }
 
 func TestGet(t *testing.T) {

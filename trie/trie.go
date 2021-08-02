@@ -19,6 +19,7 @@ package trie
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/math"
@@ -58,15 +59,26 @@ var (
 type LeafCallback func(paths [][]byte, hexpath []byte, leaf []byte, parent common.Hash) error
 
 // unique 对一个已排序的数组去重
-func unique(a []int)[]int {
+func unique(a []int) []int {
+	length := len(a)
+	if length == 0 {
+		return a
+	}
 	i := 0
-	for j := 1; j < len(a); j ++ {
+	for j := 1; j < length; j++ {
 		if a[i] != a[j] {
-			i ++
+			i++
 			a[i] = a[j]
 		}
 	}
 	return a[:i+1]
+}
+
+func intToBytes(n int) []byte {
+	data := int32(n)
+	bytebuf := bytes.NewBuffer([]byte{})
+	binary.Write(bytebuf, binary.BigEndian, data)
+	return bytebuf.Bytes()
 }
 
 // Trie is a Merkle Patricia Trie.
@@ -173,7 +185,7 @@ func (t *Trie) relatedIndexs(key []byte) ([]int, int) {
 	indexs := []int{index}
 	for i, b := range k {
 		index = 2*index + 1
-		// @todo 目前拆成nibble，我感觉更好。原先是需要拆成二进制，到时候讨论再决定
+		// @todo 需要拆成二进制
 		if b >= 8 {
 			index += 1 // 索引往右边走
 		}
@@ -189,10 +201,13 @@ func (t *Trie) relatedIndexs(key []byte) ([]int, int) {
 }
 
 // uniqueSortUnhashedIndex 对需要重新计算的叶子节点的索引进行排序去重
-func (t *Trie) uniqueSortUnhashedIndex()  {
-	sort.Ints(t.unhashedIndex)
-	t.unhashedIndex = unique(t.unhashedIndex)
+func (t *Trie) uniqueSortUnhashedIndex() {
+	if len(t.unhashedIndex) > 0 {
+		sort.Ints(t.unhashedIndex)
+		t.unhashedIndex = unique(t.unhashedIndex)
+	}
 }
+
 // NodeIterator returns an iterator that returns nodes of the trie. Iteration starts at
 // the key after the given start key.
 func (t *Trie) NodeIterator(start []byte) NodeIterator {
@@ -668,9 +683,54 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 // Hash returns the root hash of the trie. It does not write to the
 // database and can be used even if the trie doesn't have one.
 func (t *Trie) Hash() common.Hash {
-	hash, cached, _ := t.hashRoot()
-	t.root = cached
-	return common.BytesToHash(hash.(hashNode))
+	if t.binary() {
+		t.uniqueSortUnhashedIndex()
+		unhashedIndex := make([]int, 0)
+
+		// 计算叶子节点的哈希值
+		for _, index := range t.unhashedIndex {
+			num := len(t.binaryLeafs[index])
+
+			binaryNodeIndex := index + int(math.BigPow(2, int64(t.depth)).Int64()-1) // 对应哈希节点的索引值
+			t.binaryHashNodes[binaryNodeIndex].num = num
+			t.binaryHashNodes[binaryNodeIndex].hash = t.binaryLeafs[index].Hash()
+
+			// 哈希节点已更新，将这个哈希节点的索引值放到数组中开始从下往上计算哈希值
+			unhashedIndex = append(unhashedIndex, (binaryNodeIndex-1)/2)
+		}
+
+		// 由于计算叶子节点的哈希是从左至右的那么肯定是排序好的，但是最后一层哈希节点可能指向相同的父亲所以要去重防止重复计算
+		unhashedIndex = unique(unhashedIndex)
+		for {
+			temp := make([]int, 0) // 下次迭代需要计算的哈希节点索引列表
+			for _, index := range unhashedIndex {
+				li := index * 2 + 1
+				ri := index * 2 + 2
+				lHash := t.binaryHashNodes[li].hash
+				rHash := t.binaryHashNodes[ri].hash
+				lNum := t.binaryHashNodes[li].num
+				rNum := t.binaryHashNodes[ri].num
+				t.binaryHashNodes[index].num = lNum + rNum
+				// @todo 数字转byte需要分别处理大端小端的问题
+				t.binaryHashNodes[index].hash = crypto.Keccak256(concat(concat(lHash, intToBytes(lNum)...), concat(rHash, intToBytes(rNum)...)...))
+
+				temp = append(temp, (index-1)/2)
+			}
+			temp = unique(temp)
+
+			unhashedIndex = temp[:]
+			if len(unhashedIndex) <= 1 {
+				break
+			}
+		}
+		t.unhashedIndex = make([]int, 0)
+		hash := crypto.Keccak256(concat(t.binaryHashNodes[0].hash, intToBytes(t.binaryHashNodes[0].num)...))
+		return common.BytesToHash(hash)
+	} else {
+		hash, cached, _ := t.hashRoot()
+		t.root = cached
+		return common.BytesToHash(hash.(hashNode))
+	}
 }
 
 // Commit writes all nodes to the trie's memory database, tracking the internal
