@@ -51,6 +51,11 @@ func newEmpty() *Trie {
 	return trie
 }
 
+func newEmptyBinary(depth int) *Trie {
+	trie, _ := NewBinary(common.Hash{}, NewDatabase(memorydb.New()), depth)
+	return trie
+}
+
 func TestEmptyTrie(t *testing.T) {
 	var trie Trie
 	res := trie.Hash()
@@ -179,6 +184,28 @@ func TestInsert(t *testing.T) {
 	if root != exp {
 		t.Errorf("case 2: exp %x got %x", exp, root)
 	}
+}
+
+func TestBinaryInsert(t *testing.T) {
+	depth := 4
+	trie := newEmptyBinary(depth)
+	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
+	trie.TryUpdate(key, []byte("000000000"))
+	trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0xff}, []byte("111111111"))
+	trie.TryUpdate([]byte{0x7f, 0x6f, 0xbb, 0x54, 0xf7}, []byte("222222222"))
+
+	// 获取一个存在的值
+	value, _ := trie.TryGet(key)
+	t.Logf("value %s", value)
+
+	// 获取一个不存在的值
+	value, _ = trie.TryGet(append(key, 0xff))
+	t.Logf("value %s", value)
+
+	// 删除值
+	trie.TryDelete(key)
+	value, _ = trie.TryGet(key)
+	t.Logf("value %s", value)
 }
 
 func TestGet(t *testing.T) {

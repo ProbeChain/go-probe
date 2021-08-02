@@ -42,8 +42,17 @@ type (
 		Val   node
 		flags nodeFlag
 	}
+	binaryNode struct {
+		Key []byte
+		Val []byte
+	}
+	binaryHashNode struct {
+		hash []byte
+		num int
+	}
 	hashNode  []byte
 	valueNode []byte
+	binaryLeaf []binaryNode
 )
 
 // nilValueNode is used when collapsing internal trie nodes for hashing, since

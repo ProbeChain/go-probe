@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/math"
+	"sort"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -34,6 +36,9 @@ var (
 
 	// emptyState is the known hash of an empty state trie entry.
 	emptyState = crypto.Keccak256Hash(nil)
+
+	//
+	maxBinaryLeafLen = 100
 )
 
 // LeafCallback is a callback type invoked when a trie operation reaches a leaf
@@ -52,6 +57,18 @@ var (
 // for extracting the raw states(leaf nodes) with corresponding paths.
 type LeafCallback func(paths [][]byte, hexpath []byte, leaf []byte, parent common.Hash) error
 
+// unique 对一个已排序的数组去重
+func unique(a []int)[]int {
+	i := 0
+	for j := 1; j < len(a); j ++ {
+		if a[i] != a[j] {
+			i ++
+			a[i] = a[j]
+		}
+	}
+	return a[:i+1]
+}
+
 // Trie is a Merkle Patricia Trie.
 // The zero value is an empty trie with no database.
 // Use New to create a trie that sits on top of a database.
@@ -64,6 +81,11 @@ type Trie struct {
 	// hashing operation. This number will not directly map to the number of
 	// actually unhashed nodes
 	unhashed int
+
+	depth           int              // 二叉树深度
+	unhashedIndex   []int            // 需要重新计算的叶子节点的索引
+	binaryHashNodes []binaryHashNode // 二叉节点
+	binaryLeafs     []binaryLeaf     // 叶子节点
 }
 
 // newFlag returns the cache flag value for a newly created node.
@@ -82,7 +104,8 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 		panic("trie.New called without a database")
 	}
 	trie := &Trie{
-		db: db,
+		db:    db,
+		depth: -1,
 	}
 	if root != (common.Hash{}) && root != emptyRoot {
 		rootnode, err := trie.resolveHash(root[:], nil)
@@ -94,6 +117,82 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 	return trie, nil
 }
 
+// NewBinary creates a binary trie.
+func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
+	if db == nil {
+		panic("trie.New called without a database")
+	}
+	trie := &Trie{
+		db:    db,
+		depth: depth,
+	}
+	length := math.BigPow(2, int64(depth+1)).Int64()
+	trie.binaryHashNodes = make([]binaryHashNode, length, length)
+	trie.binaryLeafs = make([]binaryLeaf, length/2, length/2)
+
+	if root != (common.Hash{}) && root != emptyRoot {
+		rootnode, err := trie.resolveHash(root[:], nil)
+		if err != nil {
+			return nil, err
+		}
+		trie.root = rootnode
+	} else {
+		// depth == 21 耗时 140ms
+		// depth == 20 耗时 60ms
+		curDepth := depth
+		for curDepth >= 0 {
+			start := math.BigPow(2, int64(curDepth)).Int64() - 1
+			end := math.BigPow(2, int64(curDepth+1)).Int64() - 1
+
+			var curHash []byte
+			if curDepth == trie.depth {
+				curHash = crypto.Keccak256(nil) // 下面没挂元素用空值计算哈希
+			} else {
+				data := bytes.Repeat(append(trie.binaryHashNodes[end].hash, 0), 2)
+				curHash = crypto.Keccak256(data)
+			}
+			for i := start; i < end; i += 1 {
+				trie.binaryHashNodes[i] = binaryHashNode{curHash, 0}
+			}
+			curDepth -= 1
+		}
+	}
+	return trie, nil
+}
+
+// binary 是否是一个二叉默克尔树
+func (t *Trie) binary() bool {
+	return t.depth > 0
+}
+
+// relatedIndexs 将key相关的binaryHashNodes，binaryLeafs索引全部返回来，数组最后一个是binaryLeafs受影响的
+func (t *Trie) relatedIndexs(key []byte) ([]int, int) {
+	k := keybytesToHex(key)
+	index := 0
+	leafIndex := -1
+	indexs := []int{index}
+	for i, b := range k {
+		index = 2*index + 1
+		// @todo 目前拆成nibble，我感觉更好。原先是需要拆成二进制，到时候讨论再决定
+		if b >= 8 {
+			index += 1 // 索引往右边走
+		}
+		indexs = append(indexs, index)
+		if i+1 == t.depth {
+			// 最后一个 binaryLeafs 对应的索引
+			leafIndex = index - int(math.BigPow(2, int64(t.depth)).Int64()-1)
+			break
+		}
+	}
+
+	return indexs, leafIndex
+}
+
+// uniqueSortUnhashedIndex 对需要重新计算的叶子节点的索引进行排序去重
+func (t *Trie) uniqueSortUnhashedIndex()  {
+	sort.Ints(t.unhashedIndex)
+	t.unhashedIndex = unique(t.unhashedIndex)
+}
 // NodeIterator returns an iterator that returns nodes of the trie. Iteration starts at
 // the key after the given start key.
 func (t *Trie) NodeIterator(start []byte) NodeIterator {
@@ -114,11 +213,23 @@ func (t *Trie) Get(key []byte) []byte {
 // The value bytes must not be modified by the caller.
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryGet(key []byte) ([]byte, error) {
-	value, newroot, didResolve, err := t.tryGet(t.root, keybytesToHex(key), 0)
-	if err == nil && didResolve {
-		t.root = newroot
+	if t.binary() {
+		_, leafIndex := t.relatedIndexs(key)
+		leaf := t.binaryLeafs[leafIndex]
+		for _, node := range leaf {
+			if bytes.Compare(key, node.Key) == 0 {
+				return node.Val, nil
+			}
+		}
+		return nil, errors.New("not found")
+	} else {
+		value, newroot, didResolve, err := t.tryGet(t.root, keybytesToHex(key), 0)
+		if err == nil && didResolve {
+			t.root = newroot
+		}
+		return value, err
 	}
-	return value, err
+
 }
 
 func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode node, didResolve bool, err error) {
@@ -255,21 +366,58 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
-	t.unhashed++
-	k := keybytesToHex(key)
-	if len(value) != 0 {
-		_, n, err := t.insert(t.root, nil, k, valueNode(value))
-		if err != nil {
-			return err
+	if t.binary() {
+		_, leafIndex := t.relatedIndexs(key)
+		leaf := t.binaryLeafs[leafIndex]
+		find := false
+		insertIndex := 0
+
+		// @todo 此处可以使用二分法加快搜索
+		for i, node := range leaf {
+			ret := bytes.Compare(key, node.Key)
+			if ret == 0 {
+				leaf[i].Val = value
+				find = true
+				t.unhashedIndex = append(t.unhashedIndex, leafIndex)
+			} else if ret < 0 {
+				insertIndex = i
+			} else {
+				break
+			}
 		}
-		t.root = n
+		if !find {
+			// 按照key的顺序插入进去方便进行哈希计算
+			length := len(leaf)
+			if length == 0 {
+				t.binaryLeafs[leafIndex] = append(leaf, binaryNode{key, value})
+				t.unhashedIndex = append(t.unhashedIndex, leafIndex)
+			} else if length > maxBinaryLeafLen {
+				return errors.New("exceed max binary leaf size")
+			} else {
+				left := leaf[:insertIndex+1]
+				right := append([]binaryNode{{key, value}}, leaf[insertIndex+1:]...)
+				t.binaryLeafs[leafIndex] = append(left, right...)
+				t.unhashedIndex = append(t.unhashedIndex, leafIndex)
+			}
+		}
 	} else {
-		_, n, err := t.delete(t.root, nil, k)
-		if err != nil {
-			return err
+		t.unhashed++
+		k := keybytesToHex(key)
+		if len(value) != 0 {
+			_, n, err := t.insert(t.root, nil, k, valueNode(value))
+			if err != nil {
+				return err
+			}
+			t.root = n
+		} else {
+			_, n, err := t.delete(t.root, nil, k)
+			if err != nil {
+				return err
+			}
+			t.root = n
 		}
-		t.root = n
 	}
+
 	return nil
 }
 
@@ -352,13 +500,26 @@ func (t *Trie) Delete(key []byte) {
 // TryDelete removes any existing value for key from the trie.
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryDelete(key []byte) error {
-	t.unhashed++
-	k := keybytesToHex(key)
-	_, n, err := t.delete(t.root, nil, k)
-	if err != nil {
-		return err
+	if t.binary() {
+		_, leafIndex := t.relatedIndexs(key)
+		leaf := t.binaryLeafs[leafIndex]
+		for i, node := range leaf {
+			if bytes.Compare(key, node.Key) == 0 {
+				t.binaryLeafs[leafIndex] = append(leaf[:i], leaf[i+1:]...)
+				t.unhashedIndex = append(t.unhashedIndex, leafIndex)
+				return nil
+			}
+		}
+		return errors.New("not found")
+	} else {
+		t.unhashed++
+		k := keybytesToHex(key)
+		_, n, err := t.delete(t.root, nil, k)
+		if err != nil {
+			return err
+		}
+		t.root = n
 	}
-	t.root = n
 	return nil
 }
 
