@@ -87,6 +87,7 @@ type Database struct {
 	dirtiesSize   common.StorageSize // Storage size of the dirty node cache (exc. metadata)
 	childrenSize  common.StorageSize // Storage size of the external children tracking
 	preimagesSize common.StorageSize // Storage size of the preimages cache
+	binary bool
 
 	lock sync.RWMutex
 }
@@ -168,6 +169,7 @@ func (n *cachedNode) rlp() []byte {
 	if err != nil {
 		panic(err)
 	}
+	//fmt.Printf("cachedNode rlp data: %s\n", hexutils.BytesToHex(blob))
 	return blob
 }
 
@@ -204,7 +206,7 @@ func forGatherChildren(n node, onChild func(hash common.Hash)) {
 		}
 	case hashNode:
 		onChild(common.BytesToHash(n))
-	case valueNode, nil, rawNode:
+	case valueNode, nil, rawNode, binaryLeaf:
 	default:
 		panic(fmt.Sprintf("unknown node type: %T", n))
 	}
@@ -228,7 +230,7 @@ func simplifyNode(n node) node {
 		}
 		return node
 
-	case valueNode, hashNode, rawNode:
+	case valueNode, hashNode, rawNode, binaryLeaf:
 		return n
 
 	default:
@@ -315,6 +317,15 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 func (db *Database) DiskDB() ethdb.KeyValueStore {
 	return db.diskdb
 }
+// setBinary 设置是否二叉树提交过来的数据
+func (db *Database) setBinary(binary bool)  {
+	db.binary = binary
+}
+
+// Binary 是否是二叉树提交过来的数据
+func (db *Database) Binary() bool  {
+	return db.binary
+}
 
 // insert inserts a collapsed trie node into the memory database.
 // The blob size must be specified to allow proper size tracking.
@@ -400,7 +411,39 @@ func (db *Database) node(hash common.Hash) node {
 		memcacheCleanMissMeter.Mark(1)
 		memcacheCleanWriteMeter.Mark(int64(len(enc)))
 	}
-	return mustDecodeNode(hash[:], enc)
+	if db.Binary() {
+		var node binaryLeaf
+		elems, rest, err := rlp.SplitList(enc)
+		if err != nil {
+			return nil
+		}
+		cur := elems
+		for {
+			elems, rest, err = rlp.SplitList(cur)
+			cur = rest
+			if err != nil {
+				return nil
+			}
+			key, rest, err := rlp.SplitString(elems)
+			if err != nil {
+				return nil
+			}
+			value, _, err := rlp.SplitString(rest)
+			if err != nil {
+				return nil
+			}
+			node = append(node, binaryNode{
+				key,
+				value,
+			})
+			if len(cur) == 0 {
+				break
+			}
+		}
+		return node
+	} else {
+		return mustDecodeNode(hash[:], enc)
+	}
 }
 
 // Node retrieves an encoded cached trie node from memory. If it cannot be found
@@ -712,12 +755,25 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	}
 	// Move the trie itself into the batch, flushing if enough data is accumulated
 	nodes, storage := len(db.dirties), db.dirtiesSize
-
 	uncacher := &cleaner{db}
-	if err := db.commit(node, batch, uncacher, callback); err != nil {
-		log.Error("Failed to commit trie from trie database", "err", err)
-		return err
+	if db.binary {
+		emptyHash := make([]byte, 32, 32)
+		for hash := range db.dirties {
+			if common.BytesToHash(emptyHash) == hash {
+				continue
+			}
+			if err := db.commit(hash, batch, uncacher, callback); err != nil {
+				log.Error("Failed to commit trie from trie database", "err", err)
+				return err
+			}
+		}
+	} else {
+		if err := db.commit(node, batch, uncacher, callback); err != nil {
+			log.Error("Failed to commit trie from trie database", "err", err)
+			return err
+		}
 	}
+
 	// Trie mostly committed to disk, flush any batch leftovers
 	if err := batch.Write(); err != nil {
 		log.Error("Failed to write trie to disk", "err", err)

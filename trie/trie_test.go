@@ -26,6 +26,8 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
+	"os/user"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"testing/quick"
@@ -187,7 +189,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestBinaryInsert(t *testing.T) {
-	depth := 4
+	depth := 2
 	trie := newEmptyBinary(depth)
 	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
 	trie.TryUpdate(key, []byte("000000000"))
@@ -209,6 +211,33 @@ func TestBinaryInsert(t *testing.T) {
 
 	stateRoot := trie.Hash()
 	t.Logf("value %s", stateRoot)
+
+	hash := trie.Hash()
+	trie.Commit(nil)
+	trie.db.Commit(hash, true, nil)
+	trie.Close()
+}
+
+func TestBinaryWriteToDB(t *testing.T) {
+	usr, _ := user.Current()
+	dir := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "DB")
+	diskdb, _ := leveldb.New(dir, 256, 0, "", false)
+
+	trie, _ := NewBinary(common.Hash{}, NewDatabase(diskdb), 2)
+	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
+	//trie.TryUpdate(key, []byte("000000000"))
+	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0xff}, []byte("111111111"))
+	//trie.TryUpdate([]byte{0x7f, 0x6f, 0xbb, 0x54, 0xf7}, []byte("222222222"))
+	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0x1f}, []byte("333333333"))
+	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0x2f}, []byte("444444444"))
+	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0x3f}, []byte("555555555"))
+	value, _ := trie.TryGet(key)
+	t.Logf("value = %s", value)
+
+	rootHash, _ := trie.Commit(nil)
+	trie.db.Commit(rootHash, true, nil)
+	ldb := trie.db.diskdb.(*leveldb.Database)
+	ldb.Close()
 }
 
 func TestGet(t *testing.T) {

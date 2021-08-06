@@ -91,7 +91,7 @@ func (c *committer) commit(n node, db *Database) (node, error) {
 	if hash != nil && !dirty {
 		return hash, nil
 	}
-	// Commit children, then parent, and remove remove the dirty flag.
+	// Commit children, then parent, and remove the dirty flag.
 	switch cn := n.(type) {
 	case *shortNode:
 		// Commit child
@@ -265,6 +265,12 @@ func estimateSize(n node) int {
 		return 1 + len(n)
 	case hashNode:
 		return 1 + len(n)
+	case binaryLeaf:
+		length := 0
+		for _, item := range n {
+			length += len(item.Key) + len(item.Val)
+		}
+		return length
 	default:
 		panic(fmt.Sprintf("node type %T", n))
 	}

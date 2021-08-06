@@ -49,8 +49,8 @@ type (
 		Val []byte
 	}
 	binaryHashNode struct {
-		hash []byte
-		num int
+		hash [32]byte
+		num int32
 	}
 	hashNode  []byte
 	valueNode []byte
@@ -77,7 +77,7 @@ func (n *fullNode) EncodeRLP(w io.Writer) error {
 
 // Hash 计算一个叶子节点的哈希值
 // @todo 后续可拆分叶子节点里面的值，只有需要计算才去进行哈希计算，否则使用缓存的哈希值
-func (n *binaryLeaf) Hash() []byte {
+func (n *binaryLeaf) Hash() [32]byte {
 	num := big.NewInt(0) // 利用 x ⊕ 0 == x
 	for _, node := range *n {
 		// @todo 这里需要分别处理大端小端的问题
@@ -86,7 +86,10 @@ func (n *binaryLeaf) Hash() []byte {
 	}
 	hash := make([]byte, 32, 64) // 哈希出来的长度为32byte
 	hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
-	return hash[32:64]
+
+	var ret [32]byte
+	copy(ret[:], hash[32:64])
+	return ret
 }
 
 func (n *fullNode) copy() *fullNode   { copy := *n; return &copy }
@@ -102,12 +105,16 @@ func (n *fullNode) cache() (hashNode, bool)  { return n.flags.hash, n.flags.dirt
 func (n *shortNode) cache() (hashNode, bool) { return n.flags.hash, n.flags.dirty }
 func (n hashNode) cache() (hashNode, bool)   { return nil, true }
 func (n valueNode) cache() (hashNode, bool)  { return nil, true }
+func (n binaryLeaf) cache() (hashNode, bool)  { return nil, true }
+func (n binaryHashNode) cache() (hashNode, bool)  { return nil, true }
 
 // Pretty printing.
 func (n *fullNode) String() string  { return n.fstring("") }
 func (n *shortNode) String() string { return n.fstring("") }
 func (n hashNode) String() string   { return n.fstring("") }
 func (n valueNode) String() string  { return n.fstring("") }
+func (n binaryLeaf) String() string  { return n.fstring("") }
+func (n binaryHashNode) String() string  { return n.fstring("") }
 
 func (n *fullNode) fstring(ind string) string {
 	resp := fmt.Sprintf("[\n%s  ", ind)
@@ -129,6 +136,21 @@ func (n hashNode) fstring(ind string) string {
 func (n valueNode) fstring(ind string) string {
 	return fmt.Sprintf("%x ", []byte(n))
 }
+
+func (n binaryLeaf) fstring(ind string) string {
+	var data []byte
+	for _, node := range n {
+		data = append(data, node.Key...)
+		data = append(data, 0x3a) // 0x3a == ":"
+		data = append(data, node.Val...)
+	}
+	return fmt.Sprintf("%x ", data)
+}
+
+func (n binaryHashNode) fstring(ind string) string {
+	return fmt.Sprintf("%d %x ", n.num, n.hash)
+}
+
 
 func mustDecodeNode(hash, buf []byte) node {
 	n, err := decodeNode(hash, buf)

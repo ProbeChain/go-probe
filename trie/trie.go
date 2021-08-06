@@ -22,13 +22,18 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/math"
-	"sort"
-	"sync"
-
+	"github.com/edsrzf/mmap-go"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"os"
+	"os/user"
+	"path/filepath"
+	"reflect"
+	"sort"
+	"sync"
+	"unsafe"
 )
 
 var (
@@ -74,8 +79,7 @@ func unique(a []int) []int {
 	return a[:i+1]
 }
 
-func intToBytes(n int) []byte {
-	data := int32(n)
+func intToBytes(data int32) []byte {
 	bytebuf := bytes.NewBuffer([]byte{})
 	binary.Write(bytebuf, binary.BigEndian, data)
 	return bytebuf.Bytes()
@@ -94,8 +98,11 @@ type Trie struct {
 	// actually unhashed nodes
 	unhashed int
 
+	mem             mmap.MMap
+	f               *os.File
 	depth           int              // 二叉树深度
 	unhashedIndex   []int            // 需要重新计算的叶子节点的索引
+	uncommitedIndex []int			 // 需要提交的叶子节点索引
 	binaryHashNodes []binaryHashNode // 二叉节点
 	binaryLeafs     []binaryLeaf     // 叶子节点
 }
@@ -138,38 +145,83 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 		db:    db,
 		depth: depth,
 	}
-	length := math.BigPow(2, int64(depth+1)).Int64()
-	trie.binaryHashNodes = make([]binaryHashNode, length, length)
-	trie.binaryLeafs = make([]binaryLeaf, length/2, length/2)
+	db.setBinary(true)
 
-	if root != (common.Hash{}) && root != emptyRoot {
-		rootnode, err := trie.resolveHash(root[:], nil)
-		if err != nil {
-			return nil, err
+	length := int(math.BigPow(2, int64(depth+1)).Int64()) - 1
+	nBytes := length * int(unsafe.Sizeof(binaryHashNode{}))
+	trie.binaryHashNodes = make([]binaryHashNode, length, length)
+	trie.binaryLeafs = make([]binaryLeaf, length/2+1, length/2+1)
+
+	var f *os.File
+	var err error
+	init := false
+	usr, _ := user.Current()
+	triePath := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "trie.bin")
+	_, err = os.Lstat(triePath)
+	if os.IsNotExist(err) {
+		f, err = os.Create(triePath)
+		if err == nil {
+			err = f.Truncate(int64(nBytes))
+			init = true
 		}
-		trie.root = rootnode
 	} else {
+		f, err = os.OpenFile(triePath, os.O_RDWR, 0644)
+	}
+
+	if err == nil {
+		trie.f = f
+		mem, err := mmap.Map(f, os.O_RDWR, 0)
+		if err == nil {
+			shDst := (*reflect.SliceHeader)(unsafe.Pointer(&trie.binaryHashNodes))
+			shDst.Data = uintptr(unsafe.Pointer(&mem[0]))
+			shDst.Len = length
+			shDst.Cap = length
+			trie.mem = mem
+		} else {
+			return nil, errors.New("mmap.Map fail")
+		}
+	} else {
+		return nil, errors.New("trie file error")
+	}
+	if init && (root == (common.Hash{}) || root == emptyRoot) {
 		// depth == 21 耗时 140ms
 		// depth == 20 耗时 60ms
 		curDepth := depth
 		for curDepth >= 0 {
-			start := math.BigPow(2, int64(curDepth)).Int64() - 1
-			end := math.BigPow(2, int64(curDepth+1)).Int64() - 1
+			start := math.BigPow(2, int64(curDepth)).Int64() - 1 // 左闭
+			end := math.BigPow(2, int64(curDepth+1)).Int64() - 1 // 右开
 
 			var curHash []byte
 			if curDepth == trie.depth {
 				curHash = crypto.Keccak256(nil) // 下面没挂元素用空值计算哈希
 			} else {
-				data := bytes.Repeat(append(trie.binaryHashNodes[end].hash, 0), 2)
+				data := make([]byte, 66, 66)
+				copy(data, trie.binaryHashNodes[end].hash[:])
+				data = bytes.Repeat(data, 2)
 				curHash = crypto.Keccak256(data)
 			}
+			//curHash = []byte{0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41}
+			var hash [32]byte
+			copy(hash[:], curHash)
 			for i := start; i < end; i += 1 {
-				trie.binaryHashNodes[i] = binaryHashNode{curHash, 0}
+				trie.binaryHashNodes[i] = binaryHashNode{hash, int32(0)}
 			}
 			curDepth -= 1
 		}
+		trie.mem.Flush()
 	}
+	trie.root = trie.binaryHashNodes[0]
 	return trie, nil
+}
+
+func (t *Trie) Close() {
+	if t.mem != nil {
+		t.mem.Unmap()
+	}
+
+	if t.f != nil {
+		t.f.Close()
+	}
 }
 
 // binary 是否是一个二叉默克尔树
@@ -229,8 +281,7 @@ func (t *Trie) Get(key []byte) []byte {
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryGet(key []byte) ([]byte, error) {
 	if t.binary() {
-		_, leafIndex := t.relatedIndexs(key)
-		leaf := t.binaryLeafs[leafIndex]
+		leaf := t.TryGetBinaryLeaf(key)
 		for _, node := range leaf {
 			if bytes.Compare(key, node.Key) == 0 {
 				return node.Val, nil
@@ -281,6 +332,31 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode
 	default:
 		panic(fmt.Sprintf("%T: invalid node: %v", origNode, origNode))
 	}
+}
+
+// TryGetBinaryLeaf 根据key从内存中或者leveldb中返回叶子节点
+func (t *Trie) TryGetBinaryLeaf(key []byte) []binaryNode {
+	indexs, leafIndex := t.relatedIndexs(key)
+	leaf := t.binaryLeafs[leafIndex]
+	// 此时需要从数据库中加载一次
+	if leaf == nil {
+		hash := t.binaryHashNodes[indexs[len(indexs) - 1]].hash
+		sliceHash := make([]byte, 32, 32)
+		copy(sliceHash, hash[:])
+		node, _ := t.resolveHash(sliceHash , nil)
+		if node != nil {
+			switch n := (node).(type) {
+			case binaryLeaf:
+				leaf = n
+			default:
+				panic(fmt.Sprintf("%T: invalid node: %v", node, node))
+			}
+		} else {
+			leaf = make([]binaryNode, 0) // 创建一个空切片，防止下次再次去数据库搜索
+		}
+		t.binaryLeafs[leafIndex] = leaf
+	}
+	return leaf
 }
 
 // TryGetNode attempts to retrieve a trie node by compact-encoded path. It is not
@@ -383,7 +459,7 @@ func (t *Trie) Update(key, value []byte) {
 func (t *Trie) TryUpdate(key, value []byte) error {
 	if t.binary() {
 		_, leafIndex := t.relatedIndexs(key)
-		leaf := t.binaryLeafs[leafIndex]
+		leaf := t.TryGetBinaryLeaf(key)
 		find := false
 		insertIndex := 0
 
@@ -684,6 +760,7 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 // database and can be used even if the trie doesn't have one.
 func (t *Trie) Hash() common.Hash {
 	if t.binary() {
+		// @todo 如果待计算的个数较多可使用多线程计算
 		t.uniqueSortUnhashedIndex()
 		unhashedIndex := make([]int, 0)
 
@@ -692,7 +769,7 @@ func (t *Trie) Hash() common.Hash {
 			num := len(t.binaryLeafs[index])
 
 			binaryNodeIndex := index + int(math.BigPow(2, int64(t.depth)).Int64()-1) // 对应哈希节点的索引值
-			t.binaryHashNodes[binaryNodeIndex].num = num
+			t.binaryHashNodes[binaryNodeIndex].num = int32(num)
 			t.binaryHashNodes[binaryNodeIndex].hash = t.binaryLeafs[index].Hash()
 
 			// 哈希节点已更新，将这个哈希节点的索引值放到数组中开始从下往上计算哈希值
@@ -704,29 +781,37 @@ func (t *Trie) Hash() common.Hash {
 		for {
 			temp := make([]int, 0) // 下次迭代需要计算的哈希节点索引列表
 			for _, index := range unhashedIndex {
-				li := index * 2 + 1
-				ri := index * 2 + 2
-				lHash := t.binaryHashNodes[li].hash
-				rHash := t.binaryHashNodes[ri].hash
+				li := index*2 + 1
+				ri := index*2 + 2
+				var lHash []byte
+				var rHash []byte
+				copy(lHash, t.binaryHashNodes[li].hash[:])
+				copy(rHash, t.binaryHashNodes[ri].hash[:])
 				lNum := t.binaryHashNodes[li].num
 				rNum := t.binaryHashNodes[ri].num
 				t.binaryHashNodes[index].num = lNum + rNum
 				// @todo 数字转byte需要分别处理大端小端的问题
-				t.binaryHashNodes[index].hash = crypto.Keccak256(concat(concat(lHash, intToBytes(lNum)...), concat(rHash, intToBytes(rNum)...)...))
-
+				curHash := crypto.Keccak256(concat(concat(lHash, intToBytes(lNum)...), concat(rHash, intToBytes(rNum)...)...))
+				copy(t.binaryHashNodes[index].hash[:], curHash)
 				temp = append(temp, (index-1)/2)
 			}
 			temp = unique(temp)
 
 			unhashedIndex = temp[:]
 			if len(unhashedIndex) <= 1 {
+				t.root = t.binaryHashNodes[0]
 				break
 			}
 		}
+		t.uncommitedIndex = append(t.uncommitedIndex, t.unhashedIndex...)
 		t.unhashedIndex = make([]int, 0)
-		hash := crypto.Keccak256(concat(t.binaryHashNodes[0].hash, intToBytes(t.binaryHashNodes[0].num)...))
+
+		var hash []byte
+		copy(hash, t.binaryHashNodes[0].hash[:])
+		hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].num)...))
 		return common.BytesToHash(hash)
 	} else {
+		// 返回的cached是将算过的哈希值保存到nodeFlag中防止下次计算哈希需要重新计算，其他的值均保持不变
 		hash, cached, _ := t.hashRoot()
 		t.root = cached
 		return common.BytesToHash(hash.(hashNode))
@@ -745,6 +830,25 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	// Derive the hash for all dirty nodes first. We hold the assumption
 	// in the following procedure that all nodes are hashed.
 	rootHash := t.Hash()
+
+	// 直接将kv对往内存数据库提交
+	if t.binary() {
+		if len(t.uncommitedIndex) > 0 {
+			sort.Ints(t.uncommitedIndex)
+			t.uncommitedIndex = unique(t.uncommitedIndex)
+		}
+		for _, index := range t.uncommitedIndex {
+			hash := make([]byte, 32, 32)
+			binaryNodeIndex := index + int(math.BigPow(2, int64(t.depth)).Int64()-1) // 对应哈希节点的索引值
+			copy(hash, t.binaryHashNodes[binaryNodeIndex].hash[:])
+			t.db.insert(common.BytesToHash(hash), estimateSize(t.binaryLeafs[index]), t.binaryLeafs[index])
+		}
+		t.uncommitedIndex = make([]int, 0)
+		t.mem.Flush()
+
+		return rootHash, nil
+	}
+
 	h := newCommitter()
 	defer returnCommitterToPool(h)
 
