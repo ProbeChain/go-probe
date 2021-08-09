@@ -130,6 +130,7 @@ type cachingDB struct {
 // OpenTrie opens the main account trie at a specific root hash.
 func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
 	tr, err := trie.NewSecure(root, db.db)
+	//tr, err := trie.NewBinary(root, db.db, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -149,6 +150,8 @@ func (db *cachingDB) OpenStorageTrie(addrHash, root common.Hash) (Trie, error) {
 func (db *cachingDB) CopyTrie(t Trie) Trie {
 	switch t := t.(type) {
 	case *trie.SecureTrie:
+		return t.Copy()
+	case *trie.Trie:
 		return t.Copy()
 	default:
 		panic(fmt.Errorf("unknown trie type %T", t))

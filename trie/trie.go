@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/status-im/keycard-go/hexutils"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -102,7 +103,7 @@ type Trie struct {
 	f               *os.File
 	depth           int              // 二叉树深度
 	unhashedIndex   []int            // 需要重新计算的叶子节点的索引
-	uncommitedIndex []int			 // 需要提交的叶子节点索引
+	uncommitedIndex []int            // 需要提交的叶子节点索引
 	binaryHashNodes []binaryHashNode // 二叉节点
 	binaryLeafs     []binaryLeaf     // 叶子节点
 }
@@ -136,82 +137,88 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 	return trie, nil
 }
 
+var instanceTrie *Trie
+var once sync.Once
+
 // NewBinary creates a binary trie.
 func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
-	if db == nil {
-		panic("trie.New called without a database")
-	}
-	trie := &Trie{
-		db:    db,
-		depth: depth,
-	}
-	db.setBinary(true)
-
-	length := int(math.BigPow(2, int64(depth+1)).Int64()) - 1
-	nBytes := length * int(unsafe.Sizeof(binaryHashNode{}))
-	trie.binaryHashNodes = make([]binaryHashNode, length, length)
-	trie.binaryLeafs = make([]binaryLeaf, length/2+1, length/2+1)
-
-	var f *os.File
-	var err error
-	init := false
-	usr, _ := user.Current()
-	triePath := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "trie.bin")
-	_, err = os.Lstat(triePath)
-	if os.IsNotExist(err) {
-		f, err = os.Create(triePath)
-		if err == nil {
-			err = f.Truncate(int64(nBytes))
-			init = true
+	once.Do(func() {
+		if db == nil {
+			panic("trie.New called without a database")
 		}
-	} else {
-		f, err = os.OpenFile(triePath, os.O_RDWR, 0644)
-	}
+		trie := &Trie{
+			db:    db,
+			depth: depth,
+		}
+		db.setBinary(true)
 
-	if err == nil {
-		trie.f = f
-		mem, err := mmap.Map(f, os.O_RDWR, 0)
-		if err == nil {
-			shDst := (*reflect.SliceHeader)(unsafe.Pointer(&trie.binaryHashNodes))
-			shDst.Data = uintptr(unsafe.Pointer(&mem[0]))
-			shDst.Len = length
-			shDst.Cap = length
-			trie.mem = mem
+		length := int(math.BigPow(2, int64(depth+1)).Int64()) - 1
+		nBytes := length * int(unsafe.Sizeof(binaryHashNode{}))
+		trie.binaryHashNodes = make([]binaryHashNode, length, length)
+		trie.binaryLeafs = make([]binaryLeaf, length/2+1, length/2+1)
+
+		var f *os.File
+		var err error
+		init := false
+		usr, _ := user.Current()
+		triePath := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "trie.bin")
+		_, err = os.Lstat(triePath)
+		if os.IsNotExist(err) {
+			f, err = os.Create(triePath)
+			if err == nil {
+				err = f.Truncate(int64(nBytes))
+				init = true
+			}
 		} else {
-			return nil, errors.New("mmap.Map fail")
+			f, err = os.OpenFile(triePath, os.O_RDWR, 0644)
 		}
-	} else {
-		return nil, errors.New("trie file error")
-	}
-	if init && (root == (common.Hash{}) || root == emptyRoot) {
-		// depth == 21 耗时 140ms
-		// depth == 20 耗时 60ms
-		curDepth := depth
-		for curDepth >= 0 {
-			start := math.BigPow(2, int64(curDepth)).Int64() - 1 // 左闭
-			end := math.BigPow(2, int64(curDepth+1)).Int64() - 1 // 右开
 
-			var curHash []byte
-			if curDepth == trie.depth {
-				curHash = crypto.Keccak256(nil) // 下面没挂元素用空值计算哈希
+		if err == nil {
+			trie.f = f
+			mem, err := mmap.Map(f, os.O_RDWR, 0)
+			if err == nil {
+				shDst := (*reflect.SliceHeader)(unsafe.Pointer(&trie.binaryHashNodes))
+				shDst.Data = uintptr(unsafe.Pointer(&mem[0]))
+				shDst.Len = length
+				shDst.Cap = length
+				trie.mem = mem
 			} else {
-				data := make([]byte, 66, 66)
-				copy(data, trie.binaryHashNodes[end].hash[:])
-				data = bytes.Repeat(data, 2)
-				curHash = crypto.Keccak256(data)
+				//return nil, errors.New("mmap.Map fail")
 			}
-			//curHash = []byte{0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41}
-			var hash [32]byte
-			copy(hash[:], curHash)
-			for i := start; i < end; i += 1 {
-				trie.binaryHashNodes[i] = binaryHashNode{hash, int32(0)}
-			}
-			curDepth -= 1
+		} else {
+			//return nil, errors.New("trie file error")
 		}
-		trie.mem.Flush()
-	}
-	trie.root = trie.binaryHashNodes[0]
-	return trie, nil
+		if init && (root == (common.Hash{}) || root == emptyRoot) {
+			// depth == 21 耗时 140ms
+			// depth == 20 耗时 60ms
+			curDepth := depth
+			for curDepth >= 0 {
+				start := math.BigPow(2, int64(curDepth)).Int64() - 1 // 左闭
+				end := math.BigPow(2, int64(curDepth+1)).Int64() - 1 // 右开
+
+				var curHash []byte
+				if curDepth == trie.depth {
+					curHash = crypto.Keccak256(nil) // 下面没挂元素用空值计算哈希
+				} else {
+					data := make([]byte, 66, 66)
+					copy(data, trie.binaryHashNodes[end].hash[:])
+					data = bytes.Repeat(data, 2)
+					curHash = crypto.Keccak256(data)
+				}
+				//curHash = []byte{0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41}
+				var hash [32]byte
+				copy(hash[:], curHash)
+				for i := start; i < end; i += 1 {
+					trie.binaryHashNodes[i] = binaryHashNode{hash, int32(0)}
+				}
+				curDepth -= 1
+			}
+			trie.mem.Flush()
+		}
+		trie.root = trie.binaryHashNodes[0]
+		instanceTrie = trie
+	})
+	return instanceTrie, nil
 }
 
 func (t *Trie) Close() {
@@ -287,7 +294,7 @@ func (t *Trie) TryGet(key []byte) ([]byte, error) {
 				return node.Val, nil
 			}
 		}
-		return nil, errors.New("not found")
+		return nil, nil
 	} else {
 		value, newroot, didResolve, err := t.tryGet(t.root, keybytesToHex(key), 0)
 		if err == nil && didResolve {
@@ -340,10 +347,10 @@ func (t *Trie) TryGetBinaryLeaf(key []byte) []binaryNode {
 	leaf := t.binaryLeafs[leafIndex]
 	// 此时需要从数据库中加载一次
 	if leaf == nil {
-		hash := t.binaryHashNodes[indexs[len(indexs) - 1]].hash
+		hash := t.binaryHashNodes[indexs[len(indexs)-1]].hash
 		sliceHash := make([]byte, 32, 32)
 		copy(sliceHash, hash[:])
-		node, _ := t.resolveHash(sliceHash , nil)
+		node, _ := t.resolveHash(sliceHash, nil)
 		if node != nil {
 			switch n := (node).(type) {
 			case binaryLeaf:
@@ -457,6 +464,7 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
+	log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "value", hexutils.BytesToHex(value))
 	if t.binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
@@ -902,4 +910,13 @@ func (t *Trie) hashRoot() (node, node, error) {
 func (t *Trie) Reset() {
 	t.root = nil
 	t.unhashed = 0
+}
+
+func (t *Trie) GetKey(key []byte) []byte {
+	return key
+}
+
+func (t *Trie) Copy() *Trie {
+	cpy := *t
+	return &cpy
 }
