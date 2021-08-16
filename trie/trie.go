@@ -84,6 +84,15 @@ func intToBytes(data uint32) []byte {
 	return bytebuf.Bytes()
 }
 
+func bytesToInt(b []byte) int {
+	b = append([]byte{0, 0, 0, 0}, b...)
+	b = b[len(b) - 4:]
+	bytesBuffer := bytes.NewBuffer(b)
+	var x int32
+	binary.Read(bytesBuffer, binary.BigEndian, &x)
+	return int(x)
+}
+
 // Trie is a Merkle Patricia Trie.
 // The zero value is an empty trie with no database.
 // Use New to create a trie that sits on top of a database.
@@ -209,14 +218,23 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 				}
 				curDepth -= 1
 			}
-			trie.mem.Flush()
+			trie.Flush()
 		}
 		trie.root = trie.binaryHashNodes[0]
 		instanceTrie = trie
 	})
-	instanceTrie.db = db 	// 创世块初始化的数据库与后续出块的数据库不是同一个数据库
 	tr := instanceTrie 		// 仅仅为了调试方便
-	db.trie = tr
+	tr.db = db 				// 创世块初始化的数据库与后续出块的数据库不是同一个数据库
+	db.trie = tr			// 后续数据库需要根据MPT或者是BMPT进行数据的读取
+	curRoot := tr.binaryRoot()
+
+	// 如果不是要找回当前的root，那么尝试去恢复一下，如果能恢复成功，认为这颗BMPT存在，否则返回错误
+	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
+		_, err := tr.resolveHash(root[:], nil)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return tr, nil
 }
 
@@ -230,8 +248,14 @@ func (t *Trie) Close() {
 	}
 }
 
-// binary 是否是一个二叉默克尔树
-func (t *Trie) binary() bool {
+func (t *Trie) Flush() {
+	if t.mem != nil {
+		t.mem.Flush()
+	}
+}
+
+// Binary 是否是一个二叉默克尔树
+func (t *Trie) Binary() bool {
 	return t.depth > 0
 }
 
@@ -286,7 +310,7 @@ func (t *Trie) Get(key []byte) []byte {
 // The value bytes must not be modified by the caller.
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryGet(key []byte) ([]byte, error) {
-	if t.binary() {
+	if t.Binary() {
 		leaf := t.TryGetBinaryLeaf(key)
 		for _, node := range leaf {
 			if bytes.Compare(key, node.Key) == 0 {
@@ -463,7 +487,7 @@ func (t *Trie) Update(key, value []byte) {
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
 	log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "value", hexutils.BytesToHex(value))
-	if t.binary() {
+	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
 		find := false
@@ -597,7 +621,7 @@ func (t *Trie) Delete(key []byte) {
 // TryDelete removes any existing value for key from the trie.
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryDelete(key []byte) error {
-	if t.binary() {
+	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.binaryLeafs[leafIndex]
 		for i, node := range leaf {
@@ -765,7 +789,7 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 // Hash returns the root hash of the trie. It does not write to the
 // database and can be used even if the trie doesn't have one.
 func (t *Trie) Hash() common.Hash {
-	if t.binary() {
+	if t.Binary() {
 		// @todo 如果待计算的个数较多可使用多线程计算
 		t.uniqueSortUnhashedIndex()
 		unhashedIndex := make([]int, 0)
@@ -841,7 +865,7 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	rootHash := t.Hash()
 
 	// 直接将kv对往内存数据库提交
-	if t.binary() {
+	if t.Binary() {
 		if len(t.uncommitedIndex) > 0 {
 			sort.Ints(t.uncommitedIndex)
 			t.uncommitedIndex = unique(t.uncommitedIndex)
@@ -853,13 +877,10 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 			t.db.insert(common.BytesToHash(hash), estimateSize(t.binaryLeafs[index]), t.binaryLeafs[index])
 		}
 		// 最后提交一个总的哈希，也就是哈希节点的第一个值，一来用于判断创世块是否存在。二来可以统计每个区块上面存在的账号数据
-		var hash []byte
-		copy(hash, t.binaryHashNodes[0].Hash[:])
-		hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].Num)...))
+		hash := t.binaryRoot().Bytes()
 		t.db.insert(common.BytesToHash(hash), estimateSize(t.binaryHashNodes[0]), t.binaryHashNodes[0])
 
 		t.uncommitedIndex = make([]int, 0)
-		t.mem.Flush()
 
 		return rootHash, nil
 	}
@@ -911,6 +932,14 @@ func (t *Trie) hashRoot() (node, node, error) {
 	hashed, cached := h.hash(t.root, true)
 	t.unhashed = 0
 	return hashed, cached, nil
+}
+
+// binaryRoot calculates the BMPT root hash of the given trie
+func (t *Trie) binaryRoot() common.Hash {
+	var hash []byte
+	copy(hash, t.binaryHashNodes[0].Hash[:])
+	hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].Num)...))
+	return common.BytesToHash(hash)
 }
 
 // Reset drops the referenced root node and cleans all internal state.

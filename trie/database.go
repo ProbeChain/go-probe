@@ -320,7 +320,7 @@ func (db *Database) DiskDB() ethdb.KeyValueStore {
 
 // Binary 是否是二叉树提交过来的数据
 func (db *Database) Binary() bool  {
-	return db.trie.binary()
+	return db.trie.Binary()
 }
 
 // insert inserts a collapsed trie node into the memory database.
@@ -695,6 +695,8 @@ func (db *Database) Cap(limit common.StorageSize) error {
 	memcacheFlushSizeMeter.Mark(int64(storage - db.dirtiesSize))
 	memcacheFlushNodesMeter.Mark(int64(nodes - len(db.dirties)))
 
+	db.trie.Flush()
+
 	log.Debug("Persisted nodes from memory database", "nodes", nodes-len(db.dirties), "size", storage-db.dirtiesSize, "time", time.Since(start),
 		"flushnodes", db.flushnodes, "flushsize", db.flushsize, "flushtime", db.flushtime, "livenodes", len(db.dirties), "livesize", db.dirtiesSize)
 
@@ -776,6 +778,7 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	// Reset the garbage collection statistics
 	db.gcnodes, db.gcsize, db.gctime = 0, 0, 0
 	db.flushnodes, db.flushsize, db.flushtime = 0, 0, 0
+	db.trie.Flush()
 
 	return nil
 }

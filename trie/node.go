@@ -52,8 +52,8 @@ type (
 		Hash [32]byte
 		Num  uint32
 	}
-	hashNode  []byte
-	valueNode []byte
+	hashNode   []byte
+	valueNode  []byte
 	binaryLeaf []binaryNode
 )
 
@@ -84,7 +84,7 @@ func (n *binaryLeaf) Hash() [32]byte {
 		curNum := new(big.Int).SetBytes(crypto.Keccak256(append(node.Key, node.Val...)))
 		num = new(big.Int).Xor(curNum, num)
 	}
-	hash := make([]byte, 32, 64) // 哈希出来的长度为32byte
+	hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
 	hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
 
 	var ret [32]byte
@@ -101,20 +101,20 @@ type nodeFlag struct {
 	dirty bool     // whether the node has changes that must be written to the database
 }
 
-func (n *fullNode) cache() (hashNode, bool)  { return n.flags.hash, n.flags.dirty }
-func (n *shortNode) cache() (hashNode, bool) { return n.flags.hash, n.flags.dirty }
-func (n hashNode) cache() (hashNode, bool)   { return nil, true }
-func (n valueNode) cache() (hashNode, bool)  { return nil, true }
-func (n binaryLeaf) cache() (hashNode, bool)  { return nil, true }
-func (n binaryHashNode) cache() (hashNode, bool)  { return nil, true }
+func (n *fullNode) cache() (hashNode, bool)      { return n.flags.hash, n.flags.dirty }
+func (n *shortNode) cache() (hashNode, bool)     { return n.flags.hash, n.flags.dirty }
+func (n hashNode) cache() (hashNode, bool)       { return nil, true }
+func (n valueNode) cache() (hashNode, bool)      { return nil, true }
+func (n binaryLeaf) cache() (hashNode, bool)     { return nil, true }
+func (n binaryHashNode) cache() (hashNode, bool) { return nil, true }
 
 // Pretty printing.
-func (n *fullNode) String() string  { return n.fstring("") }
-func (n *shortNode) String() string { return n.fstring("") }
-func (n hashNode) String() string   { return n.fstring("") }
-func (n valueNode) String() string  { return n.fstring("") }
-func (n binaryLeaf) String() string  { return n.fstring("") }
-func (n binaryHashNode) String() string  { return n.fstring("") }
+func (n *fullNode) String() string      { return n.fstring("") }
+func (n *shortNode) String() string     { return n.fstring("") }
+func (n hashNode) String() string       { return n.fstring("") }
+func (n valueNode) String() string      { return n.fstring("") }
+func (n binaryLeaf) String() string     { return n.fstring("") }
+func (n binaryHashNode) String() string { return n.fstring("") }
 
 func (n *fullNode) fstring(ind string) string {
 	resp := fmt.Sprintf("[\n%s  ", ind)
@@ -151,7 +151,6 @@ func (n binaryHashNode) fstring(ind string) string {
 	return fmt.Sprintf("%d %x ", n.Num, n.Hash)
 }
 
-
 func mustDecodeNode(hash, buf []byte) node {
 	n, err := decodeNode(hash, buf)
 	if err != nil {
@@ -161,35 +160,46 @@ func mustDecodeNode(hash, buf []byte) node {
 }
 
 func mustDecodeBinaryNode(hash, buf []byte) node {
-	var node binaryLeaf
+
 	elems, rest, err := rlp.SplitList(buf)
 	if err != nil {
 		return nil
 	}
 	cur := elems
-	for {
-		elems, rest, err = rlp.SplitList(cur)
-		cur = rest
-		if err != nil {
-			return nil
+	if len(rest) == 0 {
+		var node binaryHashNode
+		elems, rest, err = rlp.SplitString(cur)
+		copy(node.Hash[0:], elems)
+		num := make([]byte, len(rest), len(rest))
+		copy(num, rest)
+		node.Num = uint32(bytesToInt(num))
+		return node
+	} else {
+		var node binaryLeaf
+		for {
+			elems, rest, err = rlp.SplitList(cur)
+			cur = rest
+			if err != nil {
+				return nil
+			}
+			key, rest, err := rlp.SplitString(elems)
+			if err != nil {
+				return nil
+			}
+			value, _, err := rlp.SplitString(rest)
+			if err != nil {
+				return nil
+			}
+			node = append(node, binaryNode{
+				key,
+				value,
+			})
+			if len(cur) == 0 {
+				break
+			}
 		}
-		key, rest, err := rlp.SplitString(elems)
-		if err != nil {
-			return nil
-		}
-		value, _, err := rlp.SplitString(rest)
-		if err != nil {
-			return nil
-		}
-		node = append(node, binaryNode{
-			key,
-			value,
-		})
-		if len(cur) == 0 {
-			break
-		}
+		return node
 	}
-	return node
 }
 
 // decodeNode parses the RLP encoding of a trie node.
