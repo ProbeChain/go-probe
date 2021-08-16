@@ -87,7 +87,7 @@ type Database struct {
 	dirtiesSize   common.StorageSize // Storage size of the dirty node cache (exc. metadata)
 	childrenSize  common.StorageSize // Storage size of the external children tracking
 	preimagesSize common.StorageSize // Storage size of the preimages cache
-	binary bool
+	trie *Trie						 // 我们要标记这棵树是二叉树还是MPT树
 
 	lock sync.RWMutex
 }
@@ -206,7 +206,7 @@ func forGatherChildren(n node, onChild func(hash common.Hash)) {
 		}
 	case hashNode:
 		onChild(common.BytesToHash(n))
-	case valueNode, nil, rawNode, binaryLeaf:
+	case valueNode, nil, rawNode, binaryLeaf, binaryHashNode:
 	default:
 		panic(fmt.Sprintf("unknown node type: %T", n))
 	}
@@ -230,7 +230,7 @@ func simplifyNode(n node) node {
 		}
 		return node
 
-	case valueNode, hashNode, rawNode, binaryLeaf:
+	case valueNode, hashNode, rawNode, binaryLeaf, binaryHashNode:
 		return n
 
 	default:
@@ -317,14 +317,10 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 func (db *Database) DiskDB() ethdb.KeyValueStore {
 	return db.diskdb
 }
-// setBinary 设置是否二叉树提交过来的数据
-func (db *Database) setBinary(binary bool)  {
-	db.binary = binary
-}
 
 // Binary 是否是二叉树提交过来的数据
 func (db *Database) Binary() bool  {
-	return db.binary
+	return db.trie.binary()
 }
 
 // insert inserts a collapsed trie node into the memory database.
@@ -386,7 +382,11 @@ func (db *Database) node(hash common.Hash) node {
 		if enc := db.cleans.Get(nil, hash[:]); enc != nil {
 			memcacheCleanHitMeter.Mark(1)
 			memcacheCleanReadMeter.Mark(int64(len(enc)))
-			return mustDecodeNode(hash[:], enc)
+			if db.Binary() {
+				return mustDecodeBinaryNode(hash[:], enc)
+			} else {
+				return mustDecodeNode(hash[:], enc)
+			}
 		}
 	}
 	// Retrieve the node from the dirty cache if available
@@ -412,35 +412,7 @@ func (db *Database) node(hash common.Hash) node {
 		memcacheCleanWriteMeter.Mark(int64(len(enc)))
 	}
 	if db.Binary() {
-		var node binaryLeaf
-		elems, rest, err := rlp.SplitList(enc)
-		if err != nil {
-			return nil
-		}
-		cur := elems
-		for {
-			elems, rest, err = rlp.SplitList(cur)
-			cur = rest
-			if err != nil {
-				return nil
-			}
-			key, rest, err := rlp.SplitString(elems)
-			if err != nil {
-				return nil
-			}
-			value, _, err := rlp.SplitString(rest)
-			if err != nil {
-				return nil
-			}
-			node = append(node, binaryNode{
-				key,
-				value,
-			})
-			if len(cur) == 0 {
-				break
-			}
-		}
-		return node
+		return mustDecodeBinaryNode(hash[:], enc)
 	} else {
 		return mustDecodeNode(hash[:], enc)
 	}
@@ -756,7 +728,7 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	// Move the trie itself into the batch, flushing if enough data is accumulated
 	nodes, storage := len(db.dirties), db.dirtiesSize
 	uncacher := &cleaner{db}
-	if db.binary {
+	if db.Binary() {
 		emptyHash := make([]byte, 32, 32)
 		for hash := range db.dirties {
 			if common.BytesToHash(emptyHash) == hash {

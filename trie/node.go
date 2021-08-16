@@ -160,6 +160,38 @@ func mustDecodeNode(hash, buf []byte) node {
 	return n
 }
 
+func mustDecodeBinaryNode(hash, buf []byte) node {
+	var node binaryLeaf
+	elems, rest, err := rlp.SplitList(buf)
+	if err != nil {
+		return nil
+	}
+	cur := elems
+	for {
+		elems, rest, err = rlp.SplitList(cur)
+		cur = rest
+		if err != nil {
+			return nil
+		}
+		key, rest, err := rlp.SplitString(elems)
+		if err != nil {
+			return nil
+		}
+		value, _, err := rlp.SplitString(rest)
+		if err != nil {
+			return nil
+		}
+		node = append(node, binaryNode{
+			key,
+			value,
+		})
+		if len(cur) == 0 {
+			break
+		}
+	}
+	return node
+}
+
 // decodeNode parses the RLP encoding of a trie node.
 func decodeNode(hash, buf []byte) (node, error) {
 	if len(buf) == 0 {

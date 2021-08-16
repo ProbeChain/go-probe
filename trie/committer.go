@@ -271,6 +271,8 @@ func estimateSize(n node) int {
 			length += len(item.Key) + len(item.Val)
 		}
 		return length
+	case binaryHashNode:
+		return 32 + 4
 	default:
 		panic(fmt.Sprintf("node type %T", n))
 	}

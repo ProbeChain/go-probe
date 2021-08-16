@@ -539,6 +539,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 			defer func(start time.Time) { s.AccountReads += time.Since(start) }(time.Now())
 		}
 		enc, err := s.trie.TryGet(addr.Bytes())
+		//log.Info("Decode state object", "enc", hexutils.BytesToHex(enc))
 		if err != nil {
 			s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", addr.Bytes(), err))
 			return nil

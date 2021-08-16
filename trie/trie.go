@@ -29,8 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/status-im/keycard-go/hexutils"
 	"os"
-	"os/user"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"sync"
@@ -45,7 +43,7 @@ var (
 	emptyState = crypto.Keccak256Hash(nil)
 
 	//
-	maxBinaryLeafLen = 100
+	maxBinaryLeafLen = 1000
 )
 
 // LeafCallback is a callback type invoked when a trie operation reaches a leaf
@@ -99,8 +97,8 @@ type Trie struct {
 	// actually unhashed nodes
 	unhashed int
 
-	mem             mmap.MMap
-	f               *os.File
+	mem             mmap.MMap		 // MMap
+	f               *os.File		 // 文件指针
 	depth           int              // 二叉树深度
 	unhashedIndex   []int            // 需要重新计算的叶子节点的索引
 	uncommitedIndex []int            // 需要提交的叶子节点索引
@@ -125,8 +123,8 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 	}
 	trie := &Trie{
 		db:    db,
-		depth: -1,
 	}
+	db.trie = trie
 	if root != (common.Hash{}) && root != emptyRoot {
 		rootnode, err := trie.resolveHash(root[:], nil)
 		if err != nil {
@@ -139,7 +137,6 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 
 var instanceTrie *Trie
 var once sync.Once
-
 // NewBinary creates a binary trie.
 func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 	once.Do(func() {
@@ -150,7 +147,6 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 			db:    db,
 			depth: depth,
 		}
-		db.setBinary(true)
 
 		length := int(math.BigPow(2, int64(depth+1)).Int64()) - 1
 		nBytes := length * int(unsafe.Sizeof(binaryHashNode{}))
@@ -160,8 +156,8 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 		var f *os.File
 		var err error
 		init := false
-		usr, _ := user.Current()
-		triePath := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "trie.bin")
+		//usr, _ := user.Current()
+		triePath := "C:\\Users\\lcq\\go\\src\\github.com\\ethereum\\go-ethereum\\build\\bin\\data\\geth\\trie.bin" //filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "trie.bin")
 		_, err = os.Lstat(triePath)
 		if os.IsNotExist(err) {
 			f, err = os.Create(triePath)
@@ -218,7 +214,10 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 		trie.root = trie.binaryHashNodes[0]
 		instanceTrie = trie
 	})
-	return instanceTrie, nil
+	instanceTrie.db = db 	// 创世块初始化的数据库与后续出块的数据库不是同一个数据库
+	tr := instanceTrie 		// 仅仅为了调试方便
+	db.trie = tr
+	return tr, nil
 }
 
 func (t *Trie) Close() {
@@ -302,7 +301,6 @@ func (t *Trie) TryGet(key []byte) ([]byte, error) {
 		}
 		return value, err
 	}
-
 }
 
 func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode node, didResolve bool, err error) {
@@ -801,12 +799,15 @@ func (t *Trie) Hash() common.Hash {
 				// @todo 数字转byte需要分别处理大端小端的问题
 				curHash := crypto.Keccak256(concat(concat(lHash, intToBytes(lNum)...), concat(rHash, intToBytes(rNum)...)...))
 				copy(t.binaryHashNodes[index].hash[:], curHash)
-				temp = append(temp, (index-1)/2)
+
+				// 如果是最后一个，那就不要反复计算了
+				if index > 0 {
+					temp = append(temp, (index-1)/2)
+				}
 			}
 			temp = unique(temp)
-
 			unhashedIndex = temp[:]
-			if len(unhashedIndex) <= 1 {
+			if len(unhashedIndex) == 0 {
 				t.root = t.binaryHashNodes[0]
 				break
 			}
@@ -851,6 +852,12 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 			copy(hash, t.binaryHashNodes[binaryNodeIndex].hash[:])
 			t.db.insert(common.BytesToHash(hash), estimateSize(t.binaryLeafs[index]), t.binaryLeafs[index])
 		}
+		// 最后提交一个总的哈希，也就是哈希节点的第一个值，一来用于判断创世块是否存在。二来可以统计每个区块上面存在的账号数据
+		var hash []byte
+		copy(hash, t.binaryHashNodes[0].hash[:])
+		hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].num)...))
+		t.db.insert(common.BytesToHash(hash), estimateSize(t.binaryHashNodes[0]), t.binaryHashNodes[0])
+
 		t.uncommitedIndex = make([]int, 0)
 		t.mem.Flush()
 
