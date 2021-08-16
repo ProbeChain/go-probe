@@ -49,8 +49,8 @@ type (
 		Val []byte
 	}
 	binaryHashNode struct {
-		hash [32]byte
-		num int32
+		Hash [32]byte
+		Num  uint32
 	}
 	hashNode  []byte
 	valueNode []byte
@@ -148,7 +148,7 @@ func (n binaryLeaf) fstring(ind string) string {
 }
 
 func (n binaryHashNode) fstring(ind string) string {
-	return fmt.Sprintf("%d %x ", n.num, n.hash)
+	return fmt.Sprintf("%d %x ", n.Num, n.Hash)
 }
 
 

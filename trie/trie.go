@@ -78,7 +78,7 @@ func unique(a []int) []int {
 	return a[:i+1]
 }
 
-func intToBytes(data int32) []byte {
+func intToBytes(data uint32) []byte {
 	bytebuf := bytes.NewBuffer([]byte{})
 	binary.Write(bytebuf, binary.BigEndian, data)
 	return bytebuf.Bytes()
@@ -197,7 +197,7 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 					curHash = crypto.Keccak256(nil) // 下面没挂元素用空值计算哈希
 				} else {
 					data := make([]byte, 66, 66)
-					copy(data, trie.binaryHashNodes[end].hash[:])
+					copy(data, trie.binaryHashNodes[end].Hash[:])
 					data = bytes.Repeat(data, 2)
 					curHash = crypto.Keccak256(data)
 				}
@@ -205,7 +205,7 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 				var hash [32]byte
 				copy(hash[:], curHash)
 				for i := start; i < end; i += 1 {
-					trie.binaryHashNodes[i] = binaryHashNode{hash, int32(0)}
+					trie.binaryHashNodes[i] = binaryHashNode{hash, uint32(0)}
 				}
 				curDepth -= 1
 			}
@@ -345,7 +345,7 @@ func (t *Trie) TryGetBinaryLeaf(key []byte) []binaryNode {
 	leaf := t.binaryLeafs[leafIndex]
 	// 此时需要从数据库中加载一次
 	if leaf == nil {
-		hash := t.binaryHashNodes[indexs[len(indexs)-1]].hash
+		hash := t.binaryHashNodes[indexs[len(indexs)-1]].Hash
 		sliceHash := make([]byte, 32, 32)
 		copy(sliceHash, hash[:])
 		node, _ := t.resolveHash(sliceHash, nil)
@@ -775,8 +775,8 @@ func (t *Trie) Hash() common.Hash {
 			num := len(t.binaryLeafs[index])
 
 			binaryNodeIndex := index + int(math.BigPow(2, int64(t.depth)).Int64()-1) // 对应哈希节点的索引值
-			t.binaryHashNodes[binaryNodeIndex].num = int32(num)
-			t.binaryHashNodes[binaryNodeIndex].hash = t.binaryLeafs[index].Hash()
+			t.binaryHashNodes[binaryNodeIndex].Num = uint32(num)
+			t.binaryHashNodes[binaryNodeIndex].Hash = t.binaryLeafs[index].Hash()
 
 			// 哈希节点已更新，将这个哈希节点的索引值放到数组中开始从下往上计算哈希值
 			unhashedIndex = append(unhashedIndex, (binaryNodeIndex-1)/2)
@@ -791,14 +791,14 @@ func (t *Trie) Hash() common.Hash {
 				ri := index*2 + 2
 				var lHash []byte
 				var rHash []byte
-				copy(lHash, t.binaryHashNodes[li].hash[:])
-				copy(rHash, t.binaryHashNodes[ri].hash[:])
-				lNum := t.binaryHashNodes[li].num
-				rNum := t.binaryHashNodes[ri].num
-				t.binaryHashNodes[index].num = lNum + rNum
+				copy(lHash, t.binaryHashNodes[li].Hash[:])
+				copy(rHash, t.binaryHashNodes[ri].Hash[:])
+				lNum := t.binaryHashNodes[li].Num
+				rNum := t.binaryHashNodes[ri].Num
+				t.binaryHashNodes[index].Num = lNum + rNum
 				// @todo 数字转byte需要分别处理大端小端的问题
 				curHash := crypto.Keccak256(concat(concat(lHash, intToBytes(lNum)...), concat(rHash, intToBytes(rNum)...)...))
-				copy(t.binaryHashNodes[index].hash[:], curHash)
+				copy(t.binaryHashNodes[index].Hash[:], curHash)
 
 				// 如果是最后一个，那就不要反复计算了
 				if index > 0 {
@@ -816,8 +816,8 @@ func (t *Trie) Hash() common.Hash {
 		t.unhashedIndex = make([]int, 0)
 
 		var hash []byte
-		copy(hash, t.binaryHashNodes[0].hash[:])
-		hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].num)...))
+		copy(hash, t.binaryHashNodes[0].Hash[:])
+		hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].Num)...))
 		return common.BytesToHash(hash)
 	} else {
 		// 返回的cached是将算过的哈希值保存到nodeFlag中防止下次计算哈希需要重新计算，其他的值均保持不变
@@ -849,13 +849,13 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 		for _, index := range t.uncommitedIndex {
 			hash := make([]byte, 32, 32)
 			binaryNodeIndex := index + int(math.BigPow(2, int64(t.depth)).Int64()-1) // 对应哈希节点的索引值
-			copy(hash, t.binaryHashNodes[binaryNodeIndex].hash[:])
+			copy(hash, t.binaryHashNodes[binaryNodeIndex].Hash[:])
 			t.db.insert(common.BytesToHash(hash), estimateSize(t.binaryLeafs[index]), t.binaryLeafs[index])
 		}
 		// 最后提交一个总的哈希，也就是哈希节点的第一个值，一来用于判断创世块是否存在。二来可以统计每个区块上面存在的账号数据
 		var hash []byte
-		copy(hash, t.binaryHashNodes[0].hash[:])
-		hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].num)...))
+		copy(hash, t.binaryHashNodes[0].Hash[:])
+		hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].Num)...))
 		t.db.insert(common.BytesToHash(hash), estimateSize(t.binaryHashNodes[0]), t.binaryHashNodes[0])
 
 		t.uncommitedIndex = make([]int, 0)
