@@ -226,15 +226,15 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 	tr := instanceTrie 		// 仅仅为了调试方便
 	tr.db = db 				// 创世块初始化的数据库与后续出块的数据库不是同一个数据库
 	db.trie = tr			// 后续数据库需要根据MPT或者是BMPT进行数据的读取
-	curRoot := tr.binaryRoot()
+	//curRoot := tr.binaryRoot()
 
 	// 如果不是要找回当前的root，那么尝试去恢复一下，如果能恢复成功，认为这颗BMPT存在，否则返回错误
-	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
-		_, err := tr.resolveHash(root[:], nil)
-		if err != nil {
-			return nil, err
-		}
-	}
+	//if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
+	//	_, err := tr.resolveHash(root[:], nil)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
 	return tr, nil
 }
 
@@ -251,6 +251,10 @@ func (t *Trie) Close() {
 func (t *Trie) Flush() {
 	if t.mem != nil {
 		t.mem.Flush()
+		t.print()
+	} else if instanceTrie != nil {
+		instanceTrie.mem.Flush()
+		instanceTrie.print()
 	}
 }
 
@@ -500,7 +504,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 				leaf[i].Val = value
 				find = true
 				t.unhashedIndex = append(t.unhashedIndex, leafIndex)
-			} else if ret < 0 {
+			} else if ret > 0 {
 				insertIndex = i
 			} else {
 				break
@@ -906,6 +910,7 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	}
 	var newRoot hashNode
 	newRoot, err = h.Commit(t.root, t.db)
+	t.db.insert(common.BytesToHash(newRoot), 0, nil)
 	if onleaf != nil {
 		// The leafch is created in newCommitter if there was an onleaf callback
 		// provided. The commitLoop only _reads_ from it, and the commit
@@ -940,6 +945,20 @@ func (t *Trie) binaryRoot() common.Hash {
 	copy(hash, t.binaryHashNodes[0].Hash[:])
 	hash = crypto.Keccak256(concat(hash, intToBytes(t.binaryHashNodes[0].Num)...))
 	return common.BytesToHash(hash)
+}
+
+// printTrie
+func (t *Trie) print()  {
+	for i, node := range t.binaryHashNodes {
+		hash := make([]byte, 32, 32)
+		copy(hash, node.Hash[:])
+		log.Info("BinaryPrint hashNodes", "i", i, "hash", common.Bytes2Hex(hash), "num", node.Num)
+	}
+	for i, node := range t.binaryLeafs {
+		for j, n := range node {
+			log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
+		}
+	}
 }
 
 // Reset drops the referenced root node and cleans all internal state.

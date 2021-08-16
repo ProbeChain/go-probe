@@ -87,7 +87,8 @@ type Database struct {
 	dirtiesSize   common.StorageSize // Storage size of the dirty node cache (exc. metadata)
 	childrenSize  common.StorageSize // Storage size of the external children tracking
 	preimagesSize common.StorageSize // Storage size of the preimages cache
-	trie *Trie						 // 我们要标记这棵树是二叉树还是MPT树
+	trie          *Trie              // 我们要标记这棵树是二叉树还是MPT树
+	storages      []common.Hash
 
 	lock sync.RWMutex
 }
@@ -319,7 +320,7 @@ func (db *Database) DiskDB() ethdb.KeyValueStore {
 }
 
 // Binary 是否是二叉树提交过来的数据
-func (db *Database) Binary() bool  {
+func (db *Database) Binary() bool {
 	return db.trie.Binary()
 }
 
@@ -328,6 +329,11 @@ func (db *Database) Binary() bool  {
 // All nodes inserted by this function will be reference tracked
 // and in theory should only used for **trie nodes** insertion.
 func (db *Database) insert(hash common.Hash, size int, node node) {
+	// 智能合约为一个MPT，提交storageRoot即可
+	if node == nil {
+		db.storages = append(db.storages, hash)
+		return
+	}
 	// If the node's already cached, skip
 	if _, ok := db.dirties[hash]; ok {
 		return
@@ -709,7 +715,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 //
 // Note, this method is a non-synchronized mutator. It is unsafe to call this
 // concurrently with other mutators.
-func (db *Database) Commit(node common.Hash, report bool, callback func(common.Hash)) error {
+func (db *Database) Commit(hash common.Hash, report bool, callback func(common.Hash)) error {
 	// Create a database batch to flush persistent data out. It is important that
 	// outside code doesn't see an inconsistent state (referenced data removed from
 	// memory cache during commit but not yet in persistent storage). This is ensured
@@ -730,23 +736,30 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	// Move the trie itself into the batch, flushing if enough data is accumulated
 	nodes, storage := len(db.dirties), db.dirtiesSize
 	uncacher := &cleaner{db}
-	if db.Binary() {
-		emptyHash := make([]byte, 32, 32)
-		for hash := range db.dirties {
-			if common.BytesToHash(emptyHash) == hash {
-				continue
-			}
-			if err := db.commit(hash, batch, uncacher, callback); err != nil {
-				log.Error("Failed to commit trie from trie database", "err", err)
-				return err
-			}
+
+	// 提交BMPT部分
+	emptyHash := make([]byte, 32, 32)
+	for hash, cachedNode := range db.dirties {
+		node := cachedNode.node
+		_, ok1 := node.(binaryHashNode)
+		_, ok2 := node.(binaryLeaf)
+		if common.BytesToHash(emptyHash) == hash || (!ok1 && !ok2) {
+			continue
 		}
-	} else {
-		if err := db.commit(node, batch, uncacher, callback); err != nil {
+		if err := db.commit(hash, batch, uncacher, callback); err != nil {
 			log.Error("Failed to commit trie from trie database", "err", err)
 			return err
 		}
 	}
+
+	for _, hash := range db.storages {
+		// 提交MPT部分
+		if err := db.commit(hash, batch, uncacher, callback); err != nil {
+			log.Error("Failed to commit trie from trie database", "err", err)
+			return err
+		}
+	}
+	db.storages = make([]common.Hash, 0, 0)
 
 	// Trie mostly committed to disk, flush any batch leftovers
 	if err := batch.Write(); err != nil {

@@ -130,8 +130,8 @@ type cachingDB struct {
 // OpenTrie opens the main account trie at a specific root hash.
 func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
 	//tr, err := trie.NewSecure(root, db.db)
-	tr, err := trie.NewBinary(root, db.db, 10)
-	//log.Debug("OpenTrie", "tr", &tr, "trie.Database", &db.db, "root", root.String())
+	tr, err := trie.NewBinary(root, db.db, 1)
+	log.Debug("OpenTrie", "tr", &tr, "trie.Database", &db.db, "root", root.String())
 	if err != nil {
 		return nil, err
 	}

@@ -160,13 +160,13 @@ func mustDecodeNode(hash, buf []byte) node {
 }
 
 func mustDecodeBinaryNode(hash, buf []byte) node {
-
 	elems, rest, err := rlp.SplitList(buf)
 	if err != nil {
 		return nil
 	}
 	cur := elems
-	if len(rest) == 0 {
+
+	if cur[0] < 0xC0 {
 		var node binaryHashNode
 		elems, rest, err = rlp.SplitString(cur)
 		copy(node.Hash[0:], elems)
