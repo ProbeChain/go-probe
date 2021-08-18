@@ -86,7 +86,7 @@ func intToBytes(data uint32) []byte {
 
 func bytesToInt(b []byte) int {
 	b = append([]byte{0, 0, 0, 0}, b...)
-	b = b[len(b) - 4:]
+	b = b[len(b)-4:]
 	bytesBuffer := bytes.NewBuffer(b)
 	var x int32
 	binary.Read(bytesBuffer, binary.BigEndian, &x)
@@ -106,8 +106,8 @@ type Trie struct {
 	// actually unhashed nodes
 	unhashed int
 
-	mem             mmap.MMap		 // MMap
-	f               *os.File		 // 文件指针
+	mem             mmap.MMap        // MMap
+	f               *os.File         // 文件指针
 	depth           int              // 二叉树深度
 	unhashedIndex   []int            // 需要重新计算的叶子节点的索引
 	uncommitedIndex []int            // 需要提交的叶子节点索引
@@ -131,7 +131,7 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 		panic("trie.New called without a database")
 	}
 	trie := &Trie{
-		db:    db,
+		db: db,
 	}
 	db.trie = trie
 	if root != (common.Hash{}) && root != emptyRoot {
@@ -146,6 +146,7 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 
 var instanceTrie *Trie
 var once sync.Once
+
 // NewBinary creates a binary trie.
 func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 	once.Do(func() {
@@ -223,18 +224,25 @@ func NewBinary(root common.Hash, db *Database, depth int) (*Trie, error) {
 		trie.root = trie.binaryHashNodes[0]
 		instanceTrie = trie
 	})
-	tr := instanceTrie 		// 仅仅为了调试方便
-	tr.db = db 				// 创世块初始化的数据库与后续出块的数据库不是同一个数据库
-	db.trie = tr			// 后续数据库需要根据MPT或者是BMPT进行数据的读取
-	//curRoot := tr.binaryRoot()
+	tr := instanceTrie // 仅仅为了调试方便
+	tr.db = db         // 创世块初始化的数据库与后续出块的数据库不是同一个数据库
+	db.trie = tr       // 后续数据库需要根据MPT或者是BMPT进行数据的读取
+	curRoot := tr.binaryRoot()
 
 	// 如果不是要找回当前的root，那么尝试去恢复一下，如果能恢复成功，认为这颗BMPT存在，否则返回错误
-	//if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
-	//	_, err := tr.resolveHash(root[:], nil)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
+	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
+		node, err := tr.resolveHash(root[:], nil)
+		if err == nil {
+			trie := &Trie{
+				db:    db,
+				depth: depth,
+			}
+			trie.root = node
+			return trie, err
+		} else {
+			return nil, err
+		}
+	}
 	return tr, nil
 }
 
@@ -504,11 +512,12 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 				leaf[i].Val = value
 				find = true
 				t.unhashedIndex = append(t.unhashedIndex, leafIndex)
-			} else if ret > 0 {
-				insertIndex = i
-			} else {
+				break
+			} else if ret < 0 {
+				insertIndex = i // 找到插入的位置了
 				break
 			}
+			insertIndex = i + 1 // 如果是最后一个则插入到末尾
 		}
 		if !find {
 			// 按照key的顺序插入进去方便进行哈希计算
@@ -519,8 +528,8 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 			} else if length > maxBinaryLeafLen {
 				return errors.New("exceed max binary leaf size")
 			} else {
-				left := leaf[:insertIndex+1]
-				right := append([]binaryNode{{key, value}}, leaf[insertIndex+1:]...)
+				left := leaf[:insertIndex]
+				right := append([]binaryNode{{key, value}}, leaf[insertIndex:]...)
 				t.binaryLeafs[leafIndex] = append(left, right...)
 				t.unhashedIndex = append(t.unhashedIndex, leafIndex)
 			}
@@ -948,7 +957,7 @@ func (t *Trie) binaryRoot() common.Hash {
 }
 
 // printTrie
-func (t *Trie) print()  {
+func (t *Trie) print() {
 	for i, node := range t.binaryHashNodes {
 		hash := make([]byte, 32, 32)
 		copy(hash, node.Hash[:])
