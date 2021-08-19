@@ -92,6 +92,17 @@ func (n *binaryLeaf) Hash() [32]byte {
 	return ret
 }
 
+func (n *binaryLeaf) Copy() binaryLeaf {
+	var leaf binaryLeaf
+	for _, node := range *n {
+		leaf = append(leaf, binaryNode{
+			node.Key,
+			node.Val,
+		})
+	}
+	return leaf
+}
+
 func (n *fullNode) copy() *fullNode   { copy := *n; return &copy }
 func (n *shortNode) copy() *shortNode { copy := *n; return &copy }
 

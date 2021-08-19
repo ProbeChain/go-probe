@@ -62,20 +62,6 @@ func NewSecure(root common.Hash, db *Database) (*SecureTrie, error) {
 	return &SecureTrie{trie: *trie}, nil
 }
 
-// NewSecureBinary creates a trie with an existing root node from a backing database
-// and optional intermediate in-memory node pool.
-func NewSecureBinary(root common.Hash, db *Database, depth int) (*SecureTrie, error) {
-	log.Info("NewSecureBinary", "root", common.Bytes2Hex(root.Bytes()))
-	if db == nil {
-		panic("trie.NewSecure called without a database")
-	}
-	trie, err := NewBinary(root, db, depth)
-	if err != nil {
-		return nil, err
-	}
-	return &SecureTrie{trie: *trie}, nil
-}
-
 // Get returns the value for key stored in the trie.
 // The value bytes must not be modified by the caller.
 func (t *SecureTrie) Get(key []byte) []byte {
