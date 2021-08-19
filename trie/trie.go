@@ -19,7 +19,6 @@ package trie
 
 import (
 	"bytes"
-	"container/list"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -30,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/status-im/keycard-go/hexutils"
 	"os"
+	"path"
 	"reflect"
 	"sort"
 	"sync"
@@ -94,22 +94,27 @@ func bytesToInt(b []byte) int {
 	return int(x)
 }
 
+type DiffLeaf struct {
+	Index uint32
+	Leaf  binaryLeaf
+}
+
 type Alter struct {
-	PreRoot  [32]byte
-	CurRoot  [32]byte
-	DiffLeaf map[int]binaryLeaf
+	PreRoot   [32]byte
+	CurRoot   [32]byte
+	DiffLeafs []DiffLeaf
 }
 
 type BinaryTree struct {
-	curDiff         map[int]binaryLeaf // 当前修改
-	alterList       *list.List         // 修改历史
-	mem             mmap.MMap          // MMap
-	f               *os.File           // 文件指针
-	depth           int                // 二叉树深度
-	unhashedIndex   []int              // 需要重新计算的叶子节点的索引
-	uncommitedIndex []int              // 需要提交的叶子节点索引
-	binaryHashNodes []binaryHashNode   // 二叉节点
-	binaryLeafs     []binaryLeaf       // 叶子节点
+	curDiffLeafs    []DiffLeaf       // 当前修改
+	alters          []Alter          // 修改历史
+	mem             mmap.MMap        // MMap
+	f               *os.File         // 文件指针
+	depth           int              // 二叉树深度
+	unhashedIndex   []int            // 需要重新计算的叶子节点的索引
+	uncommitedIndex []int            // 需要提交的叶子节点索引
+	binaryHashNodes []binaryHashNode // 二叉节点
+	binaryLeafs     []binaryLeaf     // 叶子节点
 }
 
 // Trie is a Merkle Patricia Trie.
@@ -162,7 +167,7 @@ var normalBt *BinaryTree
 // NewNormalBinary creates a normal account binary trie.
 func NewNormalBinary(root common.Hash, db *Database) (*Trie, error) {
 	normalBtOnce.Do(func() {
-		normalBt = initBinaryTree(root, 2, "./trie.bin")
+		normalBt = initBinaryTree(root, 2, "./data/geth/trie.bin")
 	})
 	return newBinary(root, db, normalBt)
 }
@@ -178,7 +183,7 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 	}
 
 	db.trie = trie // 后续数据库需要根据MPT或者是BMPT进行数据的读取
-	curRoot := trie.preRoot()
+	curRoot := trie.binaryRoot()
 
 	// 如果不是要找回当前的root，那么尝试去恢复一下，如果能恢复成功，认为这颗BMPT存在，否则返回错误
 	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
@@ -211,6 +216,8 @@ func initBinaryTree(root common.Hash, depth int, triePath string) *BinaryTree {
 	init := false
 	_, err = os.Lstat(triePath)
 	if os.IsNotExist(err) {
+		dir, _ := path.Split(triePath)
+		os.MkdirAll(dir, os.ModePerm)
 		f, err = os.Create(triePath)
 		if err == nil {
 			err = f.Truncate(int64(nBytes))
@@ -263,13 +270,8 @@ func initBinaryTree(root common.Hash, depth int, triePath string) *BinaryTree {
 		binaryTree.Flush()
 	}
 
-	binaryTree.alterList = list.New()
-	binaryTree.alterList.PushBack(Alter{
-		PreRoot:  common.Hash{},
-		CurRoot:  root,
-		DiffLeaf: make(map[int]binaryLeaf),
-	})
-	binaryTree.curDiff = make(map[int]binaryLeaf)
+	binaryTree.alters = make([]Alter, 0, 0)
+	binaryTree.curDiffLeafs = make([]DiffLeaf, 0, 0)
 
 	return binaryTree
 }
@@ -411,25 +413,41 @@ func (t *Trie) tryGet(origNode node, key []byte, pos int) (value []byte, newnode
 // TryGetBinaryLeaf 根据key从内存中或者leveldb中返回叶子节点
 func (t *Trie) TryGetBinaryLeaf(key []byte) binaryLeaf {
 	indexs, leafIndex := t.relatedIndexs(key)
+	binaryRoot := t.binaryRoot()
+	trieRoot := t.trieRoot()
 	leaf := t.bt.binaryLeafs[leafIndex]
-	// 此时需要从数据库中加载一次
-	if leaf == nil {
-		hash := t.bt.binaryHashNodes[indexs[len(indexs)-1]].Hash
-		sliceHash := make([]byte, 32, 32)
-		copy(sliceHash, hash[:])
-		node, _ := t.resolveHash(sliceHash, nil)
-		if node != nil {
-			switch n := (node).(type) {
-			case binaryLeaf:
-				leaf = n
-			default:
-				panic(fmt.Sprintf("%T: invalid node: %v", node, node))
+
+	// 这是要查历史数据
+	if binaryRoot != trieRoot {
+		for _, alter := range t.bt.alters {
+			if alter.PreRoot == trieRoot {
+				for _, diffLeaf := range alter.DiffLeafs {
+					if diffLeaf.Index == uint32(leafIndex) {
+						return diffLeaf.Leaf
+					}
+				}
 			}
-		} else {
-			leaf = make([]binaryNode, 0) // 创建一个空切片，防止下次再次去数据库搜索
 		}
-		t.bt.binaryLeafs[leafIndex] = leaf
+	} else {
+		// 此时需要从数据库中加载一次
+		if leaf == nil {
+			hash := t.bt.binaryHashNodes[indexs[len(indexs)-1]].Hash
+			sliceHash := make([]byte, 32, 32)
+			copy(sliceHash, hash[:])
+			node, _ := t.resolveHash(sliceHash, nil)
+			if node != nil {
+				if data, ok := node.(binaryLeaf); ok {
+					leaf = data
+				} else {
+					leaf = make([]binaryNode, 0)
+				}
+			} else {
+				leaf = make([]binaryNode, 0) // 创建一个空切片，防止下次再次去数据库搜索
+			}
+			t.bt.binaryLeafs[leafIndex] = leaf
+		}
 	}
+
 	return leaf
 }
 
@@ -535,7 +553,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
-		t.bt.curDiff[leafIndex] = leaf.Copy()
+		t.bt.curDiffLeafs = append(t.bt.curDiffLeafs, DiffLeaf{Index: uint32(leafIndex), Leaf: leaf.Copy()})
 		find := false
 		insertIndex := 0
 
@@ -837,6 +855,13 @@ func (t *Trie) resolveHash(n hashNode, prefix []byte) (node, error) {
 // database and can be used even if the trie doesn't have one.
 func (t *Trie) Hash() common.Hash {
 	if t.Binary() {
+		preRoot := t.binaryRoot()
+
+		// 没有需要计算的哈希索引直接返回上一次计算的结果
+		if len(t.bt.unhashedIndex) == 0 {
+			return preRoot
+		}
+
 		// @todo 如果待计算的个数较多可使用多线程计算
 		t.uniqueSortUnhashedIndex()
 		unhashedIndex := make([]int, 0)
@@ -886,10 +911,20 @@ func (t *Trie) Hash() common.Hash {
 		t.bt.uncommitedIndex = append(t.bt.uncommitedIndex, t.bt.unhashedIndex...)
 		t.bt.unhashedIndex = make([]int, 0)
 
-		var hash []byte
-		copy(hash, t.bt.binaryHashNodes[0].Hash[:])
-		hash = crypto.Keccak256(concat(hash, intToBytes(t.bt.binaryHashNodes[0].Num)...))
-		return common.BytesToHash(hash)
+		diffLeafs := make([]DiffLeaf, len(t.bt.curDiffLeafs), len(t.bt.curDiffLeafs))
+		copy(diffLeafs, t.bt.curDiffLeafs)
+
+		// 纪录变化值
+		curRoot := t.binaryRoot()
+		alter := Alter{
+			PreRoot:   preRoot,
+			CurRoot:   curRoot,
+			DiffLeafs: diffLeafs,
+		}
+		t.bt.alters = append(t.bt.alters, alter)
+		t.bt.curDiffLeafs = make([]DiffLeaf, 0, 0)
+
+		return curRoot
 	} else {
 		// 返回的cached是将算过的哈希值保存到nodeFlag中防止下次计算哈希需要重新计算，其他的值均保持不变
 		hash, cached, _ := t.hashRoot()
@@ -908,19 +943,12 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 		return emptyRoot, nil
 	}
 
-	preRoot := t.preRoot()
-
 	// Derive the hash for all dirty nodes first. We hold the assumption
 	// in the following procedure that all nodes are hashed.
 	rootHash := t.Hash()
 
 	// 直接将kv对往内存数据库提交
 	if t.Binary() {
-		alter := Alter{
-			PreRoot: preRoot,
-			CurRoot: rootHash,
-		}
-		t.bt.alterList.PushBack(alter)
 		if len(t.bt.uncommitedIndex) > 0 {
 			sort.Ints(t.bt.uncommitedIndex)
 			t.bt.uncommitedIndex = unique(t.bt.uncommitedIndex)
@@ -932,7 +960,7 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 			t.db.insert(common.BytesToHash(hash), estimateSize(t.bt.binaryLeafs[index]), t.bt.binaryLeafs[index])
 		}
 		// 最后提交一个总的哈希，也就是哈希节点的第一个值，一来用于判断创世块是否存在。二来可以统计每个区块上面存在的账号数据
-		t.db.insert(preRoot, estimateSize(t.bt.binaryHashNodes[0]), t.bt.binaryHashNodes[0])
+		t.db.insert(rootHash, estimateSize(t.bt.binaryHashNodes[0]), t.bt.binaryHashNodes[0])
 
 		t.bt.uncommitedIndex = make([]int, 0)
 
@@ -990,12 +1018,28 @@ func (t *Trie) hashRoot() (node, node, error) {
 }
 
 // binaryRoot calculates the BMPT root hash of the given trie
-func (t *Trie) preRoot() common.Hash {
+func (t *Trie) binaryRoot() common.Hash {
 	if t.Binary() {
 		var hash []byte
 		copy(hash, t.bt.binaryHashNodes[0].Hash[:])
 		hash = crypto.Keccak256(concat(hash, intToBytes(t.bt.binaryHashNodes[0].Num)...))
 		return common.BytesToHash(hash)
+	}
+	return common.Hash{}
+}
+
+// trieRoot calculates the trie root hash of the given trie
+
+func (t *Trie) trieRoot() common.Hash {
+	if t.Binary() {
+		if node, ok := t.root.(binaryHashNode); ok {
+			var hash []byte
+			copy(hash, node.Hash[:])
+			hash = crypto.Keccak256(concat(hash, intToBytes(node.Num)...))
+			return common.BytesToHash(hash)
+		} else {
+			return common.Hash{}
+		}
 	}
 	return common.Hash{}
 }
@@ -1024,6 +1068,13 @@ func (bt *BinaryTree) print() {
 		for j, n := range node {
 			log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
 		}
+	}
+}
+
+func (alter *Alter) print() {
+	log.Info("Alter", "PreRoot", common.Bytes2Hex(alter.PreRoot[:]), "CurRoot", common.Bytes2Hex(alter.CurRoot[:]))
+	for _, diffLeaf := range alter.DiffLeafs {
+		log.Info("Alter", "Index", diffLeaf.Index, "diffLeaf", diffLeaf.Leaf)
 	}
 }
 
