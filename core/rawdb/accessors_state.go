@@ -88,6 +88,19 @@ func WriteTrieNode(db ethdb.KeyValueWriter, hash common.Hash, node []byte) {
 	}
 }
 
+// WriteAlters writes the provided trie node database.
+func WriteAlters(db ethdb.KeyValueWriter, hash common.Hash, node []byte) {
+	if err := db.Put(AlterKey(hash), node); err != nil {
+		log.Crit("Failed to store write alters", "err", err)
+	}
+}
+
+// ReadAlters retrieves the alter hash.
+func ReadAlters(db ethdb.KeyValueReader, hash common.Hash) []byte {
+	data, _ := db.Get(AlterKey(hash))
+	return data
+}
+
 // DeleteTrieNode deletes the specified trie node from the database.
 func DeleteTrieNode(db ethdb.KeyValueWriter, hash common.Hash) {
 	if err := db.Delete(hash.Bytes()); err != nil {

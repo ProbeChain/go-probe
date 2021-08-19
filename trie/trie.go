@@ -167,7 +167,7 @@ var normalBt *BinaryTree
 // NewNormalBinary creates a normal account binary trie.
 func NewNormalBinary(root common.Hash, db *Database) (*Trie, error) {
 	normalBtOnce.Do(func() {
-		normalBt = initBinaryTree(root, 2, "./data/geth/trie.bin")
+		normalBt = initBinaryTree(root, db, 2, "./data/geth/trie.bin")
 	})
 	return newBinary(root, db, normalBt)
 }
@@ -201,7 +201,7 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 }
 
 // initBinaryTree init a binary tree.
-func initBinaryTree(root common.Hash, depth int, triePath string) *BinaryTree {
+func initBinaryTree(root common.Hash, db *Database, depth int, triePath string) *BinaryTree {
 	binaryTree := &BinaryTree{
 		depth: depth,
 	}
@@ -271,7 +271,7 @@ func initBinaryTree(root common.Hash, depth int, triePath string) *BinaryTree {
 	}
 
 	binaryTree.alters = make([]Alter, 0, 0)
-	binaryTree.curDiffLeafs = make([]DiffLeaf, 0, 0)
+	binaryTree.curDiffLeafs = db.alters(binaryTree.binaryHashNodes[0].CalcHash())
 
 	return binaryTree
 }
@@ -553,9 +553,22 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
-		t.bt.curDiffLeafs = append(t.bt.curDiffLeafs, DiffLeaf{Index: uint32(leafIndex), Leaf: leaf.Copy()})
 		find := false
 		insertIndex := 0
+
+		// 记录更改
+		for i, diffLeaf := range t.bt.curDiffLeafs {
+			if diffLeaf.Index == uint32(leafIndex) {
+				t.bt.curDiffLeafs[i] = DiffLeaf{Index: uint32(leafIndex), Leaf: leaf.Copy()}
+				find = true
+				break
+			}
+		}
+		if !find {
+			t.bt.curDiffLeafs = append(t.bt.curDiffLeafs, DiffLeaf{Index: uint32(leafIndex), Leaf: leaf.Copy()})
+		}
+
+		find = false
 
 		// @todo 此处可以使用二分法加快搜索
 		for i, node := range leaf {

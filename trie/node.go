@@ -92,6 +92,13 @@ func (n *binaryLeaf) Hash() [32]byte {
 	return ret
 }
 
+func (n *binaryHashNode) CalcHash() common.Hash {
+	var hash []byte
+	copy(hash, n.Hash[:])
+	hash = crypto.Keccak256(concat(hash, intToBytes(n.Num)...))
+	return common.BytesToHash(hash)
+}
+
 func (n *binaryLeaf) Copy() binaryLeaf {
 	var leaf binaryLeaf
 	for _, node := range *n {

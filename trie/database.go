@@ -19,6 +19,7 @@ package trie
 import (
 	"errors"
 	"fmt"
+	"github.com/status-im/keycard-go/hexutils"
 	"io"
 	"reflect"
 	"runtime"
@@ -378,6 +379,16 @@ func (db *Database) insertPreimage(hash common.Hash, preimage []byte) {
 	}
 	db.preimages[hash] = preimage
 	db.preimagesSize += common.StorageSize(common.HashLength + len(preimage))
+}
+
+// alters retrieves a alters from leveldb
+func (db *Database) alters(hash common.Hash) []DiffLeaf {
+	enc := rawdb.ReadAlters(db.diskdb, hash)
+	if len(enc) > 0 {
+		log.Info("alters", "enc", hexutils.BytesToHex(enc))
+	}
+	curDiffLeafs := make([]DiffLeaf, 0, 0)
+	return curDiffLeafs
 }
 
 // node retrieves a cached trie node from memory, or returns nil if none can be
@@ -752,8 +763,11 @@ func (db *Database) Commit(hash common.Hash, report bool, callback func(common.H
 		}
 	}
 
+	// 提交修改的部分
+	db.commitAlter(batch)
+
+	// 提交MPT部分
 	for _, hash := range db.storages {
-		// 提交MPT部分
 		if err := db.commit(hash, batch, uncacher, callback); err != nil {
 			log.Error("Failed to commit trie from trie database", "err", err)
 			return err
@@ -827,6 +841,18 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 		db.lock.Unlock()
 	}
 	return nil
+}
+
+// commitAlter commit alters
+func (db *Database) commitAlter(batch ethdb.Batch) {
+	alters := db.trie.bt.alters
+	for _, alter := range alters {
+		if bytes, err := rlp.EncodeToBytes(alter); err == nil {
+			key := make([]byte, 32, 32)
+			copy(key, alter.CurRoot[:])
+			rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
+		}
+	}
 }
 
 // cleaner is a database batch replayer that takes a batch of write operations
