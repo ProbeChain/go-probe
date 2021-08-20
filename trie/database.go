@@ -19,7 +19,6 @@ package trie
 import (
 	"errors"
 	"fmt"
-	"github.com/status-im/keycard-go/hexutils"
 	"io"
 	"reflect"
 	"runtime"
@@ -382,13 +381,89 @@ func (db *Database) insertPreimage(hash common.Hash, preimage []byte) {
 }
 
 // alters retrieves a alters from leveldb
-func (db *Database) alters(hash common.Hash) []DiffLeaf {
-	enc := rawdb.ReadAlters(db.diskdb, hash)
-	if len(enc) > 0 {
-		log.Info("alters", "enc", hexutils.BytesToHex(enc))
+func (db *Database) resolveAlters(hash common.Hash) []Alter {
+	alters := make([]Alter, 0, 0)
+	root := hash
+	count := 0
+	for {
+		count++
+
+		cur := rawdb.ReadAlters(db.diskdb, root)
+		if len(cur) == 0 {
+			break
+		}
+		alter := Alter{}
+
+		elems, rest, err := rlp.SplitList(cur)
+		if err != nil {
+		}
+
+		cur = elems
+		elems, rest, err = rlp.SplitString(cur)
+		copy(alter.PreRoot[0:], elems)
+
+		cur = rest
+		elems, rest, _ = rlp.SplitString(cur)
+		copy(alter.CurRoot[0:], elems)
+
+		cur = rest
+		elems, rest, err = rlp.SplitList(cur)
+
+		cur = elems
+		for {
+			var diffLeaf DiffLeaf
+			index := make([]byte, 0, 0)
+			next := make([]byte, 0, 0)
+
+			elems, rest, err = rlp.SplitList(cur)
+			next = append(next, rest...)
+			cur = next
+
+			index, rest, err = rlp.SplitString(elems)
+			diffLeaf.Index = uint32(bytesToInt(index))
+
+			elems, rest, err = rlp.SplitList(rest)
+
+			leaf := make([]binaryNode, 0, 0) // 如果叶子节点是空的，默认为空数组
+			cur := elems
+			for {
+				var node binaryNode
+				key := make([]byte, 0, 0)
+				val := make([]byte, 0, 0)
+
+				elems, rest, err = rlp.SplitList(cur)
+				next := rest
+				cur = rest
+
+				if len(elems) > 0 {
+					elems, rest, err = rlp.SplitList(elems)
+					key, rest, err = rlp.SplitString(rest)
+					val, rest, err = rlp.SplitString(rest)
+					node.Key = key
+					node.Val = val
+					leaf = append(leaf, node)
+				}
+
+				if len(next) == 0 {
+					break
+				}
+			}
+			diffLeaf.Leaf = leaf
+			alter.DiffLeafs = append(alter.DiffLeafs, diffLeaf)
+
+			if len(next) == 0 {
+				break
+			}
+		}
+		alters = append(alters, alter)
+		copy(root[:], alter.PreRoot[:])
+
+		// 最多支持回滚10个
+		if count >= 10 {
+			break
+		}
 	}
-	curDiffLeafs := make([]DiffLeaf, 0, 0)
-	return curDiffLeafs
+	return alters
 }
 
 // node retrieves a cached trie node from memory, or returns nil if none can be
@@ -848,8 +923,6 @@ func (db *Database) commitAlter(batch ethdb.Batch) {
 	alters := db.trie.bt.alters
 	for _, alter := range alters {
 		if bytes, err := rlp.EncodeToBytes(alter); err == nil {
-			key := make([]byte, 32, 32)
-			copy(key, alter.CurRoot[:])
 			rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
 		}
 	}

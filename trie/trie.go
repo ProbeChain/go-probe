@@ -270,8 +270,8 @@ func initBinaryTree(root common.Hash, db *Database, depth int, triePath string) 
 		binaryTree.Flush()
 	}
 
-	binaryTree.alters = make([]Alter, 0, 0)
-	binaryTree.curDiffLeafs = db.alters(binaryTree.binaryHashNodes[0].CalcHash())
+	binaryTree.alters = db.resolveAlters(binaryTree.binaryHashNodes[0].CalcHash())
+	binaryTree.curDiffLeafs = make([]DiffLeaf, 0, 0)
 
 	return binaryTree
 }
@@ -428,6 +428,7 @@ func (t *Trie) TryGetBinaryLeaf(key []byte) binaryLeaf {
 				}
 			}
 		}
+		leaf = make([]binaryNode, 0, 0)
 	} else {
 		// 此时需要从数据库中加载一次
 		if leaf == nil {
@@ -898,8 +899,8 @@ func (t *Trie) Hash() common.Hash {
 			for _, index := range unhashedIndex {
 				li := index*2 + 1
 				ri := index*2 + 2
-				var lHash []byte
-				var rHash []byte
+				lHash := make([]byte, 32, 32)
+				rHash := make([]byte, 32, 32)
 				copy(lHash, t.bt.binaryHashNodes[li].Hash[:])
 				copy(rHash, t.bt.binaryHashNodes[ri].Hash[:])
 				lNum := t.bt.binaryHashNodes[li].Num
@@ -921,14 +922,18 @@ func (t *Trie) Hash() common.Hash {
 				break
 			}
 		}
+		// 纪录变化值
+		curRoot := t.binaryRoot()
+		if bytes.Compare(preRoot.Bytes(), curRoot.Bytes()) == 0 {
+			log.Info("preRoot == curRoot")
+		}
+
 		t.bt.uncommitedIndex = append(t.bt.uncommitedIndex, t.bt.unhashedIndex...)
 		t.bt.unhashedIndex = make([]int, 0)
 
 		diffLeafs := make([]DiffLeaf, len(t.bt.curDiffLeafs), len(t.bt.curDiffLeafs))
 		copy(diffLeafs, t.bt.curDiffLeafs)
 
-		// 纪录变化值
-		curRoot := t.binaryRoot()
 		alter := Alter{
 			PreRoot:   preRoot,
 			CurRoot:   curRoot,

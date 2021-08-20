@@ -19,6 +19,7 @@ package trie
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
@@ -54,7 +55,7 @@ func newEmpty() *Trie {
 }
 
 func newEmptyBinary(depth int) *Trie {
-	trie, _ := NewBinary(common.Hash{}, NewDatabase(memorydb.New()), depth)
+	trie, _ := NewNormalBinary(common.Hash{}, NewDatabase(memorydb.New()))
 	return trie
 }
 
@@ -188,6 +189,118 @@ func TestInsert(t *testing.T) {
 	}
 }
 
+func TestDecodeAlters(t *testing.T) {
+	//[
+	//	"0x5a013a87733553966400242399dee3760877fead2cd87287747155e47a854acb",
+	//	"0x50fe07922f57ae3b4553201bfd7c11aca85e1541f91db8e62dca9c418dc5feae",
+	//	[
+	//	[
+	//	"0x02",
+	//	[
+	//	[
+	//	"0xb44719dc13fc46773e8cfcf79fa2f1ef2e8dcc57",
+	//	"0xf86409a0fffffffffffffffffffffffffffffffffffffffffffffffd8f7f84c48f42a3efa056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	//	],
+	//	[
+	//	"0xc1f8965475f457d5803a871092152a01fbe32ecc",
+	//	"0xf84c80884563918244f40000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	//	],
+	//	[
+	//	"0xc6ea4cf137b925f16c02cf6a7c044fb94cebd963",
+	//	"0xf84c80887ce66c50e2840000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	//	],
+	//	[
+	//	"0xf1eead1c64b2b858c75058b1a3a31a2ea78b5084",
+	//	"0xf84c80883782dace9d900000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	//	]
+	//	]
+	//	],
+	//	[
+	//	"0x01",
+	//	[
+	//	[
+	//	"0x084539534e555b53a933c62920ea6a1dc75a2577",
+	//	"0xf84c80886f05b59d3b200000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	//	],
+	//	[
+	//	"0x1ebed080b002d2cc76f43fc3ef28ed06902e5545",
+	//	"0xf84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	//	],
+	//	[
+	//	"0x6e90e8cbf72b09fe182086c21d7a9a963f2099af",
+	//	"0xf84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	//	]
+	//	]
+	//	]
+	//	]
+	//]
+	hexString := "f9033ca05a013a87733553966400242399dee3760877fead2cd87287747155e47a854acba050fe07922f57ae3b4553201bfd7c11aca85e1541f91db8e62dca9c418dc5feaef902f7f901b802f901b4f87d94b44719dc13fc46773e8cfcf79fa2f1ef2e8dcc57b866f86409a0fffffffffffffffffffffffffffffffffffffffffffffffd8f7f84c48f42a3efa056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f86594c1f8965475f457d5803a871092152a01fbe32eccb84ef84c80884563918244f40000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f86594c6ea4cf137b925f16c02cf6a7c044fb94cebd963b84ef84c80887ce66c50e2840000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f86594f1eead1c64b2b858c75058b1a3a31a2ea78b5084b84ef84c80883782dace9d900000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f9013901f90135f86594084539534e555b53a933c62920ea6a1dc75a2577b84ef84c80886f05b59d3b200000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f865941ebed080b002d2cc76f43fc3ef28ed06902e5545b84ef84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f865946e90e8cbf72b09fe182086c21d7a9a963f2099afb84ef84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+	cur, _ := hex.DecodeString(hexString)
+	alter := Alter{}
+
+	elems, rest, err := rlp.SplitList(cur)
+	if err != nil {
+	}
+
+	cur = elems
+	elems, rest, err = rlp.SplitString(cur)
+	copy(alter.PreRoot[0:], elems)
+
+	cur = rest
+	elems, rest, _ = rlp.SplitString(cur)
+	copy(alter.CurRoot[0:], elems)
+
+	cur = rest
+	elems, rest, err = rlp.SplitList(cur)
+
+	cur = elems
+	for {
+		var diffLeaf DiffLeaf
+		index := make([]byte, 0, 0)
+		next := make([]byte, 0, 0)
+
+		elems, rest, err = rlp.SplitList(cur)
+		next = append(next, rest...)
+		cur = next
+
+		index, rest, err = rlp.SplitString(elems)
+		diffLeaf.Index = uint32(bytesToInt(index))
+
+		elems, rest, err = rlp.SplitList(rest)
+
+		leaf := make([]binaryNode, 0, 0) // 如果叶子节点是空的，默认为空数组
+		cur := elems
+		for {
+			var node binaryNode
+			key := make([]byte, 0, 0)
+			val := make([]byte, 0, 0)
+
+			elems, rest, err = rlp.SplitList(cur)
+			next := rest
+			cur = rest
+
+			if len(elems) > 0 {
+				elems, rest, err = rlp.SplitList(elems)
+				key, rest, err = rlp.SplitString(rest)
+				val, rest, err = rlp.SplitString(rest)
+				node.Key = key
+				node.Val = val
+				leaf = append(leaf, node)
+			}
+
+			if len(next) == 0 {
+				break
+			}
+		}
+		diffLeaf.Leaf = leaf
+		alter.DiffLeafs = append(alter.DiffLeafs, diffLeaf)
+
+		if len(next) == 0 {
+			break
+		}
+	}
+}
+
 func TestBinaryInsert(t *testing.T) {
 	depth := 2
 	trie := newEmptyBinary(depth)
@@ -223,7 +336,7 @@ func TestBinaryWriteToDB(t *testing.T) {
 	dir := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "DB")
 	diskdb, _ := leveldb.New(dir, 256, 0, "", false)
 
-	trie, _ := NewBinary(common.Hash{}, NewDatabase(diskdb), 2)
+	trie, _ := NewNormalBinary(common.Hash{}, NewDatabase(diskdb))
 	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
 	//trie.TryUpdate(key, []byte("000000000"))
 	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0xff}, []byte("111111111"))
