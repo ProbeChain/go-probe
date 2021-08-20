@@ -50,6 +50,7 @@ var (
 	ErrUint64Range   = &decError{"hex number > 64 bits"}
 	ErrUintRange     = &decError{fmt.Sprintf("hex number > %d bits", uintBits)}
 	ErrBig256Range   = &decError{"hex number > 256 bits"}
+	ErrUint8Range    = &decError{"hex number > 8 bits"}
 )
 
 type decError struct{ msg string }
@@ -207,6 +208,7 @@ func checkNumber(input string) (raw string, err error) {
 }
 
 const badNibble = ^uint64(0)
+const badNibbleOfUint8 = ^uint8(0)
 
 func decodeNibble(in byte) uint64 {
 	switch {
@@ -218,6 +220,19 @@ func decodeNibble(in byte) uint64 {
 		return uint64(in - 'a' + 10)
 	default:
 		return badNibble
+	}
+}
+
+func decodeNibbleOfUint8(in byte) uint8 {
+	switch {
+	case in >= '0' && in <= '9':
+		return uint8(in - '0')
+	case in >= 'A' && in <= 'F':
+		return uint8(in - 'A' + 10)
+	case in >= 'a' && in <= 'f':
+		return uint8(in - 'a' + 10)
+	default:
+		return badNibbleOfUint8
 	}
 }
 

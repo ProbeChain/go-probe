@@ -36,6 +36,7 @@ import (
 type TransactionArgs struct {
 	From                 *common.Address `json:"from"`
 	To                   *common.Address `json:"to"`
+	ProbeTxType          *hexutil.Uint8	 `json:"probeTxType"`
 	Gas                  *hexutil.Uint64 `json:"gas"`
 	GasPrice             *hexutil.Big    `json:"gasPrice"`
 	MaxFeePerGas         *hexutil.Big    `json:"maxFeePerGas"`
@@ -123,6 +124,9 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
+	if args.ProbeTxType == nil {
+		args.ProbeTxType = new(hexutil.Uint8)
+	}
 	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
 	}
@@ -136,6 +140,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		callArgs := TransactionArgs{
 			From:                 args.From,
 			To:                   args.To,
+			ProbeTxType:		  args.ProbeTxType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
 			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
@@ -225,7 +230,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 	if args.AccessList != nil {
 		accessList = *args.AccessList
 	}
-	msg := types.NewMessage(addr, args.To, 0, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, false)
+	msg := types.NewMessage(addr, args.To, uint8(*args.ProbeTxType), 0, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, false)
 	return msg, nil
 }
 
@@ -240,35 +245,38 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
-			To:         args.To,
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
-			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: al,
+			To:         	args.To,
+			ProbeTxType: 	uint8(*args.ProbeTxType),
+			ChainID:    	(*big.Int)(args.ChainID),
+			Nonce:      	uint64(*args.Nonce),
+			Gas:        	uint64(*args.Gas),
+			GasFeeCap:  	(*big.Int)(args.MaxFeePerGas),
+			GasTipCap:  	(*big.Int)(args.MaxPriorityFeePerGas),
+			Value:      	(*big.Int)(args.Value),
+			Data:       	args.data(),
+			AccessList: 	al,
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
-			To:         args.To,
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasPrice:   (*big.Int)(args.GasPrice),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: *args.AccessList,
+			To:         	args.To,
+			ProbeTxType: 	uint8(*args.ProbeTxType),
+			ChainID:    	(*big.Int)(args.ChainID),
+			Nonce:      	uint64(*args.Nonce),
+			Gas:        	uint64(*args.Gas),
+			GasPrice:   	(*big.Int)(args.GasPrice),
+			Value:      	(*big.Int)(args.Value),
+			Data:       	args.data(),
+			AccessList: 	*args.AccessList,
 		}
 	default:
 		data = &types.LegacyTx{
-			To:       args.To,
-			Nonce:    uint64(*args.Nonce),
-			Gas:      uint64(*args.Gas),
-			GasPrice: (*big.Int)(args.GasPrice),
-			Value:    (*big.Int)(args.Value),
-			Data:     args.data(),
+			To:       		args.To,
+			ProbeTxType: 	uint8(*args.ProbeTxType),
+			Nonce:    		uint64(*args.Nonce),
+			Gas:      		uint64(*args.Gas),
+			GasPrice: 		(*big.Int)(args.GasPrice),
+			Value:    		(*big.Int)(args.Value),
+			Data:     		args.data(),
 		}
 	}
 	return types.NewTx(data)

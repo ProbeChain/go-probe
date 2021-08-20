@@ -30,6 +30,7 @@ var (
 	bigT    = reflect.TypeOf((*Big)(nil))
 	uintT   = reflect.TypeOf(Uint(0))
 	uint64T = reflect.TypeOf(Uint64(0))
+	uint8T  = reflect.TypeOf(Uint8(0))
 )
 
 // Bytes marshals/unmarshals as a JSON string with 0x prefix.
@@ -323,6 +324,77 @@ func (b *Uint) UnmarshalText(input []byte) error {
 func (b Uint) String() string {
 	return EncodeUint64(uint64(b))
 }
+
+type Uint8 uint8
+
+// MarshalText implements encoding.TextMarshaler.
+func (b Uint8) MarshalText() ([]byte, error) {
+	buf := make([]byte, 2, 10)
+	copy(buf, `0x`)
+	buf = strconv.AppendUint(buf, uint64(b), 16)
+	return buf, nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (b *Uint8) UnmarshalJSON(input []byte) error {
+	if !isString(input) {
+		return errNonString(uint8T)
+	}
+	return wrapTypeError(b.UnmarshalText(input[1:len(input)-1]), uintT)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (b *Uint8) UnmarshalText(input []byte) error {
+	raw, err := checkNumberText(input)
+	if err != nil {
+		return err
+	}
+	if len(raw) > 3 { //max:255 length:3
+		println("%s",ErrUint8Range.msg)
+		return ErrUint8Range
+	}
+	var dec uint8
+	for _, byte := range raw {
+		nib := decodeNibbleOfUint8(byte)
+		if nib == badNibbleOfUint8 {
+			return ErrSyntax
+		}
+		dec *= 16
+		dec += nib
+	}
+	*b = Uint8(dec)
+	return nil
+}
+
+// String returns the hex encoding of b.
+func (b Uint8) String() string {
+	return EncodeUint8(uint8(b))
+}
+
+// EncodeUint8 encodes i as a hex string with 0x prefix.
+func EncodeUint8(i uint8) string {
+	enc := make([]byte, 2, 10)
+	copy(enc, "0x")
+	return string(strconv.AppendUint(enc, uint64(i), 16))
+}
+
+// ImplementsGraphQLType returns true if Uint64 implements the provided GraphQL type.
+func (b Uint8) ImplementsGraphQLType(name string) bool { return name == "Byte" }
+
+// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+func (b *Uint8) UnmarshalGraphQL(input interface{}) error {
+	var err error
+	switch input := input.(type) {
+	case string:
+		return b.UnmarshalText([]byte(input))
+	case int8:
+		*b = Uint8(input)
+	default:
+		err = fmt.Errorf("unexpected type %T for Byte", input)
+	}
+	return err
+}
+
 
 func isString(input []byte) bool {
 	return len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"'
