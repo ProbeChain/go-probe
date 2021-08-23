@@ -924,9 +924,6 @@ func (t *Trie) Hash() common.Hash {
 		}
 		// 纪录变化值
 		curRoot := t.binaryRoot()
-		if bytes.Compare(preRoot.Bytes(), curRoot.Bytes()) == 0 {
-			log.Info("preRoot == curRoot")
-		}
 
 		t.bt.uncommitedIndex = append(t.bt.uncommitedIndex, t.bt.unhashedIndex...)
 		t.bt.unhashedIndex = make([]int, 0)
@@ -1038,8 +1035,8 @@ func (t *Trie) hashRoot() (node, node, error) {
 // binaryRoot calculates the BMPT root hash of the given trie
 func (t *Trie) binaryRoot() common.Hash {
 	if t.Binary() {
-		var hash []byte
-		copy(hash, t.bt.binaryHashNodes[0].Hash[:])
+		hash := make([]byte, 32, 32+4)
+		copy(hash, t.bt.binaryHashNodes[0].Hash[0:])
 		hash = crypto.Keccak256(concat(hash, intToBytes(t.bt.binaryHashNodes[0].Num)...))
 		return common.BytesToHash(hash)
 	}
@@ -1051,7 +1048,7 @@ func (t *Trie) binaryRoot() common.Hash {
 func (t *Trie) trieRoot() common.Hash {
 	if t.Binary() {
 		if node, ok := t.root.(binaryHashNode); ok {
-			var hash []byte
+			hash := make([]byte, 32, 32+4)
 			copy(hash, node.Hash[:])
 			hash = crypto.Keccak256(concat(hash, intToBytes(node.Num)...))
 			return common.BytesToHash(hash)
