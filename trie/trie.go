@@ -95,14 +95,14 @@ func bytesToInt(b []byte) int {
 }
 
 type DiffLeaf struct {
-	Index uint32
-	Leaf  binaryLeaf
+	Index uint32     // 被修改的叶子节点索引
+	Leaf  binaryLeaf // 叶子节点数据
 }
 
 type Alter struct {
-	PreRoot   [32]byte
-	CurRoot   [32]byte
-	DiffLeafs []DiffLeaf
+	PreRoot   [32]byte   // 上一个状态树
+	CurRoot   [32]byte   // 当前状态书
+	DiffLeafs []DiffLeaf // 上一个状态树到当前状态树被
 }
 
 type BinaryTree struct {
@@ -1017,6 +1017,11 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	}
 	t.root = newRoot
 	return rootHash, nil
+}
+
+// RollBack 数据回滚
+func (t *Trie) RollBack(root common.Hash) error {
+	return nil
 }
 
 // hashRoot calculates the root hash of the given trie
