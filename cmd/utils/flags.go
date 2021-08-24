@@ -247,6 +247,11 @@ var (
 		Name:  "override.london",
 		Usage: "Manually specify London fork-block, overriding the bundled setting",
 	}
+	ConsensusFlag = cli.StringFlag{
+		Name:  "consensus",
+		Usage: "Choose the consensus is pow or dpos",
+		Value: ethconfig.Defaults.Consensus,
+	}
 	// Light server and client settings
 	LightServeFlag = cli.IntFlag{
 		Name:  "light.serve",
@@ -1501,6 +1506,10 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setMiner(ctx, &cfg.Miner)
 	setWhitelist(ctx, cfg)
 	setLes(ctx, cfg)
+
+	if ctx.GlobalIsSet(ConsensusFlag.Name) {
+		cfg.Consensus = ctx.GlobalString(ConsensusFlag.Name)
+	}
 
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
