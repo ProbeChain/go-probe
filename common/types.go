@@ -18,6 +18,7 @@ package common
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
@@ -29,6 +30,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/google/go-cmp/cmp"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -37,7 +39,9 @@ const (
 	// HashLength is the expected length of the hash
 	HashLength = 32
 	// AddressLength is the expected length of the address
-	AddressLength = 20
+	AddressLength = 24
+	// AddressChecksumLen is the checkSum length of the address
+	AddressChecksumLen = 4
 )
 
 var (
@@ -204,8 +208,20 @@ type Address [AddressLength]byte
 // If b is larger than len(h), b will be cropped from the left.
 func BytesToAddress(b []byte) Address {
 	var a Address
-	a.SetBytes(b)
+	//调用CheckSum方法返回前四个字节的checksum
+	checkSumBytes := CheckSum(b)
+	a.SetBytes(append(b, checkSumBytes...))
 	return a
+}
+
+//取前4个字节
+func CheckSum(payload []byte) []byte {
+	//这里传入的payload其实是version+Pub Key hash，对其进行两次256运算
+	hash1 := sha256.Sum256(payload)
+
+	hash2 := sha256.Sum256(hash1[:])
+
+	return hash2[:AddressChecksumLen] //返回前四个字节，为CheckSum值
 }
 
 // BigToAddress returns Address with byte values of b.
@@ -425,4 +441,19 @@ func (ma *MixedcaseAddress) ValidChecksum() bool {
 // Original returns the mixed-case input string
 func (ma *MixedcaseAddress) Original() string {
 	return ma.original
+}
+
+// validateAddress return the validate value for the input address
+func validateAddress(v string) bool {
+	v = v[2:]
+	b, err := hex.DecodeString(v)
+	if err != nil {
+		return false
+	}
+	if len(b) != AddressLength {
+		return false
+	}
+	sum := b[len(b)-AddressChecksumLen:]
+	checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
+	return cmp.Equal(sum, checkSumBytes)
 }
