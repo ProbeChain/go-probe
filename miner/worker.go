@@ -51,6 +51,12 @@ const (
 	// chainSideChanSize is the size of channel listening to ChainSideEvent.
 	chainSideChanSize = 10
 
+	// powAnswerChanSize is the size of channel listening to PowAnswerEvent.
+	powAnswerChanSize = 10
+
+	// dposAckChanSize is the size of channel listening to DposAckEvent.
+	dposAckChanSize = 10 * 64
+
 	// resubmitAdjustChanSize is the size of resubmitting interval adjustment channel.
 	resubmitAdjustChanSize = 10
 
@@ -141,6 +147,12 @@ type worker struct {
 	chainSideCh  chan core.ChainSideEvent
 	chainSideSub event.Subscription
 
+	powAnswerCh  chan core.PowAnswerEvent
+	powAnswerSub event.Subscription
+
+	dposAckCh  chan core.DposAckEvent
+	dposAckSub event.Subscription
+
 	// Channels
 	newWorkCh          chan *newWorkReq
 	taskCh             chan *task
@@ -204,6 +216,8 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		txsCh:              make(chan core.NewTxsEvent, txChanSize),
 		chainHeadCh:        make(chan core.ChainHeadEvent, chainHeadChanSize),
 		chainSideCh:        make(chan core.ChainSideEvent, chainSideChanSize),
+		powAnswerCh:        make(chan core.PowAnswerEvent, powAnswerChanSize),
+		dposAckCh:        	make(chan core.DposAckEvent, dposAckChanSize),
 		newWorkCh:          make(chan *newWorkReq),
 		taskCh:             make(chan *task),
 		resultCh:           make(chan *types.Block, resultQueueSize),
@@ -217,6 +231,9 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	// Subscribe events for blockchain
 	worker.chainHeadSub = eth.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
 	worker.chainSideSub = eth.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
+
+	worker.powAnswerSub = eth.BlockChain().SubscribePowAnswerEvent(worker.powAnswerCh)
+	worker.dposAckSub = eth.BlockChain().SubscribeDposAckEvent(worker.dposAckCh)
 
 	// Sanitize recommit interval if the user-specified one is too short.
 	recommit := worker.config.Recommit

@@ -178,6 +178,8 @@ type BlockChain struct {
 	chainFeed     event.Feed
 	chainSideFeed event.Feed
 	chainHeadFeed event.Feed
+	powAnswerFeed event.Feed
+	dposAckFeed   event.Feed
 	logsFeed      event.Feed
 	blockProcFeed event.Feed
 	scope         event.SubscriptionScope
@@ -2498,6 +2500,16 @@ func (bc *BlockChain) SubscribeChainHeadEvent(ch chan<- ChainHeadEvent) event.Su
 // SubscribeChainSideEvent registers a subscription of ChainSideEvent.
 func (bc *BlockChain) SubscribeChainSideEvent(ch chan<- ChainSideEvent) event.Subscription {
 	return bc.scope.Track(bc.chainSideFeed.Subscribe(ch))
+}
+
+// SubscribePowAnswerEvent registers a subscription of PowAnswerEvent.
+func (bc *BlockChain) SubscribePowAnswerEvent(ch chan<- PowAnswerEvent) event.Subscription {
+	return bc.scope.Track(bc.powAnswerFeed.Subscribe(ch))
+}
+
+// SubscribeDposAckEvent registers a subscription of DposAckEvent.
+func (bc *BlockChain) SubscribeDposAckEvent(ch chan<- DposAckEvent) event.Subscription {
+	return bc.scope.Track(bc.dposAckFeed.Subscribe(ch))
 }
 
 // SubscribeLogsEvent registers a subscription of []*types.Log.
