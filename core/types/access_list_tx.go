@@ -49,7 +49,6 @@ type AccessListTx struct {
 	GasPrice   *big.Int        // wei per gas
 	Gas        uint64          // gas limit
 	To         *common.Address `rlp:"nil"` // nil means contract creation
-	ProbeTxType uint8
 	Value      *big.Int        // wei amount
 	Data       []byte          // contract invocation input data
 	AccessList AccessList      // EIP-2930 access list
@@ -62,7 +61,6 @@ func (tx *AccessListTx) copy() TxData {
 		Nonce: tx.Nonce,
 		To:    tx.To, // TODO: copy pointed-to address
 		Data:  common.CopyBytes(tx.Data),
-		ProbeTxType: tx.ProbeTxType,
 		Gas:   tx.Gas,
 		// These are copied below.
 		AccessList: make(AccessList, len(tx.AccessList)),
@@ -108,7 +106,6 @@ func (tx *AccessListTx) gasFeeCap() *big.Int    { return tx.GasPrice }
 func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
-func (tx *AccessListTx) probeTxType() uint8     { return tx.ProbeTxType }
 
 func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
