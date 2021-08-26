@@ -63,6 +63,21 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("BlockNonce", input, n[:])
 }
 
+//send from pow miner
+type PowAnswer struct {
+	Number *big.Int       `json:"number"           gencodec:"required"`
+	Nonce  BlockNonce     `json:"nonce"            gencodec:"required"`
+	Miner  common.Address `json:"miner"            gencodec:"required"`
+}
+
+//send from dpos witness node
+type DposAck struct {
+	EpochPosition uint8       `json:"epochPosition"   gencodec:"required"`
+	Number        *big.Int    `json:"number"          gencodec:"required"`
+	BlockHash     common.Hash `json:"blockHash"       gencodec:"required"`
+	WitnessSig    []byte      `json:"witnessSig"      gencodec:"required"`
+}
+
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
 
 // Header represents a block header in the Ethereum blockchain.

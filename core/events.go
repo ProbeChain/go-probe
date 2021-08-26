@@ -41,3 +41,6 @@ type ChainSideEvent struct {
 }
 
 type ChainHeadEvent struct{ Block *types.Block }
+
+type PowAnswerEvent struct{ powAnswer *types.PowAnswer }
+type DposAckEvent struct{ dposAck *types.DposAck }
