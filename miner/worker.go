@@ -217,7 +217,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		chainHeadCh:        make(chan core.ChainHeadEvent, chainHeadChanSize),
 		chainSideCh:        make(chan core.ChainSideEvent, chainSideChanSize),
 		powAnswerCh:        make(chan core.PowAnswerEvent, powAnswerChanSize),
-		dposAckCh:        	make(chan core.DposAckEvent, dposAckChanSize),
+		dposAckCh:          make(chan core.DposAckEvent, dposAckChanSize),
 		newWorkCh:          make(chan *newWorkReq),
 		taskCh:             make(chan *task),
 		resultCh:           make(chan *types.Block, resultQueueSize),
