@@ -378,10 +378,6 @@ module.exports=[
         "type": "address"
       },
       {
-        "name": "probeTxType",
-        "type": "uint8"
-      },
-      {
         "name": "value",
         "type": "uint256"
       }
@@ -478,11 +474,6 @@ module.exports=[
         "indexed": true,
         "name": "to",
         "type": "address"
-      },
-      {
-        "indexed": true,
-        "name": "probeTxType",
-        "type": "uint8"
       },
       {
         "indexed": false,
@@ -5679,7 +5670,7 @@ var methods = function () {
     var sendTransaction = new Method({
         name: 'sendTransaction',
         call: 'personal_sendTransaction',
-        params: 3,
+        params: 2,
         inputFormatter: [formatters.inputTransactionFormatter, null]
     });
 
@@ -6707,18 +6698,17 @@ var exchangeAbi = require('../contracts/SmartExchange.json');
  * @method transfer
  * @param {String} from
  * @param {String} to iban
- * @param {Uint8} probeTxType
  * @param {Value} value to be tranfered
  * @param {Function} callback, callback
  */
-var transfer = function (eth, from, to, probeTxType,value, callback) {
+var transfer = function (eth, from, to, value, callback) {
     var iban = new Iban(to); 
     if (!iban.isValid()) {
         throw new Error('invalid iban address');
     }
 
     if (iban.isDirect()) {
-        return transferToAddress(eth, from, iban.address(), probeTxType, value, callback);
+        return transferToAddress(eth, from, iban.address(), value, callback);
     }
     
     if (!callback) {
@@ -6741,11 +6731,10 @@ var transfer = function (eth, from, to, probeTxType,value, callback) {
  * @param {Value} value to be tranfered
  * @param {Function} callback, callback
  */
-var transferToAddress = function (eth, from, to, probeTxType, value, callback) {
+var transferToAddress = function (eth, from, to, value, callback) {
     return eth.sendTransaction({
         address: to,
         from: from,
-        probeTxType: probeTxType,
         value: value
     }, callback);
 };

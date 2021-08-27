@@ -42,19 +42,6 @@ const (
 	MimetypeTextPlain         = "text/plain"
 )
 
-// AccountType type of Probe
-// 6 kinds
-type AccountType byte
-
-const (
-	General		AccountType = 0x0		//普通账户
-	Pns      	AccountType = 0x1		//PNS账户
-	Asset      	AccountType = 0x2		//资产账户
-	Contract 	AccountType = 0x3		//合约账户
-	Authorize	AccountType = 0x4		//授权账户
-	Lose		AccountType = 0x5		//挂失账户
-)
-
 // Wallet represents a software or hardware wallet that might contain one or more
 // accounts (derived from the same seed).
 type Wallet interface {
