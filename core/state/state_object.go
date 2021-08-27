@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"net"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -104,6 +105,19 @@ type Account struct {
 	Balance  *big.Int
 	Root     common.Hash // merkle root of the storage trie
 	CodeHash []byte
+}
+
+type DPoSAccount struct {
+	//Address common.Hash
+	Ip    net.IP
+	Owner common.Address
+}
+
+type DPoSCandidateAccount struct {
+	//Address       common.Hash
+	Ip            net.IP
+	Owner         common.Address
+	DelegateValue *big.Int
 }
 
 // newObject creates a state object.

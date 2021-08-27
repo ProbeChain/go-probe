@@ -55,7 +55,7 @@ const (
 	powAnswerChanSize = 10
 
 	// dposAckChanSize is the size of channel listening to DposAckEvent.
-	dposAckChanSize = 10 * 64
+	dposAckChanSize = consensus.DposWitnessNumber * 10
 
 	// resubmitAdjustChanSize is the size of resubmitting interval adjustment channel.
 	resubmitAdjustChanSize = 10

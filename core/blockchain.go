@@ -185,6 +185,11 @@ type BlockChain struct {
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
 
+	DposAckMap   map[*big.Int][consensus.DposWitnessNumber]*types.DposAck
+	DposAckCount map[*big.Int]uint8
+
+	PowAnswerMap map[*big.Int][2]*types.PowAnswer
+
 	chainmu sync.RWMutex // blockchain insertion lock
 
 	currentBlock     atomic.Value // Current head of the block chain
