@@ -27,6 +27,21 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+const (
+	// DposWitnessNumber is the total number of dpos witness nodes.
+	DposWitnessNumber = 64
+	// number of witness to product stabilizing block
+	MostDposWitness = DposWitnessNumber*2/3 + 1
+	// the least number of witness to product block
+	LeastDposWitness = DposWitnessNumber*1/3 + 1
+	// seconds to delay seal since not enough dposAck
+	Time2delaySeal = 3
+	// deadline of seal after received a pow answer
+	Time2SealDeadline = 7
+	//Maximum uncle block height accepted
+	MaxDistantOfUncleBlock = 5
+)
+
 // ChainHeaderReader defines a small collection of methods needed to access the local
 // blockchain during header verification.
 type ChainHeaderReader interface {
