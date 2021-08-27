@@ -188,6 +188,7 @@ type BlockChain struct {
 	DposAckMap   map[*big.Int][consensus.DposWitnessNumber]*types.DposAck
 	DposAckCount map[*big.Int]uint8
 
+	//Index = 0 in the array indicates the first received powanswer
 	PowAnswerMap map[*big.Int][2]*types.PowAnswer
 
 	chainmu sync.RWMutex // blockchain insertion lock
