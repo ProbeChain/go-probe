@@ -44,7 +44,7 @@ var ProtocolVersions = []uint{ETH66, ETH65}
 
 // protocolLengths are the number of implemented message corresponding to
 // different protocol versions.
-var protocolLengths = map[uint]uint64{ETH66: 17, ETH65: 17}
+var protocolLengths = map[uint]uint64{ETH66: 18, ETH65: 17}
 
 // maxMessageSize is the maximum cap on the size of a protocol message.
 const maxMessageSize = 10 * 1024 * 1024
@@ -63,6 +63,7 @@ const (
 	NodeDataMsg        = 0x0e
 	GetReceiptsMsg     = 0x0f
 	ReceiptsMsg        = 0x10
+	PowAnswerMsg       = 0x11
 
 	// Protocol messages overloaded in eth/65
 	NewPooledTransactionHashesMsg = 0x08
@@ -183,6 +184,11 @@ type BlockHeadersPacket66 struct {
 type NewBlockPacket struct {
 	Block *types.Block
 	TD    *big.Int
+}
+
+// NewPowAnswerPacket is the network packet for the pow answer message.
+type NewPowAnswerPacket struct {
+	PowAnswer *types.PowAnswer
 }
 
 // sanityCheck verifies that the values are reasonable, as a DoS protection
@@ -365,3 +371,6 @@ func (*GetPooledTransactionsPacket) Kind() byte   { return GetPooledTransactions
 
 func (*PooledTransactionsPacket) Name() string { return "PooledTransactions" }
 func (*PooledTransactionsPacket) Kind() byte   { return PooledTransactionsMsg }
+
+func (*NewPowAnswerPacket) Name() string { return "NewPowAnswerPacket" }
+func (*NewPowAnswerPacket) Kind() byte   { return PowAnswerMsg }

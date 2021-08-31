@@ -2528,3 +2528,8 @@ func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscript
 func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscription {
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
 }
+
+// SendPowAnswer send a pow answer to worker
+func (bc *BlockChain) SendPowAnswer(powAnswer *types.PowAnswer) int {
+	return bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
+}

@@ -113,6 +113,7 @@ type handler struct {
 	txsCh         chan core.NewTxsEvent
 	txsSub        event.Subscription
 	minedBlockSub *event.TypeMuxSubscription
+	powAnswerSub  *event.TypeMuxSubscription
 
 	whitelist map[uint64]common.Hash
 
@@ -407,6 +408,11 @@ func (h *handler) Start(maxPeers int) {
 	h.minedBlockSub = h.eventMux.Subscribe(core.NewMinedBlockEvent{})
 	go h.minedBroadcastLoop()
 
+	// broadcast powAnswer
+	h.wg.Add(1)
+	h.powAnswerSub = h.eventMux.Subscribe(core.PowAnswerEvent{})
+	go h.powAnswerBroadcastLoop()
+
 	// start sync handlers
 	h.wg.Add(2)
 	go h.chainSync.loop()
@@ -416,6 +422,7 @@ func (h *handler) Start(maxPeers int) {
 func (h *handler) Stop() {
 	h.txsSub.Unsubscribe()        // quits txBroadcastLoop
 	h.minedBlockSub.Unsubscribe() // quits blockBroadcastLoop
+	h.powAnswerSub.Unsubscribe()  // quits powAnswerBroadcastLoop
 
 	// Quit chainSync and txsync64.
 	// After this is done, no new peers will be accepted.
@@ -508,6 +515,16 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 		"tx packs", directPeers, "broadcast txs", directCount)
 }
 
+// BroadcastPowAnswer broadcast PowAnswer to all peers
+func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
+	for _, peer := range h.peers.peers {
+		if err := peer.SendNewPowAnswer(powAnswer); err != nil {
+			log.Debug("SendNewPowAnswer", "err", err)
+		}
+	}
+	log.Debug("PowAnswer broadcast", "nonce", powAnswer.Nonce, "number", powAnswer.Number, "miner", powAnswer.Miner)
+}
+
 // minedBroadcastLoop sends mined blocks to connected peers.
 func (h *handler) minedBroadcastLoop() {
 	defer h.wg.Done()
@@ -529,6 +546,17 @@ func (h *handler) txBroadcastLoop() {
 			h.BroadcastTransactions(event.Txs)
 		case <-h.txsSub.Err():
 			return
+		}
+	}
+}
+
+// powAnswerBroadcastLoop sends pow answer to connected peers.
+func (h *handler) powAnswerBroadcastLoop() {
+	defer h.wg.Done()
+
+	for obj := range h.powAnswerSub.Chan() {
+		if ev, ok := obj.Data.(core.PowAnswerEvent); ok {
+			h.BroadcastPowAnswer(ev.PowAnswer)
 		}
 	}
 }

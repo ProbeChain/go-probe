@@ -542,7 +542,8 @@ func (w *worker) mainLoop() {
 				}
 			}
 			atomic.AddInt32(&w.newTxs, int32(len(ev.Txs)))
-
+		case ev := <-w.powAnswerCh:
+			log.Debug("PowAnswerCh receive", "nonce", ev.PowAnswer.Nonce, "number", ev.PowAnswer.Number, "miner", ev.PowAnswer.Miner)
 		// System stopped
 		case <-w.exitCh:
 			return
@@ -551,6 +552,8 @@ func (w *worker) mainLoop() {
 		case <-w.chainHeadSub.Err():
 			return
 		case <-w.chainSideSub.Err():
+			return
+		case <-w.powAnswerSub.Err():
 			return
 		}
 	}
@@ -659,6 +662,14 @@ func (w *worker) resultLoop() {
 
 			// Broadcast the block and announce chain insertion event
 			w.mux.Post(core.NewMinedBlockEvent{Block: block})
+
+			// @todo just for debug to boardcast pow answer to peers
+			powAnswer := &types.PowAnswer{
+				Number: big.NewInt(time.Now().UnixNano()),
+				Nonce:  types.EncodeNonce(uint64(time.Now().UnixNano())),
+				Miner:  w.coinbase,
+			}
+			w.mux.Post(core.PowAnswerEvent{PowAnswer: powAnswer})
 
 			// Insert the block into the set of pending ones to resultLoop for confirmations
 			w.unconfirmed.Insert(block.NumberU64(), block.Hash())

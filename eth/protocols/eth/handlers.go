@@ -312,6 +312,15 @@ func handleNewBlock(backend Backend, msg Decoder, peer *Peer) error {
 	return backend.Handle(peer, ann)
 }
 
+func handlePowAnswerMsg(backend Backend, msg Decoder, peer *Peer) error {
+	// Retrieve and decode the pow answer
+	ann := new(NewPowAnswerPacket)
+	if err := msg.Decode(ann); err != nil {
+		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
+	}
+	return backend.Handle(peer, ann)
+}
+
 func handleBlockHeaders(backend Backend, msg Decoder, peer *Peer) error {
 	// A batch of headers arrived to one of our previous requests
 	res := new(BlockHeadersPacket)

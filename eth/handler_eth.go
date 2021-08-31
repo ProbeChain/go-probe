@@ -90,6 +90,9 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 	case *eth.NewBlockPacket:
 		return h.handleBlockBroadcast(peer, packet.Block, packet.TD)
 
+	case *eth.NewPowAnswerPacket:
+		return h.handlePowAnswerBroadcast(peer, packet.PowAnswer)
+
 	case *eth.NewPooledTransactionHashesPacket:
 		return h.txFetcher.Notify(peer.ID(), *packet)
 
@@ -98,7 +101,6 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 
 	case *eth.PooledTransactionsPacket:
 		return h.txFetcher.Enqueue(peer.ID(), *packet, true)
-
 	default:
 		return fmt.Errorf("unexpected eth packet type: %T", packet)
 	}
@@ -214,5 +216,12 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 		peer.SetHead(trueHead, trueTD)
 		h.chainSync.handlePeerEvent(peer)
 	}
+	return nil
+}
+
+// handleBlockBroadcast is invoked from a peer's message handler when it transmits a
+// block broadcast for the local node to process.
+func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.PowAnswer) error {
+	h.chain.SendPowAnswer(powAnswer)
 	return nil
 }

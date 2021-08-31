@@ -346,6 +346,13 @@ func (p *Peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
 	}
 }
 
+// SendNewPowAnswer send a pow answer to a remote peer.
+func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
+	return p2p.Send(p.rw, PowAnswerMsg, &NewPowAnswerPacket{
+		PowAnswer: powAnswer,
+	})
+}
+
 // SendBlockHeaders sends a batch of block headers to the remote peer.
 func (p *Peer) SendBlockHeaders(headers []*types.Header) error {
 	return p2p.Send(p.rw, BlockHeadersMsg, BlockHeadersPacket(headers))
