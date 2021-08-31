@@ -58,6 +58,11 @@ var (
 	memcacheCommitSizeMeter  = metrics.NewRegisteredMeter("trie/memcache/commit/size", nil)
 )
 
+type commitLeaf struct {
+	Hash  common.Hash
+	Index int
+}
+
 // Database is an intermediate write layer between the trie data structures and
 // the disk database. The aim is to accumulate trie writes in-memory and only
 // periodically flush a couple tries to disk, garbage collecting the remainder.
@@ -69,10 +74,11 @@ var (
 type Database struct {
 	diskdb ethdb.KeyValueStore // Persistent storage for matured trie nodes
 
-	cleans  *fastcache.Cache            // GC friendly memory cache of clean node RLPs
-	dirties map[common.Hash]*cachedNode // Data and references relationships of dirty trie nodes
-	oldest  common.Hash                 // Oldest tracked node, flush-list head
-	newest  common.Hash                 // Newest tracked node, flush-list tail
+	cleans      *fastcache.Cache            // GC friendly memory cache of clean node RLPs
+	dirties     map[common.Hash]*cachedNode // Data and references relationships of dirty trie nodes
+	commitLeafs []commitLeaf                // 已提交的叶子节点列表
+	oldest      common.Hash                 // Oldest tracked node, flush-list head
+	newest      common.Hash                 // Newest tracked node, flush-list tail
 
 	preimages map[common.Hash][]byte // Preimages of nodes from the secure trie
 
@@ -141,8 +147,9 @@ func (n rawShortNode) fstring(ind string) string { panic("this should never end 
 // cachedNode is all the information we know about a single cached trie node
 // in the memory database write layer.
 type cachedNode struct {
-	node node   // Cached collapsed trie node, or raw rlp data
-	size uint16 // Byte size of the useful cached data
+	node  node   // Cached collapsed trie node, or raw rlp data
+	size  uint16 // Byte size of the useful cached data
+	index int    // leaf index
 
 	parents  uint32                 // Number of live nodes referencing this one
 	children map[common.Hash]uint16 // External children referenced by this node
@@ -305,6 +312,7 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 		diskdb: diskdb,
 		cleans: cleans,
 		dirties: map[common.Hash]*cachedNode{{}: {
+			index:    -1,
 			children: make(map[common.Hash]uint16),
 		}},
 	}
@@ -322,6 +330,31 @@ func (db *Database) DiskDB() ethdb.KeyValueStore {
 // Binary 是否是二叉树提交过来的数据
 func (db *Database) Binary() bool {
 	return db.trie.Binary()
+}
+
+// insertLeaf
+func (db *Database) insertLeaf(index int, hash common.Hash, size int, node node) {
+	// If the node's already cached, skip
+	if _, ok := db.dirties[hash]; ok {
+		return
+	}
+	memcacheDirtyWriteMeter.Mark(int64(size))
+
+	// Create the cached entry for this node
+	entry := &cachedNode{
+		node:      simplifyNode(node),
+		size:      uint16(size),
+		flushPrev: db.newest,
+		index:     index,
+	}
+	for hash, cachedNode := range db.dirties {
+		if cachedNode.index == index {
+			delete(db.dirties, hash)
+			break
+		}
+	}
+	db.dirties[hash] = entry
+	db.dirtiesSize += common.StorageSize(common.HashLength + entry.size)
 }
 
 // insert inserts a collapsed trie node into the memory database.
@@ -345,6 +378,7 @@ func (db *Database) insert(hash common.Hash, size int, node node) {
 		node:      simplifyNode(node),
 		size:      uint16(size),
 		flushPrev: db.newest,
+		index:     -1,
 	}
 	entry.forChilds(func(child common.Hash) {
 		if c := db.dirties[child]; c != nil {
@@ -455,11 +489,12 @@ func (db *Database) resolveAlters(hash common.Hash) []Alter {
 				break
 			}
 		}
+		alter.commit = true
 		alters = append(alters, alter)
 		copy(root[:], alter.PreRoot[:])
 
 		// 最多支持回滚10个
-		if count >= 10 {
+		if count >= rollBackMaxStep {
 			break
 		}
 	}
@@ -592,7 +627,19 @@ func (db *Database) Reference(child common.Hash, parent common.Hash) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
+	db.referenceAlters()
+
 	db.reference(child, parent)
+}
+
+// referenceAlters
+func (db *Database) referenceAlters() {
+
+}
+
+// referenceLeafs
+func (db *Database) referenceLeafs() {
+
 }
 
 // reference is the private locked version of Reference.
@@ -824,17 +871,16 @@ func (db *Database) Commit(hash common.Hash, report bool, callback func(common.H
 	uncacher := &cleaner{db}
 
 	// 提交BMPT部分
-	emptyHash := make([]byte, 32, 32)
 	for hash, cachedNode := range db.dirties {
-		node := cachedNode.node
-		_, ok1 := node.(binaryHashNode)
-		_, ok2 := node.(binaryLeaf)
-		if common.BytesToHash(emptyHash) == hash || (!ok1 && !ok2) {
-			continue
-		}
-		if err := db.commit(hash, batch, uncacher, callback); err != nil {
-			log.Error("Failed to commit trie from trie database", "err", err)
-			return err
+		if cachedNode.index >= 0 {
+			db.commitLeafs = append(db.commitLeafs, commitLeaf{
+				Index: cachedNode.index,
+				Hash:  hash,
+			})
+			if err := db.commit(hash, batch, uncacher, callback); err != nil {
+				log.Error("Failed to commit trie from trie database", "err", err)
+				return err
+			}
 		}
 	}
 
@@ -922,8 +968,11 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 func (db *Database) commitAlter(batch ethdb.Batch) {
 	alters := db.trie.bt.alters
 	for _, alter := range alters {
-		if bytes, err := rlp.EncodeToBytes(alter); err == nil {
-			rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
+		if !alter.commit {
+			if bytes, err := rlp.EncodeToBytes(alter); err == nil {
+				rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
+			}
+			alter.commit = true
 		}
 	}
 }

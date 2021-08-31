@@ -45,6 +45,8 @@ var (
 
 	//
 	maxBinaryLeafLen = 1000
+
+	rollBackMaxStep = 10 // 能够回滚的最大步数
 )
 
 // LeafCallback is a callback type invoked when a trie operation reaches a leaf
@@ -100,6 +102,7 @@ type DiffLeaf struct {
 }
 
 type Alter struct {
+	commit    bool       // 是否已提交
 	PreRoot   [32]byte   // 上一个状态树
 	CurRoot   [32]byte   // 当前状态书
 	DiffLeafs []DiffLeaf // 上一个状态树到当前状态树被
@@ -972,7 +975,7 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 			hash := make([]byte, 32, 32)
 			binaryNodeIndex := index + int(math.BigPow(2, int64(t.bt.depth)).Int64()-1) // 对应哈希节点的索引值
 			copy(hash, t.bt.binaryHashNodes[binaryNodeIndex].Hash[:])
-			t.db.insert(common.BytesToHash(hash), estimateSize(t.bt.binaryLeafs[index]), t.bt.binaryLeafs[index])
+			t.db.insertLeaf(index, common.BytesToHash(hash), estimateSize(t.bt.binaryLeafs[index]), t.bt.binaryLeafs[index])
 		}
 		// 最后提交一个总的哈希，也就是哈希节点的第一个值，一来用于判断创世块是否存在。二来可以统计每个区块上面存在的账号数据
 		t.db.insert(rootHash, estimateSize(t.bt.binaryHashNodes[0]), t.bt.binaryHashNodes[0])
@@ -1019,9 +1022,75 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 	return rootHash, nil
 }
 
-// RollBack 数据回滚
-func (t *Trie) RollBack(root common.Hash) error {
+// RollBack roolback the data for the give hash
+func (t *Trie) RollBack(rootHash common.Hash) error {
+	alters := t.bt.alters
+	find := false
+	//查找是否具备有目标roothash的一棵树
+	for _, alter := range alters {
+		if alter.CurRoot == rootHash {
+			find = true
+		}
+	}
+
+	if find {
+		t.bt.unhashedIndex = make([]int, 0, 0)
+		//查找当前修改，进行逆序回滚
+		for i := len(t.bt.curDiffLeafs) - 1; i >= 0; i-- {
+			copy(t.bt.binaryLeafs[t.bt.curDiffLeafs[i].Index], t.bt.curDiffLeafs[i].Leaf)
+			t.bt.unhashedIndex = append(t.bt.unhashedIndex, int(t.bt.curDiffLeafs[i].Index))
+			t.bt.uncommitedIndex = append(t.bt.uncommitedIndex, int(t.bt.curDiffLeafs[i].Index))
+		}
+
+		// alters 排序
+		t.sortAlter()
+
+		//查找历史修改，进行逆序回滚
+		for i := len(alters) - 1; i >= 0; i-- {
+			for j := len(alters[i].DiffLeafs) - 1; j >= 0; j-- {
+				copy(t.bt.binaryLeafs[alters[i].DiffLeafs[j].Index], alters[i].DiffLeafs[j].Leaf)
+				t.bt.unhashedIndex = append(t.bt.unhashedIndex, int(alters[i].DiffLeafs[j].Index))
+				t.bt.uncommitedIndex = append(t.bt.uncommitedIndex, int(alters[i].DiffLeafs[j].Index))
+			}
+			//回滚结束，删去修改记录，清零当前修改，且进行hash的重新计算
+			if t.Hash() == rootHash {
+				t.bt.alters = t.bt.alters[:i]
+				t.bt.curDiffLeafs = make([]DiffLeaf, 0, 0)
+				break
+			}
+		}
+		// 排序去重  uncommitedIndex
+		sort.Ints(t.bt.uncommitedIndex)
+		unique(t.bt.uncommitedIndex)
+	} else {
+		return errors.New("no such rootHash")
+	}
 	return nil
+}
+
+func (t *Trie) sortAlter() {
+	var alters []Alter
+	if len(t.bt.alters) != 0 {
+		alters = append(alters, t.bt.alters[0])
+		t.bt.alters = t.bt.alters[1:]
+	}
+
+	for len(t.bt.alters) != 0 {
+		preRoot := alters[0].PreRoot
+		curRoot := alters[len(alters)-1].CurRoot
+		length := len(alters)
+		for i, alter := range t.bt.alters {
+			if alter.PreRoot == curRoot {
+				alters = append(alters, alter)
+			} else if alter.CurRoot == preRoot {
+				alters = append([]Alter{alter}, alters...)
+			}
+			if length+1 == len(alters) {
+				t.bt.alters = append(t.bt.alters[:i], t.bt.alters[i+1:]...)
+				break
+			}
+		}
+	}
 }
 
 // hashRoot calculates the root hash of the given trie
