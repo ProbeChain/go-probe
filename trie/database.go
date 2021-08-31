@@ -58,6 +58,7 @@ var (
 	memcacheCommitSizeMeter  = metrics.NewRegisteredMeter("trie/memcache/commit/size", nil)
 )
 
+// commitLeaf
 type commitLeaf struct {
 	Hash  common.Hash
 	Index int
@@ -627,19 +628,7 @@ func (db *Database) Reference(child common.Hash, parent common.Hash) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
-	db.referenceAlters()
-
 	db.reference(child, parent)
-}
-
-// referenceAlters
-func (db *Database) referenceAlters() {
-
-}
-
-// referenceLeafs
-func (db *Database) referenceLeafs() {
-
 }
 
 // reference is the private locked version of Reference.
@@ -673,6 +662,9 @@ func (db *Database) Dereference(root common.Hash) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
+	db.dereferenceAlters()
+	db.dereferenceLeafs()
+
 	nodes, storage, start := len(db.dirties), db.dirtiesSize, time.Now()
 	db.dereference(root, common.Hash{})
 
@@ -686,6 +678,16 @@ func (db *Database) Dereference(root common.Hash) {
 
 	log.Debug("Dereferenced trie from memory database", "nodes", nodes-len(db.dirties), "size", storage-db.dirtiesSize, "time", time.Since(start),
 		"gcnodes", db.gcnodes, "gcsize", db.gcsize, "gctime", db.gctime, "livenodes", len(db.dirties), "livesize", db.dirtiesSize)
+}
+
+// dereferenceAlters
+func (db *Database) dereferenceAlters() {
+
+}
+
+// dereferenceLeafs
+func (db *Database) dereferenceLeafs() {
+
 }
 
 // dereference is the private locked version of Dereference.
