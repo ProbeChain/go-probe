@@ -60,8 +60,9 @@ var (
 
 // commitLeaf
 type commitLeaf struct {
-	Hash  common.Hash
-	Index int
+	Commit bool
+	Hash   common.Hash
+	Index  int
 }
 
 // Database is an intermediate write layer between the trie data structures and
@@ -356,6 +357,12 @@ func (db *Database) insertLeaf(index int, hash common.Hash, size int, node node)
 	}
 	db.dirties[hash] = entry
 	db.dirtiesSize += common.StorageSize(common.HashLength + entry.size)
+
+	db.commitLeafs = append(db.commitLeafs, commitLeaf{
+		Commit: false,
+		Index:  index,
+		Hash:   hash,
+	})
 }
 
 // insert inserts a collapsed trie node into the memory database.
@@ -874,11 +881,14 @@ func (db *Database) Commit(hash common.Hash, report bool, callback func(common.H
 
 	// 提交BMPT部分
 	for hash, cachedNode := range db.dirties {
-		if cachedNode.index >= 0 {
-			db.commitLeafs = append(db.commitLeafs, commitLeaf{
-				Index: cachedNode.index,
-				Hash:  hash,
-			})
+		node := cachedNode.node
+		_, ok := node.(binaryHashNode)
+		if cachedNode.index >= 0 || ok {
+			for _, commitLeaf := range db.commitLeafs {
+				if hash == commitLeaf.Hash {
+					commitLeaf.Commit = true
+				}
+			}
 			if err := db.commit(hash, batch, uncacher, callback); err != nil {
 				log.Error("Failed to commit trie from trie database", "err", err)
 				return err
