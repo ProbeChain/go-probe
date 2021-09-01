@@ -359,18 +359,18 @@ func (h *serverHandler) AddTxsSync() bool {
 }
 
 // getAccount retrieves an account from the state based on root.
-func getAccount(triedb *trie.Database, root, hash common.Hash) (state.Account, error) {
+func getAccount(triedb *trie.Database, root, hash common.Hash) (state.RegularAccount, error) {
 	trie, err := trie.New(root, triedb)
 	if err != nil {
-		return state.Account{}, err
+		return state.RegularAccount{}, err
 	}
 	blob, err := trie.TryGet(hash[:])
 	if err != nil {
-		return state.Account{}, err
+		return state.RegularAccount{}, err
 	}
-	var account state.Account
+	var account state.RegularAccount
 	if err = rlp.DecodeBytes(blob, &account); err != nil {
-		return state.Account{}, err
+		return state.RegularAccount{}, err
 	}
 	return account, nil
 }

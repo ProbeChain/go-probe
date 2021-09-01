@@ -19,8 +19,10 @@ package state
 import (
 	"bytes"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts"
 	"io"
 	"math/big"
+	"net"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -65,8 +67,19 @@ func (s Storage) Copy() Storage {
 type stateObject struct {
 	address  common.Address
 	addrHash common.Hash // hash of ethereum address of the account
-	data     Account
 	db       *StateDB
+
+	accountType byte
+
+	regularAccount     RegularAccount
+	// PnsAccount PNS账号
+	pnsAccount PnsAccount
+	// AssetAccount 资产账户
+	assetAccount AssetAccount
+	// AuthorizeAccount 授权账户
+	authorizeAccount AuthorizeAccount
+	// 挂失账户
+	lossAccount LossAccount
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -94,20 +107,209 @@ type stateObject struct {
 
 // empty returns whether the account is considered empty.
 func (s *stateObject) empty() bool {
-	return s.data.Nonce == 0 && s.data.Balance.Sign() == 0 && bytes.Equal(s.data.CodeHash, emptyCodeHash)
+
+	switch s.accountType {
+	case accounts.General:
+/*		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue == nil &&
+			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value == nil*/
+		return s.regularAccount.Nonce == 0 && s.regularAccount.Balance.Sign() == 0 && bytes.Equal(s.regularAccount.CodeHash, emptyCodeHash)
+	case accounts.Pns:
+		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && s.pnsAccount.Data == nil
+
+	case accounts.Asset, accounts.Contract:
+		return s.assetAccount.Type == 0 && s.assetAccount.CodeHash == nil && s.assetAccount.StorageRoot == nil &&
+			s.assetAccount.Value == nil && s.assetAccount.VoteAccount == common.Address{} && s.assetAccount.VoteValue == nil && s.assetAccount.Nonce == 0
+
+	case accounts.Authorize:
+		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue == nil && s.authorizeAccount.DelegateValue == nil &&
+			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.InterestRate == nil && s.authorizeAccount.ValidPeriod == nil
+
+	case accounts.Lose:
+		return s.lossAccount.State == 0 && s.lossAccount.LossAccount == common.Address{} && s.lossAccount.NewAccount == common.Address{} &&
+			s.lossAccount.Height == nil && len(s.lossAccount.InfoDigest) == 0
+
+	default:
+		return false
+	}
 }
 
 // Account is the Ethereum consensus representation of accounts.
 // These objects are stored in the main account trie.
-type Account struct {
+type RegularAccount struct {
 	Nonce    uint64
 	Balance  *big.Int
 	Root     common.Hash // merkle root of the storage trie
 	CodeHash []byte
 }
 
-// newObject creates a state object.
-func newObject(db *StateDB, address common.Address, data Account) *stateObject {
+
+// RegularAccount 普通账户
+/*type RegularAccount struct {
+	VoteAccount common.Address
+	VoteValue   *big.Int
+	LossType    uint8
+	Nonce       uint64
+	Value       *big.Int
+	//账户存储树的Root根
+	Root common.Hash // merkle root of the storage trie
+}*/
+
+// PnsAccount PNS账号
+type PnsAccount struct {
+	Type 		byte
+	// 24bytes地址
+	Owner 		common.Address
+	Data  		[]byte
+}
+
+// AssetAccount 资产账户 和 合约账户
+type AssetAccount struct {
+	Type 		byte
+	// 24bytes地址
+	CodeHash    []byte
+	StorageRoot []byte
+	Value       *big.Int
+	VoteAccount common.Address
+	VoteValue   *big.Int
+	Nonce       uint64
+}
+
+// AuthorizeAccount 授权账户
+type AuthorizeAccount struct {
+	Owner         	common.Address
+	PledgeValue   	*big.Int
+	DelegateValue 	*big.Int
+	Info          	[]byte
+	InterestRate  	*big.Int
+	ValidPeriod   	*big.Int
+	State         	bool
+}
+
+// LossAccount 挂失账户
+type LossAccount struct {
+	State       byte           // 业务状态
+	LossAccount common.Address // 挂失账户地址
+	NewAccount  common.Address // 新账户地址
+	Height      *big.Int       // 上链高度
+	InfoDigest  []byte         // 挂失内容摘要
+}
+
+// DPoSAccount DPoS账户
+type DPoSAccount struct {
+	Ip    		net.IP
+	Port  		uint8
+	Owner 		common.Address
+}
+
+// DPoSCandidateAccount DPoS候选账户
+type DPoSCandidateAccount struct {
+	Ip            	net.IP
+	Port			uint8
+	Owner         	common.Address
+	DelegateValue 	*big.Int
+}
+
+
+type Wrapper struct {
+	accountType			 byte
+	regularAccount       RegularAccount
+	pnsAccount           PnsAccount
+	assetAccount         AssetAccount
+	authorizeAccount     AuthorizeAccount
+	lossAccount          LossAccount
+	dPoSAccount          DPoSAccount
+	dPoSCandidateAccount DPoSCandidateAccount
+}
+
+
+// DecodeRLP decode bytes to account
+func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
+	var (
+		wrapper Wrapper
+		err   error
+	)
+	switch accountType {
+	case accounts.General:
+		var data RegularAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.regularAccount = data
+	case accounts.Pns:
+		var data PnsAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.pnsAccount = data
+	case accounts.Asset, accounts.Contract:
+		var data AssetAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.assetAccount = data
+	case accounts.Authorize:
+		var data AuthorizeAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.authorizeAccount = data
+	case accounts.Lose:
+		var data LossAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.lossAccount = data
+	case accounts.DPoS:
+		var data DPoSAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.dPoSAccount = data
+	case accounts.DPoSCandidate:
+		var data DPoSCandidateAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.dPoSCandidateAccount = data
+	default:
+		err = accounts.ErrUnknownAccount
+	}
+	wrapper.accountType = accountType
+	return &wrapper, err
+}
+
+// newRegularAccount creates a state object.
+func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *stateObject {
+	trie := *db.getStateObjectTireByAccountType(wrapper.accountType)
+	return &stateObject{
+		db:               db,
+		address:          address,
+		accountType:      wrapper.accountType,
+		trie:             trie,
+		addrHash:         crypto.Keccak256Hash(address[:]),
+		regularAccount:   wrapper.regularAccount,
+		pnsAccount:       wrapper.pnsAccount,
+		assetAccount:     wrapper.assetAccount,
+		authorizeAccount: wrapper.authorizeAccount,
+		lossAccount:      wrapper.lossAccount,
+		originStorage:    make(Storage),
+		pendingStorage:   make(Storage),
+		dirtyStorage:     make(Storage),
+	}
+}
+
+
+// getStateObjectTireByAccountType return stateObject's tire
+func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie{
+	/*	switch accountType {
+		case accounts.General:
+			return &s.regularTrie
+		case accounts.Pns:
+			return &s.pnsTrie
+		case accounts.Asset:
+			return &s.digitalTrie
+		case accounts.Contract:
+			return &s.contractTrie
+		case accounts.Authorize:
+			return &s.authorizeTrie
+		case accounts.Lose:
+			return &s.lossTrie
+		case accounts.DPoS:
+			return &s.regularTrie
+		case accounts.DPoSCandidate:
+			return &s.trie
+		}*/
+	return &s.trie
+}
+
+// newRegularAccount creates a state object.
+func newRegularAccount(db *StateDB, address common.Address, data RegularAccount) *stateObject {
 	if data.Balance == nil {
 		data.Balance = new(big.Int)
 	}
@@ -121,18 +323,125 @@ func newObject(db *StateDB, address common.Address, data Account) *stateObject {
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		data:           data,
+		accountType: 	accounts.General,
+		regularAccount: data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
 		dirtyStorage:   make(Storage),
 	}
 }
 
-// EncodeRLP implements rlp.Encoder.
-func (s *stateObject) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, s.data)
+
+// newPnsAccount creates a state object.
+func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateObject {
+	return &stateObject{
+		db:             db,
+		address:        address,
+		addrHash:       crypto.Keccak256Hash(address[:]),
+		accountType: 	accounts.Pns,
+		pnsAccount: 	data,
+		originStorage:  make(Storage),
+		pendingStorage: make(Storage),
+		dirtyStorage:   make(Storage),
+	}
 }
 
+
+// newAssetAccount creates a state object.
+func newAssetAccount(db *StateDB, address common.Address, data AssetAccount) *stateObject {
+	if data.Value == nil {
+		data.Value = new(big.Int)
+	}
+	if data.VoteValue == nil {
+		data.VoteValue = new(big.Int)
+	}
+	if data.CodeHash == nil {
+		data.CodeHash = emptyCodeHash
+	}
+	if data.StorageRoot == nil {
+		data.StorageRoot = emptyCodeHash
+	}
+	return &stateObject{
+		db:             db,
+		address:        address,
+		addrHash:       crypto.Keccak256Hash(address[:]),
+		accountType: 	accounts.Asset,
+		assetAccount: 	data,
+		originStorage:  make(Storage),
+		pendingStorage: make(Storage),
+		dirtyStorage:   make(Storage),
+	}
+}
+
+// newAuthorizeAccount creates a state object.
+func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAccount) *stateObject {
+	return &stateObject{
+		db:             db,
+		address:        address,
+		addrHash:       crypto.Keccak256Hash(address[:]),
+		accountType: 	accounts.Authorize,
+		authorizeAccount: 	data,
+		originStorage:  make(Storage),
+		pendingStorage: make(Storage),
+		dirtyStorage:   make(Storage),
+	}
+}
+
+
+// newLossAccount creates a state object.
+func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stateObject {
+	return &stateObject{
+		db:             db,
+		address:        address,
+		addrHash:       crypto.Keccak256Hash(address[:]),
+		accountType: 	accounts.Lose,
+		lossAccount: 	data,
+		originStorage:  make(Storage),
+		pendingStorage: make(Storage),
+		dirtyStorage:   make(Storage),
+	}
+}
+
+// newDPoSAccount creates a state object.
+/*func newDPoSAccount(db *StateDB, address common.Address, data DPoSAccount) *stateObject {
+	return &stateObject{
+		db:             db,
+		address:        address,
+		addrHash:       crypto.Keccak256Hash(address[:]),
+		accountType: 	accounts.Pns,
+		dPoSAccount: 	data,
+		originStorage:  make(Storage),
+		pendingStorage: make(Storage),
+		dirtyStorage:   make(Storage),
+	}
+}*/
+
+// EncodeRLP implements rlp.Encoder.
+/*func (s *stateObject) EncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, s.regularAccount)
+}*/
+
+// EncodeRLP implements rlp.Encoder.
+func (s *stateObject) EncodeRLP(w io.Writer) error {
+	switch s.accountType {
+	case accounts.General:
+		return rlp.Encode(w, s.regularAccount)
+	case accounts.Pns:
+		return rlp.Encode(w, s.pnsAccount)
+	case accounts.Asset, accounts.Contract:
+		return rlp.Encode(w, s.assetAccount)
+	case accounts.Authorize:
+		return rlp.Encode(w, s.authorizeAccount)
+	case accounts.Lose:
+		return rlp.Encode(w, s.lossAccount)
+	case accounts.DPoS:
+		return rlp.Encode(w, s.db.dPoSAccounts)
+	case accounts.DPoSCandidate:
+		return rlp.Encode(w, s.db.dPoSCandidateAccounts)
+	default:
+		return accounts.ErrUnknownAccount
+	}
+}
 // setError remembers the first non-nil error it is called with.
 func (s *stateObject) setError(err error) {
 	if s.dbErr == nil {
@@ -159,14 +468,14 @@ func (s *stateObject) getTrie(db Database) Trie {
 	if s.trie == nil {
 		// Try fetching from prefetcher first
 		// We don't prefetch empty tries
-		if s.data.Root != emptyRoot && s.db.prefetcher != nil {
+		if s.regularAccount.Root != emptyRoot && s.db.prefetcher != nil {
 			// When the miner is creating the pending state, there is no
 			// prefetcher
-			s.trie = s.db.prefetcher.trie(s.data.Root)
+			s.trie = s.db.prefetcher.trie(s.regularAccount.Root)
 		}
 		if s.trie == nil {
 			var err error
-			s.trie, err = db.OpenStorageTrie(s.addrHash, s.data.Root)
+			s.trie, err = db.OpenStorageTrie(s.addrHash, s.regularAccount.Root)
 			if err != nil {
 				s.trie, _ = db.OpenStorageTrie(s.addrHash, common.Hash{})
 				s.setError(fmt.Errorf("can't create storage trie: %v", err))
@@ -317,8 +626,8 @@ func (s *stateObject) finalise(prefetch bool) {
 			slotsToPrefetch = append(slotsToPrefetch, common.CopyBytes(key[:])) // Copy needed for closure
 		}
 	}
-	if s.db.prefetcher != nil && prefetch && len(slotsToPrefetch) > 0 && s.data.Root != emptyRoot {
-		s.db.prefetcher.prefetch(s.data.Root, slotsToPrefetch)
+	if s.db.prefetcher != nil && prefetch && len(slotsToPrefetch) > 0 && s.regularAccount.Root != emptyRoot {
+		s.db.prefetcher.prefetch(s.regularAccount.Root, slotsToPrefetch)
 	}
 	if len(s.dirtyStorage) > 0 {
 		s.dirtyStorage = make(Storage)
@@ -373,7 +682,7 @@ func (s *stateObject) updateTrie(db Database) Trie {
 		usedStorage = append(usedStorage, common.CopyBytes(key[:])) // Copy needed for closure
 	}
 	if s.db.prefetcher != nil {
-		s.db.prefetcher.used(s.data.Root, usedStorage)
+		s.db.prefetcher.used(s.regularAccount.Root, usedStorage)
 	}
 	if len(s.pendingStorage) > 0 {
 		s.pendingStorage = make(Storage)
@@ -391,7 +700,7 @@ func (s *stateObject) updateRoot(db Database) {
 	if metrics.EnabledExpensive {
 		defer func(start time.Time) { s.db.StorageHashes += time.Since(start) }(time.Now())
 	}
-	s.data.Root = s.trie.Hash()
+	s.regularAccount.Root = s.trie.Hash()
 }
 
 // CommitTrie the storage trie of the object to db.
@@ -410,7 +719,7 @@ func (s *stateObject) CommitTrie(db Database) error {
 	}
 	root, err := s.trie.Commit(nil)
 	if err == nil {
-		s.data.Root = root
+		s.regularAccount.Root = root
 	}
 	return err
 }
@@ -441,17 +750,17 @@ func (s *stateObject) SubBalance(amount *big.Int) {
 func (s *stateObject) SetBalance(amount *big.Int) {
 	s.db.journal.append(balanceChange{
 		account: &s.address,
-		prev:    new(big.Int).Set(s.data.Balance),
+		prev:    new(big.Int).Set(s.regularAccount.Balance),
 	})
 	s.setBalance(amount)
 }
 
 func (s *stateObject) setBalance(amount *big.Int) {
-	s.data.Balance = amount
+	s.regularAccount.Balance = amount
 }
 
 func (s *stateObject) deepCopy(db *StateDB) *stateObject {
-	stateObject := newObject(db, s.address, s.data)
+	stateObject := newRegularAccount(db, s.address, s.regularAccount)
 	if s.trie != nil {
 		stateObject.trie = db.db.CopyTrie(s.trie)
 	}
@@ -519,32 +828,32 @@ func (s *stateObject) SetCode(codeHash common.Hash, code []byte) {
 
 func (s *stateObject) setCode(codeHash common.Hash, code []byte) {
 	s.code = code
-	s.data.CodeHash = codeHash[:]
+	s.regularAccount.CodeHash = codeHash[:]
 	s.dirtyCode = true
 }
 
 func (s *stateObject) SetNonce(nonce uint64) {
 	s.db.journal.append(nonceChange{
 		account: &s.address,
-		prev:    s.data.Nonce,
+		prev:    s.regularAccount.Nonce,
 	})
 	s.setNonce(nonce)
 }
 
 func (s *stateObject) setNonce(nonce uint64) {
-	s.data.Nonce = nonce
+	s.regularAccount.Nonce = nonce
 }
 
 func (s *stateObject) CodeHash() []byte {
-	return s.data.CodeHash
+	return s.regularAccount.CodeHash
 }
 
 func (s *stateObject) Balance() *big.Int {
-	return s.data.Balance
+	return s.regularAccount.Balance
 }
 
 func (s *stateObject) Nonce() uint64 {
-	return s.data.Nonce
+	return s.regularAccount.Nonce
 }
 
 // Never called, but must be present to allow stateObject to be used

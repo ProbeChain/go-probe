@@ -138,11 +138,11 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 			return sigCache.from, nil
 		}
 	}
-
 	addr, err := signer.Sender(tx)
 	if err != nil {
 		return common.Address{}, err
 	}
+	fmt.Printf("Sender.addr:%s\n",addr.String())
 	tx.from.Store(sigCache{signer: signer, from: addr})
 	return addr, nil
 }
@@ -303,6 +303,7 @@ func (s eip2930Signer) Hash(tx *Transaction) common.Hash {
 			tx.GasPrice(),
 			tx.Gas(),
 			tx.To(),
+			tx.ProbeTxType(),
 			tx.Value(),
 			tx.Data(),
 			s.chainId, uint(0), uint(0),
@@ -316,6 +317,7 @@ func (s eip2930Signer) Hash(tx *Transaction) common.Hash {
 				tx.GasPrice(),
 				tx.Gas(),
 				tx.To(),
+				tx.ProbeTxType(),
 				tx.Value(),
 				tx.Data(),
 				tx.AccessList(),

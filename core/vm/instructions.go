@@ -787,7 +787,7 @@ func opSuicide(pc *uint64, interpreter *EVMInterpreter, scope *ScopeContext) ([]
 	beneficiary := scope.Stack.pop()
 	balance := interpreter.evm.StateDB.GetBalance(scope.Contract.Address())
 	interpreter.evm.StateDB.AddBalance(beneficiary.Bytes25(), balance)
-	//interpreter.evm.StateDB.Suicide(scope.Contract.Address())
+	interpreter.evm.StateDB.Suicide(scope.Contract.Address())
 	return nil, nil
 }
 

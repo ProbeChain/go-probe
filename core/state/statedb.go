@@ -66,6 +66,14 @@ type StateDB struct {
 	prefetcher   *triePrefetcher
 	originalRoot common.Hash // The pre-state root, before any changes were made
 	trie         Trie
+
+	regularTrie   Trie
+	pnsTrie       Trie
+	digitalTrie   Trie
+	contractTrie  Trie
+	authorizeTrie Trie
+	lossTrie      Trie
+
 	hasher       crypto.KeccakState
 
 	snaps         *snapshot.Tree
@@ -78,6 +86,17 @@ type StateDB struct {
 	stateObjects        map[common.Address]*stateObject
 	stateObjectsPending map[common.Address]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
+
+
+	// DPoSAccount DPoS账户 64
+	dPoSAccounts []*DPoSAccount
+	// DPoSCandidateAccount DPoS候选账户 300
+	dPoSCandidateAccounts []*DPoSCandidateAccount
+
+	// DPoSAccount DPoS账户 64
+	oldDPoSAccounts []*DPoSAccount
+	// DPoSCandidateAccount DPoS候选账户 300
+	oldDPoSCandidateAccounts []*DPoSCandidateAccount
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -122,6 +141,8 @@ type StateDB struct {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
+	fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
+
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +459,7 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 		prevbalance: new(big.Int).Set(stateObject.Balance()),
 	})
 	stateObject.markSuicided()
-	stateObject.data.Balance = new(big.Int)
+	stateObject.regularAccount.Balance = new(big.Int)
 
 	return true
 }
@@ -469,7 +490,7 @@ func (s *StateDB) updateStateObject(obj *stateObject) {
 	// enough to track account updates at commit time, deletions need tracking
 	// at transaction boundary level to ensure we capture state clearing.
 	if s.snap != nil {
-		s.snapAccounts[obj.addrHash] = snapshot.SlimAccountRLP(obj.data.Nonce, obj.data.Balance, obj.data.Root, obj.data.CodeHash)
+		s.snapAccounts[obj.addrHash] = snapshot.SlimAccountRLP(obj.regularAccount.Nonce, obj.regularAccount.Balance, obj.regularAccount.Root, obj.regularAccount.CodeHash)
 	}
 }
 
@@ -507,7 +528,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 	}
 	// If no live objects are available, attempt to use snapshots
 	var (
-		data *Account
+		data *RegularAccount
 		err  error
 	)
 	if s.snap != nil {
@@ -519,7 +540,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 			if acc == nil {
 				return nil
 			}
-			data = &Account{
+			data = &RegularAccount{
 				Nonce:    acc.Nonce,
 				Balance:  acc.Balance,
 				CodeHash: acc.CodeHash,
@@ -546,14 +567,14 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 		if len(enc) == 0 {
 			return nil
 		}
-		data = new(Account)
+		data = new(RegularAccount)
 		if err := rlp.DecodeBytes(enc, data); err != nil {
 			log.Error("Failed to decode state object", "addr", addr, "err", err)
 			return nil
 		}
 	}
 	// Insert into the live set
-	obj := newObject(s, addr, *data)
+	obj := newRegularAccount(s, addr, *data)
 	s.setStateObject(obj)
 	return obj
 }
@@ -583,7 +604,7 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 			s.snapDestructs[prev.addrHash] = struct{}{}
 		}
 	}
-	newobj = newObject(s, addr, Account{})
+	newobj = newRegularAccount(s, addr, RegularAccount{})
 	if prev == nil {
 		s.journal.append(createObjectChange{account: &addr})
 	} else {
@@ -609,7 +630,7 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 func (s *StateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
-		newObj.setBalance(prev.data.Balance)
+		newObj.setBalance(prev.regularAccount.Balance)
 	}
 }
 
@@ -932,7 +953,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	// The onleaf func is called _serially_, so we can reuse the same account
 	// for unmarshalling every time.
-	var account Account
+	var account RegularAccount
 	root, err := s.trie.Commit(func(_ [][]byte, _ []byte, leaf []byte, parent common.Hash) error {
 		if err := rlp.DecodeBytes(leaf, &account); err != nil {
 			return nil
