@@ -29,7 +29,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/holiman/uint256"
+	//uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
+	uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
 )
 
 // Storage represents a contract's storage.

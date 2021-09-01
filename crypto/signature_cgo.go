@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
+//go:build !nacl && !js && cgo && !gofuzz
 // +build !nacl,!js,cgo,!gofuzz
 
 package crypto
@@ -84,4 +85,8 @@ func CompressPubkey(pubkey *ecdsa.PublicKey) []byte {
 // S256 returns an instance of the secp256k1 curve.
 func S256() elliptic.Curve {
 	return secp256k1.S256()
+}
+
+func S256ByType(c byte) elliptic.Curve {
+	return secp256k1.S256ByType(c)
 }

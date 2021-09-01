@@ -20,7 +20,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/holiman/uint256"
+	//uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
+	uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
 )
 
 // ContractRef is a reference to the contract's backing object

@@ -18,6 +18,10 @@ package accounts
 
 import (
 	"bytes"
+	"encoding/hex"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -29,4 +33,32 @@ func TestTextHash(t *testing.T) {
 	if !bytes.Equal(hash, want) {
 		t.Fatalf("wrong hash: %x", hash)
 	}
+}
+
+func TestGenerate(t *testing.T) {
+	//Create an account
+	key, err := crypto.GenerateKeyByType(0x01)
+	if err != nil {
+		fmt.Println("Error: ", err.Error())
+	}
+	hexPriKey := hex.EncodeToString(crypto.FromECDSA(key))
+	//不含0x的私钥65
+	fmt.Printf("private key [%d] [%v]\n", len(hexPriKey), hexPriKey)
+	//Get the address
+	address := crypto.PubkeyToAddress(key.PublicKey).Hex()
+	fmt.Printf("address[%d][%v]\n", len(address), address)
+	//	address2 := PubkeyToNormalAddress(key.PublicKey).Hex()
+	//fmt.Printf("address[%d][%v]\n", len(address2), address2)
+
+	acc1Key, _ := crypto.HexToECDSA(hexPriKey)
+	fmt.Println("public key from prikey  \n", hexutil.Encode(crypto.FromECDSAPub(&acc1Key.PublicKey)))
+	address1 := crypto.PubkeyToAddress(acc1Key.PublicKey).Hex()
+	fmt.Println("address1 ", address1)
+
+	var c, err2 = common.ValidCheckAddress(address)
+	if err2 != nil {
+		fmt.Printf("failed GenerateKey with %s.", err2)
+	}
+	fmt.Printf("flag[%T][%X]\n", c, c)
+
 }

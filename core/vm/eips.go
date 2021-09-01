@@ -18,10 +18,10 @@ package vm
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/vm/uint256"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/holiman/uint256"
 )
 
 var activators = map[int]func(*JumpTable){

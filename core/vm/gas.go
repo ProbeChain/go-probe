@@ -17,7 +17,8 @@
 package vm
 
 import (
-	"github.com/holiman/uint256"
+	//uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
+	uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
 )
 
 // Gas costs

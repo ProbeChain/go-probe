@@ -18,9 +18,9 @@ package vm
 
 import (
 	"fmt"
+	uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
+	//"github.com/ethereum/go-ethereum/core/vm/uint256"
 	"sync"
-
-	"github.com/holiman/uint256"
 )
 
 var stackPool = sync.Pool{
@@ -45,7 +45,7 @@ func returnStack(s *Stack) {
 	stackPool.Put(s)
 }
 
-// Data returns the underlying uint256.Int array.
+// Data returns the underlying Int array.
 func (st *Stack) Data() []uint256.Int {
 	return st.data
 }

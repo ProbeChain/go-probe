@@ -44,15 +44,15 @@ const (
 
 // AccountType type of Probe
 // 6 kinds
-type AccountType byte
-
 const (
-	General		AccountType = 0x0		//普通账户
-	Pns      	AccountType = 0x1		//PNS账户
-	Asset      	AccountType = 0x2		//资产账户
-	Contract 	AccountType = 0x3		//合约账户
-	Authorize	AccountType = 0x4		//授权账户
-	Lose		AccountType = 0x5		//挂失账户
+	General       = byte(0) //普通账户
+	Pns           = byte(1) //PNS账户
+	Asset         = byte(2) //资产账户
+	Contract      = byte(3) //合约账户
+	Authorize     = byte(4) //授权账户
+	Lose          = byte(5) //挂失账户
+	DPoS          = byte(6) //DPoS账户
+	DPoSCandidate = byte(7) //DPoS候选账户
 )
 
 // Wallet represents a software or hardware wallet that might contain one or more
