@@ -62,3 +62,31 @@ func TestGenerate(t *testing.T) {
 	fmt.Printf("flag[%T][%X]\n", c, c)
 
 }
+
+func TestCreateAddressForAccountType(t *testing.T) {
+	//Create an account
+	key, err := crypto.GenerateKeyByType(0x01)
+	if err != nil {
+		fmt.Println("Error: ", err.Error())
+	}
+	hexPriKey := hex.EncodeToString(crypto.FromECDSA(key))
+	//不含0x的私钥65
+	fmt.Printf("private key [%d] [%v]\n", len(hexPriKey), hexPriKey)
+	//Get the address
+	address := crypto.PubkeyToAddress(key.PublicKey)
+	fmt.Printf("address[%d][%v]\n", len(address), address)
+
+	var c, err2 = common.ValidCheckAddress(address.Hex())
+	if err2 != nil {
+		fmt.Printf("failed GenerateKey with %s.", err2)
+	}
+	fmt.Printf("flag[%T][%X]\n", c, c)
+	address_02 := crypto.CreateAddressForAccountType(address, uint64(123456), 0x02)
+	fmt.Printf("address2[%d][%v]\n", len(address_02), address_02)
+
+	acc1Key, _ := crypto.HexToECDSA(hexPriKey)
+	fmt.Println("public key from prikey  \n", hexutil.Encode(crypto.FromECDSAPub(&acc1Key.PublicKey)))
+	address1 := crypto.PubkeyToAddress(acc1Key.PublicKey).Hex()
+	fmt.Println("address1 ", address1)
+
+}

@@ -118,7 +118,8 @@ func CreateAddressForAccountType(b common.Address, nonce uint64, t byte) common.
 	c := make([]byte, len(k)+1)
 	c[0] = t
 	copy(c[1:], k)
-	return common.BytesToAddress(c)
+	checkSumBytes := common.CheckSum(c)
+	return common.BytesToAddress(append(c, checkSumBytes...))
 }
 
 func CreateAddressForPNSString(b common.Address, pns string) common.Address {
