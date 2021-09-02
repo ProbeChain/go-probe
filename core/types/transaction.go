@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"container/heap"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -83,9 +84,9 @@ type TxData interface {
 	nonce() uint64
 	to() *common.Address
 	probeTxType() uint8
-
 	rawSignatureValues() (v, r, s *big.Int)
 	setSignatureValues(chainID, v, r, s *big.Int)
+	fromAcType() byte
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -284,6 +285,8 @@ func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
 func (tx *Transaction) ProbeTxType() uint8 { return tx.inner.probeTxType() }
 
+func (tx *Transaction) FromAcType() byte { return tx.inner.fromAcType() }
+
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
 func (tx *Transaction) To() *common.Address {
@@ -339,6 +342,7 @@ func (tx *Transaction) EffectiveGasTip(baseFee *big.Int) (*big.Int, error) {
 	var err error
 	gasFeeCap := tx.GasFeeCap()
 	if gasFeeCap.Cmp(baseFee) == -1 {
+		fmt.Printf("EffectiveGasTip，gasFeeCap：%s,baseFee:%s\n",gasFeeCap.String(),baseFee.String())
 		err = ErrGasFeeCapTooLow
 	}
 	return math.BigMin(tx.GasTipCap(), gasFeeCap.Sub(gasFeeCap, baseFee)), err
@@ -639,3 +643,4 @@ func (m Message) Data() []byte           { return m.data }
 func (m Message) AccessList() AccessList { return m.accessList }
 func (m Message) CheckNonce() bool       { return m.checkNonce }
 func (m Message) ProbeTxType() uint8     { return m.probeTxType }
+

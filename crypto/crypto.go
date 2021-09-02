@@ -326,16 +326,20 @@ func PubkeyToAddress(p ecdsa.PublicKey) common.Address {
 		return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])
 	*/
 	pubBytes := FromECDSAPub(&p)
-	b := Keccak256(pubBytes[1:])[12:]
-	c := make([]byte, len(b)+1)
-	c[0] = General
-	copy(c[1:], b)
-	checkSumBytes := common.CheckSum(c)
-	return common.BytesToAddress(append(c, checkSumBytes...))
+	return PubkeyBytesToAddress(pubBytes,General)
 }
 
 func zeroBytes(bytes []byte) {
 	for i := range bytes {
 		bytes[i] = 0
 	}
+}
+
+func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address{
+	b := Keccak256(pubKey[1:])[12:]
+	c := make([]byte, len(b)+1)
+	c[0] = fromAcType
+	copy(c[1:], b)
+	checkSumBytes := common.CheckSum(c)
+	return common.BytesToAddress(append(c, checkSumBytes...))
 }

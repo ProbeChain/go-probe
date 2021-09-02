@@ -161,8 +161,14 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 		return common.Address{}, err
 	}
 	var signer common.Address
-	copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
+	//copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
 
+	b := crypto.Keccak256(pubkey[1:])[12:]
+	c := make([]byte, len(b)+1)
+	c[0] = 0x00
+	copy(c[1:], b)
+	checkSumBytes := common.CheckSum(c)
+	signer =common.BytesToAddress(append(c, checkSumBytes...))
 	sigcache.Add(hash, signer)
 	return signer, nil
 }
@@ -399,6 +405,7 @@ func (c *Clique) snapshot(chain consensus.ChainHeaderReader, number uint64, hash
 				signers := make([]common.Address, (len(checkpoint.Extra)-extraVanity-extraSeal)/common.AddressLength)
 				for i := 0; i < len(signers); i++ {
 					copy(signers[i][:], checkpoint.Extra[extraVanity+i*common.AddressLength:])
+					fmt.Printf("newSnapshot signers[%d]: %s\n",i,signers[i].String())
 				}
 				snap = newSnapshot(c.config, c.signatures, number, hash, signers)
 				if err := snap.store(c.db); err != nil {

@@ -31,6 +31,7 @@ type LegacyTx struct {
 	Value    *big.Int        // wei amount
 	ProbeTxType uint8
 	Data     []byte          // contract invocation input data
+	FromAcType byte
 	V, R, S  *big.Int        // signature values
 }
 
@@ -73,6 +74,7 @@ func (tx *LegacyTx) copy() TxData {
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
+		FromAcType: tx.FromAcType,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -100,11 +102,12 @@ func (tx *LegacyTx) data() []byte           { return tx.Data }
 func (tx *LegacyTx) gas() uint64            { return tx.Gas }
 func (tx *LegacyTx) gasPrice() *big.Int     { return tx.GasPrice }
 func (tx *LegacyTx) gasTipCap() *big.Int    { return tx.GasPrice }
-func (tx *LegacyTx) gasFeeCap() *big.Int    { return tx.GasPrice }
+func (tx *LegacyTx) gasFeeCap() *big.Int    {return tx.GasPrice }
 func (tx *LegacyTx) value() *big.Int        { return tx.Value }
 func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
 func (tx *LegacyTx) probeTxType() uint8     { return tx.ProbeTxType }
+func (tx *LegacyTx) fromAcType() byte    	{ return tx.FromAcType }
 
 func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S

@@ -18,6 +18,7 @@
 package state
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
@@ -580,6 +581,10 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 }
 
 func (s *StateDB) setStateObject(object *stateObject) {
+	if obj := s.stateObjects[object.Address()]; obj == nil {
+		fmt.Printf("添加账号信息setStateObject，addr:%s,balance:%s,nonce:%d,code:%s,codeHashEmpty:%t\n",
+			object.address.String(),object.Balance().String(),object.Nonce(),object.code.String(), bytes.Equal(object.CodeHash(), emptyCodeHash))
+	}
 	s.stateObjects[object.Address()] = object
 }
 

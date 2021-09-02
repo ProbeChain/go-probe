@@ -19,6 +19,7 @@ package clique
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 
@@ -220,6 +221,7 @@ func (s *Snapshot) apply(headers []*types.Header) (*Snapshot, error) {
 			return nil, err
 		}
 		if _, ok := snap.Signers[signer]; !ok {
+			fmt.Printf("errUnauthorizedSigner,signer:%s",signer.String())
 			return nil, errUnauthorizedSigner
 		}
 		for _, recent := range snap.Recents {

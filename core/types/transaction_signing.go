@@ -192,7 +192,7 @@ func (s londonSigner) Sender(tx *Transaction) (common.Address, error) {
 	if tx.ChainId().Cmp(s.chainId) != 0 {
 		return common.Address{}, ErrInvalidChainId
 	}
-	return recoverPlain(s.Hash(tx), R, S, V, true)
+	return recoverPlain(tx.FromAcType(),s.Hash(tx), R, S, V, true)
 }
 
 func (s londonSigner) Equal(s2 Signer) bool {
@@ -272,7 +272,7 @@ func (s eip2930Signer) Sender(tx *Transaction) (common.Address, error) {
 	if tx.ChainId().Cmp(s.chainId) != 0 {
 		return common.Address{}, ErrInvalidChainId
 	}
-	return recoverPlain(s.Hash(tx), R, S, V, true)
+	return recoverPlain(tx.FromAcType(),s.Hash(tx), R, S, V, true)
 }
 
 func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
@@ -371,7 +371,7 @@ func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 	V, R, S := tx.RawSignatureValues()
 	V = new(big.Int).Sub(V, s.chainIdMul)
 	V.Sub(V, big8)
-	return recoverPlain(s.Hash(tx), R, S, V, true)
+	return recoverPlain(tx.FromAcType(),s.Hash(tx), R, S, V, true)
 }
 
 // SignatureValues returns signature values. This signature
@@ -426,7 +426,7 @@ func (hs HomesteadSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, ErrTxTypeNotSupported
 	}
 	v, r, s := tx.RawSignatureValues()
-	return recoverPlain(hs.Hash(tx), r, s, v, true)
+	return recoverPlain(tx.FromAcType(), hs.Hash(tx), r, s, v, true)
 }
 
 type FrontierSigner struct{}
@@ -445,7 +445,7 @@ func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, ErrTxTypeNotSupported
 	}
 	v, r, s := tx.RawSignatureValues()
-	return recoverPlain(fs.Hash(tx), r, s, v, false)
+	return recoverPlain(tx.FromAcType(),fs.Hash(tx), r, s, v, false)
 }
 
 // SignatureValues returns signature values. This signature
@@ -481,7 +481,7 @@ func decodeSignature(sig []byte) (r, s, v *big.Int) {
 	return r, s, v
 }
 
-func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
+func recoverPlain(fromAcType byte,sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
 	if Vb.BitLen() > 8 {
 		return common.Address{}, ErrInvalidSig
 	}
@@ -509,12 +509,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 		copy(addr[:], crypto.Keccak256(pub[1:])[12:])
 		return addr, nil
 	*/
-	b := crypto.Keccak256(pub[1:])[12:]
-	c := make([]byte, len(b)+1)
-	c[0] = 0x00
-	copy(c[1:], b)
-	checkSumBytes := common.CheckSum(c)
-	return common.BytesToAddress(append(c, checkSumBytes...)), nil
+	return crypto.PubkeyBytesToAddress(pub, fromAcType),nil
 }
 
 // deriveChainId derives the chain id from the given v parameter

@@ -53,6 +53,7 @@ type AccessListTx struct {
 	Value      *big.Int        // wei amount
 	Data       []byte          // contract invocation input data
 	AccessList AccessList      // EIP-2930 access list
+	FromAcType byte
 	V, R, S    *big.Int        // signature values
 }
 
@@ -72,6 +73,7 @@ func (tx *AccessListTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
+		FromAcType: tx.FromAcType,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -109,6 +111,7 @@ func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) probeTxType() uint8     { return tx.ProbeTxType }
+func (tx *AccessListTx) fromAcType() byte    	{ return tx.FromAcType }
 
 func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S

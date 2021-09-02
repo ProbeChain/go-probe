@@ -230,6 +230,8 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 	if args.AccessList != nil {
 		accessList = *args.AccessList
 	}
+	fmt.Printf("NewMessage---->\nfrom：%s\nto：%s\nvalue：%s\nprobeTxType：%d\ngas：%d\ngasPrice：%s\ngasFeeCap：%s\ngasTipCap：%s\n",
+		addr.String(),args.To.String(),value.String(),uint8(*args.ProbeTxType), gas, gasPrice.String(),gasFeeCap.String(),gasTipCap.String())
 	msg := types.NewMessage(addr, args.To, uint8(*args.ProbeTxType), 0, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, false)
 	return msg, nil
 }
@@ -238,6 +240,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 // This assumes that setDefaults has been called.
 func (args *TransactionArgs) toTransaction() *types.Transaction {
 	var data types.TxData
+	fromAcType,_ := common.ValidAddress(*args.From)
 	switch {
 	case args.MaxFeePerGas != nil:
 		al := types.AccessList{}
@@ -255,6 +258,7 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			Value:      	(*big.Int)(args.Value),
 			Data:       	args.data(),
 			AccessList: 	al,
+			FromAcType: 	fromAcType,
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -267,6 +271,7 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			Value:      	(*big.Int)(args.Value),
 			Data:       	args.data(),
 			AccessList: 	*args.AccessList,
+			FromAcType: 	fromAcType,
 		}
 	default:
 		data = &types.LegacyTx{
@@ -277,6 +282,7 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			GasPrice: 		(*big.Int)(args.GasPrice),
 			Value:    		(*big.Int)(args.Value),
 			Data:     		args.data(),
+			FromAcType: 	fromAcType,
 		}
 	}
 	return types.NewTx(data)
