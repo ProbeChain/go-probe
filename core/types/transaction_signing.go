@@ -142,7 +142,7 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	if err != nil {
 		return common.Address{}, err
 	}
-	fmt.Printf("Sender.addr:%s\n",addr.String())
+	fmt.Printf("Sender.addr:%s\n", addr.String())
 	tx.from.Store(sigCache{signer: signer, from: addr})
 	return addr, nil
 }
@@ -503,9 +503,18 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) (commo
 	if len(pub) == 0 || pub[0] != 4 {
 		return common.Address{}, errors.New("invalid public key")
 	}
-	var addr common.Address
-	copy(addr[:], crypto.Keccak256(pub[1:])[12:])
-	return addr, nil
+
+	/*
+		var addr common.Address
+		copy(addr[:], crypto.Keccak256(pub[1:])[12:])
+		return addr, nil
+	*/
+	b := crypto.Keccak256(pub[1:])[12:]
+	c := make([]byte, len(b)+1)
+	c[0] = 0x00
+	copy(c[1:], b)
+	checkSumBytes := common.CheckSum(c)
+	return common.BytesToAddress(append(c, checkSumBytes...)), nil
 }
 
 // deriveChainId derives the chain id from the given v parameter
