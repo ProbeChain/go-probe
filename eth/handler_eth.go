@@ -222,6 +222,14 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 // handleBlockBroadcast is invoked from a peer's message handler when it transmits a
 // block broadcast for the local node to process.
 func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.PowAnswer) error {
+	// boardcast pow answer again
+	peer.KnownPowAnswer(powAnswer.Id())
+	for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
+		if err := peer.SendNewPowAnswer(powAnswer); err != nil {
+			log.Debug("SendNewPowAnswer", "err", err)
+		}
+	}
 	h.chain.SendPowAnswer(powAnswer)
+	h.chain.SavePowAnswer(powAnswer)
 	return nil
 }

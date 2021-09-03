@@ -318,6 +318,10 @@ func handlePowAnswerMsg(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(ann); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
+
+	// Mark the peer as owning the pow answer
+	peer.markPowAnswer(ann.PowAnswer.Id())
+
 	return backend.Handle(peer, ann)
 }
 

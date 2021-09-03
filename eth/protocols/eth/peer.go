@@ -37,6 +37,10 @@ const (
 	// before starting to randomly evict them.
 	maxKnownBlocks = 1024
 
+	// maxPowAnswers is the maximum pow answer to keep in the known list
+	// before starting to randomly evict them.
+	maxPowAnswers = 1024
+
 	// maxQueuedTxs is the maximum number of transactions to queue up before dropping
 	// older broadcasts.
 	maxQueuedTxs = 4096
@@ -84,6 +88,8 @@ type Peer struct {
 	txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
 	txAnnounce  chan []common.Hash // Channel used to queue transaction announcement requests
 
+	knowPowAnswers mapset.Set
+
 	term chan struct{} // Termination channel to stop the broadcasters
 	lock sync.RWMutex  // Mutex protecting the internal fields
 }
@@ -98,6 +104,7 @@ func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool) *Pe
 		version:         version,
 		knownTxs:        mapset.NewSet(),
 		knownBlocks:     mapset.NewSet(),
+		knowPowAnswers:  mapset.NewSet(),
 		queuedBlocks:    make(chan *blockPropagation, maxQueuedBlocks),
 		queuedBlockAnns: make(chan *types.Block, maxQueuedBlockAnns),
 		txBroadcast:     make(chan []common.Hash),
@@ -159,6 +166,11 @@ func (p *Peer) KnownTransaction(hash common.Hash) bool {
 	return p.knownTxs.Contains(hash)
 }
 
+// KnownPowAnswer returns whether peer is known to already have a powAnswer.
+func (p *Peer) KnownPowAnswer(id common.Hash) bool {
+	return p.knowPowAnswers.Contains(id)
+}
+
 // markBlock marks a block as known for the peer, ensuring that the block will
 // never be propagated to this particular peer.
 func (p *Peer) markBlock(hash common.Hash) {
@@ -177,6 +189,16 @@ func (p *Peer) markTransaction(hash common.Hash) {
 		p.knownTxs.Pop()
 	}
 	p.knownTxs.Add(hash)
+}
+
+// markPowAnswer marks a pow answer as known for the peer, ensuring that it
+// will never be propagated to this particular peer.
+func (p *Peer) markPowAnswer(id common.Hash) {
+	// If we reached the memory allowance, drop a previously known pow answer hash
+	for p.knowPowAnswers.Cardinality() >= maxPowAnswers {
+		p.knowPowAnswers.Pop()
+	}
+	p.knowPowAnswers.Add(id)
 }
 
 // SendTransactions sends transactions to the peer and includes the hashes
@@ -348,6 +370,7 @@ func (p *Peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
 
 // SendNewPowAnswer send a pow answer to a remote peer.
 func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
+	p.markPowAnswer(powAnswer.Id())
 	return p2p.Send(p.rw, PowAnswerMsg, &NewPowAnswerPacket{
 		PowAnswer: powAnswer,
 	})

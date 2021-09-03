@@ -665,7 +665,7 @@ func (w *worker) resultLoop() {
 
 			// @todo just for debug to boardcast pow answer to peers
 			powAnswer := &types.PowAnswer{
-				Number: big.NewInt(time.Now().UnixNano()),
+				Number: block.Number(),
 				Nonce:  types.EncodeNonce(uint64(time.Now().UnixNano())),
 				Miner:  w.coinbase,
 			}

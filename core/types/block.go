@@ -20,6 +20,7 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
 	"io"
 	"math/big"
 	"reflect"
@@ -68,6 +69,13 @@ type PowAnswer struct {
 	Number *big.Int       `json:"number"           gencodec:"required"`
 	Nonce  BlockNonce     `json:"nonce"            gencodec:"required"`
 	Miner  common.Address `json:"miner"            gencodec:"required"`
+}
+
+// Id returns the pow answer unique id
+func (powAnswer *PowAnswer) Id() common.Hash {
+	// We assume that the miners will only give one answer in a given block number
+	id := append(powAnswer.Number.Bytes(), powAnswer.Miner.Bytes()...)
+	return common.BytesToHash(crypto.Keccak256(id))
 }
 
 //send from dpos witness node

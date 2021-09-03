@@ -90,7 +90,7 @@ const (
 	maxFutureBlocks     = 256
 	maxTimeFutureBlocks = 30
 	TriesInMemory       = 128
-
+	maxChainPowAnswers  = 1024
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -189,7 +189,8 @@ type BlockChain struct {
 	DposAckCount map[*big.Int]uint8
 
 	//Index = 0 in the array indicates the first received powanswer
-	PowAnswerMap map[*big.Int][2]*types.PowAnswer
+	PowAnswerMap map[*big.Int][]*types.PowAnswer
+	powAnswers   sync.Map
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -264,6 +265,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		return nil, err
 	}
 	bc.genesisBlock = bc.GetBlockByNumber(0)
+	bc.powAnswers = sync.Map{}
 	if bc.genesisBlock == nil {
 		return nil, ErrNoGenesis
 	}
@@ -2531,5 +2533,19 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 
 // SendPowAnswer send a pow answer to worker
 func (bc *BlockChain) SendPowAnswer(powAnswer *types.PowAnswer) int {
-	return bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
+	if _, ok := bc.powAnswers.Load(powAnswer.Id()); ok {
+		return 0
+	} else {
+		return bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
+	}
+}
+
+// SavePowAnswer save a pow answer to set
+func (bc *BlockChain) SavePowAnswer(powAnswer *types.PowAnswer) {
+	// @todo
+	// If we reached the memory allowance, drop a previously known powAnswers
+	//if len(bc.powAnswers) >= maxChainPowAnswers {
+	//	bc.powAnswers.Pop()
+	//}
+	bc.powAnswers.Store(powAnswer.Id(), powAnswer)
 }
