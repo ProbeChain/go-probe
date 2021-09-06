@@ -29,7 +29,7 @@ type LegacyTx struct {
 	Gas      uint64          // gas limit
 	To       *common.Address `rlp:"nil"` // nil means contract creation
 	Value    *big.Int        // wei amount
-	ProbeTxType uint8
+	BizType uint8
 	Data     []byte          // contract invocation input data
 	FromAcType byte
 	V, R, S  *big.Int        // signature values
@@ -66,7 +66,7 @@ func (tx *LegacyTx) copy() TxData {
 		Nonce: tx.Nonce,
 		To:    tx.To, // TODO: copy pointed-to address
 		Data:  common.CopyBytes(tx.Data),
-		ProbeTxType: tx.ProbeTxType,
+		BizType: tx.BizType,
 		Gas:   tx.Gas,
 		// These are initialized below.
 		Value:    new(big.Int),
@@ -106,7 +106,7 @@ func (tx *LegacyTx) gasFeeCap() *big.Int    {return tx.GasPrice }
 func (tx *LegacyTx) value() *big.Int        { return tx.Value }
 func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
-func (tx *LegacyTx) probeTxType() uint8     { return tx.ProbeTxType }
+func (tx *LegacyTx) bizType() uint8     { return tx.BizType }
 func (tx *LegacyTx) fromAcType() byte    	{ return tx.FromAcType }
 
 func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {

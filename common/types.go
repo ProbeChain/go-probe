@@ -468,17 +468,15 @@ func ValidCheckAddress(v string) (c byte, err error) {
 }
 
 func ValidAddress(addr Address) (c byte, err error) {
-	b, err := hex.DecodeString(string(hex.EncodeToString(addr.Bytes()))[2:])
-	if len(b) != AddressLength {
-		return
+	b, err := hex.DecodeString(hex.EncodeToString(addr.Bytes())[2:])
+	if len(b) == AddressLength {
+		sum := b[len(b)-AddressChecksumLen:]
+		checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
+		flag := cmp.Equal(sum, checkSumBytes)
+		if flag {
+			byte := b[0]
+			return byte, nil
+		}
 	}
-	sum := b[len(b)-AddressChecksumLen:]
-	checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
-	flag := cmp.Equal(sum, checkSumBytes)
-	if flag {
-		byte := b[0]
-		fmt.Println("validateAddress byte: ", byte)
-		return byte, nil
-	}
-	return
+	return 0,errors.New("unsupported account type")
 }
