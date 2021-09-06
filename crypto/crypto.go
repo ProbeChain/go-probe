@@ -37,7 +37,7 @@ import (
 )
 
 //SignatureLength indicates the byte length required to carry a signature with recovery id.
-const SignatureLength = 64 + 1 // 64 bytes ECDSA signature + 1 byte recovery id
+const SignatureLength = 64 + 2 // 64 bytes ECDSA signature + 1 byte recovery id + 1 byte accountType
 
 // RecoveryIDOffset points to the byte offset within the signature that contains the recovery id.
 const RecoveryIDOffset = 64
@@ -268,7 +268,7 @@ func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 	defer fd.Close()
 
 	r := bufio.NewReader(fd)
-	buf := make([]byte, 66)
+	buf := make([]byte, SignatureLength)
 	n, err := readASCII(buf, r)
 	if err != nil {
 		return nil, err

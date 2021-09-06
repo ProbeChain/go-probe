@@ -300,6 +300,7 @@ func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address {
 }
 
 func UnmarshalPubkey(pub []byte) (*PublicKey, error) {
+	//TODO node start need set default k
 	k := byte(0x00)
 	if len(pub) == 66 {
 		k = pub[65]

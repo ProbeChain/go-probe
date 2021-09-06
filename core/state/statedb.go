@@ -18,7 +18,6 @@
 package state
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
@@ -75,7 +74,7 @@ type StateDB struct {
 	authorizeTrie Trie
 	lossTrie      Trie
 
-	hasher       crypto.KeccakState
+	hasher crypto.KeccakState
 
 	snaps         *snapshot.Tree
 	snap          snapshot.Snapshot
@@ -87,7 +86,6 @@ type StateDB struct {
 	stateObjects        map[common.Address]*stateObject
 	stateObjectsPending map[common.Address]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
-
 
 	// DPoSAccount DPoS账户 64
 	dPoSAccounts []*DPoSAccount
@@ -142,7 +140,7 @@ type StateDB struct {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
-	fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
+	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
 
 	if err != nil {
 		return nil, err
@@ -581,10 +579,10 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 }
 
 func (s *StateDB) setStateObject(object *stateObject) {
-	if obj := s.stateObjects[object.Address()]; obj == nil {
+	/*if obj := s.stateObjects[object.Address()]; obj == nil {
 		fmt.Printf("添加账号信息setStateObject，addr:%s,balance:%s,nonce:%d,code:%s,codeHashEmpty:%t\n",
 			object.address.String(),object.Balance().String(),object.Nonce(),object.code.String(), bytes.Equal(object.CodeHash(), emptyCodeHash))
-	}
+	}*/
 	s.stateObjects[object.Address()] = object
 }
 

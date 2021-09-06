@@ -22,6 +22,7 @@ package crypto
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto/probe"
 
@@ -68,6 +69,8 @@ func Sign(digestHash []byte, prv *probe.PrivateKey) (sig []byte, err error) {
 	if len(digestHash) != DigestLength {
 		return nil, fmt.Errorf("hash is required to be exactly %d bytes (%d)", DigestLength, len(digestHash))
 	}
+	hexPriKey := hex.EncodeToString(probe.FromECDSA(prv))
+	fmt.Println("digestHash:" + hex.EncodeToString(digestHash) + " prv: " + hexPriKey)
 	seckey := math.PaddedBigBytes(prv.D, prv.Params().BitSize/8)
 	defer zeroBytes(seckey)
 	sig, err = secp256k1.Sign(digestHash, seckey)

@@ -495,6 +495,7 @@ func recoverPlain(fromAcType byte, sighash common.Hash, R, S, Vb *big.Int, homes
 	copy(sig[32-len(r):32], r)
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
+	sig[65] = fromAcType
 	// recover the public key from the signature
 	pub, err := crypto.Ecrecover(sighash[:], sig)
 	if err != nil {
@@ -509,7 +510,8 @@ func recoverPlain(fromAcType byte, sighash common.Hash, R, S, Vb *big.Int, homes
 		copy(addr[:], crypto.Keccak256(pub[1:])[12:])
 		return addr, nil
 	*/
-	return crypto.PubkeyBytesToAddress(pub, fromAcType), nil
+	pubKey, _ := probe.UnmarshalPubkey(pub)
+	return probe.PubkeyToAddress(*pubKey), nil
 }
 
 // deriveChainId derives the chain id from the given v parameter

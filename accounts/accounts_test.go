@@ -120,7 +120,26 @@ func TestCreateAddressForProbeAccountType(t *testing.T) {
 	address1 := probe.PubkeyToAddress(acc1Key.PublicKey).Hex()
 	fmt.Println("address1 ", address1)
 }*/
+func TestSign01(*testing.T) {
+	hexStr := "5eabdc3deb6c6caaa80e063d6f11784ff06a57c6a06d43b7ede9a805e5fc29b2"
+	hexPriKey := "00b386e51a745b4f739b0e7a8e12f04c336413336546cdee86d2f360e5d4658a82"
+	digestHash, _ := hex.DecodeString(hexStr)
+	key1, _ := probe.HexToECDSA(hexPriKey)
+	sig, _ := crypto.Sign(digestHash, key1)
+	fmt.Println("sig ", hex.EncodeToString(sig))
+	recoveredPub, _ := crypto.Ecrecover(digestHash, sig)
+	pubKey, _ := probe.UnmarshalPubkey(recoveredPub)
+	recoveredAddr := probe.PubkeyToAddress(*pubKey)
 
+	recoveredPub2, _ := crypto.SigToPub(digestHash, sig)
+	recoveredAddr2 := probe.PubkeyToAddress(*recoveredPub2)
+	tt := probe.FromECDSAPub(&key1.PublicKey)
+	//addrtest:=hexutil.Encode(probe.FromECDSAPub(&key1.PublicKey))
+	addrtest := hexutil.Encode(tt)
+	fmt.Println("addrtest ", addrtest)
+	fmt.Println("recoveredAddr ", recoveredAddr.String())
+	fmt.Println("recoveredAddr2 ", recoveredAddr2.String())
+}
 func TestSign(*testing.T) {
 
 	/*//生成公私钥

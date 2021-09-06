@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"math/big"
 	"math/rand"
@@ -146,29 +147,27 @@ type SignerFn func(signer accounts.Account, mimeType string, message []byte) ([]
 func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, error) {
 	// If the signature's already cached, return that
 	hash := header.Hash()
-	if address, known := sigcache.Get(hash); known {
-		return address.(common.Address), nil
-	}
-	// Retrieve the signature from the header extra-data
-	if len(header.Extra) < extraSeal {
-		return common.Address{}, errMissingSignature
-	}
+	/*
+		if address, known := sigcache.Get(hash); known {
+			return address.(common.Address), nil
+		}
+		// Retrieve the signature from the header extra-data
+		if len(header.Extra) < extraSeal {
+			return common.Address{}, errMissingSignature
+		}
+		signature := header.Extra[len(header.Extra)-extraSeal:]
+	*/
 	signature := header.Extra[len(header.Extra)-extraSeal:]
-
 	// Recover the public key and the Ethereum address
 	pubkey, err := crypto.Ecrecover(SealHash(header).Bytes(), signature)
 	if err != nil {
 		return common.Address{}, err
 	}
-	var signer common.Address
+	pubKey, _ := probe.UnmarshalPubkey(pubkey[:len(pubkey)-1])
+	signer := probe.PubkeyToAddress(*pubKey)
+	// signer common.Address
 	//copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
 
-	b := crypto.Keccak256(pubkey[1:])[12:]
-	c := make([]byte, len(b)+1)
-	c[0] = 0x00
-	copy(c[1:], b)
-	checkSumBytes := common.CheckSum(c)
-	signer =common.BytesToAddress(append(c, checkSumBytes...))
 	sigcache.Add(hash, signer)
 	return signer, nil
 }
@@ -405,7 +404,7 @@ func (c *Clique) snapshot(chain consensus.ChainHeaderReader, number uint64, hash
 				signers := make([]common.Address, (len(checkpoint.Extra)-extraVanity-extraSeal)/common.AddressLength)
 				for i := 0; i < len(signers); i++ {
 					copy(signers[i][:], checkpoint.Extra[extraVanity+i*common.AddressLength:])
-					fmt.Printf("newSnapshot signers[%d]: %s\n",i,signers[i].String())
+					fmt.Printf("newSnapshot signers[%d]: %s\n", i, signers[i].String())
 				}
 				snap = newSnapshot(c.config, c.signatures, number, hash, signers)
 				if err := snap.store(c.db); err != nil {
