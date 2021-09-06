@@ -319,11 +319,13 @@ func handleMessage(backend Backend, peer *Peer) error {
 				if err != nil {
 					return p2p.Send(peer.rw, StorageRangesMsg, &StorageRangesPacket{ID: req.ID})
 				}
-				var acc state.RegularAccount
+				//var acc state.RegularAccount
+				var acc state.AssetAccount
 				if err := rlp.DecodeBytes(accTrie.Get(account[:]), &acc); err != nil {
 					return p2p.Send(peer.rw, StorageRangesMsg, &StorageRangesPacket{ID: req.ID})
 				}
-				stTrie, err := trie.New(acc.Root, backend.Chain().StateCache().TrieDB())
+				//stTrie, err := trie.New(acc.Root, backend.Chain().StateCache().TrieDB())
+				stTrie, err := trie.New(acc.StorageRoot, backend.Chain().StateCache().TrieDB())
 				if err != nil {
 					return p2p.Send(peer.rw, StorageRangesMsg, &StorageRangesPacket{ID: req.ID})
 				}

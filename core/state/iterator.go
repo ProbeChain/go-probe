@@ -104,11 +104,13 @@ func (it *NodeIterator) step() error {
 		return nil
 	}
 	// Otherwise we've reached an account node, initiate data iteration
-	var account RegularAccount
+	//var account RegularAccount
+	var account AssetAccount
 	if err := rlp.Decode(bytes.NewReader(it.stateIt.LeafBlob()), &account); err != nil {
 		return err
 	}
-	dataTrie, err := it.state.db.OpenStorageTrie(common.BytesToHash(it.stateIt.LeafKey()), account.Root)
+	//dataTrie, err := it.state.db.OpenStorageTrie(common.BytesToHash(it.stateIt.LeafKey()), account.Root)
+	dataTrie, err := it.state.db.OpenStorageTrie(common.BytesToHash(it.stateIt.LeafKey()), account.StorageRoot)
 	if err != nil {
 		return err
 	}

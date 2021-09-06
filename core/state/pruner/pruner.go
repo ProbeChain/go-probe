@@ -426,12 +426,15 @@ func extractGenesis(db ethdb.Database, stateBloom *stateBloom) error {
 		// If it's a leaf node, yes we are touching an account,
 		// dig into the storage trie further.
 		if accIter.Leaf() {
-			var acc state.RegularAccount
+			//var acc state.RegularAccount
+			var acc state.AssetAccount
 			if err := rlp.DecodeBytes(accIter.LeafBlob(), &acc); err != nil {
 				return err
 			}
-			if acc.Root != emptyRoot {
-				storageTrie, err := trie.NewSecure(acc.Root, trie.NewDatabase(db))
+			//if acc.Root != emptyRoot {
+			if acc.StorageRoot != emptyRoot {
+				//storageTrie, err := trie.NewSecure(acc.Root, trie.NewDatabase(db))
+				storageTrie, err := trie.NewSecure(acc.StorageRoot, trie.NewDatabase(db))
 				if err != nil {
 					return err
 				}

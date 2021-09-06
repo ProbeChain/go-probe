@@ -125,8 +125,9 @@ type accountRequest struct {
 type accountResponse struct {
 	task *accountTask // Task which this request is filling
 
-	hashes   []common.Hash    // Account hashes in the returned range
-	accounts []*state.RegularAccount // Expanded accounts in the returned range
+	hashes []common.Hash // Account hashes in the returned range
+	//accounts []*state.RegularAccount // Expanded accounts in the returned range
+	accounts []*state.AssetAccount // Expanded accounts in the returned range
 
 	cont bool // Whether the account range has a continuation
 }
@@ -1759,21 +1760,26 @@ func (s *Syncer) processAccountResponse(res *accountResponse) {
 			}
 		}
 		// Check if the account is a contract with an unknown storage trie
-		if account.Root != emptyRoot {
-			if node, err := s.db.Get(account.Root[:]); err != nil || node == nil {
+		//if account.Root != emptyRoot {
+		if account.StorageRoot != emptyRoot {
+			//if node, err := s.db.Get(account.Root[:]); err != nil || node == nil {
+			if node, err := s.db.Get(account.StorageRoot[:]); err != nil || node == nil {
 				// If there was a previous large state retrieval in progress,
 				// don't restart it from scratch. This happens if a sync cycle
 				// is interrupted and resumed later. However, *do* update the
 				// previous root hash.
 				if subtasks, ok := res.task.SubTasks[res.hashes[i]]; ok {
-					log.Debug("Resuming large storage retrieval", "account", res.hashes[i], "root", account.Root)
+					//log.Debug("Resuming large storage retrieval", "account", res.hashes[i], "root", account.Root)
+					log.Debug("Resuming large storage retrieval", "account", res.hashes[i], "root", account.StorageRoot)
 					for _, subtask := range subtasks {
-						subtask.root = account.Root
+						subtask.root = account.StorageRoot
+						//subtask.root = account.Root
 					}
 					res.task.needHeal[i] = true
 					resumed[res.hashes[i]] = struct{}{}
 				} else {
-					res.task.stateTasks[res.hashes[i]] = account.Root
+					//res.task.stateTasks[res.hashes[i]] = account.Root
+					res.task.stateTasks[res.hashes[i]] = account.StorageRoot
 				}
 				res.task.needState[i] = true
 				res.task.pend++
@@ -1928,9 +1934,10 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 						},
 					}
 					tasks = append(tasks, &storageTask{
-						Next:     common.Hash{},
-						Last:     r.End(),
-						root:     acc.Root,
+						Next: common.Hash{},
+						Last: r.End(),
+						//root:     acc.Root,
+						root:     acc.StorageRoot,
 						genBatch: batch,
 						genTrie:  trie.NewStackTrie(batch),
 					})
@@ -1942,15 +1949,17 @@ func (s *Syncer) processStorageResponse(res *storageResponse) {
 							},
 						}
 						tasks = append(tasks, &storageTask{
-							Next:     r.Start(),
-							Last:     r.End(),
-							root:     acc.Root,
+							Next: r.Start(),
+							Last: r.End(),
+							//root:     acc.Root,
+							root:     acc.StorageRoot,
 							genBatch: batch,
 							genTrie:  trie.NewStackTrie(batch),
 						})
 					}
 					for _, task := range tasks {
-						log.Debug("Created storage sync task", "account", account, "root", acc.Root, "from", task.Next, "last", task.Last)
+						//log.Debug("Created storage sync task", "account", account, "root", acc.Root, "from", task.Next, "last", task.Last)
+						log.Debug("Created storage sync task", "account", account, "root", acc.StorageRoot, "from", task.Next, "last", task.Last)
 					}
 					res.mainTask.SubTasks[account] = tasks
 
@@ -2147,7 +2156,8 @@ func (s *Syncer) forwardAccountTask(task *accountTask) {
 		if task.needCode[i] || task.needState[i] {
 			break
 		}
-		slim := snapshot.SlimAccountRLP(res.accounts[i].Nonce, res.accounts[i].Balance, res.accounts[i].Root, res.accounts[i].CodeHash)
+		//slim := snapshot.SlimAccountRLP(res.accounts[i].Nonce, res.accounts[i].Balance, res.accounts[i].Root, res.accounts[i].CodeHash)
+		slim := snapshot.SlimAccountRLP(res.accounts[i].Nonce, res.accounts[i].Value, res.accounts[i].StorageRoot, res.accounts[i].CodeHash)
 		rawdb.WriteAccountSnapshot(batch, hash, slim)
 
 		// If the task is complete, drop it into the stack trie to generate
@@ -2274,9 +2284,11 @@ func (s *Syncer) OnAccounts(peer SyncPeer, id uint64, hashes []common.Hash, acco
 		s.scheduleRevertAccountRequest(req)
 		return err
 	}
-	accs := make([]*state.RegularAccount, len(accounts))
+	//accs := make([]*state.RegularAccount, len(accounts))
+	accs := make([]*state.AssetAccount, len(accounts))
 	for i, account := range accounts {
-		acc := new(state.RegularAccount)
+		//acc := new(state.RegularAccount)
+		acc := new(state.AssetAccount)
 		if err := rlp.DecodeBytes(account, acc); err != nil {
 			panic(err) // We created these blobs, we must be able to decode them
 		}
@@ -2740,11 +2752,13 @@ func (s *Syncer) onHealByteCodes(peer SyncPeer, id uint64, bytecodes [][]byte) e
 // Note it's not concurrent safe, please handle the concurrent issue outside.
 func (s *Syncer) onHealState(paths [][]byte, value []byte) error {
 	if len(paths) == 1 {
-		var account state.RegularAccount
+		//var account state.RegularAccount
+		var account state.AssetAccount
 		if err := rlp.DecodeBytes(value, &account); err != nil {
 			return nil
 		}
-		blob := snapshot.SlimAccountRLP(account.Nonce, account.Balance, account.Root, account.CodeHash)
+		//blob := snapshot.SlimAccountRLP(account.Nonce, account.Balance, account.Root, account.CodeHash)
+		blob := snapshot.SlimAccountRLP(account.Nonce, account.Value, account.StorageRoot, account.CodeHash)
 		rawdb.WriteAccountSnapshot(s.stateWriter, common.BytesToHash(paths[0]), blob)
 		s.accountHealed += 1
 		s.accountHealedBytes += common.StorageSize(1 + common.HashLength + len(blob))

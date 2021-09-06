@@ -75,7 +75,7 @@ type StateDB struct {
 	authorizeTrie Trie
 	lossTrie      Trie
 
-	hasher       crypto.KeccakState
+	hasher crypto.KeccakState
 
 	snaps         *snapshot.Tree
 	snap          snapshot.Snapshot
@@ -87,7 +87,6 @@ type StateDB struct {
 	stateObjects        map[common.Address]*stateObject
 	stateObjectsPending map[common.Address]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
-
 
 	// DPoSAccount DPoS账户 64
 	dPoSAccounts []*DPoSAccount
@@ -142,7 +141,7 @@ type StateDB struct {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
-	fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
+	fmt.Printf("OpenTrieRoot: %s,isErr:%t\n", root.String(), err != nil)
 
 	if err != nil {
 		return nil, err
@@ -460,7 +459,8 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 		prevbalance: new(big.Int).Set(stateObject.Balance()),
 	})
 	stateObject.markSuicided()
-	stateObject.regularAccount.Balance = new(big.Int)
+	//stateObject.regularAccount.Balance = new(big.Int)
+	stateObject.regularAccount.Value = new(big.Int)
 
 	return true
 }
@@ -491,7 +491,7 @@ func (s *StateDB) updateStateObject(obj *stateObject) {
 	// enough to track account updates at commit time, deletions need tracking
 	// at transaction boundary level to ensure we capture state clearing.
 	if s.snap != nil {
-		s.snapAccounts[obj.addrHash] = snapshot.SlimAccountRLP(obj.regularAccount.Nonce, obj.regularAccount.Balance, obj.regularAccount.Root, obj.regularAccount.CodeHash)
+		//s.snapAccounts[obj.addrHash] = snapshot.SlimAccountRLP(obj.regularAccount.Nonce, obj.regularAccount.Balance, obj.regularAccount.Root, obj.regularAccount.CodeHash)
 	}
 }
 
@@ -533,27 +533,27 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 		err  error
 	)
 	if s.snap != nil {
-		if metrics.EnabledExpensive {
-			defer func(start time.Time) { s.SnapshotAccountReads += time.Since(start) }(time.Now())
-		}
-		var acc *snapshot.Account
-		if acc, err = s.snap.Account(crypto.HashData(s.hasher, addr.Bytes())); err == nil {
-			if acc == nil {
-				return nil
-			}
-			data = &RegularAccount{
-				Nonce:    acc.Nonce,
-				Balance:  acc.Balance,
-				CodeHash: acc.CodeHash,
-				Root:     common.BytesToHash(acc.Root),
-			}
-			if len(data.CodeHash) == 0 {
-				data.CodeHash = emptyCodeHash
-			}
-			if data.Root == (common.Hash{}) {
-				data.Root = emptyRoot
-			}
-		}
+		//if metrics.EnabledExpensive {
+		//	defer func(start time.Time) { s.SnapshotAccountReads += time.Since(start) }(time.Now())
+		//}
+		//var acc *snapshot.Account
+		//if acc, err = s.snap.Account(crypto.HashData(s.hasher, addr.Bytes())); err == nil {
+		//	if acc == nil {
+		//		return nil
+		//	}
+		//	data = &RegularAccount{
+		//		Nonce:    acc.Nonce,
+		//		Balance:  acc.Balance,
+		//		CodeHash: acc.CodeHash,
+		//		Root:     common.BytesToHash(acc.Root),
+		//	}
+		//	if len(data.CodeHash) == 0 {
+		//		data.CodeHash = emptyCodeHash
+		//	}
+		//	if data.Root == (common.Hash{}) {
+		//		data.Root = emptyRoot
+		//	}
+		//}
 	}
 	// If snapshot unavailable or reading from it failed, load from the database
 	if s.snap == nil || err != nil {
@@ -583,7 +583,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 func (s *StateDB) setStateObject(object *stateObject) {
 	if obj := s.stateObjects[object.Address()]; obj == nil {
 		fmt.Printf("添加账号信息setStateObject，addr:%s,balance:%s,nonce:%d,code:%s,codeHashEmpty:%t\n",
-			object.address.String(),object.Balance().String(),object.Nonce(),object.code.String(), bytes.Equal(object.CodeHash(), emptyCodeHash))
+			object.address.String(), object.Balance().String(), object.Nonce(), object.code.String(), bytes.Equal(object.CodeHash(), emptyCodeHash))
 	}
 	s.stateObjects[object.Address()] = object
 }
@@ -635,7 +635,8 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 func (s *StateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
-		newObj.setBalance(prev.regularAccount.Balance)
+		//newObj.setBalance(prev.regularAccount.Balance)
+		newObj.setBalance(prev.regularAccount.Value)
 	}
 }
 
@@ -963,9 +964,9 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 		if err := rlp.DecodeBytes(leaf, &account); err != nil {
 			return nil
 		}
-		if account.Root != emptyRoot {
-			s.db.TrieDB().Reference(account.Root, parent)
-		}
+		//if account.Root != emptyRoot {
+		//	s.db.TrieDB().Reference(account.Root, parent)
+		//}
 		return nil
 	})
 	if metrics.EnabledExpensive {
@@ -973,23 +974,23 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	// If snapshotting is enabled, update the snapshot tree with this new version
 	if s.snap != nil {
-		if metrics.EnabledExpensive {
-			defer func(start time.Time) { s.SnapshotCommits += time.Since(start) }(time.Now())
-		}
-		// Only update if there's a state transition (skip empty Clique blocks)
-		if parent := s.snap.Root(); parent != root {
-			if err := s.snaps.Update(root, parent, s.snapDestructs, s.snapAccounts, s.snapStorage); err != nil {
-				log.Warn("Failed to update snapshot tree", "from", parent, "to", root, "err", err)
-			}
-			// Keep 128 diff layers in the memory, persistent layer is 129th.
-			// - head layer is paired with HEAD state
-			// - head-1 layer is paired with HEAD-1 state
-			// - head-127 layer(bottom-most diff layer) is paired with HEAD-127 state
-			if err := s.snaps.Cap(root, 128); err != nil {
-				log.Warn("Failed to cap snapshot tree", "root", root, "layers", 128, "err", err)
-			}
-		}
-		s.snap, s.snapDestructs, s.snapAccounts, s.snapStorage = nil, nil, nil, nil
+		//if metrics.EnabledExpensive {
+		//	defer func(start time.Time) { s.SnapshotCommits += time.Since(start) }(time.Now())
+		//}
+		//// Only update if there's a state transition (skip empty Clique blocks)
+		//if parent := s.snap.Root(); parent != root {
+		//	if err := s.snaps.Update(root, parent, s.snapDestructs, s.snapAccounts, s.snapStorage); err != nil {
+		//		log.Warn("Failed to update snapshot tree", "from", parent, "to", root, "err", err)
+		//	}
+		//	// Keep 128 diff layers in the memory, persistent layer is 129th.
+		//	// - head layer is paired with HEAD state
+		//	// - head-1 layer is paired with HEAD-1 state
+		//	// - head-127 layer(bottom-most diff layer) is paired with HEAD-127 state
+		//	if err := s.snaps.Cap(root, 128); err != nil {
+		//		log.Warn("Failed to cap snapshot tree", "root", root, "layers", 128, "err", err)
+		//	}
+		//}
+		//s.snap, s.snapDestructs, s.snapAccounts, s.snapStorage = nil, nil, nil, nil
 	}
 	return root, err
 }

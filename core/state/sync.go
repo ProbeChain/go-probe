@@ -43,11 +43,17 @@ func NewStateSync(root common.Hash, database ethdb.KeyValueReader, bloom *trie.S
 				return err
 			}
 		}
-		var obj RegularAccount
+		//var obj RegularAccount
+		//if err := rlp.Decode(bytes.NewReader(leaf), &obj); err != nil {
+		//	return err
+		//}
+		//syncer.AddSubTrie(obj.Root, hexpath, parent, onSlot)
+		//syncer.AddCodeEntry(common.BytesToHash(obj.CodeHash), hexpath, parent)
+		var obj AssetAccount
 		if err := rlp.Decode(bytes.NewReader(leaf), &obj); err != nil {
 			return err
 		}
-		syncer.AddSubTrie(obj.Root, hexpath, parent, onSlot)
+		syncer.AddSubTrie(obj.StorageRoot, hexpath, parent, onSlot)
 		syncer.AddCodeEntry(common.BytesToHash(obj.CodeHash), hexpath, parent)
 		return nil
 	}

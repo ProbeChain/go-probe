@@ -287,15 +287,19 @@ func traverseState(ctx *cli.Context) error {
 	accIter := trie.NewIterator(t.NodeIterator(nil))
 	for accIter.Next() {
 		accounts += 1
-		var acc state.RegularAccount
+		//var acc state.RegularAccount
+		var acc state.AssetAccount
 		if err := rlp.DecodeBytes(accIter.Value, &acc); err != nil {
 			log.Error("Invalid account encountered during traversal", "err", err)
 			return err
 		}
-		if acc.Root != emptyRoot {
-			storageTrie, err := trie.NewSecure(acc.Root, triedb)
+		//if acc.Root != emptyRoot {
+		if acc.StorageRoot != emptyRoot {
+			//storageTrie, err := trie.NewSecure(acc.Root, triedb)
+			storageTrie, err := trie.NewSecure(acc.StorageRoot, triedb)
 			if err != nil {
-				log.Error("Failed to open storage trie", "root", acc.Root, "err", err)
+				//log.Error("Failed to open storage trie", "root", acc.Root, "err", err)
+				log.Error("Failed to open storage trie", "root", acc.StorageRoot, "err", err)
 				return err
 			}
 			storageIter := trie.NewIterator(storageTrie.NodeIterator(nil))
@@ -303,7 +307,8 @@ func traverseState(ctx *cli.Context) error {
 				slots += 1
 			}
 			if storageIter.Err != nil {
-				log.Error("Failed to traverse storage trie", "root", acc.Root, "err", storageIter.Err)
+				//log.Error("Failed to traverse storage trie", "root", acc.Root, "err", storageIter.Err)
+				log.Error("Failed to traverse storage trie", "root", acc.StorageRoot, "err", storageIter.Err)
 				return storageIter.Err
 			}
 		}
@@ -393,15 +398,19 @@ func traverseRawState(ctx *cli.Context) error {
 		// dig into the storage trie further.
 		if accIter.Leaf() {
 			accounts += 1
-			var acc state.RegularAccount
+			//var acc state.RegularAccount
+			var acc state.AssetAccount
 			if err := rlp.DecodeBytes(accIter.LeafBlob(), &acc); err != nil {
 				log.Error("Invalid account encountered during traversal", "err", err)
 				return errors.New("invalid account")
 			}
-			if acc.Root != emptyRoot {
-				storageTrie, err := trie.NewSecure(acc.Root, triedb)
+			//if acc.Root != emptyRoot {
+			if acc.StorageRoot != emptyRoot {
+				//storageTrie, err := trie.NewSecure(acc.Root, triedb)
+				storageTrie, err := trie.NewSecure(acc.StorageRoot, triedb)
 				if err != nil {
-					log.Error("Failed to open storage trie", "root", acc.Root, "err", err)
+					//log.Error("Failed to open storage trie", "root", acc.Root, "err", err)
+					log.Error("Failed to open storage trie", "root", acc.StorageRoot, "err", err)
 					return errors.New("missing storage trie")
 				}
 				storageIter := storageTrie.NodeIterator(nil)
@@ -424,7 +433,8 @@ func traverseRawState(ctx *cli.Context) error {
 					}
 				}
 				if storageIter.Error() != nil {
-					log.Error("Failed to traverse storage trie", "root", acc.Root, "err", storageIter.Error())
+					//log.Error("Failed to traverse storage trie", "root", acc.Root, "err", storageIter.Error())
+					log.Error("Failed to traverse storage trie", "root", acc.StorageRoot, "err", storageIter.Error())
 					return storageIter.Error()
 				}
 			}
