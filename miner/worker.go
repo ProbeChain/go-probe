@@ -543,7 +543,7 @@ func (w *worker) mainLoop() {
 			}
 			atomic.AddInt32(&w.newTxs, int32(len(ev.Txs)))
 		case ev := <-w.powAnswerCh:
-			log.Debug("PowAnswerCh receive", "nonce", ev.PowAnswer.Nonce, "number", ev.PowAnswer.Number, "miner", ev.PowAnswer.Miner)
+			log.Debug("PowAnswerCh receive", "nonce", ev.PowAnswer.Nonce.Uint64(), "number", ev.PowAnswer.Number, "miner", ev.PowAnswer.Miner)
 		// System stopped
 		case <-w.exitCh:
 			return

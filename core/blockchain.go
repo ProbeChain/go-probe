@@ -143,6 +143,78 @@ var defaultCacheConfig = &CacheConfig{
 	SnapshotWait:   true,
 }
 
+// PowAnswerPool contains all pow answer
+type PowAnswerPool struct {
+	lock          sync.RWMutex
+	powAnswerList [][]*types.PowAnswer
+}
+
+// NewPowAnswerPool return a two-dimension pow answer
+func NewPowAnswerPool(size int) *PowAnswerPool {
+	pool := &PowAnswerPool{
+		powAnswerList: make([][]*types.PowAnswer, size, size),
+	}
+	return pool
+}
+
+func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
+	powAnswers, _ := pool.list(powAnswer.Number)
+	for _, answer := range powAnswers {
+		if powAnswer.Miner == answer.Miner {
+			return true
+		}
+	}
+	return false
+}
+
+func (pool *PowAnswerPool) Contain(powAnswer *types.PowAnswer) bool {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	return pool.contain(powAnswer)
+}
+
+func (pool *PowAnswerPool) list(number *big.Int) ([]*types.PowAnswer, int) {
+	index := int(number.Uint64() % uint64(len(pool.powAnswerList)))
+	powAnswers := pool.powAnswerList[index]
+	if powAnswers != nil {
+		powAnswer := powAnswers[0]
+		if powAnswer.Number.Cmp(number) != 0 {
+			return nil, -1
+		}
+	}
+	return powAnswers, index
+}
+
+func (pool *PowAnswerPool) List(number *big.Int) []*types.PowAnswer {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	data, _ := pool.list(number)
+	return data
+}
+
+func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	if pool.contain(powAnswer) {
+		return
+	}
+	powAnswers, index := pool.list(powAnswer.Number)
+	if powAnswers != nil {
+		curNumber := powAnswer.Number.Uint64()
+		number := powAnswers[0].Number.Uint64()
+		if curNumber > number {
+			powAnswers = nil
+			powAnswers = append(powAnswers, powAnswer)
+		} else if number == curNumber {
+			powAnswers = append(powAnswers, powAnswer)
+		}
+		// if curNumber < number directly discarded
+	} else {
+		powAnswers = append(powAnswers, powAnswer)
+	}
+	pool.powAnswerList[index] = powAnswers
+}
+
 // BlockChain represents the canonical chain given a database with a genesis
 // block. The Blockchain manages chain imports, reverts, chain reorganisations.
 //
@@ -190,7 +262,7 @@ type BlockChain struct {
 
 	//Index = 0 in the array indicates the first received powanswer
 	PowAnswerMap map[*big.Int][]*types.PowAnswer
-	powAnswers   sync.Map
+	powAnswers   *PowAnswerPool
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -254,6 +326,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		futureBlocks:   futureBlocks,
 		engine:         engine,
 		vmConfig:       vmConfig,
+		powAnswers:     NewPowAnswerPool(maxChainPowAnswers),
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc, engine)
@@ -265,7 +338,6 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		return nil, err
 	}
 	bc.genesisBlock = bc.GetBlockByNumber(0)
-	bc.powAnswers = sync.Map{}
 	if bc.genesisBlock == nil {
 		return nil, ErrNoGenesis
 	}
@@ -2531,21 +2603,17 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
 }
 
-// SendPowAnswer send a pow answer to worker
-func (bc *BlockChain) SendPowAnswer(powAnswer *types.PowAnswer) int {
-	if _, ok := bc.powAnswers.Load(powAnswer.Id()); ok {
+// HandlePowAnswer send a pow answer to worker and save it
+func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
+	if bc.powAnswers.Contain(powAnswer) {
 		return 0
 	} else {
+		bc.powAnswers.Add(powAnswer)
 		return bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
 	}
 }
 
 // SavePowAnswer save a pow answer to set
 func (bc *BlockChain) SavePowAnswer(powAnswer *types.PowAnswer) {
-	// @todo
-	// If we reached the memory allowance, drop a previously known powAnswers
-	//if len(bc.powAnswers) >= maxChainPowAnswers {
-	//	bc.powAnswers.Pop()
-	//}
-	bc.powAnswers.Store(powAnswer.Id(), powAnswer)
+	bc.powAnswers.Add(powAnswer)
 }

@@ -229,7 +229,6 @@ func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.P
 			log.Debug("SendNewPowAnswer", "err", err)
 		}
 	}
-	h.chain.SendPowAnswer(powAnswer)
-	h.chain.SavePowAnswer(powAnswer)
+	h.chain.HandlePowAnswer(powAnswer)
 	return nil
 }

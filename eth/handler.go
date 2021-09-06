@@ -517,13 +517,13 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 // BroadcastPowAnswer broadcast PowAnswer to all peers
 func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
+	h.chain.SavePowAnswer(powAnswer)
 	for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
 		if err := peer.SendNewPowAnswer(powAnswer); err != nil {
 			log.Debug("SendNewPowAnswer", "err", err)
 		}
 	}
-	h.chain.SavePowAnswer(powAnswer)
-	log.Debug("PowAnswer broadcast", "nonce", powAnswer.Nonce, "number", powAnswer.Number, "miner", powAnswer.Miner)
+	log.Debug("PowAnswer broadcast", "nonce", powAnswer.Nonce.Uint64(), "number", powAnswer.Number, "miner", powAnswer.Miner)
 }
 
 // minedBroadcastLoop sends mined blocks to connected peers.

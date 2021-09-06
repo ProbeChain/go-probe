@@ -20,7 +20,6 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	"io"
 	"math/big"
 	"reflect"
@@ -74,8 +73,8 @@ type PowAnswer struct {
 // Id returns the pow answer unique id
 func (powAnswer *PowAnswer) Id() common.Hash {
 	// We assume that the miners will only give one answer in a given block number
-	id := append(powAnswer.Number.Bytes(), powAnswer.Miner.Bytes()...)
-	return common.BytesToHash(crypto.Keccak256(id))
+	id := append(append(powAnswer.Miner.Bytes(), powAnswer.Number.Bytes()...), []byte{0, 0, 0, 0}...)
+	return common.BytesToHash(id)
 }
 
 //send from dpos witness node
