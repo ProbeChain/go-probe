@@ -207,6 +207,23 @@ func FromECDSA(priv *ecdsa.PrivateKey) []byte {
 	return c
 }
 
+func FromECDSAByType(priv *ecdsa.PrivateKey, k byte) []byte {
+	/*
+		if priv == nil {
+			return nil
+		}
+		return math.PaddedBigBytes(priv.D, priv.Params().BitSize/8)
+	*/
+	if priv == nil {
+		return nil
+	}
+	b := math.PaddedBigBytes(priv.D, priv.Params().BitSize/8)
+	c := make([]byte, len(b)+1)
+	c[0] = k
+	copy(c[1:], b)
+	return c
+}
+
 // UnmarshalPubkey converts bytes to a secp256k1 public key.
 func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 	x, y := elliptic.Unmarshal(S256(), pub)
@@ -214,6 +231,14 @@ func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 		return nil, errInvalidPubkey
 	}
 	return &ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil
+}
+
+func UnmarshalPubkeyForType(pub []byte, k byte) (*ecdsa.PublicKey, error) {
+	x, y := elliptic.Unmarshal(S256ByType(k), pub)
+	if x == nil {
+		return nil, errInvalidPubkey
+	}
+	return &ecdsa.PublicKey{Curve: S256ByType(k), X: x, Y: y}, nil
 }
 
 func FromECDSAPub(pub *ecdsa.PublicKey) []byte {
@@ -326,7 +351,16 @@ func PubkeyToAddress(p ecdsa.PublicKey) common.Address {
 		return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])
 	*/
 	pubBytes := FromECDSAPub(&p)
-	return PubkeyBytesToAddress(pubBytes,General)
+	return PubkeyBytesToAddress(pubBytes, General)
+}
+
+func PubkeyToAddressForType(p ecdsa.PublicKey, k byte) common.Address {
+	/*
+		pubBytes := FromECDSAPub(&p)
+		return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])
+	*/
+	pubBytes := FromECDSAPub(&p)
+	return PubkeyBytesToAddress(pubBytes, k)
 }
 
 func zeroBytes(bytes []byte) {
@@ -335,7 +369,7 @@ func zeroBytes(bytes []byte) {
 	}
 }
 
-func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address{
+func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address {
 	b := Keccak256(pubKey[1:])[12:]
 	c := make([]byte, len(b)+1)
 	c[0] = fromAcType

@@ -77,7 +77,7 @@ type BitCurve struct {
 	B       *big.Int // the constant of the BitCurve equation
 	Gx, Gy  *big.Int // (x,y) of the base point
 	BitSize int      // the size of the underlying field
-	C       byte     // the type of the private key
+	K       byte     // the type of the private key
 }
 
 func (BitCurve *BitCurve) Params() *elliptic.CurveParams {
@@ -291,7 +291,7 @@ func init() {
 	theCurve.Gx, _ = new(big.Int).SetString("0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798", 0)
 	theCurve.Gy, _ = new(big.Int).SetString("0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8", 0)
 	theCurve.BitSize = 256
-	theCurve.C = 0x00
+	theCurve.K = 0x00
 }
 
 // S256 returns a BitCurve which implements secp256k1.
@@ -299,7 +299,11 @@ func S256() *BitCurve {
 	return theCurve
 }
 
-func S256ByType(c byte) *BitCurve {
-	theCurve.C = c
+func S256ByType(k byte) *BitCurve {
+	theCurve.K = k
 	return theCurve
+}
+
+func GetAccountType() byte {
+	return theCurve.K
 }

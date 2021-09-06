@@ -44,6 +44,16 @@ func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
 	return &ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil
 }
 
+func SigToPubForType(hash, sig []byte, k byte) (*ecdsa.PublicKey, error) {
+	s, err := Ecrecover(hash, sig)
+	if err != nil {
+		return nil, err
+	}
+
+	x, y := elliptic.Unmarshal(S256ByType(k), s)
+	return &ecdsa.PublicKey{Curve: S256ByType(k), X: x, Y: y}, nil
+}
+
 // Sign calculates an ECDSA signature.
 //
 // This function is susceptible to chosen plaintext attacks that can leak
@@ -58,7 +68,9 @@ func Sign(digestHash []byte, prv *ecdsa.PrivateKey) (sig []byte, err error) {
 	}
 	seckey := math.PaddedBigBytes(prv.D, prv.Params().BitSize/8)
 	defer zeroBytes(seckey)
-	return secp256k1.Sign(digestHash, seckey)
+	sig, err = secp256k1.Sign(digestHash, seckey)
+	//append(sig,prv.PublicKey.Curve.C)
+	return append(sig, GetAccountType()), err
 }
 
 // VerifySignature checks that the given public key created signature over digest.
@@ -89,4 +101,8 @@ func S256() elliptic.Curve {
 
 func S256ByType(c byte) elliptic.Curve {
 	return secp256k1.S256ByType(c)
+}
+
+func GetAccountType() byte {
+	return secp256k1.GetAccountType()
 }
