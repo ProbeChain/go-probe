@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 	"mime"
 	"reflect"
@@ -664,7 +665,7 @@ func (api *SignerAPI) EcRecover(ctx context.Context, data hexutil.Bytes, sig hex
 	if err != nil {
 		return common.Address{}, err
 	}
-	return crypto.PubkeyToAddress(*rpk), nil
+	return probe.PubkeyToAddress(*rpk), nil
 }
 
 // UnmarshalValidatorData converts the bytes input to typed data

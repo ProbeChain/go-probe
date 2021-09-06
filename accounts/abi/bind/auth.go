@@ -17,8 +17,8 @@
 package bind
 
 import (
-	"crypto/ecdsa"
 	"errors"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -81,9 +81,9 @@ func NewKeyStoreTransactor(keystore *keystore.KeyStore, account accounts.Account
 // from a single private key.
 //
 // Deprecated: Use NewKeyedTransactorWithChainID instead.
-func NewKeyedTransactor(key *ecdsa.PrivateKey) *TransactOpts {
+func NewKeyedTransactor(key *probe.PrivateKey) *TransactOpts {
 	log.Warn("WARNING: NewKeyedTransactor has been deprecated in favour of NewKeyedTransactorWithChainID")
-	keyAddr := crypto.PubkeyToAddress(key.PublicKey)
+	keyAddr := probe.PubkeyToAddress(key.PublicKey)
 	signer := types.HomesteadSigner{}
 	return &TransactOpts{
 		From: keyAddr,
@@ -138,8 +138,8 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 
 // NewKeyedTransactorWithChainID is a utility method to easily create a transaction signer
 // from a single private key.
-func NewKeyedTransactorWithChainID(key *ecdsa.PrivateKey, chainID *big.Int) (*TransactOpts, error) {
-	keyAddr := crypto.PubkeyToAddress(key.PublicKey)
+func NewKeyedTransactorWithChainID(key *probe.PrivateKey, chainID *big.Int) (*TransactOpts, error) {
+	keyAddr := probe.PubkeyToAddress(key.PublicKey)
 	if chainID == nil {
 		return nil, ErrNoChainID
 	}

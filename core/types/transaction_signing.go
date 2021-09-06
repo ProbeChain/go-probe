@@ -17,9 +17,9 @@
 package types
 
 import (
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -91,7 +91,7 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 }
 
 // SignTx signs the transaction using the given signer and private key.
-func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, error) {
+func SignTx(tx *Transaction, s Signer, prv *probe.PrivateKey) (*Transaction, error) {
 	h := s.Hash(tx)
 	sig, err := crypto.Sign(h[:], prv)
 	if err != nil {
@@ -101,7 +101,7 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 }
 
 // SignNewTx creates a transaction and signs it.
-func SignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) (*Transaction, error) {
+func SignNewTx(prv *probe.PrivateKey, s Signer, txdata TxData) (*Transaction, error) {
 	tx := NewTx(txdata)
 	h := s.Hash(tx)
 	sig, err := crypto.Sign(h[:], prv)
@@ -113,7 +113,7 @@ func SignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) (*Transaction, er
 
 // MustSignNewTx creates a transaction and signs it.
 // This panics if the transaction cannot be signed.
-func MustSignNewTx(prv *ecdsa.PrivateKey, s Signer, txdata TxData) *Transaction {
+func MustSignNewTx(prv *probe.PrivateKey, s Signer, txdata TxData) *Transaction {
 	tx, err := SignNewTx(prv, s, txdata)
 	if err != nil {
 		panic(err)
@@ -192,7 +192,7 @@ func (s londonSigner) Sender(tx *Transaction) (common.Address, error) {
 	if tx.ChainId().Cmp(s.chainId) != 0 {
 		return common.Address{}, ErrInvalidChainId
 	}
-	return recoverPlain(tx.FromAcType(),s.Hash(tx), R, S, V, true)
+	return recoverPlain(tx.FromAcType(), s.Hash(tx), R, S, V, true)
 }
 
 func (s londonSigner) Equal(s2 Signer) bool {
@@ -272,7 +272,7 @@ func (s eip2930Signer) Sender(tx *Transaction) (common.Address, error) {
 	if tx.ChainId().Cmp(s.chainId) != 0 {
 		return common.Address{}, ErrInvalidChainId
 	}
-	return recoverPlain(tx.FromAcType(),s.Hash(tx), R, S, V, true)
+	return recoverPlain(tx.FromAcType(), s.Hash(tx), R, S, V, true)
 }
 
 func (s eip2930Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
@@ -371,7 +371,7 @@ func (s EIP155Signer) Sender(tx *Transaction) (common.Address, error) {
 	V, R, S := tx.RawSignatureValues()
 	V = new(big.Int).Sub(V, s.chainIdMul)
 	V.Sub(V, big8)
-	return recoverPlain(tx.FromAcType(),s.Hash(tx), R, S, V, true)
+	return recoverPlain(tx.FromAcType(), s.Hash(tx), R, S, V, true)
 }
 
 // SignatureValues returns signature values. This signature
@@ -445,7 +445,7 @@ func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 		return common.Address{}, ErrTxTypeNotSupported
 	}
 	v, r, s := tx.RawSignatureValues()
-	return recoverPlain(tx.FromAcType(),fs.Hash(tx), r, s, v, false)
+	return recoverPlain(tx.FromAcType(), fs.Hash(tx), r, s, v, false)
 }
 
 // SignatureValues returns signature values. This signature
@@ -481,7 +481,7 @@ func decodeSignature(sig []byte) (r, s, v *big.Int) {
 	return r, s, v
 }
 
-func recoverPlain(fromAcType byte,sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
+func recoverPlain(fromAcType byte, sighash common.Hash, R, S, Vb *big.Int, homestead bool) (common.Address, error) {
 	if Vb.BitLen() > 8 {
 		return common.Address{}, ErrInvalidSig
 	}
@@ -509,7 +509,7 @@ func recoverPlain(fromAcType byte,sighash common.Hash, R, S, Vb *big.Int, homest
 		copy(addr[:], crypto.Keccak256(pub[1:])[12:])
 		return addr, nil
 	*/
-	return crypto.PubkeyBytesToAddress(pub, fromAcType),nil
+	return crypto.PubkeyBytesToAddress(pub, fromAcType), nil
 }
 
 // deriveChainId derives the chain id from the given v parameter

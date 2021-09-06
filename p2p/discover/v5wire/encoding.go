@@ -20,12 +20,12 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/ecdsa"
 	crand "crypto/rand"
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"hash"
 
 	"github.com/ethereum/go-ethereum/common/mclock"
@@ -131,7 +131,7 @@ var (
 type Codec struct {
 	sha256    hash.Hash
 	localnode *enode.LocalNode
-	privkey   *ecdsa.PrivateKey
+	privkey   *probe.PrivateKey
 	sc        *SessionCache
 
 	// encoder buffers
@@ -145,7 +145,7 @@ type Codec struct {
 }
 
 // NewCodec creates a wire codec.
-func NewCodec(ln *enode.LocalNode, key *ecdsa.PrivateKey, clock mclock.Clock) *Codec {
+func NewCodec(ln *enode.LocalNode, key *probe.PrivateKey, clock mclock.Clock) *Codec {
 	c := &Codec{
 		sha256:    sha256.New(),
 		localnode: ln,
@@ -344,7 +344,7 @@ func (c *Codec) makeHandshakeAuth(toID enode.ID, addr string, challenge *Whoarey
 
 	// Create the ephemeral key. This needs to be first because the
 	// key is part of the ID nonce signature.
-	var remotePubkey = new(ecdsa.PublicKey)
+	var remotePubkey = new(probe.PublicKey)
 	if err := challenge.Node.Load((*enode.Secp256k1)(remotePubkey)); err != nil {
 		return nil, nil, fmt.Errorf("can't find secp256k1 key for recipient")
 	}

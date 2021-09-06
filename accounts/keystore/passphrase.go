@@ -33,6 +33,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"io/ioutil"
 	"os"
@@ -231,14 +232,14 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := crypto.ToECDSAUnsafe(keyBytes)
+	key := probe.ToECDSAUnsafe(keyBytes)
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
 		return nil, err
 	}
 	return &Key{
 		Id:         id,
-		Address:    crypto.PubkeyToAddress(key.PublicKey),
+		Address:    probe.PubkeyToAddress(key.PublicKey),
 		PrivateKey: key,
 	}, nil
 }

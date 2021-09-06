@@ -18,14 +18,13 @@
 package main
 
 import (
-	"crypto/ecdsa"
 	"flag"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"net"
 	"os"
 
 	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -46,7 +45,7 @@ func main() {
 		verbosity   = flag.Int("verbosity", int(log.LvlInfo), "log verbosity (0-5)")
 		vmodule     = flag.String("vmodule", "", "log verbosity pattern")
 
-		nodeKey *ecdsa.PrivateKey
+		nodeKey *probe.PrivateKey
 		err     error
 	)
 	flag.Parse()
@@ -62,11 +61,11 @@ func main() {
 	}
 	switch {
 	case *genKey != "":
-		nodeKey, err = crypto.GenerateKey()
+		nodeKey, err = probe.GenerateKey()
 		if err != nil {
 			utils.Fatalf("could not generate key: %v", err)
 		}
-		if err = crypto.SaveECDSA(*genKey, nodeKey); err != nil {
+		if err = probe.SaveECDSA(*genKey, nodeKey); err != nil {
 			utils.Fatalf("%v", err)
 		}
 		if !*writeAddr {
@@ -77,17 +76,17 @@ func main() {
 	case *nodeKeyFile != "" && *nodeKeyHex != "":
 		utils.Fatalf("Options -nodekey and -nodekeyhex are mutually exclusive")
 	case *nodeKeyFile != "":
-		if nodeKey, err = crypto.LoadECDSA(*nodeKeyFile); err != nil {
+		if nodeKey, err = probe.LoadECDSA(*nodeKeyFile); err != nil {
 			utils.Fatalf("-nodekey: %v", err)
 		}
 	case *nodeKeyHex != "":
-		if nodeKey, err = crypto.HexToECDSA(*nodeKeyHex); err != nil {
+		if nodeKey, err = probe.HexToECDSA(*nodeKeyHex); err != nil {
 			utils.Fatalf("-nodekeyhex: %v", err)
 		}
 	}
 
 	if *writeAddr {
-		fmt.Printf("%x\n", crypto.FromECDSAPub(&nodeKey.PublicKey)[1:])
+		fmt.Printf("%x\n", probe.FromECDSAPub(&nodeKey.PublicKey)[1:])
 		os.Exit(0)
 	}
 
@@ -139,7 +138,7 @@ func main() {
 	select {}
 }
 
-func printNotice(nodeKey *ecdsa.PublicKey, addr net.UDPAddr) {
+func printNotice(nodeKey *probe.PublicKey, addr net.UDPAddr) {
 	if addr.IP.IsUnspecified() {
 		addr.IP = net.IP{127, 0, 0, 1}
 	}

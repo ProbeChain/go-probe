@@ -21,9 +21,9 @@
 package keystore
 
 import (
-	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -454,7 +454,7 @@ func (ks *KeyStore) Import(keyJSON []byte, passphrase, newPassphrase string) (ac
 }
 
 // ImportECDSA stores the given key into the key directory, encrypting it with the passphrase.
-func (ks *KeyStore) ImportECDSA(priv *ecdsa.PrivateKey, passphrase string) (accounts.Account, error) {
+func (ks *KeyStore) ImportECDSA(priv *probe.PrivateKey, passphrase string) (accounts.Account, error) {
 	ks.importMu.Lock()
 	defer ks.importMu.Unlock()
 
@@ -499,7 +499,7 @@ func (ks *KeyStore) ImportPreSaleKey(keyJSON []byte, passphrase string) (account
 }
 
 // zeroKey zeroes a private key in memory.
-func zeroKey(k *ecdsa.PrivateKey) {
+func zeroKey(k *probe.PrivateKey) {
 	b := k.D.Bits()
 	for i := range b {
 		b[i] = 0
