@@ -11,7 +11,7 @@ import (
 
 //wxc todo 各种业务类型的默认值设置实现
 // setDefaultsOfRegister set default parameters of register business type
-func setDefaultsOfRegister(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error{
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -51,7 +51,7 @@ func setDefaultsOfRegister(ctx context.Context, b Backend,args *TransactionArgs)
 		callArgs := TransactionArgs{
 			From:                 args.From,
 			To:                   args.To,
-			BizType:			  args.BizType,
+			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
 			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
@@ -71,17 +71,17 @@ func setDefaultsOfRegister(ctx context.Context, b Backend,args *TransactionArgs)
 }
 
 // setDefaultsOfCancellation set default parameters of cancellation business type
-func setDefaultsOfCancellation(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Backend) error{
 	return nil
 }
 
 // setDefaultsOfRevokeCancellation set default parameters of revoke cancellation business type
-func setDefaultsOfRevokeCancellation(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfRevokeCancellation(ctx context.Context, b Backend) error{
 	return nil
 }
 
 // setDefaultsOfTransfer set default parameters of transfer business type
-func setDefaultsOfTransfer(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backend) error{
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -105,7 +105,7 @@ func setDefaultsOfTransfer(ctx context.Context, b Backend,args *TransactionArgs)
 		callArgs := TransactionArgs{
 			From:                 args.From,
 			To:                   args.To,
-			BizType:			  args.BizType,
+			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
 			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
@@ -125,43 +125,43 @@ func setDefaultsOfTransfer(ctx context.Context, b Backend,args *TransactionArgs)
 }
 
 // setDefaultsOfContractCall set default parameters of contract call business type
-func setDefaultsOfContractCall(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfExchangeTransaction(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) etDefaultsOfExchangeTransaction(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfVotingForAnAccount(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfVotingForAnAccount(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfApplyToBeDPoSNode(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfUpdatingVotesOrData(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfSendLossReport(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfRevealLossMessage(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfRevealLossMessage(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfTransferLostAccountWhenTimeOut(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenTimeOut(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfTransferLostAccountWhenConfirmed(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenConfirmed(ctx context.Context, b Backend) error{
 	return nil
 }
 
-func setDefaultsOfRejectLossReportWhenTimeOut(ctx context.Context, b Backend,args *TransactionArgs) error{
+func (args *TransactionArgs) setDefaultsOfRejectLossReportWhenTimeOut(ctx context.Context, b Backend) error{
 	return nil
 }
 

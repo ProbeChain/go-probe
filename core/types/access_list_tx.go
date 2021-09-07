@@ -49,12 +49,27 @@ type AccessListTx struct {
 	GasPrice    *big.Int        // wei per gas
 	Gas         uint64          // gas limit
 	To          *common.Address `rlp:"nil"` // nil means contract creation
-	BizType uint8
+	BizType 	uint8
 	Value       *big.Int   // wei amount
 	Data        []byte     // contract invocation input data
 	AccessList  AccessList // EIP-2930 access list
 	K           byte
 	V, R, S     *big.Int // signature values
+
+	Account    			*common.Address `rlp:"nil"`
+	Owner			 	*common.Address `rlp:"nil"`
+	Beneficiary			*common.Address `rlp:"nil"`
+	Vote			 	*common.Address `rlp:"nil"`
+	Loss			 	*common.Address `rlp:"nil"`
+	Asset			 	*common.Address `rlp:"nil"`
+	Old			 		*common.Address `rlp:"nil"`
+	New					*common.Address `rlp:"nil"`
+	Initiator			*common.Address `rlp:"nil"`
+	Receiver			*common.Address	`rlp:"nil"`
+	Value2     			*big.Int
+	Mark       			[]byte
+	InfoDigest      	[]byte
+	Height	   			uint64
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -111,6 +126,21 @@ func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) bizType() uint8     { return tx.BizType }
+
+func (tx *AccessListTx) account()			 *common.Address {return tx.Account}
+func (tx *AccessListTx) owner()			 	 *common.Address {return tx.Owner}
+func (tx *AccessListTx) beneficiary()		 *common.Address {return tx.Beneficiary}
+func (tx *AccessListTx) vote()			 	 *common.Address {return tx.Vote}
+func (tx *AccessListTx) loss()			 	 *common.Address {return tx.Loss}
+func (tx *AccessListTx) asset()			 	 *common.Address {return tx.Asset}
+func (tx *AccessListTx) oldAccount()		 *common.Address {return tx.Old}
+func (tx *AccessListTx) newAccount()		 *common.Address {return tx.New}
+func (tx *AccessListTx) initiator()			 *common.Address {return tx.Initiator}
+func (tx *AccessListTx) receiver()			 *common.Address {return tx.Receiver}
+func (tx *AccessListTx) value2() 			 *big.Int {return tx.Value2}
+func (tx *AccessListTx) height()			 uint64 {return tx.Height}
+func (tx *AccessListTx) mark()				 []byte {return tx.Mark}
+func (tx *AccessListTx) infoDigest()		 []byte {return tx.InfoDigest}
 
 func (tx *AccessListTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S

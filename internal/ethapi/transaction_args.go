@@ -34,51 +34,83 @@ import (
 type TransactionArgs struct {
 	From                 *common.Address `json:"from"`
 	To                   *common.Address `json:"to"`
-	Account              *common.Address `json:"account"`
-	Owner                *common.Address `json:"owner"`
-	Beneficiary          *common.Address `json:"beneficiary"`
-	Vote                 *common.Address `json:"vote"`
-	Loss                 *common.Address `json:"loss"`
-	Asset                *common.Address `json:"asset"`
-	Old                  *common.Address `json:"old"`
-	New                  *common.Address `json:"new"`
-	BizType              *hexutil.Uint8  `json:"bizType"`
+	Account			 	 *common.Address `json:"account"`
+	Owner			 	 *common.Address `json:"owner"`
+	Beneficiary			 *common.Address `json:"beneficiary"`
+	Vote			 	 *common.Address `json:"vote"`
+	Loss			 	 *common.Address `json:"loss"`
+	Asset			 	 *common.Address `json:"asset"`
+	Old			 		 *common.Address `json:"old"`
+	New					 *common.Address `json:"new"`
+	Initiator			 *common.Address `json:"initiator"` //wxc 资产对换发起方 regular account
+	Receiver			 *common.Address `json:"receiver"`  //wxc 资产对换接受方 regular account
+	BizType          	 *hexutil.Uint8	 `json:"bizType"`
+
 	Gas                  *hexutil.Uint64 `json:"gas"`
 	GasPrice             *hexutil.Big    `json:"gasPrice"`
 	MaxFeePerGas         *hexutil.Big    `json:"maxFeePerGas"`
 	MaxPriorityFeePerGas *hexutil.Big    `json:"maxPriorityFeePerGas"`
 	Value                *hexutil.Big    `json:"value"`
+	Value2               *hexutil.Big    `json:"value2"`
 	Nonce                *hexutil.Uint64 `json:"nonce"`
+	Height               *hexutil.Uint64 `json:"height"`
 
-	// We accept "data" and "input" for backwards-compatibility reasons.
-	// "input" is the newer name and should be preferred by clients.
-	// Issue detail: https://github.com/ethereum/go-ethereum/issues/15628
-	Data       *hexutil.Bytes `json:"data"`
-	Input      *hexutil.Bytes `json:"input"`
-	Mark       *hexutil.Bytes `json:"data"`
-	InfoDigest *hexutil.Bytes `json:"data"`
+	Data  				*hexutil.Bytes `json:"data"`
+	Input 				*hexutil.Bytes `json:"input"`
+	Mark  				*hexutil.Bytes `json:"mark"`
+	InfoDigest  		*hexutil.Bytes `json:"infoDigest"`
+
 	// For non-legacy transactions
-	AccessList *types.AccessList `json:"accessList,omitempty"`
-	ChainID    *hexutil.Big      `json:"chainId,omitempty"`
+	AccessList 			*types.AccessList `json:"accessList,omitempty"`
+	ChainID    			*hexutil.Big      `json:"chainId,omitempty"`
 }
 
 // from retrieves the transaction sender address.
-func (arg *TransactionArgs) from() common.Address {
-	if arg.From == nil {
+func (args *TransactionArgs) from() common.Address {
+	if args.From == nil {
 		return common.Address{}
 	}
-	return *arg.From
+	return *args.From
 }
 
 // data retrieves the transaction calldata. Input field is preferred.
-func (arg *TransactionArgs) data() []byte {
-	if arg.Input != nil {
-		return *arg.Input
+func (args *TransactionArgs) data() []byte {
+	if args.Input != nil {
+		return *args.Input
 	}
-	if arg.Data != nil {
-		return *arg.Data
+	if args.Data != nil {
+		return *args.Data
 	}
 	return nil
+}
+
+
+func (args *TransactionArgs) mark() []byte {
+	if args.Mark != nil {
+		return *args.Mark
+	}
+	return nil
+}
+
+func (args *TransactionArgs) infoDigest() []byte {
+	if args.InfoDigest != nil {
+		return *args.InfoDigest
+	}
+	return nil
+}
+
+func (args *TransactionArgs) value2()*big.Int {
+	if args.Value2 != nil {
+		return args.Value2.ToInt()
+	}
+	return nil
+}
+
+func (args *TransactionArgs) height() uint64 {
+	if args.Height != nil {
+		return uint64(*args.Height)
+	}
+	return 0
 }
 
 // setDefaults fills in default values for unspecified tx fields.
@@ -124,15 +156,15 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 	var err error
 	switch uint8(*args.BizType) {
 	case common.Register:
-		err = setDefaultsOfRegister(ctx, b, args)
+		err = args.setDefaultsOfRegister(ctx,b)
 	case common.Cancellation:
-		err = setDefaultsOfCancellation(ctx, b, args)
+		err = args.setDefaultsOfCancellation(ctx,b)
 	case common.RevokeCancellation:
-		err = setDefaultsOfRevokeCancellation(ctx, b, args)
+		err = args.setDefaultsOfRevokeCancellation(ctx,b)
 	case common.Transfer:
-		err = setDefaultsOfTransfer(ctx, b, args)
+		err = args.setDefaultsOfTransfer(ctx,b)
 	case common.ContractCall:
-		err = setDefaultsOfContractCall(ctx, b, args)
+		err = args.setDefaultsOfContractCall(ctx,b)
 	//... todo 还有未实现的
 	default:
 		err = errors.New("unsupported business type")
@@ -215,57 +247,37 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		accessList = *args.AccessList
 	}
 	fmt.Printf("NewMessage---->\nfrom：%s\nto：%s\nvalue：%s\nbizType：%d\ngas：%d\ngasPrice：%s\ngasFeeCap：%s\ngasTipCap：%s\n",
-		addr.String(), args.To.String(), value.String(), uint8(*args.BizType), gas, gasPrice.String(), gasFeeCap.String(), gasTipCap.String())
-	msg := types.NewMessage(addr, args.To, uint8(*args.BizType), 0, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, false)
+		addr.String(), args.To.String(),value.String(),uint8(*args.BizType), gas, gasPrice.String(),gasFeeCap.String(),gasTipCap.String())
+	msg := types.NewMessage(
+		addr, args.To, uint8(*args.BizType),
+		0, value, gas,
+		gasPrice, gasFeeCap, gasTipCap,
+		data, accessList, false,
+		args.Account,args.Owner,args.Beneficiary,
+		args.Vote,args.Loss,args.Asset,
+		args.Old,args.New,args.Initiator,
+		args.Receiver,args.mark(), args.infoDigest(),
+		args.value2(),args.height())
 	return msg, nil
 }
 
 // toTransaction converts the arguments to a transaction.
 // This assumes that setDefaults has been called.
 func (args *TransactionArgs) toTransaction() *types.Transaction {
-	var data types.TxData
-	switch {
-	case args.MaxFeePerGas != nil:
-		al := types.AccessList{}
-		if args.AccessList != nil {
-			al = *args.AccessList
-		}
-		data = &types.DynamicFeeTx{
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
-			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: al,
-		}
-	case args.AccessList != nil:
-		data = &types.AccessListTx{
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasPrice:   (*big.Int)(args.GasPrice),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: *args.AccessList,
-		}
-	default:
-		data = &types.LegacyTx{
-			To:       args.To,
-			BizType:  uint8(*args.BizType),
-			Nonce:    uint64(*args.Nonce),
-			Gas:      uint64(*args.Gas),
-			GasPrice: (*big.Int)(args.GasPrice),
-			Value:    (*big.Int)(args.Value),
-			Data:     args.data(),
-		}
+	switch uint8(*args.BizType) {
+	case common.Register:
+		return args.transactionOfRegister()
+	case common.Cancellation:
+		return args.transactionOfCancellation()
+	case common.RevokeCancellation:
+		return args.transactionOfRevokeCancellation()
+	case common.Transfer:
+		return args.transactionOfTransfer()
+	case common.ContractCall:
+		return args.transactionOfContractCall()
+	//... todo 还有未实现的
+	default: return nil
 	}
-	return types.NewTx(data)
 }
 
 // ToTransaction converts the arguments to a transaction.

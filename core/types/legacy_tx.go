@@ -33,6 +33,21 @@ type LegacyTx struct {
 	Data        []byte // contract invocation input data
 	K           byte
 	V, R, S     *big.Int // signature values
+
+	Account    			*common.Address `rlp:"nil"`
+	Owner			 	*common.Address `rlp:"nil"`
+	Beneficiary			*common.Address `rlp:"nil"`
+	Vote			 	*common.Address `rlp:"nil"`
+	Loss			 	*common.Address `rlp:"nil"`
+	Asset			 	*common.Address `rlp:"nil"`
+	Old			 		*common.Address `rlp:"nil"`
+	New					*common.Address `rlp:"nil"`
+	Initiator			*common.Address `rlp:"nil"`
+	Receiver			*common.Address	`rlp:"nil"`
+	Value2     			*big.Int
+	Mark       			[]byte
+	InfoDigest      	[]byte
+	Height	   			uint64
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -108,8 +123,23 @@ func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
 func (tx *LegacyTx) bizType() uint8     { return tx.BizType }
 
+func (tx *LegacyTx) account()			 *common.Address {return tx.Account}
+func (tx *LegacyTx) owner()			 	 *common.Address {return tx.Owner}
+func (tx *LegacyTx) beneficiary()		 *common.Address {return tx.Beneficiary}
+func (tx *LegacyTx) vote()			 	 *common.Address {return tx.Vote}
+func (tx *LegacyTx) loss()			 	 *common.Address {return tx.Loss}
+func (tx *LegacyTx) asset()			 	 *common.Address {return tx.Asset}
+func (tx *LegacyTx) oldAccount()		 *common.Address {return tx.Old}
+func (tx *LegacyTx) newAccount()		 *common.Address {return tx.New}
+func (tx *LegacyTx) initiator()			 *common.Address {return tx.Initiator}
+func (tx *LegacyTx) receiver()			 *common.Address {return tx.Receiver}
+func (tx *LegacyTx) value2() 			 *big.Int {return tx.Value2}
+func (tx *LegacyTx) height()			 uint64 {return tx.Height}
+func (tx *LegacyTx) mark()				 []byte {return tx.Mark}
+func (tx *LegacyTx) infoDigest()		 []byte {return tx.InfoDigest}
+
 func (tx *LegacyTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
-	return tx.K, tx.V, tx.R, tx.S
+		return tx.K, tx.V, tx.R, tx.S
 }
 
 func (tx *LegacyTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {

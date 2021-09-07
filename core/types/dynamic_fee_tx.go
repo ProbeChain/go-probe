@@ -38,6 +38,21 @@ type DynamicFeeTx struct {
 	V *big.Int `json:"v" gencodec:"required"`
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
+
+	Account    			*common.Address `rlp:"nil"`
+	Owner			 	*common.Address `rlp:"nil"`
+	Beneficiary			*common.Address `rlp:"nil"`
+	Vote			 	*common.Address `rlp:"nil"`
+	Loss			 	*common.Address `rlp:"nil"`
+	Asset			 	*common.Address `rlp:"nil"`
+	Old			 		*common.Address `rlp:"nil"`
+	New					*common.Address `rlp:"nil"`
+	Initiator			*common.Address `rlp:"nil"`
+	Receiver			*common.Address	`rlp:"nil"`
+	Value2     			*big.Int
+	Mark       			[]byte
+	InfoDigest      	[]byte
+	Height	   			uint64
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -98,6 +113,22 @@ func (tx *DynamicFeeTx) value() *big.Int        { return tx.Value }
 func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
 func (tx *DynamicFeeTx) bizType() uint8     { return tx.BizType }
+
+func (tx *DynamicFeeTx) account()			 *common.Address {return tx.Account}
+func (tx *DynamicFeeTx) owner()			 	 *common.Address {return tx.Owner}
+func (tx *DynamicFeeTx) beneficiary()		 *common.Address {return tx.Beneficiary}
+func (tx *DynamicFeeTx) vote()			 	 *common.Address {return tx.Vote}
+func (tx *DynamicFeeTx) loss()			 	 *common.Address {return tx.Loss}
+func (tx *DynamicFeeTx) asset()			 	 *common.Address {return tx.Asset}
+func (tx *DynamicFeeTx) oldAccount()		 *common.Address {return tx.Old}
+func (tx *DynamicFeeTx) newAccount()		 *common.Address {return tx.New}
+func (tx *DynamicFeeTx) initiator()			 *common.Address {return tx.Initiator}
+func (tx *DynamicFeeTx) receiver()			 *common.Address {return tx.Receiver}
+func (tx *DynamicFeeTx) value2() 			 *big.Int {return tx.Value2}
+func (tx *DynamicFeeTx) height()			 uint64 {return tx.Height}
+func (tx *DynamicFeeTx) mark()				 []byte {return tx.Mark}
+func (tx *DynamicFeeTx) infoDigest()		 []byte {return tx.InfoDigest}
+
 func (tx *DynamicFeeTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S
 }
