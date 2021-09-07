@@ -147,16 +147,13 @@ type SignerFn func(signer accounts.Account, mimeType string, message []byte) ([]
 func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, error) {
 	// If the signature's already cached, return that
 	hash := header.Hash()
-	/*
-		if address, known := sigcache.Get(hash); known {
-			return address.(common.Address), nil
-		}
-		// Retrieve the signature from the header extra-data
-		if len(header.Extra) < extraSeal {
-			return common.Address{}, errMissingSignature
-		}
-		signature := header.Extra[len(header.Extra)-extraSeal:]
-	*/
+	if address, known := sigcache.Get(hash); known {
+		return address.(common.Address), nil
+	}
+	// Retrieve the signature from the header extra-data
+	if len(header.Extra) < extraSeal {
+		return common.Address{}, errMissingSignature
+	}
 	signature := header.Extra[len(header.Extra)-extraSeal:]
 	// Recover the public key and the Ethereum address
 	pubkey, err := crypto.Ecrecover(SealHash(header).Bytes(), signature)

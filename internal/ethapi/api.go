@@ -1239,7 +1239,7 @@ type RPCTransaction struct {
 	Input            hexutil.Bytes     `json:"input"`
 	Nonce            hexutil.Uint64    `json:"nonce"`
 	To               *common.Address   `json:"to"`
-	BizType		 	 hexutil.Uint8     `json:"bizType"`
+	BizType          hexutil.Uint8     `json:"bizType"`
 	TransactionIndex *hexutil.Uint64   `json:"transactionIndex"`
 	Value            *hexutil.Big      `json:"value"`
 	Type             hexutil.Uint64    `json:"type"`
@@ -1248,6 +1248,7 @@ type RPCTransaction struct {
 	V                *hexutil.Big      `json:"v"`
 	R                *hexutil.Big      `json:"r"`
 	S                *hexutil.Big      `json:"s"`
+	K                byte              `json:"k"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1264,21 +1265,22 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		signer = types.HomesteadSigner{}
 	}
 	from, _ := types.Sender(signer, tx)
-	v, r, s := tx.RawSignatureValues()
+	k, v, r, s := tx.RawSignatureValues()
 	result := &RPCTransaction{
-		Type:     		hexutil.Uint64(tx.Type()),
-		From:     		from,
-		Gas:      		hexutil.Uint64(tx.Gas()),
-		GasPrice: 		(*hexutil.Big)(tx.GasPrice()),
-		Hash:     		tx.Hash(),
-		Input:    		hexutil.Bytes(tx.Data()),
-		Nonce:    		hexutil.Uint64(tx.Nonce()),
-		To:       		tx.To(),
-		BizType:		hexutil.Uint8(tx.BizType()),
-		Value:    		(*hexutil.Big)(tx.Value()),
-		V:        		(*hexutil.Big)(v),
-		R:        		(*hexutil.Big)(r),
-		S:        		(*hexutil.Big)(s),
+		Type:     hexutil.Uint64(tx.Type()),
+		From:     from,
+		Gas:      hexutil.Uint64(tx.Gas()),
+		GasPrice: (*hexutil.Big)(tx.GasPrice()),
+		Hash:     tx.Hash(),
+		Input:    hexutil.Bytes(tx.Data()),
+		Nonce:    hexutil.Uint64(tx.Nonce()),
+		To:       tx.To(),
+		BizType:  hexutil.Uint8(tx.BizType()),
+		Value:    (*hexutil.Big)(tx.Value()),
+		V:        (*hexutil.Big)(v),
+		R:        (*hexutil.Big)(r),
+		S:        (*hexutil.Big)(s),
+		K:        k,
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
@@ -1591,7 +1593,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"transactionIndex":  hexutil.Uint64(index),
 		"from":              from,
 		"to":                tx.To(),
-		"bizType":       hexutil.Uint8(tx.BizType()),
+		"bizType":           hexutil.Uint8(tx.BizType()),
 		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
 		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
 		"contractAddress":   nil,
