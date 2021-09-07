@@ -101,6 +101,8 @@ type dialScheduler struct {
 	doneCh      chan *dialTask
 	addStaticCh chan *enode.Node
 	remStaticCh chan *enode.Node
+	addDposCh   chan *enode.Node
+	remDposCh   chan *enode.Node
 	addPeerCh   chan *conn
 	remPeerCh   chan *conn
 
@@ -116,6 +118,9 @@ type dialScheduler struct {
 	// iterator.
 	static     map[enode.ID]*dialTask
 	staticPool []*dialTask
+
+	dpos     map[enode.ID]*dialTask
+	dposPool []*dialTask
 
 	// The dial history keeps recently dialed nodes. Members of history are not dialed.
 	history          expHeap
@@ -166,11 +171,14 @@ func newDialScheduler(config dialConfig, it enode.Iterator, setupFunc dialSetupF
 		setupFunc:   setupFunc,
 		dialing:     make(map[enode.ID]*dialTask),
 		static:      make(map[enode.ID]*dialTask),
+		dpos:        make(map[enode.ID]*dialTask),
 		peers:       make(map[enode.ID]connFlag),
 		doneCh:      make(chan *dialTask),
 		nodesIn:     make(chan *enode.Node),
 		addStaticCh: make(chan *enode.Node),
 		remStaticCh: make(chan *enode.Node),
+		addDposCh:   make(chan *enode.Node),
+		remDposCh:   make(chan *enode.Node),
 		addPeerCh:   make(chan *conn),
 		remPeerCh:   make(chan *conn),
 	}
@@ -204,6 +212,22 @@ func (d *dialScheduler) removeStatic(n *enode.Node) {
 	}
 }
 
+// addDpos adds a dpos dial candidate.
+func (d *dialScheduler) addDpos(n *enode.Node) {
+	select {
+	case d.addDposCh <- n:
+	case <-d.ctx.Done():
+	}
+}
+
+// removeDpos removes a dpos dial candidate.
+func (d *dialScheduler) removeDpos(n *enode.Node) {
+	select {
+	case d.remDposCh <- n:
+	case <-d.ctx.Done():
+	}
+}
+
 // peerAdded updates the peer set.
 func (d *dialScheduler) peerAdded(c *conn) {
 	select {
@@ -232,6 +256,7 @@ loop:
 		// Launch new dials if slots are available.
 		slots := d.freeDialSlots()
 		slots -= d.startStaticDials(slots)
+		slots -= d.startDposDials(slots)
 		if slots > 0 {
 			nodesCh = d.nodesIn
 		} else {
@@ -293,6 +318,30 @@ loop:
 			d.log.Trace("Removing static node", "id", id, "ok", task != nil)
 			if task != nil {
 				delete(d.static, id)
+				if task.staticPoolIndex >= 0 {
+					d.removeFromStaticPool(task.staticPoolIndex)
+				}
+			}
+
+		case node := <-d.addDposCh:
+			id := node.ID()
+			_, exists := d.dpos[id]
+			d.log.Trace("Adding dpos node", "id", id, "ip", node.IP(), "added", !exists)
+			if exists {
+				continue loop
+			}
+			task := newDialTask(node, dposDialedConn)
+			d.dpos[id] = task
+			if d.checkDial(node) == nil {
+				d.addToStaticPool(task)
+			}
+
+		case node := <-d.remDposCh:
+			id := node.ID()
+			task := d.dpos[id]
+			d.log.Trace("Removing dpos node", "id", id, "ok", task != nil)
+			if task != nil {
+				delete(d.dpos, id)
 				if task.staticPoolIndex >= 0 {
 					d.removeFromStaticPool(task.staticPoolIndex)
 				}
@@ -449,6 +498,45 @@ func (d *dialScheduler) removeFromStaticPool(idx int) {
 	task.staticPoolIndex = -1
 }
 
+// startStaticDials starts n static dial tasks.
+func (d *dialScheduler) startDposDials(n int) (started int) {
+	for started = 0; started < n && len(d.dposPool) > 0; started++ {
+		idx := d.rand.Intn(len(d.dposPool))
+		task := d.dposPool[idx]
+		d.startDial(task)
+		d.removeFromDposPool(idx)
+	}
+	return started
+}
+
+// updateDposPool attempts to move the given static dial back into staticPool.
+func (d *dialScheduler) updateDposPool(id enode.ID) {
+	task, ok := d.dpos[id]
+	if ok && task.dposPoolIndex < 0 && d.checkDial(task.dest) == nil {
+		d.addToDposPool(task)
+	}
+}
+
+func (d *dialScheduler) addToDposPool(task *dialTask) {
+	if task.dposPoolIndex >= 0 {
+		panic("attempt to add task to dposPool twice")
+	}
+	d.dposPool = append(d.dposPool, task)
+	task.dposPoolIndex = len(d.dposPool) - 1
+}
+
+// removeFromDposPool removes the task at idx from dposPool. It does that by moving the
+// current last element of the pool to idx and then shortening the pool by one.
+func (d *dialScheduler) removeFromDposPool(idx int) {
+	task := d.dposPool[idx]
+	end := len(d.dposPool) - 1
+	d.dposPool[idx] = d.dposPool[end]
+	d.dposPool[idx].dposPoolIndex = idx
+	d.dposPool[end] = nil
+	d.dposPool = d.dposPool[:end]
+	task.dposPoolIndex = -1
+}
+
 // startDial runs the given dial task in a separate goroutine.
 func (d *dialScheduler) startDial(task *dialTask) {
 	d.log.Trace("Starting p2p dial", "id", task.dest.ID(), "ip", task.dest.IP(), "flag", task.flags)
@@ -464,6 +552,7 @@ func (d *dialScheduler) startDial(task *dialTask) {
 // A dialTask generated for each node that is dialed.
 type dialTask struct {
 	staticPoolIndex int
+	dposPoolIndex   int
 	flags           connFlag
 	// These fields are private to the task and should not be
 	// accessed by dialScheduler while the task is running.
@@ -473,7 +562,7 @@ type dialTask struct {
 }
 
 func newDialTask(dest *enode.Node, flags connFlag) *dialTask {
-	return &dialTask{dest: dest, flags: flags, staticPoolIndex: -1}
+	return &dialTask{dest: dest, flags: flags, staticPoolIndex: -1, dposPoolIndex: -1}
 }
 
 type dialError struct {

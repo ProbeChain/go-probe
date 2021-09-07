@@ -2617,3 +2617,8 @@ func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 func (bc *BlockChain) SavePowAnswer(powAnswer *types.PowAnswer) {
 	bc.powAnswers.Add(powAnswer)
 }
+
+// PowAnswers save a pow answer to set
+func (bc *BlockChain) PowAnswers(number *big.Int) []*types.PowAnswer {
+	return bc.powAnswers.List(number)
+}
