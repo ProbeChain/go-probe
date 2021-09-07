@@ -121,8 +121,20 @@ func TestCreateAddressForProbeAccountType(t *testing.T) {
 	fmt.Println("address1 ", address1)
 }*/
 func TestSign01(*testing.T) {
+	k := byte(0x03)
+	key, err := probe.GenerateKeyByType(k)
+	if err != nil {
+		fmt.Println("Error: ", err.Error())
+	}
+	hexPriKey := hex.EncodeToString(probe.FromECDSA(key))
+	//不含0x的私钥65
+	fmt.Printf("private key [%d] [%v]\n", len(hexPriKey), hexPriKey)
+	//Get the address
+	address := probe.PubkeyToAddress(key.PublicKey)
+	fmt.Printf("address[%d][%v]\n", len(address), address.Hex())
+
 	hexStr := "5eabdc3deb6c6caaa80e063d6f11784ff06a57c6a06d43b7ede9a805e5fc29b2"
-	hexPriKey := "00b386e51a745b4f739b0e7a8e12f04c336413336546cdee86d2f360e5d4658a82"
+	//hexPriKey := "033b2dd38d41445e25d626808d39c3359117c5ba9145740cd38a3b430f13153c97"
 	digestHash, _ := hex.DecodeString(hexStr)
 	key1, _ := probe.HexToECDSA(hexPriKey)
 	sig, _ := crypto.Sign(digestHash, key1)

@@ -44,27 +44,27 @@ func (al AccessList) StorageKeys() int {
 
 // AccessListTx is the data of EIP-2930 access list transactions.
 type AccessListTx struct {
-	ChainID    *big.Int        // destination chain ID
-	Nonce      uint64          // nonce of sender account
-	GasPrice   *big.Int        // wei per gas
-	Gas        uint64          // gas limit
-	To         *common.Address `rlp:"nil"` // nil means contract creation
+	ChainID     *big.Int        // destination chain ID
+	Nonce       uint64          // nonce of sender account
+	GasPrice    *big.Int        // wei per gas
+	Gas         uint64          // gas limit
+	To          *common.Address `rlp:"nil"` // nil means contract creation
 	ProbeTxType uint8
-	Value      *big.Int        // wei amount
-	Data       []byte          // contract invocation input data
-	AccessList AccessList      // EIP-2930 access list
-	FromAcType byte
-	V, R, S    *big.Int        // signature values
+	Value       *big.Int   // wei amount
+	Data        []byte     // contract invocation input data
+	AccessList  AccessList // EIP-2930 access list
+	K           byte
+	V, R, S     *big.Int // signature values
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *AccessListTx) copy() TxData {
 	cpy := &AccessListTx{
-		Nonce: tx.Nonce,
-		To:    tx.To, // TODO: copy pointed-to address
-		Data:  common.CopyBytes(tx.Data),
+		Nonce:       tx.Nonce,
+		To:          tx.To, // TODO: copy pointed-to address
+		Data:        common.CopyBytes(tx.Data),
 		ProbeTxType: tx.ProbeTxType,
-		Gas:   tx.Gas,
+		Gas:         tx.Gas,
 		// These are copied below.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
@@ -73,7 +73,7 @@ func (tx *AccessListTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
-		FromAcType: tx.FromAcType,
+		K:          tx.K,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -111,12 +111,12 @@ func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) probeTxType() uint8     { return tx.ProbeTxType }
-func (tx *AccessListTx) fromAcType() byte    	{ return tx.FromAcType }
 
-func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
-	return tx.V, tx.R, tx.S
+func (tx *AccessListTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
+	return tx.K, tx.V, tx.R, tx.S
 }
 
-func (tx *AccessListTx) setSignatureValues(chainID, v, r, s *big.Int) {
+func (tx *AccessListTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s
+	tx.K = k
 }

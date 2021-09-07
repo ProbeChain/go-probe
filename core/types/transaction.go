@@ -84,9 +84,8 @@ type TxData interface {
 	nonce() uint64
 	to() *common.Address
 	probeTxType() uint8
-	rawSignatureValues() (v, r, s *big.Int)
-	setSignatureValues(chainID, v, r, s *big.Int)
-	fromAcType() byte
+	rawSignatureValues() (k byte, v, r, s *big.Int)
+	setSignatureValues(k byte, chainID, v, r, s *big.Int)
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -285,8 +284,6 @@ func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
 func (tx *Transaction) ProbeTxType() uint8 { return tx.inner.probeTxType() }
 
-func (tx *Transaction) FromAcType() byte { return tx.inner.fromAcType() }
-
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
 func (tx *Transaction) To() *common.Address {
@@ -308,7 +305,7 @@ func (tx *Transaction) Cost() *big.Int {
 
 // RawSignatureValues returns the V, R, S signature values of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
+func (tx *Transaction) RawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.inner.rawSignatureValues()
 }
 
@@ -342,7 +339,7 @@ func (tx *Transaction) EffectiveGasTip(baseFee *big.Int) (*big.Int, error) {
 	var err error
 	gasFeeCap := tx.GasFeeCap()
 	if gasFeeCap.Cmp(baseFee) == -1 {
-		fmt.Printf("EffectiveGasTip，gasFeeCap：%s,baseFee:%s\n",gasFeeCap.String(),baseFee.String())
+		fmt.Printf("EffectiveGasTip，gasFeeCap：%s,baseFee:%s\n", gasFeeCap.String(), baseFee.String())
 		err = ErrGasFeeCapTooLow
 	}
 	return math.BigMin(tx.GasTipCap(), gasFeeCap.Sub(gasFeeCap, baseFee)), err
@@ -407,7 +404,7 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 		return nil, err
 	}
 	cpy := tx.inner.copy()
-	cpy.setSignatureValues(signer.ChainID(), v, r, s)
+	cpy.setSignatureValues(sig[65], signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 
@@ -576,51 +573,51 @@ func (t *TransactionsByPriceAndNonce) Pop() {
 //
 // NOTE: In a future PR this will be removed.
 type Message struct {
-	to         *common.Address
-	from       common.Address
+	to          *common.Address
+	from        common.Address
 	probeTxType uint8
-	nonce      uint64
-	amount     *big.Int
-	gasLimit   uint64
-	gasPrice   *big.Int
-	gasFeeCap  *big.Int
-	gasTipCap  *big.Int
-	data       []byte
-	accessList AccessList
-	checkNonce bool
+	nonce       uint64
+	amount      *big.Int
+	gasLimit    uint64
+	gasPrice    *big.Int
+	gasFeeCap   *big.Int
+	gasTipCap   *big.Int
+	data        []byte
+	accessList  AccessList
+	checkNonce  bool
 }
 
 func NewMessage(from common.Address, to *common.Address, probeTxType uint8, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, gasFeeCap, gasTipCap *big.Int, data []byte, accessList AccessList, checkNonce bool) Message {
 	return Message{
-		from:       from,
-		to:         to,
+		from:        from,
+		to:          to,
 		probeTxType: probeTxType,
-		nonce:      nonce,
-		amount:     amount,
-		gasLimit:   gasLimit,
-		gasPrice:   gasPrice,
-		gasFeeCap:  gasFeeCap,
-		gasTipCap:  gasTipCap,
-		data:       data,
-		accessList: accessList,
-		checkNonce: checkNonce,
+		nonce:       nonce,
+		amount:      amount,
+		gasLimit:    gasLimit,
+		gasPrice:    gasPrice,
+		gasFeeCap:   gasFeeCap,
+		gasTipCap:   gasTipCap,
+		data:        data,
+		accessList:  accessList,
+		checkNonce:  checkNonce,
 	}
 }
 
 // AsMessage returns the transaction as a core.Message.
 func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 	msg := Message{
-		nonce:      tx.Nonce(),
-		gasLimit:   tx.Gas(),
-		gasPrice:   new(big.Int).Set(tx.GasPrice()),
-		gasFeeCap:  new(big.Int).Set(tx.GasFeeCap()),
-		gasTipCap:  new(big.Int).Set(tx.GasTipCap()),
-		to:         tx.To(),
+		nonce:       tx.Nonce(),
+		gasLimit:    tx.Gas(),
+		gasPrice:    new(big.Int).Set(tx.GasPrice()),
+		gasFeeCap:   new(big.Int).Set(tx.GasFeeCap()),
+		gasTipCap:   new(big.Int).Set(tx.GasTipCap()),
+		to:          tx.To(),
 		probeTxType: tx.ProbeTxType(),
-		amount:     tx.Value(),
-		data:       tx.Data(),
-		accessList: tx.AccessList(),
-		checkNonce: true,
+		amount:      tx.Value(),
+		data:        tx.Data(),
+		accessList:  tx.AccessList(),
+		checkNonce:  true,
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
@@ -643,4 +640,3 @@ func (m Message) Data() []byte           { return m.data }
 func (m Message) AccessList() AccessList { return m.accessList }
 func (m Message) CheckNonce() bool       { return m.checkNonce }
 func (m Message) ProbeTxType() uint8     { return m.probeTxType }
-

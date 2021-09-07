@@ -369,10 +369,10 @@ func zeroBytes(bytes []byte) {
 	}
 }
 
-func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address {
+func PubkeyBytesToAddress(pubKey []byte, k byte) common.Address {
 	b := Keccak256(pubKey[1:])[12:]
 	c := make([]byte, len(b)+1)
-	c[0] = fromAcType
+	c[0] = k
 	copy(c[1:], b)
 	checkSumBytes := common.CheckSum(c)
 	return common.BytesToAddress(append(c, checkSumBytes...))
