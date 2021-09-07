@@ -70,7 +70,7 @@ type Receipt struct {
 	BlockHash        common.Hash `json:"blockHash,omitempty"`
 	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
 	TransactionIndex uint        `json:"transactionIndex"`
-	ProbeTxType      uint8       `json:"probeTxType"`
+	BizType      uint8       `json:"bizType"`
 }
 
 type receiptMarshaling struct {
@@ -310,7 +310,7 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 			r[i].Logs[j].Index = logIndex
 			logIndex++
 		}
-		r[i].ProbeTxType = txs[i].ProbeTxType()
+		r[i].BizType = txs[i].BizType()
 	}
 	return nil
 }

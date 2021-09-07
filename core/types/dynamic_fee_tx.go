@@ -29,7 +29,7 @@ type DynamicFeeTx struct {
 	GasFeeCap   *big.Int
 	Gas         uint64
 	To          *common.Address `rlp:"nil"` // nil means contract creation
-	ProbeTxType uint8
+	BizType uint8
 	Value       *big.Int
 	Data        []byte
 	AccessList  AccessList
@@ -45,7 +45,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
 		Nonce:       tx.Nonce,
 		To:          tx.To, // TODO: copy pointed-to address
-		ProbeTxType: tx.ProbeTxType,
+		BizType:     tx.BizType,
 		Data:        common.CopyBytes(tx.Data),
 		Gas:         tx.Gas,
 		// These are copied below.
@@ -97,7 +97,7 @@ func (tx *DynamicFeeTx) gasPrice() *big.Int     { return tx.GasFeeCap }
 func (tx *DynamicFeeTx) value() *big.Int        { return tx.Value }
 func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
-func (tx *DynamicFeeTx) probeTxType() uint8     { return tx.ProbeTxType }
+func (tx *DynamicFeeTx) bizType() uint8     { return tx.BizType }
 func (tx *DynamicFeeTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S
 }

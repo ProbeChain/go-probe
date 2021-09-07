@@ -378,7 +378,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
             "type": "address"
           },
           {
-            "name": "probeTxType",
+            "name": "bizType",
             "type": "uint8"
           },
           {
@@ -481,7 +481,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
           },
           {
             "indexed": true,
-            "name": "probeTxType",
+            "name": "bizType",
             "type": "uint8"
           },
           {
@@ -6707,18 +6707,18 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @method transfer
      * @param {String} from
      * @param {String} to iban
-     * @param {Uint8} probeTxType
+     * @param {Uint8} bizType
      * @param {Value} value to be tranfered
      * @param {Function} callback, callback
      */
-    var transfer = function (eth, from, to, probeTxType,value, callback) {
+    var transfer = function (eth, from, to, bizType,value, callback) {
       var iban = new Iban(to);
       if (!iban.isValid()) {
         throw new Error('invalid iban address');
       }
 
       if (iban.isDirect()) {
-        return transferToAddress(eth, from, iban.address(), probeTxType, value, callback);
+        return transferToAddress(eth, from, iban.address(), bizType, value, callback);
       }
 
       if (!callback) {
@@ -6741,11 +6741,11 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @param {Value} value to be tranfered
      * @param {Function} callback, callback
      */
-    var transferToAddress = function (eth, from, to, probeTxType, value, callback) {
+    var transferToAddress = function (eth, from, to, bizType, value, callback) {
       return eth.sendTransaction({
         address: to,
         from: from,
-        probeTxType: probeTxType,
+        bizType: bizType,
         value: value
       }, callback);
     };

@@ -156,6 +156,13 @@ const (
 	// up to half the consumed gas could be refunded. Redefined as 1/5th in EIP-3529
 	RefundQuotient        uint64 = 2
 	RefundQuotientEIP3529 uint64 = 5
+
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR  		uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS  			uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET	uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT			uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING			uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT		uint64 = 2
 )
 
 // Gas discount table for BLS12-381 G1 and G2 multi exponentiation operations

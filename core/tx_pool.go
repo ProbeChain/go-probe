@@ -553,6 +553,28 @@ func (pool *TxPool) local() map[common.Address]types.Transactions {
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
+	bizType := tx.BizType()
+	if !common.CheckBizType(bizType) {
+		return ErrBizTypeNotSupported
+	}
+	var err error
+	switch bizType {
+	case common.Register:
+		err = validateTxOfRegister(tx,local,pool)
+	case common.Cancellation:
+		err = validateTxOfCancellation(tx,local,pool)
+	case common.RevokeCancellation:
+		err = validateTxOfRevokeCancellation(tx,local,pool)
+	case common.Transfer:
+		err = validateTxOfTransfer(tx,local,pool)
+	case common.ContractCall:
+		err = validateTxOfContractCall(tx,local,pool)
+	//... todo 还有未实现的
+	default: err = errors.New("unsupported business type")
+	}
+	if err != nil {
+		return err
+	}
 	// Accept only legacy transactions until EIP-2718/2930 activates.
 	if !pool.eip2718 && tx.Type() != types.LegacyTxType {
 		return ErrTxTypeNotSupported
