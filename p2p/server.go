@@ -182,12 +182,14 @@ type Server struct {
 	peerFeed     event.Feed
 	log          log.Logger
 
-	nodedb    *enode.DB
-	localnode *enode.LocalNode
-	ntab      *discover.UDPv4
-	DiscV5    *discover.UDPv5
-	discmix   *enode.FairMix
-	dialsched *dialScheduler
+	nodedb        *enode.DB
+	localnode     *enode.LocalNode
+	ntab          *discover.UDPv4
+	DiscV5        *discover.UDPv5
+	discmix       *enode.FairMix
+	dialsched     *dialScheduler
+	discmixDpos   *enode.FairMix
+	dialschedDpos *dialScheduler
 
 	// Channels into the run loop.
 	quit                    chan struct{}
@@ -271,6 +273,9 @@ func (f connFlag) String() string {
 	}
 	if f&inboundConn != 0 {
 		s += "-inbound"
+	}
+	if f&dposDialedConn != 0 {
+		s += "-dposdial"
 	}
 	if s != "" {
 		s = s[1:]
@@ -377,20 +382,40 @@ func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
 	}
 }
 
-// AddDposPeer adds the given dpos node to a reserved whitelist which allows the
-// node to always connect, even if the slot are full.
+// AddDposPeer adds the given node to the static node set. When there is room in the peer set,
+// the server will connect to the node. If the connection fails for any reason, the server
+// will attempt to reconnect the peer.
 func (srv *Server) AddDposPeer(node *enode.Node) {
-	select {
-	case srv.adddpos <- node:
-	case <-srv.quit:
-	}
+	srv.dialschedDpos.addStatic(node)
 }
 
-// RemoveDposdPeer removes the given node from the dpos peer set.
-func (srv *Server) RemoveDposdPeer(node *enode.Node) {
-	select {
-	case srv.removedpos <- node:
-	case <-srv.quit:
+// RemoveDposPeer removes a node from the static node set. It also disconnects from the given
+// node if it is currently connected as a peer.
+//
+// This method blocks until all protocols have exited and the peer is removed. Do not use
+// RemovePeer in protocol implementations, call Disconnect on the Peer instead.
+func (srv *Server) RemoveDposPeer(node *enode.Node) {
+	var (
+		ch  chan *PeerEvent
+		sub event.Subscription
+	)
+	// Disconnect the peer on the main loop.
+	srv.doPeerOp(func(peers map[enode.ID]*Peer) {
+		srv.dialschedDpos.removeStatic(node)
+		if peer := peers[node.ID()]; peer != nil {
+			ch = make(chan *PeerEvent, 1)
+			sub = srv.peerFeed.Subscribe(ch)
+			peer.Disconnect(DiscRequested)
+		}
+	})
+	// Wait for the peer connection to end.
+	if ch != nil {
+		defer sub.Unsubscribe()
+		for ev := range ch {
+			if ev.Peer == node.ID() && ev.Type == PeerEventTypeDrop {
+				return
+			}
+		}
 	}
 }
 
@@ -570,6 +595,17 @@ func (srv *Server) setupDiscovery() error {
 		}
 	}
 
+	srv.discmixDpos = enode.NewFairMix(discmixTimeout)
+
+	// Add protocol-specific discovery sources.
+	added = make(map[string]bool)
+	for _, proto := range srv.Protocols {
+		if proto.DialCandidates != nil && !added[proto.Name] {
+			srv.discmixDpos.AddSource(proto.DialCandidates)
+			added[proto.Name] = true
+		}
+	}
+
 	// Don't listen on UDP endpoint if DHT is disabled.
 	if srv.NoDiscovery && !srv.DiscoveryV5 {
 		return nil
@@ -656,13 +692,14 @@ func (srv *Server) setupDialScheduler() {
 	if config.dialer == nil {
 		config.dialer = tcpDialer{&net.Dialer{Timeout: defaultDialTimeout}}
 	}
-	srv.dialsched = newDialScheduler(config, srv.discmix, srv.SetupConn)
+	srv.dialsched = newDialScheduler(config, srv.discmix, srv.SetupConn, dialTypeStatic)
 	for _, n := range srv.StaticNodes {
 		srv.dialsched.addStatic(n)
 	}
 
+	srv.dialschedDpos = newDialScheduler(config, srv.discmixDpos, srv.SetupConn, dialTypeDpos)
 	for _, n := range srv.DposNodes {
-		srv.dialsched.addDpos(n)
+		srv.dialschedDpos.addStatic(n)
 	}
 }
 
@@ -727,6 +764,8 @@ func (srv *Server) run() {
 	defer srv.nodedb.Close()
 	defer srv.discmix.Close()
 	defer srv.dialsched.stop()
+	defer srv.discmixDpos.Close()
+	defer srv.dialschedDpos.stop()
 
 	var (
 		peers        = make(map[enode.ID]*Peer)
@@ -855,11 +894,9 @@ running:
 
 func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	switch {
-	case !c.is(trustedConn) && len(peers) >= srv.MaxPeers:
+	case !c.is(trustedConn) && !c.is(dposDialedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
-	case !c.is(dposDialedConn) && len(peers) >= srv.MaxPeers:
-		return DiscTooManyPeers
-	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
+	case !c.is(trustedConn) && !c.is(dposDialedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
 		return DiscTooManyPeers
 	case peers[c.node.ID()] != nil:
 		return DiscAlreadyConnected

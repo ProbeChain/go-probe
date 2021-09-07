@@ -2618,7 +2618,12 @@ func (bc *BlockChain) SavePowAnswer(powAnswer *types.PowAnswer) {
 	bc.powAnswers.Add(powAnswer)
 }
 
-// PowAnswers save a pow answer to set
-func (bc *BlockChain) PowAnswers(number *big.Int) []*types.PowAnswer {
+// GetPowAnswers get a pow answer list
+func (bc *BlockChain) GetPowAnswers(number *big.Int) []*types.PowAnswer {
 	return bc.powAnswers.List(number)
+}
+
+// GetDposAck get a dpos ack list
+func (bc *BlockChain) GetDposAck(number *big.Int) []*types.DposAck {
+	return nil
 }

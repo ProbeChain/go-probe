@@ -152,7 +152,7 @@ func (api *privateAdminAPI) RemoveDposPeer(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid enode: %v", err)
 	}
-	server.RemoveDposdPeer(node)
+	server.RemoveDposPeer(node)
 	return true, nil
 }
 
