@@ -194,6 +194,8 @@ var eth66 = map[uint64]msgHandler{
 	TransactionsMsg:               handleTransactions,
 	NewPooledTransactionHashesMsg: handleNewPooledTransactionHashes,
 	PowAnswerMsg:                  handlePowAnswerMsg,
+	DposAckMsg:                    handleDposAckMsg,
+
 	// eth66 messages with request-id
 	GetBlockHeadersMsg:       handleGetBlockHeaders66,
 	BlockHeadersMsg:          handleBlockHeaders66,

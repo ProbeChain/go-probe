@@ -93,6 +93,9 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 	case *eth.NewPowAnswerPacket:
 		return h.handlePowAnswerBroadcast(peer, packet.PowAnswer)
 
+	case *eth.NewDposAckPacket:
+		return h.handleDposAckBroadcast(peer, packet.DposAck)
+
 	case *eth.NewPooledTransactionHashesPacket:
 		return h.txFetcher.Notify(peer.ID(), *packet)
 
@@ -219,8 +222,8 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 	return nil
 }
 
-// handleBlockBroadcast is invoked from a peer's message handler when it transmits a
-// block broadcast for the local node to process.
+// handlePowAnswerBroadcast is invoked from a peer's message handler when it transmits a
+// pow answer broadcast for the local node to process.
 func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.PowAnswer) error {
 	// boardcast pow answer again
 	peer.KnownPowAnswer(powAnswer.Id())
@@ -230,5 +233,19 @@ func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.P
 		}
 	}
 	h.chain.HandlePowAnswer(powAnswer)
+	return nil
+}
+
+// handleDposAckBroadcast is invoked from a peer's message handler when it transmits a
+// dpos ack for the local node to process.
+func (h *ethHandler) handleDposAckBroadcast(peer *eth.Peer, dposAck *types.DposAck) error {
+	// boardcast dpos ack again
+	peer.KnownDposAck(dposAck.Id())
+	for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
+		if err := peer.SendNewDposAck(dposAck); err != nil {
+			log.Debug("SendNewDposAck", "err", err)
+		}
+	}
+	h.chain.HandleDposAck(dposAck)
 	return nil
 }

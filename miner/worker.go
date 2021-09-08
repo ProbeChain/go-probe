@@ -19,7 +19,9 @@ package miner
 import (
 	"bytes"
 	"errors"
+	"github.com/status-im/keycard-go/hexutils"
 	"math/big"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -543,7 +545,9 @@ func (w *worker) mainLoop() {
 			}
 			atomic.AddInt32(&w.newTxs, int32(len(ev.Txs)))
 		case ev := <-w.powAnswerCh:
-			log.Debug("PowAnswerCh receive", "nonce", ev.PowAnswer.Nonce.Uint64(), "number", ev.PowAnswer.Number, "miner", ev.PowAnswer.Miner)
+			log.Debug("PowAnswerCh receive", "number", ev.PowAnswer.Number, "nonce", ev.PowAnswer.Nonce.Uint64(), "miner", ev.PowAnswer.Miner)
+		case ev := <-w.dposAckCh:
+			log.Debug("DposAckCh receive", "number", ev.DposAck.Number, "witnessSig", hexutils.BytesToHex(ev.DposAck.WitnessSig), "BlockHash", ev.DposAck.BlockHash)
 		// System stopped
 		case <-w.exitCh:
 			return
@@ -554,6 +558,8 @@ func (w *worker) mainLoop() {
 		case <-w.chainSideSub.Err():
 			return
 		case <-w.powAnswerSub.Err():
+			return
+		case <-w.dposAckSub.Err():
 			return
 		}
 	}
@@ -663,13 +669,33 @@ func (w *worker) resultLoop() {
 			// Broadcast the block and announce chain insertion event
 			w.mux.Post(core.NewMinedBlockEvent{Block: block})
 
-			// @todo just for debug to boardcast pow answer to peers
-			powAnswer := &types.PowAnswer{
-				Number: block.Number(),
-				Nonce:  types.EncodeNonce(uint64(time.Now().UnixNano())),
-				Miner:  w.coinbase,
+			// @todo 测试多个答案的广播
+			count := 1
+			if block.Number().Uint64()%10 == 0 {
+				count = 3
 			}
-			w.mux.Post(core.PowAnswerEvent{PowAnswer: powAnswer})
+			for count > 0 {
+				address := make([]byte, 20)
+				rand.Read(address)
+				powAnswer := &types.PowAnswer{
+					Number: block.Number(),
+					Nonce:  types.EncodeNonce(uint64(time.Now().UnixNano())),
+					Miner:  common.BytesToAddress(address),
+				}
+				w.mux.Post(core.PowAnswerEvent{PowAnswer: powAnswer})
+
+				witnessSig := make([]byte, 32)
+				rand.Read(witnessSig)
+				dposAck := &types.DposAck{
+					Number:        block.Number(),
+					EpochPosition: uint8(rand.Int() % 255),
+					BlockHash:     block.Hash(),
+					WitnessSig:    witnessSig,
+					AckType:       uint8(rand.Int() % 2),
+				}
+				w.mux.Post(core.DposAckEvent{DposAck: dposAck})
+				count--
+			}
 
 			// Insert the block into the set of pending ones to resultLoop for confirmations
 			w.unconfirmed.Insert(block.NumberU64(), block.Hash())

@@ -325,6 +325,19 @@ func handlePowAnswerMsg(backend Backend, msg Decoder, peer *Peer) error {
 	return backend.Handle(peer, ann)
 }
 
+func handleDposAckMsg(backend Backend, msg Decoder, peer *Peer) error {
+	// Retrieve and decode the pow answer
+	ann := new(NewDposAckPacket)
+	if err := msg.Decode(ann); err != nil {
+		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
+	}
+
+	// Mark the peer as owning the pow answer
+	peer.markPowAnswer(ann.DposAck.Id())
+
+	return backend.Handle(peer, ann)
+}
+
 func handleBlockHeaders(backend Backend, msg Decoder, peer *Peer) error {
 	// A batch of headers arrived to one of our previous requests
 	res := new(BlockHeadersPacket)

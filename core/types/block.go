@@ -36,6 +36,12 @@ var (
 	EmptyUncleHash = rlpHash([]*Header(nil))
 )
 
+const (
+	AckTypeAgree  = 0
+	AckTypeOppose = 1
+	AckTypeAll    = 255
+)
+
 // A BlockNonce is a 64-bit hash which proves (combined with the
 // mix-hash) that a sufficient amount of computation has been carried
 // out on a block.
@@ -84,6 +90,13 @@ type DposAck struct {
 	Number        *big.Int    `json:"number"          gencodec:"required"`
 	BlockHash     common.Hash `json:"blockHash"       gencodec:"required"`
 	WitnessSig    []byte      `json:"witnessSig"      gencodec:"required"`
+	AckType       uint8       `json:"ackType"   gencodec:"required"`
+}
+
+// Id returns the pow answer unique id
+func (dposAck *DposAck) Id() common.Hash {
+	// We assume that the miners will only give one answer in a given block number
+	return common.BytesToHash(dposAck.WitnessSig)
 }
 
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go

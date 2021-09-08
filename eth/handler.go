@@ -18,6 +18,7 @@ package eth
 
 import (
 	"errors"
+	"github.com/status-im/keycard-go/hexutils"
 	"math"
 	"math/big"
 	"sync"
@@ -114,6 +115,7 @@ type handler struct {
 	txsSub        event.Subscription
 	minedBlockSub *event.TypeMuxSubscription
 	powAnswerSub  *event.TypeMuxSubscription
+	dposAckSub    *event.TypeMuxSubscription
 
 	whitelist map[uint64]common.Hash
 
@@ -413,6 +415,11 @@ func (h *handler) Start(maxPeers int) {
 	h.powAnswerSub = h.eventMux.Subscribe(core.PowAnswerEvent{})
 	go h.powAnswerBroadcastLoop()
 
+	// broadcast dposAck
+	h.wg.Add(1)
+	h.dposAckSub = h.eventMux.Subscribe(core.DposAckEvent{})
+	go h.dposAckBroadcastLoop()
+
 	// start sync handlers
 	h.wg.Add(2)
 	go h.chainSync.loop()
@@ -423,6 +430,7 @@ func (h *handler) Stop() {
 	h.txsSub.Unsubscribe()        // quits txBroadcastLoop
 	h.minedBlockSub.Unsubscribe() // quits blockBroadcastLoop
 	h.powAnswerSub.Unsubscribe()  // quits powAnswerBroadcastLoop
+	h.dposAckSub.Unsubscribe()    // quits dposAckBroadcastLoop
 
 	// Quit chainSync and txsync64.
 	// After this is done, no new peers will be accepted.
@@ -517,13 +525,24 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 // BroadcastPowAnswer broadcast PowAnswer to all peers
 func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
-	h.chain.SavePowAnswer(powAnswer)
+	h.chain.HandlePowAnswer(powAnswer)
 	for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
 		if err := peer.SendNewPowAnswer(powAnswer); err != nil {
 			log.Debug("SendNewPowAnswer", "err", err)
 		}
 	}
-	log.Debug("PowAnswer broadcast", "nonce", powAnswer.Nonce.Uint64(), "number", powAnswer.Number, "miner", powAnswer.Miner)
+	log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
+}
+
+// BroadcastDposAck broadcast dpos ack to all peers
+func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
+	h.chain.HandleDposAck(dposAck)
+	for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
+		if err := peer.SendNewDposAck(dposAck); err != nil {
+			log.Debug("SendNewDposAck", "err", err)
+		}
+	}
+	log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 }
 
 // minedBroadcastLoop sends mined blocks to connected peers.
@@ -558,6 +577,17 @@ func (h *handler) powAnswerBroadcastLoop() {
 	for obj := range h.powAnswerSub.Chan() {
 		if ev, ok := obj.Data.(core.PowAnswerEvent); ok {
 			h.BroadcastPowAnswer(ev.PowAnswer)
+		}
+	}
+}
+
+// dposAckBroadcastLoop sends dpos ack to connected peers.
+func (h *handler) dposAckBroadcastLoop() {
+	defer h.wg.Done()
+
+	for obj := range h.dposAckSub.Chan() {
+		if ev, ok := obj.Data.(core.DposAckEvent); ok {
+			h.BroadcastDposAck(ev.DposAck)
 		}
 	}
 }

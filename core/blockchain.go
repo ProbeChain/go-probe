@@ -18,6 +18,7 @@
 package core
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -91,6 +92,7 @@ const (
 	maxTimeFutureBlocks = 30
 	TriesInMemory       = 128
 	maxChainPowAnswers  = 1024
+	maxChainDposAcks    = 1024
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -143,22 +145,28 @@ var defaultCacheConfig = &CacheConfig{
 	SnapshotWait:   true,
 }
 
+type Uint64Slice []uint64
+
+func (x Uint64Slice) Len() int           { return len(x) }
+func (x Uint64Slice) Less(i, j int) bool { return x[i] < (x[j]) }
+func (x Uint64Slice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+
 // PowAnswerPool contains all pow answer
 type PowAnswerPool struct {
-	lock          sync.RWMutex
-	powAnswerList [][]*types.PowAnswer
+	lock         sync.RWMutex
+	powAnswerMap map[uint64][]*types.PowAnswer
 }
 
 // NewPowAnswerPool return a two-dimension pow answer
-func NewPowAnswerPool(size int) *PowAnswerPool {
+func NewPowAnswerPool() *PowAnswerPool {
 	pool := &PowAnswerPool{
-		powAnswerList: make([][]*types.PowAnswer, size, size),
+		powAnswerMap: make(map[uint64][]*types.PowAnswer),
 	}
 	return pool
 }
 
 func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
-	powAnswers, _ := pool.list(powAnswer.Number)
+	powAnswers := pool.powAnswerMap[powAnswer.Number.Uint64()]
 	for _, answer := range powAnswers {
 		if powAnswer.Miner == answer.Miner {
 			return true
@@ -173,23 +181,11 @@ func (pool *PowAnswerPool) Contain(powAnswer *types.PowAnswer) bool {
 	return pool.contain(powAnswer)
 }
 
-func (pool *PowAnswerPool) list(number *big.Int) ([]*types.PowAnswer, int) {
-	index := int(number.Uint64() % uint64(len(pool.powAnswerList)))
-	powAnswers := pool.powAnswerList[index]
-	if powAnswers != nil {
-		powAnswer := powAnswers[0]
-		if powAnswer.Number.Cmp(number) != 0 {
-			return nil, -1
-		}
-	}
-	return powAnswers, index
-}
-
 func (pool *PowAnswerPool) List(number *big.Int) []*types.PowAnswer {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
-	data, _ := pool.list(number)
-	return data
+	powAnswers := pool.powAnswerMap[number.Uint64()]
+	return powAnswers
 }
 
 func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
@@ -198,21 +194,107 @@ func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
 	if pool.contain(powAnswer) {
 		return
 	}
-	powAnswers, index := pool.list(powAnswer.Number)
-	if powAnswers != nil {
-		curNumber := powAnswer.Number.Uint64()
-		number := powAnswers[0].Number.Uint64()
-		if curNumber > number {
-			powAnswers = nil
-			powAnswers = append(powAnswers, powAnswer)
-		} else if number == curNumber {
-			powAnswers = append(powAnswers, powAnswer)
+	number := powAnswer.Number
+	powAnswers := pool.powAnswerMap[number.Uint64()]
+	powAnswers = append(powAnswers, powAnswer)
+
+	// Check whether a deletion operation is required
+	size := len(pool.powAnswerMap)
+	if size >= 2*maxChainPowAnswers {
+		// first sort the number
+		numbers := make([]uint64, size, size)
+		for number := range pool.powAnswerMap {
+			numbers = append(numbers, number)
 		}
-		// if curNumber < number directly discarded
-	} else {
-		powAnswers = append(powAnswers, powAnswer)
+		sort.Sort(Uint64Slice(numbers))
+
+		// remove the old pow answer
+		for index, number := range numbers {
+			if index <= maxChainPowAnswers {
+				delete(pool.powAnswerMap, number)
+			}
+		}
 	}
-	pool.powAnswerList[index] = powAnswers
+
+	pool.powAnswerMap[number.Uint64()] = powAnswers
+}
+
+// DposAckPool contains all dpos ack
+type DposAckPool struct {
+	lock       sync.RWMutex
+	dposAckMap map[uint64][]*types.DposAck
+}
+
+// NewDposAckPool return a two-dimension pow answer
+func NewDposAckPool() *DposAckPool {
+	pool := &DposAckPool{
+		dposAckMap: make(map[uint64][]*types.DposAck),
+	}
+	return pool
+}
+
+func (pool *DposAckPool) contain(dposAck *types.DposAck) bool {
+	dposAcks := pool.dposAckMap[dposAck.Number.Uint64()]
+	for _, ack := range dposAcks {
+		if bytes.Compare(ack.WitnessSig, dposAck.WitnessSig) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (pool *DposAckPool) Contain(dposAck *types.DposAck) bool {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	return pool.contain(dposAck)
+}
+
+func (pool *DposAckPool) List(number *big.Int, ackType uint8) []*types.DposAck {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	dposAcks := pool.dposAckMap[number.Uint64()]
+	if ackType != types.AckTypeAll {
+		return dposAcks
+	} else {
+		ans := make([]*types.DposAck, 0, len(dposAcks))
+		for _, ack := range dposAcks {
+			if ack.AckType == ackType {
+				ans = append(ans, ack)
+			}
+		}
+		return ans
+	}
+}
+
+func (pool *DposAckPool) Add(dposAck *types.DposAck) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	if pool.contain(dposAck) {
+		return
+	}
+	number := dposAck.Number
+	dposAcks := pool.dposAckMap[number.Uint64()]
+	dposAcks = append(dposAcks, dposAck)
+
+	// Check whether a deletion operation is required
+	size := len(pool.dposAckMap)
+	if size >= 2*maxChainDposAcks {
+		// first sort the number
+		numbers := make([]uint64, size, size)
+		for number := range pool.dposAckMap {
+			numbers = append(numbers, number)
+		}
+		sort.Sort(Uint64Slice(numbers))
+
+		// remove the old ack
+		for index, number := range numbers {
+			if index <= maxChainDposAcks {
+				delete(pool.dposAckMap, number)
+			}
+		}
+	}
+
+	pool.dposAckMap[number.Uint64()] = dposAcks
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -257,12 +339,11 @@ type BlockChain struct {
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
 
-	DposAckMap   map[*big.Int][consensus.DposWitnessNumber]*types.DposAck
-	DposAckCount map[*big.Int]uint8
+	DposAckMap map[*big.Int][consensus.DposWitnessNumber]*types.DposAck
+	dposAcks   *DposAckPool
 
 	//Index = 0 in the array indicates the first received powanswer
-	PowAnswerMap map[*big.Int][]*types.PowAnswer
-	powAnswers   *PowAnswerPool
+	powAnswers *PowAnswerPool
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -326,7 +407,8 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		futureBlocks:   futureBlocks,
 		engine:         engine,
 		vmConfig:       vmConfig,
-		powAnswers:     NewPowAnswerPool(maxChainPowAnswers),
+		powAnswers:     NewPowAnswerPool(),
+		dposAcks:       NewDposAckPool(),
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc, engine)
@@ -2618,12 +2700,54 @@ func (bc *BlockChain) SavePowAnswer(powAnswer *types.PowAnswer) {
 	bc.powAnswers.Add(powAnswer)
 }
 
+// HandleDposAck send a dpos ack to worker and save it
+func (bc *BlockChain) HandleDposAck(dposAck *types.DposAck) int {
+	if bc.dposAcks.Contain(dposAck) {
+		return 0
+	} else {
+		bc.dposAcks.Add(dposAck)
+		return bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+	}
+}
+
+// SaveDposAck save a dpos ack to dposAckPool
+func (bc *BlockChain) SaveDposAck(dposAck *types.DposAck) {
+	bc.dposAcks.Add(dposAck)
+}
+
 // GetPowAnswers get a pow answer list
 func (bc *BlockChain) GetPowAnswers(number *big.Int) []*types.PowAnswer {
 	return bc.powAnswers.List(number)
 }
 
+// GetLatestPowAnswer get a pow answer receive latest
+func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
+	ans := bc.powAnswers.List(number)
+	if len(ans) > 0 {
+		return ans[0]
+	} else {
+		return nil
+	}
+}
+
+// GetUnclePowAnswers get uncle pow answer list
+func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
+	uncles := 5
+	ans := make([]*types.PowAnswer, 0, uncles*2)
+	for uncles >= 0 {
+		ans = append(ans, bc.powAnswers.List(big.NewInt(0).Sub(number, big.NewInt(int64(uncles))))...)
+		uncles -= 1
+	}
+	// @todo 叔块答案应该排除已上链的答案
+	return ans
+}
+
 // GetDposAck get a dpos ack list
-func (bc *BlockChain) GetDposAck(number *big.Int) []*types.DposAck {
-	return nil
+func (bc *BlockChain) GetDposAck(number *big.Int, ackType uint8) []*types.DposAck {
+	return bc.dposAcks.List(number, ackType)
+}
+
+// GetDposAckSize get a dpos ack list size
+func (bc *BlockChain) GetDposAckSize(number *big.Int, ackType uint8) int {
+	return len(bc.dposAcks.List(number, ackType))
 }

@@ -41,6 +41,10 @@ const (
 	// before starting to randomly evict them.
 	maxPowAnswers = 1024
 
+	// maxDposAcks is the maximum dpos ack to keep in the known list
+	// before starting to randomly evict them.
+	maxDposAcks = 10240
+
 	// maxQueuedTxs is the maximum number of transactions to queue up before dropping
 	// older broadcasts.
 	maxQueuedTxs = 4096
@@ -90,6 +94,8 @@ type Peer struct {
 
 	knowPowAnswers mapset.Set
 
+	knowDposAcks mapset.Set
+
 	term chan struct{} // Termination channel to stop the broadcasters
 	lock sync.RWMutex  // Mutex protecting the internal fields
 }
@@ -105,6 +111,7 @@ func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool) *Pe
 		knownTxs:        mapset.NewSet(),
 		knownBlocks:     mapset.NewSet(),
 		knowPowAnswers:  mapset.NewSet(),
+		knowDposAcks:    mapset.NewSet(),
 		queuedBlocks:    make(chan *blockPropagation, maxQueuedBlocks),
 		queuedBlockAnns: make(chan *types.Block, maxQueuedBlockAnns),
 		txBroadcast:     make(chan []common.Hash),
@@ -171,6 +178,11 @@ func (p *Peer) KnownPowAnswer(id common.Hash) bool {
 	return p.knowPowAnswers.Contains(id)
 }
 
+// KnownDposAck returns whether peer is known to already have a dpos ack.
+func (p *Peer) KnownDposAck(id common.Hash) bool {
+	return p.knowDposAcks.Contains(id)
+}
+
 // markBlock marks a block as known for the peer, ensuring that the block will
 // never be propagated to this particular peer.
 func (p *Peer) markBlock(hash common.Hash) {
@@ -199,6 +211,16 @@ func (p *Peer) markPowAnswer(id common.Hash) {
 		p.knowPowAnswers.Pop()
 	}
 	p.knowPowAnswers.Add(id)
+}
+
+// markDposAck marks a dpos ack as known for the peer, ensuring that it
+// will never be propagated to this particular peer.
+func (p *Peer) markDposAck(id common.Hash) {
+	// If we reached the memory allowance, drop a previously known pow answer hash
+	for p.knowDposAcks.Cardinality() >= maxDposAcks {
+		p.knowDposAcks.Pop()
+	}
+	p.knowDposAcks.Add(id)
 }
 
 // SendTransactions sends transactions to the peer and includes the hashes
@@ -373,6 +395,14 @@ func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
 	p.markPowAnswer(powAnswer.Id())
 	return p2p.Send(p.rw, PowAnswerMsg, &NewPowAnswerPacket{
 		PowAnswer: powAnswer,
+	})
+}
+
+// SendNewDposAck send a dpos ack to a remote peer.
+func (p *Peer) SendNewDposAck(dposAck *types.DposAck) error {
+	p.markDposAck(dposAck.Id())
+	return p2p.Send(p.rw, DposAckMsg, &NewDposAckPacket{
+		DposAck: dposAck,
 	})
 }
 
