@@ -141,7 +141,7 @@ type StateDB struct {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
-	fmt.Printf("OpenTrieRoot: %s,isErr:%t\n", root.String(), err != nil)
+	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
 
 	if err != nil {
 		return nil, err
@@ -581,10 +581,10 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 }
 
 func (s *StateDB) setStateObject(object *stateObject) {
-	if obj := s.stateObjects[object.Address()]; obj == nil {
+	/*if obj := s.stateObjects[object.Address()]; obj == nil {
 		fmt.Printf("添加账号信息setStateObject，addr:%s,balance:%s,nonce:%d,code:%s,codeHashEmpty:%t\n",
-			object.address.String(), object.Balance().String(), object.Nonce(), object.code.String(), bytes.Equal(object.CodeHash(), emptyCodeHash))
-	}
+			object.address.String(),object.Balance().String(),object.Nonce(),object.code.String(), bytes.Equal(object.CodeHash(), emptyCodeHash))
+	}*/
 	s.stateObjects[object.Address()] = object
 }
 

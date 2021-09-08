@@ -83,10 +83,24 @@ type TxData interface {
 	value() *big.Int
 	nonce() uint64
 	to() *common.Address
-	probeTxType() uint8
-	rawSignatureValues() (v, r, s *big.Int)
-	setSignatureValues(chainID, v, r, s *big.Int)
-	fromAcType() byte
+	bizType() uint8
+	rawSignatureValues() (k byte, v, r, s *big.Int)
+	setSignatureValues(k byte, chainID, v, r, s *big.Int)
+
+	account()			 *common.Address
+	owner()			 	 *common.Address
+	beneficiary()		 *common.Address
+	vote()			 	 *common.Address
+	loss()			 	 *common.Address
+	asset()			 	 *common.Address
+	oldAccount()		 *common.Address
+	newAccount()		 *common.Address
+	initiator()			 *common.Address
+	receiver()			 *common.Address
+	value2() 			 *big.Int
+	height()			 uint64
+	mark()				 []byte
+	infoDigest()		 []byte
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -283,9 +297,7 @@ func (tx *Transaction) Value() *big.Int { return new(big.Int).Set(tx.inner.value
 // Nonce returns the sender account nonce of the transaction.
 func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
-func (tx *Transaction) ProbeTxType() uint8 { return tx.inner.probeTxType() }
-
-func (tx *Transaction) FromAcType() byte { return tx.inner.fromAcType() }
+func (tx *Transaction) BizType() uint8 { return tx.inner.bizType() }
 
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
@@ -308,7 +320,7 @@ func (tx *Transaction) Cost() *big.Int {
 
 // RawSignatureValues returns the V, R, S signature values of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
+func (tx *Transaction) RawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.inner.rawSignatureValues()
 }
 
@@ -342,7 +354,7 @@ func (tx *Transaction) EffectiveGasTip(baseFee *big.Int) (*big.Int, error) {
 	var err error
 	gasFeeCap := tx.GasFeeCap()
 	if gasFeeCap.Cmp(baseFee) == -1 {
-		fmt.Printf("EffectiveGasTip，gasFeeCap：%s,baseFee:%s\n",gasFeeCap.String(),baseFee.String())
+		fmt.Printf("EffectiveGasTip，gasFeeCap：%s,baseFee:%s\n", gasFeeCap.String(), baseFee.String())
 		err = ErrGasFeeCapTooLow
 	}
 	return math.BigMin(tx.GasTipCap(), gasFeeCap.Sub(gasFeeCap, baseFee)), err
@@ -402,12 +414,12 @@ func (tx *Transaction) Size() common.StorageSize {
 // WithSignature returns a new transaction with the given signature.
 // This signature needs to be in the [R || S || V] format where V is 0 or 1.
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
-	r, s, v, err := signer.SignatureValues(tx, sig)
+	k, r, s, v, err := signer.SignatureValues(tx, sig)
 	if err != nil {
 		return nil, err
 	}
 	cpy := tx.inner.copy()
-	cpy.setSignatureValues(signer.ChainID(), v, r, s)
+	cpy.setSignatureValues(k, signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 
@@ -428,6 +440,22 @@ func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 		tx.encodeTyped(w)
 	}
 }
+
+
+func (tx *Transaction) account()*common.Address { return tx.inner.account() }
+func (tx *Transaction) owner()*common.Address {return tx.inner.owner()}
+func (tx *Transaction) beneficiary()*common.Address {return tx.inner.beneficiary()}
+func (tx *Transaction) vote()*common.Address {return tx.inner.vote()}
+func (tx *Transaction) loss()*common.Address {return tx.inner.loss()}
+func (tx *Transaction) asset()*common.Address {return tx.inner.asset()}
+func (tx *Transaction) oldAccount()*common.Address {return tx.inner.oldAccount()}
+func (tx *Transaction) newAccount()*common.Address {return tx.inner.newAccount()}
+func (tx *Transaction) initiator()*common.Address {return tx.inner.initiator()}
+func (tx *Transaction) receiver()*common.Address {return tx.inner.receiver()}
+func (tx *Transaction) value2()*big.Int {return tx.inner.value2()}
+func (tx *Transaction) height()uint64 {return tx.inner.height()}
+func (tx *Transaction) mark()[]byte { return tx.inner.mark() }
+func (tx *Transaction) infoDigest()[]byte { return tx.inner.infoDigest() }
 
 // TxDifference returns a new set which is the difference between a and b.
 func TxDifference(a, b Transactions) Transactions {
@@ -576,34 +604,72 @@ func (t *TransactionsByPriceAndNonce) Pop() {
 //
 // NOTE: In a future PR this will be removed.
 type Message struct {
-	to         *common.Address
-	from       common.Address
-	probeTxType uint8
-	nonce      uint64
-	amount     *big.Int
-	gasLimit   uint64
-	gasPrice   *big.Int
-	gasFeeCap  *big.Int
-	gasTipCap  *big.Int
-	data       []byte
-	accessList AccessList
-	checkNonce bool
+	to         			*common.Address
+	from       			common.Address
+	account    			*common.Address
+	owner			 	*common.Address
+	beneficiary			*common.Address
+	vote			 	*common.Address
+	loss			 	*common.Address
+	asset			 	*common.Address
+	old			 		*common.Address
+	new					*common.Address
+	initiator			*common.Address
+	receiver			*common.Address
+
+	bizType    			uint8
+	nonce      			uint64
+	amount     			*big.Int
+	amount2     		*big.Int
+	height	   			uint64
+	gasLimit   			uint64
+	gasPrice   			*big.Int
+	gasFeeCap  			*big.Int
+	gasTipCap  			*big.Int
+	data       			[]byte
+	mark       			[]byte
+	infoDigest      	[]byte
+	accessList 			AccessList
+	checkNonce 			bool
 }
 
-func NewMessage(from common.Address, to *common.Address, probeTxType uint8, nonce uint64, amount *big.Int, gasLimit uint64, gasPrice, gasFeeCap, gasTipCap *big.Int, data []byte, accessList AccessList, checkNonce bool) Message {
+func NewMessage(from common.Address, to *common.Address, bizType uint8,
+	nonce uint64, amount *big.Int, gasLimit uint64,
+	gasPrice, gasFeeCap, gasTipCap *big.Int,
+	data []byte, accessList AccessList, checkNonce bool,
+	account *common.Address,owner *common.Address,beneficiary *common.Address,
+	vote *common.Address,loss *common.Address,asset *common.Address,
+	old *common.Address,new *common.Address,initiator *common.Address,
+	receiver *common.Address,mark []byte,infoDigest []byte,
+	amount2 *big.Int, height uint64) Message {
 	return Message{
-		from:       from,
-		to:         to,
-		probeTxType: probeTxType,
-		nonce:      nonce,
-		amount:     amount,
-		gasLimit:   gasLimit,
-		gasPrice:   gasPrice,
-		gasFeeCap:  gasFeeCap,
-		gasTipCap:  gasTipCap,
-		data:       data,
-		accessList: accessList,
-		checkNonce: checkNonce,
+		from:       	from,
+		to:         	to,
+		bizType:    	bizType,
+		nonce:      	nonce,
+		amount:     	amount,
+		gasLimit:   	gasLimit,
+		gasPrice:   	gasPrice,
+		gasFeeCap:  	gasFeeCap,
+		gasTipCap:  	gasTipCap,
+		data:       	data,
+		accessList: 	accessList,
+		checkNonce: 	checkNonce,
+
+		account:		account,
+		owner:			owner,
+		beneficiary:	beneficiary,
+		vote:			vote,
+		loss:			loss,
+		asset:			asset,
+		old:			old,
+		new:			new,
+		initiator:		initiator,
+		receiver:		receiver,
+		mark:			mark,
+		infoDigest:		infoDigest,
+		amount2:		amount2,
+		height:			height,
 	}
 }
 
@@ -616,7 +682,7 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		gasFeeCap:  new(big.Int).Set(tx.GasFeeCap()),
 		gasTipCap:  new(big.Int).Set(tx.GasTipCap()),
 		to:         tx.To(),
-		probeTxType: tx.ProbeTxType(),
+		bizType:    tx.BizType(),
 		amount:     tx.Value(),
 		data:       tx.Data(),
 		accessList: tx.AccessList(),
@@ -642,5 +708,19 @@ func (m Message) Nonce() uint64          { return m.nonce }
 func (m Message) Data() []byte           { return m.data }
 func (m Message) AccessList() AccessList { return m.accessList }
 func (m Message) CheckNonce() bool       { return m.checkNonce }
-func (m Message) ProbeTxType() uint8     { return m.probeTxType }
+func (m Message) BizType() uint8     	 { return m.bizType }
 
+func (m Message) Account()			 *common.Address { return m.account }
+func (m Message) Owner()			 *common.Address { return m.owner }
+func (m Message) Beneficiary()		 *common.Address { return m.beneficiary }
+func (m Message) Vote()			 	 *common.Address { return m.vote }
+func (m Message) Loss()			 	 *common.Address { return m.loss }
+func (m Message) Asset()			 *common.Address { return m.asset }
+func (m Message) OldAccount()		 *common.Address { return m.old }
+func (m Message) NewAccount()		 *common.Address { return m.new }
+func (m Message) Initiator()		 *common.Address { return m.initiator }
+func (m Message) Receiver()			 *common.Address { return m.receiver }
+func (m Message) Value2() 			 *big.Int {return m.amount2}
+func (m Message) Height()			 uint64 {return m.height}
+func (m Message) Mark()				 []byte {return m.mark}
+func (m Message) InfoDigest()		 []byte {return m.infoDigest}

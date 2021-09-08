@@ -24,15 +24,30 @@ import (
 
 // LegacyTx is the transaction data of regular Ethereum transactions.
 type LegacyTx struct {
-	Nonce    uint64          // nonce of sender account
-	GasPrice *big.Int        // wei per gas
-	Gas      uint64          // gas limit
-	To       *common.Address `rlp:"nil"` // nil means contract creation
-	Value    *big.Int        // wei amount
-	ProbeTxType uint8
-	Data     []byte          // contract invocation input data
-	FromAcType byte
-	V, R, S  *big.Int        // signature values
+	Nonce       uint64          // nonce of sender account
+	GasPrice    *big.Int        // wei per gas
+	Gas         uint64          // gas limit
+	To          *common.Address `rlp:"nil"` // nil means contract creation
+	Value       *big.Int        // wei amount
+	BizType     uint8
+	Data        []byte // contract invocation input data
+	K           byte
+	V, R, S     *big.Int // signature values
+
+	Account    			*common.Address `rlp:"nil"`
+	Owner			 	*common.Address `rlp:"nil"`
+	Beneficiary			*common.Address `rlp:"nil"`
+	Vote			 	*common.Address `rlp:"nil"`
+	Loss			 	*common.Address `rlp:"nil"`
+	Asset			 	*common.Address `rlp:"nil"`
+	Old			 		*common.Address `rlp:"nil"`
+	New					*common.Address `rlp:"nil"`
+	Initiator			*common.Address `rlp:"nil"`
+	Receiver			*common.Address	`rlp:"nil"`
+	Value2     			*big.Int
+	Mark       			[]byte
+	InfoDigest      	[]byte
+	Height	   			uint64
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -66,7 +81,7 @@ func (tx *LegacyTx) copy() TxData {
 		Nonce: tx.Nonce,
 		To:    tx.To, // TODO: copy pointed-to address
 		Data:  common.CopyBytes(tx.Data),
-		ProbeTxType: tx.ProbeTxType,
+		BizType: tx.BizType,
 		Gas:   tx.Gas,
 		// These are initialized below.
 		Value:    new(big.Int),
@@ -74,7 +89,7 @@ func (tx *LegacyTx) copy() TxData {
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
-		FromAcType: tx.FromAcType,
+		K:        tx.K,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -102,17 +117,32 @@ func (tx *LegacyTx) data() []byte           { return tx.Data }
 func (tx *LegacyTx) gas() uint64            { return tx.Gas }
 func (tx *LegacyTx) gasPrice() *big.Int     { return tx.GasPrice }
 func (tx *LegacyTx) gasTipCap() *big.Int    { return tx.GasPrice }
-func (tx *LegacyTx) gasFeeCap() *big.Int    {return tx.GasPrice }
+func (tx *LegacyTx) gasFeeCap() *big.Int    { return tx.GasPrice }
 func (tx *LegacyTx) value() *big.Int        { return tx.Value }
 func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
-func (tx *LegacyTx) probeTxType() uint8     { return tx.ProbeTxType }
-func (tx *LegacyTx) fromAcType() byte    	{ return tx.FromAcType }
+func (tx *LegacyTx) bizType() uint8     { return tx.BizType }
 
-func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
-	return tx.V, tx.R, tx.S
+func (tx *LegacyTx) account()			 *common.Address {return tx.Account}
+func (tx *LegacyTx) owner()			 	 *common.Address {return tx.Owner}
+func (tx *LegacyTx) beneficiary()		 *common.Address {return tx.Beneficiary}
+func (tx *LegacyTx) vote()			 	 *common.Address {return tx.Vote}
+func (tx *LegacyTx) loss()			 	 *common.Address {return tx.Loss}
+func (tx *LegacyTx) asset()			 	 *common.Address {return tx.Asset}
+func (tx *LegacyTx) oldAccount()		 *common.Address {return tx.Old}
+func (tx *LegacyTx) newAccount()		 *common.Address {return tx.New}
+func (tx *LegacyTx) initiator()			 *common.Address {return tx.Initiator}
+func (tx *LegacyTx) receiver()			 *common.Address {return tx.Receiver}
+func (tx *LegacyTx) value2() 			 *big.Int {return tx.Value2}
+func (tx *LegacyTx) height()			 uint64 {return tx.Height}
+func (tx *LegacyTx) mark()				 []byte {return tx.Mark}
+func (tx *LegacyTx) infoDigest()		 []byte {return tx.InfoDigest}
+
+func (tx *LegacyTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
+		return tx.K, tx.V, tx.R, tx.S
 }
 
-func (tx *LegacyTx) setSignatureValues(chainID, v, r, s *big.Int) {
+func (tx *LegacyTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {
 	tx.V, tx.R, tx.S = v, r, s
+	tx.K = k
 }

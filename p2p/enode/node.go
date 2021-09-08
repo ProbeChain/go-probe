@@ -17,11 +17,11 @@
 package enode
 
 import (
-	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/bits"
 	"net"
 	"strings"
@@ -129,8 +129,8 @@ func (n *Node) TCP() int {
 }
 
 // Pubkey returns the secp256k1 public key of the node, if present.
-func (n *Node) Pubkey() *ecdsa.PublicKey {
-	var key ecdsa.PublicKey
+func (n *Node) Pubkey() *probe.PublicKey {
+	var key probe.PublicKey
 	if n.Load((*Secp256k1)(&key)) != nil {
 		return nil
 	}

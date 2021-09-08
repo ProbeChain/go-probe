@@ -973,7 +973,7 @@ type encryptedSeedStorage struct {
 // encryptSeed uses a similar scheme as the keystore uses, but with a different wrapping,
 // to encrypt the master seed
 func encryptSeed(seed []byte, auth []byte, scryptN, scryptP int) ([]byte, error) {
-	cryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP)
+	cryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP, accounts.General)
 	if err != nil {
 		return nil, err
 	}

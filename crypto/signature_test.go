@@ -106,7 +106,7 @@ func TestDecompressPubkey(t *testing.T) {
 
 func TestCompressPubkey(t *testing.T) {
 	key := &ecdsa.PublicKey{
-		Curve: S256(),
+		Curve: S256ByType(0x03),
 		X:     math.MustParseBig256("0xe32df42865e97135acfb65f3bae71bdc86f4d49150ad6a440b6f15878109880a"),
 		Y:     math.MustParseBig256("0x0a2b2667f7e725ceea70c673093bf67663e0312623c8e091b13cf2c0f11ef652"),
 	}

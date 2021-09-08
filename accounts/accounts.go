@@ -19,6 +19,7 @@ package accounts
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -234,4 +235,24 @@ const (
 type WalletEvent struct {
 	Wallet Wallet          // Wallet instance arrived or departed
 	Kind   WalletEventType // Event type that happened in the system
+}
+
+// AmountOfPledgeForCreateAccount amount of pledge for create a account
+func AmountOfPledgeForCreateAccount(accType uint8) uint64 {
+	switch accType {
+	case General:
+		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
+	case Pns:
+		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+	case Asset:
+		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET
+	case Contract:
+		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
+	case Authorize:
+		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
+	case Lose:
+		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
+	default:
+		return 0
+	}
 }

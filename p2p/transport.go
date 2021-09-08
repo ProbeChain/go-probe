@@ -18,8 +18,8 @@ package p2p
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"net"
 	"sync"
@@ -51,7 +51,7 @@ type rlpxTransport struct {
 	conn     *rlpx.Conn
 }
 
-func newRLPX(conn net.Conn, dialDest *ecdsa.PublicKey) transport {
+func newRLPX(conn net.Conn, dialDest *probe.PublicKey) transport {
 	return &rlpxTransport{conn: rlpx.NewConn(conn, dialDest)}
 }
 
@@ -126,7 +126,7 @@ func (t *rlpxTransport) close(err error) {
 	t.conn.Close()
 }
 
-func (t *rlpxTransport) doEncHandshake(prv *ecdsa.PrivateKey) (*ecdsa.PublicKey, error) {
+func (t *rlpxTransport) doEncHandshake(prv *probe.PrivateKey) (*probe.PublicKey, error) {
 	t.conn.SetDeadline(time.Now().Add(handshakeTimeout))
 	return t.conn.Handshake(prv)
 }

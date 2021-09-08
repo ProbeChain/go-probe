@@ -44,17 +44,32 @@ func (al AccessList) StorageKeys() int {
 
 // AccessListTx is the data of EIP-2930 access list transactions.
 type AccessListTx struct {
-	ChainID    *big.Int        // destination chain ID
-	Nonce      uint64          // nonce of sender account
-	GasPrice   *big.Int        // wei per gas
-	Gas        uint64          // gas limit
-	To         *common.Address `rlp:"nil"` // nil means contract creation
-	ProbeTxType uint8
-	Value      *big.Int        // wei amount
-	Data       []byte          // contract invocation input data
-	AccessList AccessList      // EIP-2930 access list
-	FromAcType byte
-	V, R, S    *big.Int        // signature values
+	ChainID     *big.Int        // destination chain ID
+	Nonce       uint64          // nonce of sender account
+	GasPrice    *big.Int        // wei per gas
+	Gas         uint64          // gas limit
+	To          *common.Address `rlp:"nil"` // nil means contract creation
+	BizType 	uint8
+	Value       *big.Int   // wei amount
+	Data        []byte     // contract invocation input data
+	AccessList  AccessList // EIP-2930 access list
+	K           byte
+	V, R, S     *big.Int // signature values
+
+	Account    			*common.Address `rlp:"nil"`
+	Owner			 	*common.Address `rlp:"nil"`
+	Beneficiary			*common.Address `rlp:"nil"`
+	Vote			 	*common.Address `rlp:"nil"`
+	Loss			 	*common.Address `rlp:"nil"`
+	Asset			 	*common.Address `rlp:"nil"`
+	Old			 		*common.Address `rlp:"nil"`
+	New					*common.Address `rlp:"nil"`
+	Initiator			*common.Address `rlp:"nil"`
+	Receiver			*common.Address	`rlp:"nil"`
+	Value2     			*big.Int
+	Mark       			[]byte
+	InfoDigest      	[]byte
+	Height	   			uint64
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -63,7 +78,7 @@ func (tx *AccessListTx) copy() TxData {
 		Nonce: tx.Nonce,
 		To:    tx.To, // TODO: copy pointed-to address
 		Data:  common.CopyBytes(tx.Data),
-		ProbeTxType: tx.ProbeTxType,
+		BizType: tx.BizType,
 		Gas:   tx.Gas,
 		// These are copied below.
 		AccessList: make(AccessList, len(tx.AccessList)),
@@ -73,7 +88,7 @@ func (tx *AccessListTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
-		FromAcType: tx.FromAcType,
+		K:          tx.K,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -110,13 +125,28 @@ func (tx *AccessListTx) gasFeeCap() *big.Int    { return tx.GasPrice }
 func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
-func (tx *AccessListTx) probeTxType() uint8     { return tx.ProbeTxType }
-func (tx *AccessListTx) fromAcType() byte    	{ return tx.FromAcType }
+func (tx *AccessListTx) bizType() uint8     { return tx.BizType }
 
-func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
-	return tx.V, tx.R, tx.S
+func (tx *AccessListTx) account()			 *common.Address {return tx.Account}
+func (tx *AccessListTx) owner()			 	 *common.Address {return tx.Owner}
+func (tx *AccessListTx) beneficiary()		 *common.Address {return tx.Beneficiary}
+func (tx *AccessListTx) vote()			 	 *common.Address {return tx.Vote}
+func (tx *AccessListTx) loss()			 	 *common.Address {return tx.Loss}
+func (tx *AccessListTx) asset()			 	 *common.Address {return tx.Asset}
+func (tx *AccessListTx) oldAccount()		 *common.Address {return tx.Old}
+func (tx *AccessListTx) newAccount()		 *common.Address {return tx.New}
+func (tx *AccessListTx) initiator()			 *common.Address {return tx.Initiator}
+func (tx *AccessListTx) receiver()			 *common.Address {return tx.Receiver}
+func (tx *AccessListTx) value2() 			 *big.Int {return tx.Value2}
+func (tx *AccessListTx) height()			 uint64 {return tx.Height}
+func (tx *AccessListTx) mark()				 []byte {return tx.Mark}
+func (tx *AccessListTx) infoDigest()		 []byte {return tx.InfoDigest}
+
+func (tx *AccessListTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
+	return tx.K, tx.V, tx.R, tx.S
 }
 
-func (tx *AccessListTx) setSignatureValues(chainID, v, r, s *big.Int) {
+func (tx *AccessListTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s
+	tx.K = k
 }

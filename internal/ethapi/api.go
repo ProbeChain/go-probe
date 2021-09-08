@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 	"strings"
 	"time"
@@ -346,7 +347,7 @@ func fetchKeystore(am *accounts.Manager) (*keystore.KeyStore, error) {
 // ImportRawKey stores the given hex encoded ECDSA key into the key directory,
 // encrypting it with the passphrase.
 func (s *PrivateAccountAPI) ImportRawKey(privkey string, password string) (common.Address, error) {
-	key, err := crypto.HexToECDSA(privkey)
+	key, err := probe.HexToECDSA(privkey)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -520,7 +521,7 @@ func (s *PrivateAccountAPI) EcRecover(ctx context.Context, data, sig hexutil.Byt
 	if err != nil {
 		return common.Address{}, err
 	}
-	return crypto.PubkeyToAddress(*rpk), nil
+	return probe.PubkeyToAddress(*rpk), nil
 }
 
 // SignAndSendTransaction was renamed to SendTransaction. This method is deprecated
@@ -1238,7 +1239,7 @@ type RPCTransaction struct {
 	Input            hexutil.Bytes     `json:"input"`
 	Nonce            hexutil.Uint64    `json:"nonce"`
 	To               *common.Address   `json:"to"`
-	ProbeTxType		 hexutil.Uint8     `json:"probeTxType"`
+	BizType          hexutil.Uint8     `json:"bizType"`
 	TransactionIndex *hexutil.Uint64   `json:"transactionIndex"`
 	Value            *hexutil.Big      `json:"value"`
 	Type             hexutil.Uint64    `json:"type"`
@@ -1247,6 +1248,7 @@ type RPCTransaction struct {
 	V                *hexutil.Big      `json:"v"`
 	R                *hexutil.Big      `json:"r"`
 	S                *hexutil.Big      `json:"s"`
+	K                byte              `json:"k"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1263,21 +1265,22 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		signer = types.HomesteadSigner{}
 	}
 	from, _ := types.Sender(signer, tx)
-	v, r, s := tx.RawSignatureValues()
+	k, v, r, s := tx.RawSignatureValues()
 	result := &RPCTransaction{
-		Type:     		hexutil.Uint64(tx.Type()),
-		From:     		from,
-		Gas:      		hexutil.Uint64(tx.Gas()),
-		GasPrice: 		(*hexutil.Big)(tx.GasPrice()),
-		Hash:     		tx.Hash(),
-		Input:    		hexutil.Bytes(tx.Data()),
-		Nonce:    		hexutil.Uint64(tx.Nonce()),
-		To:       		tx.To(),
-		ProbeTxType:	hexutil.Uint8(tx.ProbeTxType()),
-		Value:    		(*hexutil.Big)(tx.Value()),
-		V:        		(*hexutil.Big)(v),
-		R:        		(*hexutil.Big)(r),
-		S:        		(*hexutil.Big)(s),
+		Type:     hexutil.Uint64(tx.Type()),
+		From:     from,
+		Gas:      hexutil.Uint64(tx.Gas()),
+		GasPrice: (*hexutil.Big)(tx.GasPrice()),
+		Hash:     tx.Hash(),
+		Input:    hexutil.Bytes(tx.Data()),
+		Nonce:    hexutil.Uint64(tx.Nonce()),
+		To:       tx.To(),
+		BizType:  hexutil.Uint8(tx.BizType()),
+		Value:    (*hexutil.Big)(tx.Value()),
+		V:        (*hexutil.Big)(v),
+		R:        (*hexutil.Big)(r),
+		S:        (*hexutil.Big)(s),
+		K:        k,
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
@@ -1419,7 +1422,16 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		}
 		// Copy the original db so we don't modify it
 		statedb := db.Copy()
-		msg := types.NewMessage(args.from(), args.To, uint8(*args.ProbeTxType), uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas), args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0), args.data(), accessList, false)
+		msg := types.NewMessage(
+			args.from(), args.To, uint8(*args.BizType),
+			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
+			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
+			args.data(), accessList, false,
+			args.Account,args.Owner,args.Beneficiary,
+			args.Vote,args.Loss,args.Asset,
+			args.Old,args.New,args.Initiator,
+			args.Receiver,args.mark(), args.infoDigest(),
+			args.value2(),args.height())
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1590,7 +1602,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"transactionIndex":  hexutil.Uint64(index),
 		"from":              from,
 		"to":                tx.To(),
-		"probeTxType":       hexutil.Uint8(tx.ProbeTxType()),
+		"bizType":           hexutil.Uint8(tx.BizType()),
 		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
 		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
 		"contractAddress":   nil,
@@ -1672,7 +1684,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
 	// Look up the wallet containing the requested signer
-	fmt.Printf("from:%s,to:%s\n",args.From.String(),args.To.String())
+	fmt.Printf("from:%s,to:%s\n", args.From.String(), args.To.String())
 	account := accounts.Account{Address: args.from()}
 
 	wallet, err := s.b.AccountManager().Find(account)

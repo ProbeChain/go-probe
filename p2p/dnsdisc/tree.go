@@ -18,10 +18,10 @@ package dnsdisc
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"encoding/base32"
 	"encoding/base64"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"sort"
 	"strings"
@@ -40,7 +40,7 @@ type Tree struct {
 }
 
 // Sign signs the tree with the given private key and sets the sequence number.
-func (t *Tree) Sign(key *ecdsa.PrivateKey, domain string) (url string, err error) {
+func (t *Tree) Sign(key *probe.PrivateKey, domain string) (url string, err error) {
 	root := *t.root
 	sig, err := crypto.Sign(root.sigHash(), key)
 	if err != nil {
@@ -54,7 +54,7 @@ func (t *Tree) Sign(key *ecdsa.PrivateKey, domain string) (url string, err error
 
 // SetSignature verifies the given signature and assigns it as the tree's current
 // signature if valid.
-func (t *Tree) SetSignature(pubkey *ecdsa.PublicKey, signature string) error {
+func (t *Tree) SetSignature(pubkey *probe.PublicKey, signature string) error {
 	sig, err := b64format.DecodeString(signature)
 	if err != nil || len(sig) != crypto.SignatureLength {
 		return errInvalidSig
@@ -242,7 +242,7 @@ type (
 	linkEntry struct {
 		str    string
 		domain string
-		pubkey *ecdsa.PublicKey
+		pubkey *probe.PublicKey
 	}
 )
 
@@ -276,9 +276,9 @@ func (e *rootEntry) sigHash() []byte {
 	return h.Sum(nil)
 }
 
-func (e *rootEntry) verifySignature(pubkey *ecdsa.PublicKey) bool {
+func (e *rootEntry) verifySignature(pubkey *probe.PublicKey) bool {
 	sig := e.sig[:crypto.RecoveryIDOffset] // remove recovery id
-	enckey := crypto.FromECDSAPub(pubkey)
+	enckey := probe.FromECDSAPub(pubkey)
 	return crypto.VerifySignature(enckey, e.sigHash(), sig)
 }
 
@@ -294,7 +294,7 @@ func (e *linkEntry) String() string {
 	return linkPrefix + e.str
 }
 
-func newLinkEntry(domain string, pubkey *ecdsa.PublicKey) *linkEntry {
+func newLinkEntry(domain string, pubkey *probe.PublicKey) *linkEntry {
 	key := b32format.EncodeToString(crypto.CompressPubkey(pubkey))
 	str := key + "@" + domain
 	return &linkEntry{str, domain, pubkey}
@@ -414,7 +414,7 @@ func truncateHash(hash string) string {
 // URL encoding
 
 // ParseURL parses an enrtree:// URL and returns its components.
-func ParseURL(url string) (domain string, pubkey *ecdsa.PublicKey, err error) {
+func ParseURL(url string) (domain string, pubkey *probe.PublicKey, err error) {
 	le, err := parseLink(url)
 	if err != nil {
 		return "", nil, err
