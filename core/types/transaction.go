@@ -59,7 +59,7 @@ type Transaction struct {
 	from atomic.Value
 }
 
-// NewTx creates a new transaction.
+// NewTx creates a New transaction.
 func NewTx(inner TxData) *Transaction {
 	tx := new(Transaction)
 	tx.setDecoded(inner.copy(), 0)
@@ -82,19 +82,18 @@ type TxData interface {
 	gasFeeCap() *big.Int
 	value() *big.Int
 	nonce() uint64
-	to() *common.Address
+	to() 				*common.Address
 	bizType() uint8
 	rawSignatureValues() (k byte, v, r, s *big.Int)
 	setSignatureValues(k byte, chainID, v, r, s *big.Int)
 
-	account()			 *common.Address
 	owner()			 	 *common.Address
 	beneficiary()		 *common.Address
 	vote()			 	 *common.Address
 	loss()			 	 *common.Address
 	asset()			 	 *common.Address
-	oldAccount()		 *common.Address
-	newAccount()		 *common.Address
+	old()		 		 *common.Address
+	new()		 		 *common.Address
 	initiator()			 *common.Address
 	receiver()			 *common.Address
 	value2() 			 *big.Int
@@ -411,7 +410,7 @@ func (tx *Transaction) Size() common.StorageSize {
 	return common.StorageSize(c)
 }
 
-// WithSignature returns a new transaction with the given signature.
+// WithSignature returns a New transaction with the given signature.
 // This signature needs to be in the [R || S || V] format where V is 0 or 1.
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
 	k, r, s, v, err := signer.SignatureValues(tx, sig)
@@ -442,22 +441,21 @@ func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 }
 
 
-func (tx *Transaction) account()*common.Address { return tx.inner.account() }
-func (tx *Transaction) owner()*common.Address {return tx.inner.owner()}
-func (tx *Transaction) beneficiary()*common.Address {return tx.inner.beneficiary()}
-func (tx *Transaction) vote()*common.Address {return tx.inner.vote()}
-func (tx *Transaction) loss()*common.Address {return tx.inner.loss()}
-func (tx *Transaction) asset()*common.Address {return tx.inner.asset()}
-func (tx *Transaction) oldAccount()*common.Address {return tx.inner.oldAccount()}
-func (tx *Transaction) newAccount()*common.Address {return tx.inner.newAccount()}
-func (tx *Transaction) initiator()*common.Address {return tx.inner.initiator()}
-func (tx *Transaction) receiver()*common.Address {return tx.inner.receiver()}
-func (tx *Transaction) value2()*big.Int {return tx.inner.value2()}
-func (tx *Transaction) height()uint64 {return tx.inner.height()}
-func (tx *Transaction) mark()[]byte { return tx.inner.mark() }
-func (tx *Transaction) infoDigest()[]byte { return tx.inner.infoDigest() }
+func (tx *Transaction) Owner()*common.Address       {return tx.inner.owner()}
+func (tx *Transaction) Beneficiary()*common.Address {return tx.inner.beneficiary()}
+func (tx *Transaction) Vote()*common.Address  {return tx.inner.vote()}
+func (tx *Transaction) Loss()*common.Address  {return tx.inner.loss()}
+func (tx *Transaction) Asset()*common.Address {return tx.inner.asset()}
+func (tx *Transaction) Old()*common.Address       {return tx.inner.old()}
+func (tx *Transaction) New()*common.Address       {return tx.inner.new()}
+func (tx *Transaction) Initiator()*common.Address {return tx.inner.initiator()}
+func (tx *Transaction) Receiver()*common.Address {return tx.inner.receiver()}
+func (tx *Transaction) Value2()*big.Int {return tx.inner.value2()}
+func (tx *Transaction) Height()uint64 {return tx.inner.height()}
+func (tx *Transaction) Mark()[]byte { return tx.inner.mark() }
+func (tx *Transaction) InfoDigest()[]byte { return tx.inner.infoDigest() }
 
-// TxDifference returns a new set which is the difference between a and b.
+// TxDifference returns a New set which is the difference between a and b.
 func TxDifference(a, b Transactions) Transactions {
 	keep := make(Transactions, 0, len(a))
 
@@ -600,44 +598,13 @@ func (t *TransactionsByPriceAndNonce) Pop() {
 	heap.Pop(&t.heads)
 }
 
-// Message is a fully derived transaction and implements core.Message
-//
-// NOTE: In a future PR this will be removed.
-type Message struct {
-	to         			*common.Address
-	from       			common.Address
-	account    			*common.Address
-	owner			 	*common.Address
-	beneficiary			*common.Address
-	vote			 	*common.Address
-	loss			 	*common.Address
-	asset			 	*common.Address
-	old			 		*common.Address
-	new					*common.Address
-	initiator			*common.Address
-	receiver			*common.Address
 
-	bizType    			uint8
-	nonce      			uint64
-	amount     			*big.Int
-	amount2     		*big.Int
-	height	   			uint64
-	gasLimit   			uint64
-	gasPrice   			*big.Int
-	gasFeeCap  			*big.Int
-	gasTipCap  			*big.Int
-	data       			[]byte
-	mark       			[]byte
-	infoDigest      	[]byte
-	accessList 			AccessList
-	checkNonce 			bool
-}
 
 func NewMessage(from common.Address, to *common.Address, bizType uint8,
 	nonce uint64, amount *big.Int, gasLimit uint64,
 	gasPrice, gasFeeCap, gasTipCap *big.Int,
 	data []byte, accessList AccessList, checkNonce bool,
-	account *common.Address,owner *common.Address,beneficiary *common.Address,
+	owner *common.Address,beneficiary *common.Address,
 	vote *common.Address,loss *common.Address,asset *common.Address,
 	old *common.Address,new *common.Address,initiator *common.Address,
 	receiver *common.Address,mark []byte,infoDigest []byte,
@@ -656,7 +623,6 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 		accessList: 	accessList,
 		checkNonce: 	checkNonce,
 
-		account:		account,
 		owner:			owner,
 		beneficiary:	beneficiary,
 		vote:			vote,
@@ -687,6 +653,7 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		data:       tx.Data(),
 		accessList: tx.AccessList(),
 		checkNonce: true,
+		new:		tx.New(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
@@ -696,31 +663,3 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 	msg.from, err = Sender(s, tx)
 	return msg, err
 }
-
-func (m Message) From() common.Address   { return m.from }
-func (m Message) To() *common.Address    { return m.to }
-func (m Message) GasPrice() *big.Int     { return m.gasPrice }
-func (m Message) GasFeeCap() *big.Int    { return m.gasFeeCap }
-func (m Message) GasTipCap() *big.Int    { return m.gasTipCap }
-func (m Message) Value() *big.Int        { return m.amount }
-func (m Message) Gas() uint64            { return m.gasLimit }
-func (m Message) Nonce() uint64          { return m.nonce }
-func (m Message) Data() []byte           { return m.data }
-func (m Message) AccessList() AccessList { return m.accessList }
-func (m Message) CheckNonce() bool       { return m.checkNonce }
-func (m Message) BizType() uint8     	 { return m.bizType }
-
-func (m Message) Account()			 *common.Address { return m.account }
-func (m Message) Owner()			 *common.Address { return m.owner }
-func (m Message) Beneficiary()		 *common.Address { return m.beneficiary }
-func (m Message) Vote()			 	 *common.Address { return m.vote }
-func (m Message) Loss()			 	 *common.Address { return m.loss }
-func (m Message) Asset()			 *common.Address { return m.asset }
-func (m Message) OldAccount()		 *common.Address { return m.old }
-func (m Message) NewAccount()		 *common.Address { return m.new }
-func (m Message) Initiator()		 *common.Address { return m.initiator }
-func (m Message) Receiver()			 *common.Address { return m.receiver }
-func (m Message) Value2() 			 *big.Int {return m.amount2}
-func (m Message) Height()			 uint64 {return m.height}
-func (m Message) Mark()				 []byte {return m.mark}
-func (m Message) InfoDigest()		 []byte {return m.infoDigest}

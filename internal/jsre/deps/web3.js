@@ -378,6 +378,10 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
             "type": "address"
           },
           {
+            "name": "new",
+            "type": "address"
+          },
+          {
             "name": "bizType",
             "type": "uint8"
           },
@@ -477,6 +481,11 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
           {
             "indexed": true,
             "name": "to",
+            "type": "address"
+          },
+          {
+            "indexed": true,
+            "name": "new",
             "type": "address"
           },
           {
@@ -6707,29 +6716,69 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @method transfer
      * @param {String} from
      * @param {String} to iban
+     * @param {String} account
      * @param {Uint8} bizType
      * @param {Value} value to be tranfered
      * @param {Function} callback, callback
      */
-    var transfer = function (eth, from, to, bizType,value, callback) {
+    var transfer = function (eth, from, to, newAccount,bizType,value, callback) {
+      checkBizType(bizType)
       var iban = new Iban(to);
-      if (!iban.isValid()) {
-        throw new Error('invalid iban address');
+
+      switch(parseInt(bizType)){
+        case biz_type_of_register:
+          return transferToAddress(eth, from, null, newAccount, bizType, null, callback);
+          break;
+        case biz_type_of_cancellation:
+          break;
+        case biz_type_of_revoke_cancellation:
+          break;
+        case biz_type_of_transfer:
+          if (!iban.isValid()) {
+            throw new Error('invalid iban address');
+          }
+          if (iban.isDirect()) {
+            return transferToAddress(eth, from, iban.address(), null, bizType, value, callback);
+          }
+          break;
+        case biz_type_of_contract_call:
+          if (!iban.isValid()) {
+            throw new Error('invalid iban address');
+          }
+          if (!callback) {
+            var address = eth.icapNamereg().addr(iban.institution());
+            return deposit(eth, from, address, value, iban.client());
+          }
+
+          eth.icapNamereg().addr(iban.institution(), function (err, address) {
+            return deposit(eth, from, address, value, iban.client(), callback);
+          });
+          break
+        //todo  implement other operations
+        default:
+          throw new Error('unrealized processing');
       }
+    };
 
-      if (iban.isDirect()) {
-        return transferToAddress(eth, from, iban.address(), bizType, value, callback);
+    /** business type **/
+    var biz_type_of_register = 0;
+    var biz_type_of_cancellation = 255;
+    var biz_type_of_revoke_cancellation = 254;
+    var biz_type_of_transfer = 1;
+    var biz_type_of_contract_call = 2;
+
+    /** regular expression **/
+    var regExp = /^(0|255|254|1|2)$/;
+
+    /**
+     * Check business type
+     * @method checkBizType
+     * @param bizType
+     */
+    var checkBizType = function (bizType){
+      if(!regExp.test(bizType)){
+          throw new Error('invalid bizType');
       }
-
-      if (!callback) {
-        var address = eth.icapNamereg().addr(iban.institution());
-        return deposit(eth, from, address, value, iban.client());
-      }
-
-      eth.icapNamereg().addr(iban.institution(), function (err, address) {
-        return deposit(eth, from, address, value, iban.client(), callback);
-      });
-
     };
 
     /**
@@ -6741,9 +6790,10 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @param {Value} value to be tranfered
      * @param {Function} callback, callback
      */
-    var transferToAddress = function (eth, from, to, bizType, value, callback) {
+    var transferToAddress = function (eth, from, to, newAccount, bizType, value, callback) {
       return eth.sendTransaction({
         address: to,
+        new: newAccount,
         from: from,
         bizType: bizType,
         value: value

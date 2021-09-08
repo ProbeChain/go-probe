@@ -1427,7 +1427,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
 			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
 			args.data(), accessList, false,
-			args.Account,args.Owner,args.Beneficiary,
+			args.Owner,args.Beneficiary,
 			args.Vote,args.Loss,args.Asset,
 			args.Old,args.New,args.Initiator,
 			args.Receiver,args.mark(), args.infoDigest(),
@@ -1671,7 +1671,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, err
 	}
 
-	if tx.To() == nil {
+	if tx.To() == nil && tx.BizType() == common.ContractCall {
 		addr := crypto.CreateAddress(from, tx.Nonce())
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
@@ -1684,10 +1684,10 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
 	// Look up the wallet containing the requested signer
-	fmt.Printf("from:%s,to:%s\n", args.From.String(), args.To.String())
-	account := accounts.Account{Address: args.from()}
+//	fmt.Printf("from:%s,to:%s\n", args.From.String(), args.To.String())
+	from := accounts.Account{Address: args.from()}
 
-	wallet, err := s.b.AccountManager().Find(account)
+	wallet, err := s.b.AccountManager().Find(from)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -1706,7 +1706,7 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 	// Assemble the transaction and sign with the wallet
 	tx := args.toTransaction()
 
-	signed, err := wallet.SignTx(account, tx, s.b.ChainConfig().ChainID)
+	signed, err := wallet.SignTx(from, tx, s.b.ChainConfig().ChainID)
 	if err != nil {
 		return common.Hash{}, err
 	}

@@ -40,6 +40,10 @@ type (
 	// GetHashFunc returns the n'th block hash in the blockchain
 	// and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
+	// RegisterFunc is the signature of a register function
+	RegisterFunc func(StateDB, common.Address, common.Address, *big.Int)
+	// CancellationFunc is the signature of a cancellation function
+	CancellationFunc func(StateDB, common.Address, common.Address)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -86,6 +90,10 @@ type BlockContext struct {
 	Transfer TransferFunc
 	// GetHash returns the hash corresponding to n
 	GetHash GetHashFunc
+	// Register register a new account
+	Register RegisterFunc
+	// Cancellation cancel an account
+	Cancellation CancellationFunc
 
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
@@ -140,11 +148,64 @@ type EVM struct {
 	// available gas is calculated in gasCall* according to the 63/64 rule and later
 	// applied in opCall*.
 	callGasTemp uint64
+
+	//
+	msg Message
+}
+
+type Message struct {
+	//From       			common.Address
+	to         			*common.Address
+	owner			 	*common.Address
+	beneficiary			*common.Address
+	vote			 	*common.Address
+	loss			 	*common.Address
+	asset			 	*common.Address
+	old			 		*common.Address
+	new					*common.Address
+	initiator			*common.Address
+	receiver			*common.Address
+
+	bizType    			uint8
+	value     			*big.Int
+	value2	     		*big.Int
+	height	   			uint64
+	//gasLimit   			uint64
+	//gasPrice   			*big.Int
+	//gasFeeCap  			*big.Int
+	//gasTipCap  			*big.Int
+	data       			[]byte
+	mark       			[]byte
+	infoDigest      	[]byte
+}
+
+// BuildMessage returns the transaction as a message.
+func BuildMessage(to,old,new,owner,beneficiary,vote,loss,asset,initiator,receiver	*common.Address,
+	bizType uint8,	value,value2 *big.Int,	height uint64,	data,mark,infoDigest []byte) *Message  {
+	return &Message{
+		to:to,
+		owner:owner,
+		beneficiary:beneficiary,
+		vote:vote,
+		loss:loss,
+		asset:asset,
+		old:old,
+		new:new,
+		initiator:initiator,
+		receiver:receiver,
+		bizType:bizType,
+		value:value,
+		value2:value2,
+		height:height,
+		data:data,
+		mark:mark,
+		infoDigest:infoDigest,
+	}
 }
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config) *EVM {
+func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config, msg *Message) *EVM {
 	evm := &EVM{
 		Context:      blockCtx,
 		TxContext:    txCtx,
@@ -153,6 +214,7 @@ func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig
 		chainConfig:  chainConfig,
 		chainRules:   chainConfig.Rules(blockCtx.BlockNumber),
 		interpreters: make([]Interpreter, 0, 1),
+		msg: 		  *msg,
 	}
 
 	if chainConfig.IsEWASM(blockCtx.BlockNumber) {
@@ -232,7 +294,23 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		}
 		evm.StateDB.CreateAccount(addr)
 	}
-	evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
+
+
+	switch evm.msg.bizType {
+	case common.Register:
+		evm.Context.Register(evm.StateDB, caller.Address(), *evm.msg.new, value)
+	case common.Cancellation:
+		evm.Context.Cancellation(evm.StateDB, caller.Address(), addr)
+	case common.RevokeCancellation:
+		//evm.Context.RevokeCancellation(evm.StateDB, caller.Address(), addr, value)
+	case common.Transfer:
+		evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
+	case common.ContractCall:
+		evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
+		//... todo 还有未实现的
+	}
+
+
 
 	// Capture the tracer start/end events in debug mode
 	if evm.Config.Debug && evm.depth == 0 {

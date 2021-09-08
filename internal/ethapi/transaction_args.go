@@ -34,7 +34,6 @@ import (
 type TransactionArgs struct {
 	From                 *common.Address `json:"from"`
 	To                   *common.Address `json:"to"`
-	Account			 	 *common.Address `json:"account"`
 	Owner			 	 *common.Address `json:"owner"`
 	Beneficiary			 *common.Address `json:"beneficiary"`
 	Vote			 	 *common.Address `json:"vote"`
@@ -253,7 +252,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		0, value, gas,
 		gasPrice, gasFeeCap, gasTipCap,
 		data, accessList, false,
-		args.Account,args.Owner,args.Beneficiary,
+		args.Owner,args.Beneficiary,
 		args.Vote,args.Loss,args.Asset,
 		args.Old,args.New,args.Initiator,
 		args.Receiver,args.mark(), args.infoDigest(),

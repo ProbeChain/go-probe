@@ -177,7 +177,7 @@ type extblock struct {
 	Uncles []*Header
 }
 
-// NewBlock creates a new block. The input data is copied,
+// NewBlock creates a New block. The input data is copied,
 // changes to header and to the field values will not affect the
 // block.
 //
@@ -340,7 +340,7 @@ func CalcUncleHash(uncles []*Header) common.Hash {
 	return rlpHash(uncles)
 }
 
-// WithSeal returns a new block with the data from b but the header replaced with
+// WithSeal returns a New block with the data from b but the header replaced with
 // the sealed one.
 func (b *Block) WithSeal(header *Header) *Block {
 	cpy := *header
@@ -352,7 +352,7 @@ func (b *Block) WithSeal(header *Header) *Block {
 	}
 }
 
-// WithBody returns a new block with the given transaction and uncle contents.
+// WithBody returns a New block with the given transaction and uncle contents.
 func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 	block := &Block{
 		header:       CopyHeader(b.header),

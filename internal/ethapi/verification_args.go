@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+	"math/big"
 )
 
 //wxc todo 各种业务类型的默认值设置实现
@@ -21,8 +24,19 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	}
 
 	if args.Value == nil {
-		args.Value = new(hexutil.Big)
+		//args.Value = new(hexutil.Big)
+
 	}
+
+/*	_,err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}*/
+	newAccType,err := common.ValidAddress(*args.New)
+	if err != nil {
+		return err
+	}
+	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(accounts.AmountOfPledgeForCreateAccount(newAccType)))
 
 	//注册账号 todo
 /*	if uint8(*args.BizType) == common.Register {
@@ -38,11 +52,11 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	}*/
 
 
-	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
-	}
-	if args.To == nil && len(args.data()) == 0 {
-		return errors.New(`contract creation without any data provided`)
+	}*/
+	if args.New == nil {
+		return errors.New(`new account is not empty`)
 	}
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
@@ -50,7 +64,7 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
-			To:                   args.To,
+			New:			  	  args.New,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
