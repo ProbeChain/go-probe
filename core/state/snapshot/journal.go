@@ -18,12 +18,8 @@ package snapshot
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
-	"time"
-
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -31,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+	"io"
 )
 
 const journalVersion uint64 = 0
@@ -179,18 +176,18 @@ func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, 
 		}
 		base.genPending = make(chan struct{})
 		base.genAbort = make(chan chan *generatorStats)
-
-		var origin uint64
-		if len(generator.Marker) >= 8 {
-			origin = binary.BigEndian.Uint64(generator.Marker)
-		}
-		go base.generate(&generatorStats{
-			origin:   origin,
-			start:    time.Now(),
-			accounts: generator.Accounts,
-			slots:    generator.Slots,
-			storage:  common.StorageSize(generator.Storage),
-		})
+		// todo 待了解
+		//var origin uint64
+		//if len(generator.Marker) >= 8 {
+		//	origin = binary.BigEndian.Uint64(generator.Marker)
+		//}
+		//go base.generate(&generatorStats{
+		//	origin:   origin,
+		//	start:    time.Now(),
+		//	accounts: generator.Accounts,
+		//	slots:    generator.Slots,
+		//	storage:  common.StorageSize(generator.Storage),
+		//})
 	}
 	return snapshot, false, nil
 }

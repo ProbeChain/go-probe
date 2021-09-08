@@ -861,3 +861,31 @@ func (s *stateObject) Nonce() uint64 {
 func (s *stateObject) Value() *big.Int {
 	panic("Value on stateObject should never be called")
 }
+
+// SetValueForAsset set asset account value and append to journal
+func (s *stateObject) SetValueForAsset(value *big.Int) {
+	//s.db.journal.append(valueForAssetChange{
+	//	account: &s.address,
+	//	prev:    s.assetAccount.Value,
+	//})
+	s.assetAccount.Value = value
+}
+
+// setValueForAsset only set asset account value
+func (s *stateObject) setValueForAsset(value *big.Int) {
+	s.assetAccount.Value = value
+}
+
+// SetValueForRegular set regular account value and append to journal
+func (s *stateObject) SetValueForRegular(value *big.Int) {
+	//s.db.journal.append(valueForRegularChange{
+	//	account: &s.address,
+	//	prev:    s.regularAccount.Value,
+	//})
+	s.regularAccount.Value = value
+}
+
+// setValueForRegular only set regular account value
+func (s *stateObject) setValueForRegular(value *big.Int) {
+	s.regularAccount.Value = value
+}

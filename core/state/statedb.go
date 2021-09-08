@@ -556,24 +556,24 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 		//}
 	}
 	// If snapshot unavailable or reading from it failed, load from the database
-	if s.snap == nil || err != nil {
-		if metrics.EnabledExpensive {
-			defer func(start time.Time) { s.AccountReads += time.Since(start) }(time.Now())
-		}
-		enc, err := s.trie.TryGet(addr.Bytes())
-		if err != nil {
-			s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", addr.Bytes(), err))
-			return nil
-		}
-		if len(enc) == 0 {
-			return nil
-		}
-		data = new(RegularAccount)
-		if err := rlp.DecodeBytes(enc, data); err != nil {
-			log.Error("Failed to decode state object", "addr", addr, "err", err)
-			return nil
-		}
+	//if s.snap == nil || err != nil {
+	if metrics.EnabledExpensive {
+		defer func(start time.Time) { s.AccountReads += time.Since(start) }(time.Now())
 	}
+	enc, err := s.trie.TryGet(addr.Bytes())
+	if err != nil {
+		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", addr.Bytes(), err))
+		return nil
+	}
+	if len(enc) == 0 {
+		return nil
+	}
+	data = new(RegularAccount)
+	if err := rlp.DecodeBytes(enc, data); err != nil {
+		log.Error("Failed to decode state object", "addr", addr, "err", err)
+		return nil
+	}
+	//}
 	// Insert into the live set
 	obj := newRegularAccount(s, addr, *data)
 	s.setStateObject(obj)
@@ -1054,4 +1054,471 @@ func (s *StateDB) AddressInAccessList(addr common.Address) bool {
 // SlotInAccessList returns true if the given (address, slot)-tuple is in the access list.
 func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressPresent bool, slotPresent bool) {
 	return s.accessList.Contains(addr, slot)
+}
+
+// GetRegular 获取普通账户
+func (s *StateDB) GetRegular(addr common.Address) RegularAccount {
+	stateObject := s.getStateObject(addr)
+	if stateObject != nil {
+		return stateObject.regularAccount
+	}
+	return RegularAccount{}
+}
+
+// GetPns PNS账号
+func (s *StateDB) GetPns(addr common.Address) PnsAccount {
+	stateObject := s.getStateObject(addr)
+	if stateObject != nil {
+		return stateObject.pnsAccount
+	}
+	return PnsAccount{}
+}
+
+// GetAsset 资产账户
+func (s *StateDB) GetAsset(addr common.Address) AssetAccount {
+	stateObject := s.getStateObject(addr)
+	if stateObject != nil {
+		return stateObject.assetAccount
+	}
+	return AssetAccount{}
+}
+
+// GetContract 合约账户
+func (s *StateDB) GetContract(addr common.Address) AssetAccount {
+	stateObject := s.getStateObject(addr)
+	if stateObject != nil {
+		return stateObject.assetAccount
+	}
+	return AssetAccount{}
+}
+
+// GetAuthorize 授权账户
+func (s *StateDB) GetAuthorize(addr common.Address) AuthorizeAccount {
+	stateObject := s.getStateObject(addr)
+	if stateObject != nil {
+		return stateObject.authorizeAccount
+	}
+	return AuthorizeAccount{}
+}
+
+// GetLoss 挂失账户
+func (s *StateDB) GetLoss(addr common.Address) LossAccount {
+	stateObject := s.getStateObject(addr)
+	if stateObject != nil {
+		return stateObject.lossAccount
+	}
+	return LossAccount{}
+}
+
+// 查询某个字段
+
+func (s *StateDB) GetValueForRegular(addr common.Address) *big.Int {
+	regular := s.GetRegular(addr)
+	return regular.Value
+}
+
+func (s *StateDB) GetVoteValueForRegular(addr common.Address) *big.Int {
+	regular := s.GetRegular(addr)
+	return regular.VoteValue
+}
+
+func (s *StateDB) GetLossTypeForRegular(addr common.Address) uint8 {
+	regular := s.GetRegular(addr)
+	return regular.LossType
+}
+
+func (s *StateDB) GetVoteAccountForRegular(addr common.Address) common.Address {
+	regular := s.GetRegular(addr)
+	return regular.VoteAccount
+}
+
+func (s *StateDB) GetNonceForRegular(addr common.Address) uint64 {
+	regular := s.GetRegular(addr)
+	return regular.Nonce
+}
+
+func (s *StateDB) GetTypeForPns(addr common.Address) byte {
+	pns := s.GetPns(addr)
+	return pns.Type
+}
+
+func (s *StateDB) GetOwnerForPns(addr common.Address) common.Address {
+	pns := s.GetPns(addr)
+	return pns.Owner
+}
+
+func (s *StateDB) GetDataForPns(addr common.Address) []byte {
+	pns := s.GetPns(addr)
+	return pns.Data
+}
+
+func (s *StateDB) GetTypeForAsset(addr common.Address) byte {
+	asset := s.GetAsset(addr)
+	return asset.Type
+}
+
+func (s *StateDB) GetCodeHashForAsset(addr common.Address) []byte {
+	asset := s.GetAsset(addr)
+	return asset.CodeHash
+}
+
+func (s *StateDB) GetStorageRootForAsset(addr common.Address) common.Hash {
+	asset := s.GetAsset(addr)
+	return asset.StorageRoot
+}
+
+func (s *StateDB) GetValueForAsset(addr common.Address) *big.Int {
+	asset := s.GetAsset(addr)
+	return asset.Value
+}
+
+func (s *StateDB) GetVoteAccountForAsset(addr common.Address) common.Address {
+	asset := s.GetAsset(addr)
+	return asset.VoteAccount
+}
+
+func (s *StateDB) GetVoteValueForAsset(addr common.Address) *big.Int {
+	asset := s.GetAsset(addr)
+	return asset.VoteValue
+}
+
+//func (s *StateDB) GetVoteValueForContract(addr common.Address) *big.Int {
+//	asset := s.GetContract(addr)
+//	return asset.VoteValue
+//}
+
+func (s *StateDB) GetTypeForContract(addr common.Address) byte {
+	asset := s.GetContract(addr)
+	return asset.Type
+}
+
+func (s *StateDB) GetCodeHashForContract(addr common.Address) []byte {
+	asset := s.GetContract(addr)
+	return asset.CodeHash
+}
+
+func (s *StateDB) GetStorageRootForContract(addr common.Address) common.Hash {
+	asset := s.GetContract(addr)
+	return asset.StorageRoot
+}
+
+func (s *StateDB) GetValueForContract(addr common.Address) *big.Int {
+	asset := s.GetContract(addr)
+	return asset.Value
+}
+
+func (s *StateDB) GetVoteAccountForContract(addr common.Address) common.Address {
+	asset := s.GetContract(addr)
+	return asset.VoteAccount
+}
+
+func (s *StateDB) GetVoteValueForContract(addr common.Address) *big.Int {
+	asset := s.GetContract(addr)
+	return asset.VoteValue
+}
+
+func (s *StateDB) GetOwnerForAuthorize(addr common.Address) common.Address {
+	authorize := s.GetAuthorize(addr)
+	return authorize.Owner
+}
+
+func (s *StateDB) GetPledgeValueForAuthorize(addr common.Address) *big.Int {
+	authorize := s.GetAuthorize(addr)
+	return authorize.PledgeValue
+}
+
+func (s *StateDB) GetDelegateValueForAuthorize(addr common.Address) *big.Int {
+	authorize := s.GetAuthorize(addr)
+	return authorize.DelegateValue
+}
+
+func (s *StateDB) GetInfoForAuthorize(addr common.Address) []byte {
+	authorize := s.GetAuthorize(addr)
+	return authorize.Info
+}
+
+func (s *StateDB) GetInterestRateForAuthorize(addr common.Address) *big.Int {
+	authorize := s.GetAuthorize(addr)
+	return authorize.InterestRate
+}
+
+func (s *StateDB) GetValidPeriodForAuthorize(addr common.Address) *big.Int {
+	authorize := s.GetAuthorize(addr)
+	return authorize.ValidPeriod
+}
+
+func (s *StateDB) GetStateForAuthorize(addr common.Address) bool {
+	authorize := s.GetAuthorize(addr)
+	return authorize.State
+}
+
+func (s *StateDB) GetStateForLoss(addr common.Address) byte {
+	loss := s.GetLoss(addr)
+	return loss.State
+}
+
+func (s *StateDB) GetLossAccountForLoss(addr common.Address) common.Address {
+	loss := s.GetLoss(addr)
+	return loss.LossAccount
+}
+
+func (s *StateDB) GetNewAccountForLoss(addr common.Address) common.Address {
+	loss := s.GetLoss(addr)
+	return loss.NewAccount
+}
+
+func (s *StateDB) GetHeightForLoss(addr common.Address) *big.Int {
+	loss := s.GetLoss(addr)
+	return loss.Height
+}
+
+func (s *StateDB) GetInfoDigestForLoss(addr common.Address) []byte {
+	loss := s.GetLoss(addr)
+	return loss.InfoDigest
+}
+
+func (s *StateDB) SetValueForRegular(addr common.Address, value *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.SetValueForRegular(value)
+	}
+}
+
+func (s *StateDB) SetVoteValueForRegular(addr common.Address, voteValue *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.regularAccount.VoteValue = voteValue
+	}
+}
+
+func (s *StateDB) SetLossTypeForRegular(addr common.Address, lossType uint8) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.regularAccount.LossType = lossType
+	}
+}
+
+func (s *StateDB) SetVoteAccountForRegular(addr common.Address, voteAccount common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.regularAccount.VoteAccount = voteAccount
+	}
+}
+
+func (s *StateDB) SetNonceForRegular(addr common.Address, nonce uint64) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.regularAccount.Nonce = nonce
+	}
+}
+
+func (s *StateDB) SetTypeForPns(addr common.Address, pnsType byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.pnsAccount.Type = pnsType
+	}
+}
+
+func (s *StateDB) SetOwnerForPns(addr common.Address, owner common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.pnsAccount.Owner = owner
+	}
+}
+
+func (s *StateDB) SetDataForPns(addr common.Address, data []byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.pnsAccount.Data = data
+	}
+}
+
+func (s *StateDB) SetTypeForAsset(addr common.Address, assetType byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.Type = assetType
+	}
+}
+
+func (s *StateDB) SetCodeHashForAsset(addr common.Address, codeHash []byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.CodeHash = codeHash
+	}
+}
+
+func (s *StateDB) SetStorageRootForAsset(addr common.Address, storageRoot common.Hash) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.StorageRoot = storageRoot
+	}
+}
+
+func (s *StateDB) SetValueForAsset(addr common.Address, value *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.Value = value
+	}
+}
+
+func (s *StateDB) SetVoteAccountForAsset(addr common.Address, voteAccount common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.VoteAccount = voteAccount
+	}
+}
+
+func (s *StateDB) SetVoteValueForAsset(addr common.Address, voteAccount *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.VoteValue = voteAccount
+	}
+}
+
+//func (s *StateDB) GetVoteValueForContract(addr common.Address) *big.Int {
+//	asset := s.GetContract(addr)
+//	return asset.VoteValue
+//}
+
+func (s *StateDB) SetTypeForContract(addr common.Address, voteAccount common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.VoteAccount = voteAccount
+	}
+}
+
+func (s *StateDB) SetCodeHashForContract(addr common.Address, codeHash []byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.CodeHash = codeHash
+	}
+}
+
+func (s *StateDB) SetStorageRootForContract(addr common.Address, storageRoot common.Hash) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.StorageRoot = storageRoot
+	}
+}
+
+func (s *StateDB) SetValueForContract(addr common.Address, value *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.Value = value
+	}
+}
+
+func (s *StateDB) SetVoteAccountForContract(addr common.Address, voteAccount common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.VoteAccount = voteAccount
+	}
+}
+
+func (s *StateDB) SetVoteValueForContract(addr common.Address, voteValue *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.assetAccount.VoteValue = voteValue
+	}
+}
+
+func (s *StateDB) SetOwnerForAuthorize(addr common.Address, owner common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.authorizeAccount.Owner = owner
+	}
+}
+
+func (s *StateDB) SetPledgeValueForAuthorize(addr common.Address, pledgeValue *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.authorizeAccount.PledgeValue = pledgeValue
+	}
+}
+
+func (s *StateDB) SetDelegateValueForAuthorize(addr common.Address, delegateValue *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.authorizeAccount.DelegateValue = delegateValue
+	}
+}
+
+func (s *StateDB) SetInfoForAuthorize(addr common.Address, info []byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.authorizeAccount.Info = info
+	}
+}
+
+func (s *StateDB) SetInterestRateForAuthorize(addr common.Address, interestRate *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.authorizeAccount.InterestRate = interestRate
+	}
+}
+
+func (s *StateDB) SetValidPeriodForAuthorize(addr common.Address, validPeriod *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.authorizeAccount.ValidPeriod = validPeriod
+	}
+}
+
+func (s *StateDB) SetStateForAuthorize(addr common.Address, state bool) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.authorizeAccount.State = state
+	}
+}
+
+func (s *StateDB) SetStateForLoss(addr common.Address, state byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.lossAccount.State = state
+	}
+}
+
+func (s *StateDB) SetLossAccountForLoss(addr common.Address, lossAccount common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.lossAccount.LossAccount = lossAccount
+	}
+}
+
+func (s *StateDB) SetNewAccountForLoss(addr common.Address, newAccount common.Address) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.lossAccount.NewAccount = newAccount
+	}
+}
+
+func (s *StateDB) SetHeightForLoss(addr common.Address, height *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.lossAccount.Height = height
+	}
+}
+
+func (s *StateDB) SetInfoDigestForLoss(addr common.Address, infoDigest []byte) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.lossAccount.InfoDigest = infoDigest
+	}
+}
+
+// DeleteStateObjectByAddr removes the given object from the state trie.
+func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
+	state := s.stateObjects[addr]
+	if state != nil {
+		state.deleted = true
+	}
+
+	// Track the amount of time wasted on deleting the account from the trie
+	if metrics.EnabledExpensive {
+		defer func(start time.Time) { s.AccountUpdates += time.Since(start) }(time.Now())
+	}
+	// Delete the account from the trie
+	if err := s.trie.TryDelete(addr[:]); err != nil {
+		s.setError(fmt.Errorf("deleteStateObject (%x) error: %v", addr[:], err))
+	}
 }
