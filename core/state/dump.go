@@ -323,7 +323,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 4 {
-				wrapper, err = DecodeRLP(it.Value, accounts.Pns)
+				wrapper, err = DecodeRLP(it.Value, accounts.Authorize)
 				if err != nil {
 					continue
 				}
@@ -339,7 +339,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 5 {
-				wrapper, err = DecodeRLP(it.Value, accounts.Pns)
+				wrapper, err = DecodeRLP(it.Value, accounts.Lose)
 				if err != nil {
 					continue
 				}
