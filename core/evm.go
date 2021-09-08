@@ -17,11 +17,12 @@
 package core
 
 import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 )
 
@@ -52,15 +53,17 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer: CanTransfer,
-		Transfer:    Transfer,
-		GetHash:     GetHashFn(header, chain),
-		Coinbase:    beneficiary,
-		BlockNumber: new(big.Int).Set(header.Number),
-		Time:        new(big.Int).SetUint64(header.Time),
-		Difficulty:  new(big.Int).Set(header.Difficulty),
-		BaseFee:     baseFee,
-		GasLimit:    header.GasLimit,
+		CanTransfer: 	CanTransfer,
+		Transfer:    	Transfer,
+		GetHash:     	GetHashFn(header, chain),
+		Coinbase:    	beneficiary,
+		BlockNumber: 	new(big.Int).Set(header.Number),
+		Time:        	new(big.Int).SetUint64(header.Time),
+		Difficulty:  	new(big.Int).Set(header.Difficulty),
+		BaseFee:     	baseFee,
+		GasLimit:    	header.GasLimit,
+		Register:	 	Register,
+		Cancellation:	Cancellation,
 	}
 }
 
@@ -116,4 +119,16 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
 	db.SubBalance(sender, amount)
 	db.AddBalance(recipient, amount)
+}
+
+func Register(db vm.StateDB, sender, new common.Address, pledge *big.Int)  {
+	fmt.Printf("Register: sender:%s,new:%s,pledge:%s\n",sender.String(),new.String(),pledge.String())
+	db.SubBalance(sender, pledge)
+	db.GenerateAccount(new)
+}
+
+func Cancellation(db vm.StateDB, senderAccount, newAccount common.Address)  {
+	balance := db.GetBalance(senderAccount)
+	db.SubBalance(senderAccount,balance)
+	db.AddBalance(newAccount, balance)
 }

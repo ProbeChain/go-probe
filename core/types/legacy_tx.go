@@ -34,7 +34,6 @@ type LegacyTx struct {
 	K           byte
 	V, R, S     *big.Int // signature values
 
-	Account    			*common.Address `rlp:"nil"`
 	Owner			 	*common.Address `rlp:"nil"`
 	Beneficiary			*common.Address `rlp:"nil"`
 	Vote			 	*common.Address `rlp:"nil"`
@@ -78,18 +77,19 @@ func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPric
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *LegacyTx) copy() TxData {
 	cpy := &LegacyTx{
-		Nonce: tx.Nonce,
-		To:    tx.To, // TODO: copy pointed-to address
-		Data:  common.CopyBytes(tx.Data),
-		BizType: tx.BizType,
-		Gas:   tx.Gas,
+		Nonce: 		tx.Nonce,
+		To:    		tx.To,
+		New:   		tx.New,
+		Data:  		common.CopyBytes(tx.Data),
+		BizType: 	tx.BizType,
+		Gas:   		tx.Gas,
 		// These are initialized below.
-		Value:    new(big.Int),
-		GasPrice: new(big.Int),
-		V:        new(big.Int),
-		R:        new(big.Int),
-		S:        new(big.Int),
-		K:        tx.K,
+		Value:    	new(big.Int),
+		GasPrice: 	new(big.Int),
+		V:        	new(big.Int),
+		R:        	new(big.Int),
+		S:        	new(big.Int),
+		K:        	tx.K,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -123,14 +123,13 @@ func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
 func (tx *LegacyTx) bizType() uint8     { return tx.BizType }
 
-func (tx *LegacyTx) account()			 *common.Address {return tx.Account}
 func (tx *LegacyTx) owner()			 	 *common.Address {return tx.Owner}
 func (tx *LegacyTx) beneficiary()		 *common.Address {return tx.Beneficiary}
 func (tx *LegacyTx) vote()			 	 *common.Address {return tx.Vote}
 func (tx *LegacyTx) loss()			 	 *common.Address {return tx.Loss}
 func (tx *LegacyTx) asset()			 	 *common.Address {return tx.Asset}
-func (tx *LegacyTx) oldAccount()		 *common.Address {return tx.Old}
-func (tx *LegacyTx) newAccount()		 *common.Address {return tx.New}
+func (tx *LegacyTx) old()				 *common.Address {return tx.Old}
+func (tx *LegacyTx) new()		 		 *common.Address {return tx.New}
 func (tx *LegacyTx) initiator()			 *common.Address {return tx.Initiator}
 func (tx *LegacyTx) receiver()			 *common.Address {return tx.Receiver}
 func (tx *LegacyTx) value2() 			 *big.Int {return tx.Value2}

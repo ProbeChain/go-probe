@@ -56,7 +56,6 @@ type AccessListTx struct {
 	K           byte
 	V, R, S     *big.Int // signature values
 
-	Account    			*common.Address `rlp:"nil"`
 	Owner			 	*common.Address `rlp:"nil"`
 	Beneficiary			*common.Address `rlp:"nil"`
 	Vote			 	*common.Address `rlp:"nil"`
@@ -75,11 +74,12 @@ type AccessListTx struct {
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *AccessListTx) copy() TxData {
 	cpy := &AccessListTx{
-		Nonce: tx.Nonce,
-		To:    tx.To, // TODO: copy pointed-to address
-		Data:  common.CopyBytes(tx.Data),
-		BizType: tx.BizType,
-		Gas:   tx.Gas,
+		Nonce: 		tx.Nonce,
+		To:    		tx.To,
+		New:   		tx.New,
+		Data:  		common.CopyBytes(tx.Data),
+		BizType: 	tx.BizType,
+		Gas:   		tx.Gas,
 		// These are copied below.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
@@ -127,14 +127,13 @@ func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) bizType() uint8     { return tx.BizType }
 
-func (tx *AccessListTx) account()			 *common.Address {return tx.Account}
 func (tx *AccessListTx) owner()			 	 *common.Address {return tx.Owner}
 func (tx *AccessListTx) beneficiary()		 *common.Address {return tx.Beneficiary}
 func (tx *AccessListTx) vote()			 	 *common.Address {return tx.Vote}
 func (tx *AccessListTx) loss()			 	 *common.Address {return tx.Loss}
 func (tx *AccessListTx) asset()			 	 *common.Address {return tx.Asset}
-func (tx *AccessListTx) oldAccount()		 *common.Address {return tx.Old}
-func (tx *AccessListTx) newAccount()		 *common.Address {return tx.New}
+func (tx *AccessListTx) old()		 		 *common.Address {return tx.Old}
+func (tx *AccessListTx) new()		 		 *common.Address {return tx.New}
 func (tx *AccessListTx) initiator()			 *common.Address {return tx.Initiator}
 func (tx *AccessListTx) receiver()			 *common.Address {return tx.Receiver}
 func (tx *AccessListTx) value2() 			 *big.Int {return tx.Value2}

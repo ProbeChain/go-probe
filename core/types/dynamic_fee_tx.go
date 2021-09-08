@@ -39,7 +39,6 @@ type DynamicFeeTx struct {
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
 
-	Account    			*common.Address `rlp:"nil"`
 	Owner			 	*common.Address `rlp:"nil"`
 	Beneficiary			*common.Address `rlp:"nil"`
 	Vote			 	*common.Address `rlp:"nil"`
@@ -59,7 +58,8 @@ type DynamicFeeTx struct {
 func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
 		Nonce:       tx.Nonce,
-		To:          tx.To, // TODO: copy pointed-to address
+		To:          tx.To,
+		New:   		 tx.New,
 		BizType:     tx.BizType,
 		Data:        common.CopyBytes(tx.Data),
 		Gas:         tx.Gas,
@@ -114,14 +114,13 @@ func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
 func (tx *DynamicFeeTx) bizType() uint8     { return tx.BizType }
 
-func (tx *DynamicFeeTx) account()			 *common.Address {return tx.Account}
 func (tx *DynamicFeeTx) owner()			 	 *common.Address {return tx.Owner}
 func (tx *DynamicFeeTx) beneficiary()		 *common.Address {return tx.Beneficiary}
 func (tx *DynamicFeeTx) vote()			 	 *common.Address {return tx.Vote}
 func (tx *DynamicFeeTx) loss()			 	 *common.Address {return tx.Loss}
 func (tx *DynamicFeeTx) asset()			 	 *common.Address {return tx.Asset}
-func (tx *DynamicFeeTx) oldAccount()		 *common.Address {return tx.Old}
-func (tx *DynamicFeeTx) newAccount()		 *common.Address {return tx.New}
+func (tx *DynamicFeeTx) old()		 		 *common.Address {return tx.Old}
+func (tx *DynamicFeeTx) new()		 		 *common.Address {return tx.New}
 func (tx *DynamicFeeTx) initiator()			 *common.Address {return tx.Initiator}
 func (tx *DynamicFeeTx) receiver()			 *common.Address {return tx.Receiver}
 func (tx *DynamicFeeTx) value2() 			 *big.Int {return tx.Value2}

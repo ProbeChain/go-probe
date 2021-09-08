@@ -152,7 +152,7 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 // processing of signatures.
 //
 // Note that this interface is not a stable API and may change at any time to accommodate
-// new protocol rules.
+// New protocol rules.
 type Signer interface {
 	// Sender returns the sender address of the transaction.
 	Sender(tx *Transaction) (common.Address, error)

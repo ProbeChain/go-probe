@@ -468,7 +468,7 @@ func ValidCheckAddress(v string) (c byte, err error) {
 }
 
 func ValidAddress(addr Address) (c byte, err error) {
-	b, err := hex.DecodeString(hex.EncodeToString(addr.Bytes())[2:])
+	b := addr.Bytes()
 	if len(b) == AddressLength {
 		sum := b[len(b)-AddressChecksumLen:]
 		checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
