@@ -91,8 +91,8 @@ const (
 	maxFutureBlocks     = 256
 	maxTimeFutureBlocks = 30
 	TriesInMemory       = 128
-	maxChainPowAnswers  = 1024
-	maxChainDposAcks    = 1024
+	maxChainPowAnswers  = 256
+	maxChainDposAcks    = 256
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -202,7 +202,7 @@ func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
 	size := len(pool.powAnswerMap)
 	if size >= 2*maxChainPowAnswers {
 		// first sort the number
-		numbers := make([]uint64, size, size)
+		numbers := make([]uint64, 0, size)
 		for number := range pool.powAnswerMap {
 			numbers = append(numbers, number)
 		}
@@ -280,7 +280,7 @@ func (pool *DposAckPool) Add(dposAck *types.DposAck) {
 	size := len(pool.dposAckMap)
 	if size >= 2*maxChainDposAcks {
 		// first sort the number
-		numbers := make([]uint64, size, size)
+		numbers := make([]uint64, 0, size)
 		for number := range pool.dposAckMap {
 			numbers = append(numbers, number)
 		}
