@@ -67,13 +67,6 @@ type StateDB struct {
 	originalRoot common.Hash // The pre-state root, before any changes were made
 	trie         Trie
 
-	regularTrie   Trie
-	pnsTrie       Trie
-	digitalTrie   Trie
-	contractTrie  Trie
-	authorizeTrie Trie
-	lossTrie      Trie
-
 	hasher crypto.KeccakState
 
 	snaps         *snapshot.Tree
