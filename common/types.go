@@ -24,14 +24,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/google/go-cmp/cmp"
+	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
 	"reflect"
 	"strings"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/google/go-cmp/cmp"
-	"golang.org/x/crypto/sha3"
 )
 
 // Lengths of hashes and addresses in bytes.

@@ -103,7 +103,7 @@ type stateObject struct {
 	dirtyCode bool // true if the code was updated
 	suicided  bool
 	deleted   bool
-	isNew 	  bool
+	isNew     bool
 }
 
 // empty returns whether the account is considered empty.
@@ -258,6 +258,100 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 	}
 	wrapper.accountType = accountType
 	return &wrapper, err
+}
+
+// newObject creates a state object.
+func newObject(db *StateDB, address common.Address) *stateObject {
+	wrapper, _ := initStateObject(address)
+	trie := *db.getStateObjectTireByAccountType(wrapper.accountType)
+	return &stateObject{
+		db:          db,
+		address:     address,
+		accountType: wrapper.accountType,
+		//Root:			  trie.Hash(),
+		trie:             trie,
+		addrHash:         crypto.Keccak256Hash(address[:]),
+		regularAccount:   wrapper.regularAccount,
+		pnsAccount:       wrapper.pnsAccount,
+		assetAccount:     wrapper.assetAccount,
+		authorizeAccount: wrapper.authorizeAccount,
+		lossAccount:      wrapper.lossAccount,
+		originStorage:    make(Storage),
+		pendingStorage:   make(Storage),
+		dirtyStorage:     make(Storage),
+	}
+}
+
+func initStateObject(address common.Address) (*Wrapper, error) {
+	accountType, err := common.ValidAddress(address)
+	if err != nil {
+		return nil, err
+	}
+	var (
+		wrapper Wrapper
+		error   error
+	)
+	switch accountType {
+	case accounts.General:
+		wrapper.regularAccount = RegularAccount{
+			VoteAccount: address,
+			VoteValue:   new(big.Int),
+			LossType:    uint8(0),
+			Nonce:       uint64(0),
+			Value:       new(big.Int),
+		}
+	case accounts.Pns:
+		wrapper.pnsAccount = PnsAccount{
+			Owner: address,
+			Type:  byte(0),
+			Data:  []byte{},
+		}
+	case accounts.Asset, accounts.Contract:
+		wrapper.assetAccount = AssetAccount{
+			Type:        byte(0),
+			CodeHash:    []byte{},
+			StorageRoot: common.Hash{},
+			Value:       new(big.Int),
+			VoteAccount: address,
+			VoteValue:   new(big.Int),
+			Nonce:       uint64(0),
+		}
+	case accounts.Authorize:
+		wrapper.authorizeAccount = AuthorizeAccount{
+			Owner:         address,
+			PledgeValue:   new(big.Int),
+			DelegateValue: new(big.Int),
+			Info:          []byte{},
+			InterestRate:  new(big.Int),
+			ValidPeriod:   new(big.Int),
+			State:         false,
+		}
+	case accounts.Lose:
+		wrapper.lossAccount = LossAccount{
+			State:       byte(0),
+			LossAccount: common.Address{},
+			NewAccount:  common.Address{},
+			Height:      new(big.Int),
+			InfoDigest:  []byte{},
+		}
+	case accounts.DPoS:
+		wrapper.dPoSAccount = DPoSAccount{
+			Ip:    net.IP{},
+			Port:  0,
+			Owner: address,
+		}
+	case accounts.DPoSCandidate:
+		wrapper.dPoSCandidateAccount = DPoSCandidateAccount{
+			Ip:            net.IP{},
+			Port:          0,
+			Owner:         address,
+			DelegateValue: new(big.Int),
+		}
+	default:
+		error = accounts.ErrUnknownAccount
+	}
+	wrapper.accountType = accountType
+	return &wrapper, error
 }
 
 // newRegularAccount creates a state object.
@@ -747,7 +841,7 @@ func (s *stateObject) SetBalance(amount *big.Int) {
 		s.db.journal.append(balanceChange{
 			account: &s.address,
 			//prev:    new(big.Int).Set(s.regularAccount.Balance),
-			prev: new(big.Int).Set(s.regularAccount.Value),
+			prev: new(big.Int).Set(s.Balance()),
 		})
 		s.setBalance(amount)
 	}
@@ -755,11 +849,18 @@ func (s *stateObject) SetBalance(amount *big.Int) {
 
 func (s *stateObject) setBalance(amount *big.Int) {
 	//s.regularAccount.Balance = amount
-	s.regularAccount.Value = amount
+	switch s.accountType {
+	case accounts.General:
+		s.SetValueForRegular(amount)
+	case accounts.Asset, accounts.Contract:
+		s.SetValueForAsset(amount)
+	default:
+	}
 }
 
 func (s *stateObject) deepCopy(db *StateDB) *stateObject {
-	stateObject := newRegularAccount(db, s.address, s.regularAccount)
+	//stateObject := newRegularAccount(db, s.address, s.regularAccount)
+	stateObject := s.getNewStateObjectByAddr(db, s.address)
 	if s.trie != nil {
 		stateObject.trie = db.db.CopyTrie(s.trie)
 	}
@@ -771,6 +872,34 @@ func (s *stateObject) deepCopy(db *StateDB) *stateObject {
 	stateObject.dirtyCode = s.dirtyCode
 	stateObject.deleted = s.deleted
 	return stateObject
+}
+
+func (s *stateObject) getNewStateObjectByAddr(db *StateDB, address common.Address) *stateObject {
+	accountType, err := common.ValidAddress(address)
+	if err != nil {
+		return nil
+	}
+	var (
+		state *stateObject
+	)
+	switch accountType {
+	case accounts.General:
+		state = newRegularAccount(db, s.address, s.regularAccount)
+	case accounts.Pns:
+		state = newPnsAccount(db, s.address, s.pnsAccount)
+	case accounts.Asset, accounts.Contract:
+		state = newAssetAccount(db, s.address, s.assetAccount)
+	case accounts.Authorize:
+		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
+	case accounts.Lose:
+		state = newLossAccount(db, s.address, s.lossAccount)
+	//case accounts.DPoS:
+	//
+	//case accounts.DPoSCandidate:
+	default:
+		state = nil
+	}
+	return state
 }
 
 //
@@ -833,15 +962,25 @@ func (s *stateObject) setCode(codeHash common.Hash, code []byte) {
 }
 
 func (s *stateObject) SetNonce(nonce uint64) {
-	s.db.journal.append(nonceChange{
-		account: &s.address,
-		prev:    s.regularAccount.Nonce,
-	})
-	s.setNonce(nonce)
+	if s.accountType == accounts.General || s.accountType == accounts.Asset || s.accountType == accounts.Contract {
+		s.db.journal.append(nonceChange{
+			account: &s.address,
+			//prev:    s.regularAccount.Nonce,
+			prev: s.Nonce(),
+		})
+		s.setNonce(nonce)
+	}
 }
 
 func (s *stateObject) setNonce(nonce uint64) {
-	s.regularAccount.Nonce = nonce
+	//s.regularAccount.Nonce = nonce
+	switch s.accountType {
+	case accounts.General:
+		s.regularAccount.Nonce = nonce
+	case accounts.Asset, accounts.Contract:
+		s.assetAccount.Nonce = nonce
+	default:
+	}
 }
 
 func (s *stateObject) CodeHash() []byte {
@@ -850,11 +989,27 @@ func (s *stateObject) CodeHash() []byte {
 }
 
 func (s *stateObject) Balance() *big.Int {
-	return s.regularAccount.Value
+	//return s.regularAccount.Value
+	switch s.accountType {
+	case accounts.General:
+		return s.regularAccount.Value
+	case accounts.Asset, accounts.Contract:
+		return s.assetAccount.Value
+	default:
+		return new(big.Int)
+	}
 }
 
 func (s *stateObject) Nonce() uint64 {
-	return s.regularAccount.Nonce
+	//return s.regularAccount.Nonce
+	switch s.accountType {
+	case accounts.General:
+		return s.regularAccount.Nonce
+	case accounts.Asset, accounts.Contract:
+		return s.assetAccount.Nonce
+	default:
+		return 0
+	}
 }
 
 // Never called, but must be present to allow stateObject to be used
