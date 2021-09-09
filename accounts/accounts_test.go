@@ -37,10 +37,9 @@ func TestTextHash(t *testing.T) {
 	}
 }
 
-/*
 func TestGenerate(t *testing.T) {
 	//Create an account
-	key, err := probe.GenerateKeyByType(0x01)
+	key, err := probe.GenerateKeyByType(0x00)
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
 	}
@@ -85,17 +84,12 @@ func TestCreateAddressForAccountType(t *testing.T) {
 		fmt.Printf("failed GenerateKey with %s.", err2)
 	}
 	fmt.Printf("flag[%T][%X]\n", c, c)
-	//address_02 := probe.CreateAddressForAccountType(address, uint64(123456), 0x02)
-	//fmt.Printf("address2[%d][%v]\n", len(address_02), address_02)
-
-	/*acc1Key, _ := probe.HexToECDSA(hexPriKey)
-	fmt.Println("public key from prikey  \n", hexutil.Encode(probe.FromECDSAPub(&acc1Key.PublicKey)))
-	address1 := probe.PubkeyToAddress(acc1Key.PublicKey).Hex()
-	fmt.Println("address1 ", address1)
+	address_02, _ := probe.CreateAddressForAccountType(address, uint64(123456), 0x02)
+	fmt.Printf("address2[%d][%v]\n", len(address_02), address_02)
 
 }
 
-func TestCreateAddressForProbeAccountType(t *testing.T) {
+func TestCreateAddressForProbeGenerateKeyByType(t *testing.T) {
 
 	k := byte(0x02)
 	key, err := probe.GenerateKeyByType(k)
@@ -119,7 +113,8 @@ func TestCreateAddressForProbeAccountType(t *testing.T) {
 	fmt.Println("public key from prikey  \n", hexutil.Encode(probe.FromECDSAPub(&acc1Key.PublicKey)))
 	address1 := probe.PubkeyToAddress(acc1Key.PublicKey).Hex()
 	fmt.Println("address1 ", address1)
-}*/
+}
+
 func TestSign01(*testing.T) {
 	k := byte(0x03)
 	key, err := probe.GenerateKeyByType(k)
@@ -127,6 +122,8 @@ func TestSign01(*testing.T) {
 		fmt.Println("Error: ", err.Error())
 	}
 	hexPriKey := hex.EncodeToString(probe.FromECDSA(key))
+	//带有0x的私钥
+	fmt.Println("private key have 0x   n", hexutil.Encode(probe.FromECDSA(key)))
 	//不含0x的私钥65
 	fmt.Printf("private key [%d] [%v]\n", len(hexPriKey), hexPriKey)
 	//Get the address
