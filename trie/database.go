@@ -78,7 +78,7 @@ type Database struct {
 
 	cleans      *fastcache.Cache            // GC friendly memory cache of clean node RLPs
 	dirties     map[common.Hash]*cachedNode // Data and references relationships of dirty trie nodes
-	commitLeafs []commitLeaf                // 已提交的叶子节点列表
+	commitLeafs []*commitLeaf               // 已提交的叶子节点列表
 	oldest      common.Hash                 // Oldest tracked node, flush-list head
 	newest      common.Hash                 // Newest tracked node, flush-list tail
 
@@ -358,11 +358,11 @@ func (db *Database) insertLeaf(index int, hash common.Hash, size int, node node)
 	db.dirties[hash] = entry
 	db.dirtiesSize += common.StorageSize(common.HashLength + entry.size)
 
-	db.commitLeafs = append(db.commitLeafs, commitLeaf{
+	db.commitLeafs = append([]*commitLeaf{{
 		Commit: false,
 		Index:  index,
 		Hash:   hash,
-	})
+	}}, db.commitLeafs...)
 }
 
 // insert inserts a collapsed trie node into the memory database.
@@ -689,12 +689,55 @@ func (db *Database) Dereference(root common.Hash) {
 
 // dereferenceAlters
 func (db *Database) dereferenceAlters() {
+	db.trie.sortAlter()
+	size := len(db.trie.bt.alters)
 
+	// delete levedb
+	for i, alter := range db.trie.bt.alters {
+		if i < size-rollBackMaxStep {
+			rawdb.DelAlters(db.diskdb, alter.CurRoot)
+		}
+	}
+
+	// delete memory
+	if size > rollBackMaxStep {
+		db.trie.bt.alters = db.trie.bt.alters[size-rollBackMaxStep:]
+	}
 }
 
 // dereferenceLeafs
 func (db *Database) dereferenceLeafs() {
+	cursor := 0
+	size := len(db.commitLeafs)
+	for {
+		if cursor == size {
+			break
+		}
 
+		// Delete duplicate submissions in leveldb
+		curLeaf := db.commitLeafs[cursor]
+		if curLeaf != nil {
+			curLeafIndex := curLeaf.Index
+			for i := cursor + 1; i < size; i++ {
+				leaf := db.commitLeafs[i]
+				if leaf != nil && leaf.Commit && leaf.Index == curLeafIndex {
+					rawdb.DeleteTrieNode(db.diskdb, leaf.Hash)
+					db.commitLeafs[i] = nil
+				}
+			}
+		}
+
+		cursor++
+	}
+
+	// Delete data that has been deleted from the Level DB
+	commitLeafs := make([]*commitLeaf, 0, size)
+	for _, leaf := range db.commitLeafs {
+		if leaf != nil {
+			commitLeafs = append(commitLeafs, leaf)
+		}
+	}
+	db.commitLeafs = commitLeafs
 }
 
 // dereference is the private locked version of Dereference.
@@ -979,12 +1022,12 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 // commitAlter commit alters
 func (db *Database) commitAlter(batch ethdb.Batch) {
 	alters := db.trie.bt.alters
-	for _, alter := range alters {
+	for i, alter := range alters {
 		if !alter.commit {
 			if bytes, err := rlp.EncodeToBytes(alter); err == nil {
 				rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
 			}
-			alter.commit = true
+			alters[i].commit = true
 		}
 	}
 }
@@ -1006,6 +1049,11 @@ func (c *cleaner) Put(key []byte, rlp []byte) error {
 	// If the node does not exist, we're done on this path
 	node, ok := c.db.dirties[hash]
 	if !ok {
+		return nil
+	}
+	_, binaryHash := node.node.(binaryHashNode)
+	_, binaryLeaf := node.node.(binaryLeaf)
+	if binaryHash || binaryLeaf {
 		return nil
 	}
 	// Node still exists, remove it from the flush-list

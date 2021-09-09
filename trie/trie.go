@@ -291,13 +291,13 @@ func (t *Trie) Close() {
 func (t *Trie) Flush() {
 	if t.bt != nil && t.bt.mem != nil {
 		t.bt.Flush()
-		t.print()
+		//t.print()
 	}
 }
 func (bt *BinaryTree) Flush() {
 	if bt.mem != nil {
 		bt.mem.Flush()
-		bt.print()
+		//bt.print()
 	}
 }
 
@@ -1091,6 +1091,7 @@ func (t *Trie) sortAlter() {
 			}
 		}
 	}
+	t.bt.alters = alters
 }
 
 // hashRoot calculates the root hash of the given trie
