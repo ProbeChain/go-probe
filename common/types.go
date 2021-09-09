@@ -468,6 +468,11 @@ func ValidCheckAddress(v string) (c byte, err error) {
 
 func ValidAddress(addr Address) (c byte, err error) {
 	b := addr.Bytes()
+	//创世块判断
+	if (addr == Address{}) {
+		byte := b[0]
+		return byte, nil
+	}
 	if len(b) == AddressLength {
 		sum := b[len(b)-AddressChecksumLen:]
 		checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
