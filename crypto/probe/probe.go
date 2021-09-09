@@ -337,20 +337,28 @@ func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (
 	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 
-func CreatePNSAddressStr(address string, pns string, K byte) (add common.Address, err error) {
+func CreatePNSAddressStr(address string, pns []byte, K byte) (add common.Address, err error) {
+
 	k1, err := common.ValidCheckAddress(address)
 	if k1 != 0x00 || err != nil {
 		log.Crit("Failed to Create PNSAddress from address", "err", err)
 		return common.HexToAddress(address), err
 	}
+	if len(pns) <= 0 {
+		return common.HexToAddress(address), errors.New("Creat PNSAddress error,PNS parameter is invalid")
+	}
+
 	b, err := hexutil.Decode(address)
-	return PubkeyBytesToAddress(Keccak256([]byte{K}, b, []byte(pns))[12:], K), nil
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, b, pns)[12:], K), nil
 }
 
-func CreatePNSAddress(address common.Address, pns string, K byte) (add common.Address, err error) {
+func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Address, err error) {
+	if len(pns) <= 0 {
+		return address, errors.New("Creat PNSAddress error,PNS parameter is invalid")
+	}
 	k1, err := common.ValidAddress(address)
 	if k1 != 0x00 || err != nil {
 		return address, err
 	}
-	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), []byte(pns))[12:], K), nil
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), pns)[12:], K), nil
 }

@@ -481,5 +481,5 @@ func ValidAddress(addr Address) (c byte, err error) {
 			return byte, nil
 		}
 	}
-	return 0, errors.New("unsupported account type")
+	return 128, errors.New("unsupported account type")
 }

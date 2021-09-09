@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
@@ -15,8 +16,8 @@ import (
 //wxc todo 各种业务类型的默认值设置实现
 // setDefaultsOfRegister set default parameters of register business type
 func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error{
-	if args.New == nil {
-		return errors.New(`new account is not empty`)
+	if args.New == nil || args.AccType == nil{
+		return errors.New(`new account or type is not empty`)
 	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
@@ -30,23 +31,38 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		return err
 	}
 	if fromAccType != accounts.General {
-		return errors.New("unsupported initiator account type")
+		return accounts.ErrWrongAccountType
 	}
-	newAccType,err := common.ValidAddress(*args.New)
-	if err != nil {
-		return err
+
+	if args.New != nil {
+		accType,err := common.ValidAddress(*args.New)
+		if err != nil {
+			return err
+		}
+		args.AccType = (*hexutil.Uint8)(&accType)
 	}
+	if args.New == nil && args.AccType != nil {
+		if !accounts.CheckAccType(uint8(*args.AccType)){
+			return accounts.ErrWrongAccountType
+		}
+		var newAccount *common.Address
+		var err error
+		if uint8(*args.AccType) == accounts.Pns {
+			*newAccount,err = probe.CreatePNSAddress(args.from(),*args.Data, uint8(*args.AccType))
+		}else {
+			*newAccount,err = probe.CreateAddressForAccountType(args.from(),uint64(*args.Nonce),uint8(*args.AccType))
+		}
+		if err != nil {
+			return err
+		}
+		args.New = newAccount
+	}
+
 	if *args.From == *args.New {
 		return errors.New("must not equals initiator")
 	}
-
-   //todo 校验存不存在
-
-
-	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(accounts.AmountOfPledgeForCreateAccount(newAccType)))
-
-
-
+   //todo from 校验存不存在
+	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(accounts.AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
 /*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
 	}*/
@@ -58,6 +74,7 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		callArgs := TransactionArgs{
 			From:                 args.From,
 			New:			  	  args.New,
+			AccType:              args.AccType,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,

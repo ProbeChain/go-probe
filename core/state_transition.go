@@ -76,6 +76,7 @@ type Message interface {
 	AccessList() types.AccessList
 
 	BizType() uint8
+	AccType() uint8
 	New() *common.Address
 }
 

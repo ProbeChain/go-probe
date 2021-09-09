@@ -177,11 +177,12 @@ type Message struct {
 	data       			[]byte
 	mark       			[]byte
 	infoDigest      	[]byte
+	accType    			uint8
 }
 
 // BuildMessage returns the transaction as a message.
 func BuildMessage(to,old,new,owner,beneficiary,vote,loss,asset,initiator,receiver	*common.Address,
-	bizType uint8,	value,value2 *big.Int,	height uint64,	data,mark,infoDigest []byte) *Message  {
+	bizType uint8,	value,value2 *big.Int,	height uint64,	data,mark,infoDigest []byte, accType uint8) *Message  {
 	return &Message{
 		to:to,
 		owner:owner,
@@ -200,6 +201,7 @@ func BuildMessage(to,old,new,owner,beneficiary,vote,loss,asset,initiator,receive
 		data:data,
 		mark:mark,
 		infoDigest:infoDigest,
+		accType: accType,
 	}
 }
 

@@ -238,7 +238,7 @@ type WalletEvent struct {
 }
 
 // AmountOfPledgeForCreateAccount amount of pledge for create a account
-func AmountOfPledgeForCreateAccount(accType uint8) uint64 {
+func AmountOfPledgeForCreateAccount(accType byte) uint64 {
 	switch accType {
 	case General:
 		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
@@ -255,4 +255,9 @@ func AmountOfPledgeForCreateAccount(accType uint8) uint64 {
 	default:
 		return 0
 	}
+}
+
+// CheckAccType check account type
+func CheckAccType(accType byte) bool {
+	return General <= accType && accType <= DPoSCandidate
 }

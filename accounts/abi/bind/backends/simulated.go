@@ -796,6 +796,7 @@ func (m callMsg) AccessList() types.AccessList { return m.CallMsg.AccessList }
 
 func (m callMsg) New() *common.Address         	{ return m.CallMsg.New }
 func (m callMsg) BizType() uint8         		{ return m.CallMsg.BizType }
+func (m callMsg) AccType() uint8         		{ return m.CallMsg.AccType }
 
 // filterBackend implements filters.Backend to support filtering for logs without
 // taking bloom-bits acceleration structures into account.
