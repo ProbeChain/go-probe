@@ -89,6 +89,8 @@ type Backend interface {
 
 	ChainConfig() *params.ChainConfig
 	Engine() consensus.Engine
+
+	Exist(addr common.Address) bool
 }
 
 func GetAPIs(apiBackend Backend) []rpc.API {

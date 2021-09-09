@@ -270,7 +270,7 @@ func (evm *EVM) Interpreter() Interpreter {
 // parameters. It also handles any necessary value transfer required and takes
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
-func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
 	if evm.Config.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -283,32 +283,34 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 		return nil, gas, ErrInsufficientBalance
 	}
 	snapshot := evm.StateDB.Snapshot()
-	p, isPrecompile := evm.precompile(addr)
-
-	if !evm.StateDB.Exist(addr) {
-		if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
-			// Calling a non existing account, don't do anything, but ping the tracer
-			if evm.Config.Debug && evm.depth == 0 {
-				evm.Config.Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
-				evm.Config.Tracer.CaptureEnd(ret, 0, 0, nil)
+    var p PrecompiledContract
+	var isPrecompile bool
+	if to != (common.Address{}){
+		p, isPrecompile = evm.precompile(to)
+		if !evm.StateDB.Exist(to) {
+			if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
+				// Calling a non existing account, don't do anything, but ping the tracer
+				if evm.Config.Debug && evm.depth == 0 {
+					evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
+					evm.Config.Tracer.CaptureEnd(ret, 0, 0, nil)
+				}
+				return nil, gas, nil
 			}
-			return nil, gas, nil
+			evm.StateDB.CreateAccount(to)
 		}
-		evm.StateDB.CreateAccount(addr)
 	}
-
 
 	switch evm.msg.bizType {
 	case common.Register:
 		evm.Context.Register(evm.StateDB, caller.Address(), *evm.msg.new, value)
 	case common.Cancellation:
-		evm.Context.Cancellation(evm.StateDB, caller.Address(), addr)
+		evm.Context.Cancellation(evm.StateDB, caller.Address(), to)
 	case common.RevokeCancellation:
 		//evm.Context.RevokeCancellation(evm.StateDB, caller.Address(), addr, value)
 	case common.Transfer:
-		evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
+		evm.Context.Transfer(evm.StateDB, caller.Address(), to, value)
 	case common.ContractCall:
-		evm.Context.Transfer(evm.StateDB, caller.Address(), addr, value)
+		evm.Context.Transfer(evm.StateDB, caller.Address(), to, value)
 		//... todo 还有未实现的
 	}
 
@@ -316,7 +318,7 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 
 	// Capture the tracer start/end events in debug mode
 	if evm.Config.Debug && evm.depth == 0 {
-		evm.Config.Tracer.CaptureStart(evm, caller.Address(), addr, false, input, gas, value)
+		evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
 		defer func(startGas uint64, startTime time.Time) { // Lazy evaluation of the parameters
 			evm.Config.Tracer.CaptureEnd(ret, startGas-gas, time.Since(startTime), err)
 		}(gas, time.Now())
@@ -325,19 +327,21 @@ func (evm *EVM) Call(caller ContractRef, addr common.Address, input []byte, gas 
 	if isPrecompile {
 		ret, gas, err = RunPrecompiledContract(p, input, gas)
 	} else {
-		// Initialise a new contract and set the code that is to be used by the EVM.
-		// The contract is a scoped environment for this execution context only.
-		code := evm.StateDB.GetCode(addr)
-		if len(code) == 0 {
-			ret, err = nil, nil // gas is unchanged
-		} else {
-			addrCopy := addr
-			// If the account has no code, we can abort here
-			// The depth-check is already done, and precompiles handled above
-			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
-			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
-			ret, err = run(evm, contract, input, false)
-			gas = contract.Gas
+		if evm.msg.bizType == common.ContractCall {
+			// Initialise a new contract and set the code that is to be used by the EVM.
+			// The contract is a scoped environment for this execution context only.
+			code := evm.StateDB.GetCode(to)
+			if len(code) == 0 {
+				ret, err = nil, nil // gas is unchanged
+			} else {
+				addrCopy := to
+				// If the account has no code, we can abort here
+				// The depth-check is already done, and precompiles handled above
+				contract := NewContract(caller, AccountRef(addrCopy), value, gas)
+				contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
+				ret, err = run(evm, contract, input, false)
+				gas = contract.Gas
+			}
 		}
 	}
 	// When an error was returned by the EVM or when setting the creation code

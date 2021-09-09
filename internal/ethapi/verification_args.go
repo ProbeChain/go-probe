@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/probe"
@@ -16,7 +17,7 @@ import (
 //wxc todo 各种业务类型的默认值设置实现
 // setDefaultsOfRegister set default parameters of register business type
 func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error{
-	if args.New == nil || args.AccType == nil{
+	if args.New == nil && args.AccType == nil{
 		return errors.New(`new account or type is not empty`)
 	}
 	if args.Nonce == nil {
@@ -45,17 +46,17 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		if !accounts.CheckAccType(uint8(*args.AccType)){
 			return accounts.ErrWrongAccountType
 		}
-		var newAccount *common.Address
+		var newAccount common.Address
 		var err error
 		if uint8(*args.AccType) == accounts.Pns {
-			*newAccount,err = probe.CreatePNSAddress(args.from(),*args.Data, uint8(*args.AccType))
+			newAccount,err = probe.CreatePNSAddress(args.from(),*args.Data, uint8(*args.AccType))
 		}else {
-			*newAccount,err = probe.CreateAddressForAccountType(args.from(),uint64(*args.Nonce),uint8(*args.AccType))
+			newAccount,err = probe.CreateAddressForAccountType(args.from(),uint64(*args.Nonce),uint8(*args.AccType))
 		}
 		if err != nil {
 			return err
 		}
-		args.New = newAccount
+		args.New = &newAccount
 	}
 
 	if *args.From == *args.New {
@@ -66,6 +67,16 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 /*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
 	}*/
+
+	exist := b.Exist(*args.From)
+	if !exist {
+		return accounts.ErrUnknownAccount
+	}
+
+	exist = b.Exist(*args.New)
+	if exist {
+		return keystore.ErrAccountAlreadyExists
+	}
 
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {

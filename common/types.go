@@ -483,3 +483,10 @@ func ValidAddress(addr Address) (c byte, err error) {
 	}
 	return 128, errors.New("unsupported account type")
 }
+
+func If(condition bool, trueVal, falseVal interface{}) interface{} {
+	if condition {
+		return trueVal
+	}
+	return falseVal
+}
