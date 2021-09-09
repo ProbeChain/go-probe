@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts"
 	"math/big"
+	"net"
 	"sort"
 	"time"
 
@@ -83,12 +84,12 @@ type StateDB struct {
 
 	// DPoSAccount DPoS账户 64
 	dPoSAccounts []*DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 300
+	// DPoSCandidateAccount DPoS候选账户 64
 	dPoSCandidateAccounts []*DPoSCandidateAccount
 
 	// DPoSAccount DPoS账户 64
 	oldDPoSAccounts []*DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 300
+	// DPoSCandidateAccount DPoS候选账户 64
 	oldDPoSCandidateAccounts []*DPoSCandidateAccount
 
 	// DB error.
@@ -819,7 +820,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 	addressesToPrefetch := make([][]byte, 0, len(s.journal.dirties))
 	for addr := range s.journal.dirties {
 		obj, exist := s.stateObjects[addr]
-		fmt.Printf("Finalise %s\n",obj.address.String())
+		fmt.Printf("Finalise %s\n", obj.address.String())
 		if !exist {
 			// ripeMD is 'touched' at block 1714175, in tx 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
 			// That tx goes out of gas, and although the notion of 'touched' does not exist there, the
@@ -1596,4 +1597,8 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	default:
 		return nil, true
 	}
+}
+
+func (s *StateDB) getDPosByHeight(height big.Int) DPoSAccount {
+	return DPoSAccount{Ip: net.IP{12}, Port: 66, Owner: common.Address{0x003dADB65B0234669f885520BD45680AEbA49704a152999435}}
 }
