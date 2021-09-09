@@ -126,6 +126,7 @@ type CallMsg struct {
 
 	BizType			uint8
 	New 			*common.Address
+	AccType			uint8
 }
 
 // A ContractCaller provides contract calls, essentially transactions that are executed by

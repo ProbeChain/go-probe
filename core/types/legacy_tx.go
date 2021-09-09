@@ -48,6 +48,7 @@ type LegacyTx struct {
 	Mark       			[]byte
 	InfoDigest      	[]byte
 	Height	   			uint64
+	AccType     		uint8
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -92,6 +93,7 @@ func (tx *LegacyTx) copy() TxData {
 		R:        	new(big.Int),
 		S:        	new(big.Int),
 		K:        	tx.K,
+		AccType: 	tx.AccType,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -139,6 +141,7 @@ func (tx *LegacyTx) value2() 			 *big.Int {return tx.Value2}
 func (tx *LegacyTx) height()			 uint64 {return tx.Height}
 func (tx *LegacyTx) mark()				 []byte {return tx.Mark}
 func (tx *LegacyTx) infoDigest()		 []byte {return tx.InfoDigest}
+func (tx *LegacyTx) accType() uint8      { return tx.AccType }
 
 func (tx *LegacyTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 		return tx.K, tx.V, tx.R, tx.S

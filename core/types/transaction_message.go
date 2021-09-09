@@ -35,6 +35,7 @@ type Message struct {
 	infoDigest      	[]byte
 	accessList 			AccessList
 	checkNonce 			bool
+	accType    			uint8
 }
 
 
@@ -64,3 +65,4 @@ func (m Message) Value2() 			 *big.Int {return m.amount2}
 func (m Message) Height()			 uint64 {return m.height}
 func (m Message) Mark()				 []byte {return m.mark}
 func (m Message) InfoDigest()		 []byte {return m.infoDigest}
+func (m Message) AccType() 			 uint8 { return m.accType }

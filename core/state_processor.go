@@ -172,5 +172,6 @@ func BuildMessage(tx *types.Transaction) (*vm.Message) {
 		tx.Height(),
 		tx.Data(),
 		tx.Mark(),
-		tx.InfoDigest())
+		tx.InfoDigest(),
+		tx.AccType())
 }

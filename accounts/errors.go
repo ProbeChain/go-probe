@@ -45,6 +45,9 @@ var ErrWalletAlreadyOpen = errors.New("wallet already open")
 // secodn time.
 var ErrWalletClosed = errors.New("wallet closed")
 
+//ErrWrongAccountType is returned if account type is wrong
+var ErrWrongAccountType = errors.New("wrong account type")
+
 // AuthNeededError is returned by backends for signing requests where the user
 // is required to provide further authentication before signing can succeed.
 //

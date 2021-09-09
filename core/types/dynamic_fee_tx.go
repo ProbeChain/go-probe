@@ -29,7 +29,7 @@ type DynamicFeeTx struct {
 	GasFeeCap   *big.Int
 	Gas         uint64
 	To          *common.Address `rlp:"nil"` // nil means contract creation
-	BizType uint8
+	BizType 	uint8
 	Value       *big.Int
 	Data        []byte
 	AccessList  AccessList
@@ -53,6 +53,7 @@ type DynamicFeeTx struct {
 	Mark       			[]byte
 	InfoDigest      	[]byte
 	Height	   			uint64
+	AccType 			uint8
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -75,6 +76,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 		R:          new(big.Int),
 		S:          new(big.Int),
 		K:          tx.K,
+		AccType:    tx.AccType,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -130,7 +132,7 @@ func (tx *DynamicFeeTx) value2() 			 *big.Int {return tx.Value2}
 func (tx *DynamicFeeTx) height()			 uint64 {return tx.Height}
 func (tx *DynamicFeeTx) mark()				 []byte {return tx.Mark}
 func (tx *DynamicFeeTx) infoDigest()		 []byte {return tx.InfoDigest}
-
+func (tx *DynamicFeeTx) accType() uint8     { return tx.AccType }
 func (tx *DynamicFeeTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S
 }

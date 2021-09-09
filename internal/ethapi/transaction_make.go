@@ -16,6 +16,7 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 		data = &types.DynamicFeeTx{
 			From: 		args.From,
 			New:        args.New,
+			AccType:    uint8(*args.AccType),
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -30,6 +31,7 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 		data = &types.AccessListTx{
 			From: 		args.From,
 			New:        args.New,
+			AccType:    uint8(*args.AccType),
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -43,6 +45,7 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 		data = &types.LegacyTx{
 			From: 		args.From,
 			New:        args.New,
+			AccType:    uint8(*args.AccType),
 			BizType:    uint8(*args.BizType),
 			Nonce:      uint64(*args.Nonce),
 			Gas:        uint64(*args.Gas),

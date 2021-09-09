@@ -101,6 +101,7 @@ type TxData interface {
 	height()			 uint64
 	mark()				 []byte
 	infoDigest()		 []byte
+	accType() 			uint8
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -298,6 +299,8 @@ func (tx *Transaction) Value() *big.Int { return new(big.Int).Set(tx.inner.value
 func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
 func (tx *Transaction) BizType() uint8 { return tx.inner.bizType() }
+
+func (tx *Transaction) AccType() uint8 { return tx.inner.accType() }
 
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
@@ -619,7 +622,7 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 	vote *common.Address,loss *common.Address,asset *common.Address,
 	old *common.Address,new *common.Address,initiator *common.Address,
 	receiver *common.Address,mark []byte,infoDigest []byte,
-	amount2 *big.Int, height uint64) Message {
+	amount2 *big.Int, height uint64, accType uint8) Message {
 	return Message{
 		from:       	from,
 		to:         	to,
@@ -647,6 +650,7 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 		infoDigest:		infoDigest,
 		amount2:		amount2,
 		height:			height,
+		accType:		accType,
 	}
 }
 
@@ -665,6 +669,7 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		accessList: tx.AccessList(),
 		checkNonce: true,
 		new:		tx.New(),
+		accType:	tx.AccType(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
