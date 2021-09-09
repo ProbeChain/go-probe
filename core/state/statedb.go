@@ -20,6 +20,7 @@ package state
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts"
 	"math/big"
 	"sort"
 	"time"
@@ -134,7 +135,6 @@ type StateDB struct {
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
 	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
-
 	if err != nil {
 		return nil, err
 	}
@@ -452,8 +452,14 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 	})
 	stateObject.markSuicided()
 	//stateObject.regularAccount.Balance = new(big.Int)
-	stateObject.regularAccount.Value = new(big.Int)
-
+	//stateObject.regularAccount.Value = new(big.Int)
+	switch stateObject.accountType {
+	case accounts.General:
+		stateObject.SetValueForRegular(new(big.Int))
+	case accounts.Asset, accounts.Contract:
+		stateObject.SetValueForAsset(new(big.Int))
+	default:
+	}
 	return true
 }
 
@@ -521,8 +527,8 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 	}
 	// If no live objects are available, attempt to use snapshots
 	var (
-		data *RegularAccount
-		err  error
+		//data *RegularAccount
+		err error
 	)
 	if s.snap != nil {
 		//if metrics.EnabledExpensive {
@@ -557,17 +563,23 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", addr.Bytes(), err))
 		return nil
 	}
-	if len(enc) == 0 {
+	if enc == nil || len(enc) == 0 {
 		return nil
 	}
-	data = new(RegularAccount)
-	if err := rlp.DecodeBytes(enc, data); err != nil {
-		log.Error("Failed to decode state object", "addr", addr, "err", err)
-		return nil
-	}
+
+	//data := new(RegularAccount)
+	//if err := rlp.DecodeBytes(enc, data); err != nil {
+	//	log.Error("Failed to decode state object", "addr", addr, "err", err)
+	//	return nil, true
 	//}
-	// Insert into the live set
-	obj := newRegularAccount(s, addr, *data)
+	////}
+	//// Insert into the live set
+	//obj := newRegularAccount(s, addr, *data)
+
+	obj, done := s.newAccountDataByAddr(addr, enc)
+	if done {
+		return obj
+	}
 	s.setStateObject(obj)
 	return obj
 }
@@ -601,7 +613,11 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 			s.snapDestructs[prev.addrHash] = struct{}{}
 		}
 	}
-	newobj = newRegularAccount(s, addr, RegularAccount{})
+	//newobj = newRegularAccount(s, addr, RegularAccount{})
+	newobj, done := s.newAccountDataByAddr(addr, nil)
+	if done {
+		return newobj, nil
+	}
 	if prev == nil {
 		s.journal.append(createObjectChange{account: &addr})
 	} else {
@@ -628,12 +644,12 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
 		//newObj.setBalance(prev.regularAccount.Balance)
-		newObj.setBalance(prev.regularAccount.Value)
+		newObj.setBalance(prev.Balance())
 	}
 }
 
 func (s *StateDB) GenerateAccount(addr common.Address) {
-	obj,_ := s.createObject(addr)
+	obj, _ := s.createObject(addr)
 	obj.isNew = true
 }
 
@@ -956,14 +972,14 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	// The onleaf func is called _serially_, so we can reuse the same account
 	// for unmarshalling every time.
-	var account RegularAccount
+	var account AssetAccount
 	root, err := s.trie.Commit(func(_ [][]byte, _ []byte, leaf []byte, parent common.Hash) error {
 		if err := rlp.DecodeBytes(leaf, &account); err != nil {
 			return nil
 		}
-		//if account.Root != emptyRoot {
-		//	s.db.TrieDB().Reference(account.Root, parent)
-		//}
+		if account.StorageRoot != emptyRoot {
+			s.db.TrieDB().Reference(account.StorageRoot, parent)
+		}
 		return nil
 	})
 	if metrics.EnabledExpensive {
@@ -971,23 +987,23 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	// If snapshotting is enabled, update the snapshot tree with this new version
 	if s.snap != nil {
-		//if metrics.EnabledExpensive {
-		//	defer func(start time.Time) { s.SnapshotCommits += time.Since(start) }(time.Now())
-		//}
-		//// Only update if there's a state transition (skip empty Clique blocks)
-		//if parent := s.snap.Root(); parent != root {
-		//	if err := s.snaps.Update(root, parent, s.snapDestructs, s.snapAccounts, s.snapStorage); err != nil {
-		//		log.Warn("Failed to update snapshot tree", "from", parent, "to", root, "err", err)
-		//	}
-		//	// Keep 128 diff layers in the memory, persistent layer is 129th.
-		//	// - head layer is paired with HEAD state
-		//	// - head-1 layer is paired with HEAD-1 state
-		//	// - head-127 layer(bottom-most diff layer) is paired with HEAD-127 state
-		//	if err := s.snaps.Cap(root, 128); err != nil {
-		//		log.Warn("Failed to cap snapshot tree", "root", root, "layers", 128, "err", err)
-		//	}
-		//}
-		//s.snap, s.snapDestructs, s.snapAccounts, s.snapStorage = nil, nil, nil, nil
+		if metrics.EnabledExpensive {
+			defer func(start time.Time) { s.SnapshotCommits += time.Since(start) }(time.Now())
+		}
+		// Only update if there's a state transition (skip empty Clique blocks)
+		if parent := s.snap.Root(); parent != root {
+			if err := s.snaps.Update(root, parent, s.snapDestructs, s.snapAccounts, s.snapStorage); err != nil {
+				log.Warn("Failed to update snapshot tree", "from", parent, "to", root, "err", err)
+			}
+			// Keep 128 diff layers in the memory, persistent layer is 129th.
+			// - head layer is paired with HEAD state
+			// - head-1 layer is paired with HEAD-1 state
+			// - head-127 layer(bottom-most diff layer) is paired with HEAD-127 state
+			if err := s.snaps.Cap(root, 128); err != nil {
+				log.Warn("Failed to cap snapshot tree", "root", root, "layers", 128, "err", err)
+			}
+		}
+		s.snap, s.snapDestructs, s.snapAccounts, s.snapStorage = nil, nil, nil, nil
 	}
 	return root, err
 }
@@ -1517,5 +1533,65 @@ func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
 	// Delete the account from the trie
 	if err := s.trie.TryDelete(addr[:]); err != nil {
 		s.setError(fmt.Errorf("deleteStateObject (%x) error: %v", addr[:], err))
+	}
+}
+
+func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
+	accountType, err := common.ValidAddress(addr)
+	if err != nil {
+		return nil, true
+	}
+	switch accountType {
+	case accounts.General:
+		data := new(RegularAccount)
+		if enc != nil {
+			if err := rlp.DecodeBytes(enc, data); err != nil {
+				log.Error("Failed to decode state object", "addr", addr, "err", err)
+				return nil, true
+			}
+		}
+		return newRegularAccount(s, addr, *data), false
+	case accounts.Pns:
+		data := new(PnsAccount)
+		if enc != nil {
+			if err := rlp.DecodeBytes(enc, data); err != nil {
+				log.Error("Failed to decode state object", "addr", addr, "err", err)
+				return nil, true
+			}
+		}
+		return newPnsAccount(s, addr, *data), false
+	case accounts.Asset, accounts.Contract:
+		data := new(AssetAccount)
+		if enc != nil {
+			if err := rlp.DecodeBytes(enc, data); err != nil {
+				log.Error("Failed to decode state object", "addr", addr, "err", err)
+				return nil, true
+			}
+		}
+		return newAssetAccount(s, addr, *data), false
+	case accounts.Authorize:
+		data := new(AuthorizeAccount)
+		if enc != nil {
+			if err := rlp.DecodeBytes(enc, data); err != nil {
+				log.Error("Failed to decode state object", "addr", addr, "err", err)
+				return nil, true
+			}
+		}
+		return newAuthorizeAccount(s, addr, *data), false
+	case accounts.Lose:
+		data := new(LossAccount)
+		if enc != nil {
+			if err := rlp.DecodeBytes(enc, data); err != nil {
+				log.Error("Failed to decode state object", "addr", addr, "err", err)
+				return nil, true
+			}
+		}
+		return newLossAccount(s, addr, *data), false
+	case accounts.DPoS:
+		return nil, true
+	case accounts.DPoSCandidate:
+		return nil, true
+	default:
+		return nil, true
 	}
 }

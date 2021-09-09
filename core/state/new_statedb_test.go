@@ -59,6 +59,8 @@ func TestTrieAndRlp(t *testing.T) {
 
 	regular := s.state.GetRegular(address)
 	fmt.Printf("GetRegular：%v \n", regular)
+	//addr, b := s.state.DecodeDataByAddr(common.HexToAddress("0x00C350afF0fDdbED23B29Cf559acb5aA68C2C4F0247f5D58Bc"), nil)
+	//fmt.Printf("addr：%v \n; b：%v \n", addr, b)
 }
 
 func TestDeleteData(t *testing.T) {
