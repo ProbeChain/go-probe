@@ -633,8 +633,8 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 }
 
 func (s *StateDB) GenerateAccount(addr common.Address) {
-	newObj, _ := s.createObject(addr)
-	newObj.SetBalance(new(big.Int).SetInt64(0))
+	obj,_ := s.createObject(addr)
+	obj.isNew = true
 }
 
 func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common.Hash) bool) error {

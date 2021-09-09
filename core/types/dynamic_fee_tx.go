@@ -39,6 +39,7 @@ type DynamicFeeTx struct {
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
 
+	From			 	*common.Address `rlp:"nil"`
 	Owner			 	*common.Address `rlp:"nil"`
 	Beneficiary			*common.Address `rlp:"nil"`
 	Vote			 	*common.Address `rlp:"nil"`
@@ -59,6 +60,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
 		Nonce:       tx.Nonce,
 		To:          tx.To,
+		From:        tx.From,
 		New:   		 tx.New,
 		BizType:     tx.BizType,
 		Data:        common.CopyBytes(tx.Data),
@@ -114,6 +116,7 @@ func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
 func (tx *DynamicFeeTx) bizType() uint8     { return tx.BizType }
 
+func (tx *DynamicFeeTx) from()			 	 *common.Address {return tx.From}
 func (tx *DynamicFeeTx) owner()			 	 *common.Address {return tx.Owner}
 func (tx *DynamicFeeTx) beneficiary()		 *common.Address {return tx.Beneficiary}
 func (tx *DynamicFeeTx) vote()			 	 *common.Address {return tx.Vote}

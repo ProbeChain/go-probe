@@ -56,6 +56,7 @@ type AccessListTx struct {
 	K           byte
 	V, R, S     *big.Int // signature values
 
+	From			 	*common.Address `rlp:"nil"`
 	Owner			 	*common.Address `rlp:"nil"`
 	Beneficiary			*common.Address `rlp:"nil"`
 	Vote			 	*common.Address `rlp:"nil"`
@@ -127,6 +128,7 @@ func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) bizType() uint8     { return tx.BizType }
 
+func (tx *AccessListTx) from()			 	 *common.Address {return tx.From}
 func (tx *AccessListTx) owner()			 	 *common.Address {return tx.Owner}
 func (tx *AccessListTx) beneficiary()		 *common.Address {return tx.Beneficiary}
 func (tx *AccessListTx) vote()			 	 *common.Address {return tx.Vote}

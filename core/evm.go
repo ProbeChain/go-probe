@@ -121,10 +121,12 @@ func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) 
 	db.AddBalance(recipient, amount)
 }
 
-func Register(db vm.StateDB, sender, new common.Address, pledge *big.Int)  {
-	fmt.Printf("Register: sender:%s,new:%s,pledge:%s\n",sender.String(),new.String(),pledge.String())
-	db.SubBalance(sender, pledge)
-	db.GenerateAccount(new)
+func Register(db vm.StateDB, sender, newAccount common.Address, pledgeAmount *big.Int)  {
+	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n",sender.String(),newAccount.String(),pledgeAmount.String())
+	db.SubBalance(sender, pledgeAmount)
+	db.GenerateAccount(newAccount)
+
+
 }
 
 func Cancellation(db vm.StateDB, senderAccount, newAccount common.Address)  {

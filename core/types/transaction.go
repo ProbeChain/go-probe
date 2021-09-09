@@ -87,6 +87,7 @@ type TxData interface {
 	rawSignatureValues() (k byte, v, r, s *big.Int)
 	setSignatureValues(k byte, chainID, v, r, s *big.Int)
 
+	from()			 	 *common.Address
 	owner()			 	 *common.Address
 	beneficiary()		 *common.Address
 	vote()			 	 *common.Address
@@ -303,6 +304,16 @@ func (tx *Transaction) BizType() uint8 { return tx.inner.bizType() }
 func (tx *Transaction) To() *common.Address {
 	// Copy the pointed-to address.
 	ito := tx.inner.to()
+	if ito == nil {
+		return nil
+	}
+	cpy := *ito
+	return &cpy
+}
+
+func (tx *Transaction) From() *common.Address {
+	// Copy the pointed-to address.
+	ito := tx.inner.from()
 	if ito == nil {
 		return nil
 	}
