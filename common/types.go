@@ -451,10 +451,9 @@ func (ma *MixedcaseAddress) Original() string {
 
 // ValidateAddress return the accountType byte value for the input address
 func ValidCheckAddress(v string) (c byte, err error) {
-	v = v[2:]
-	b, err := hex.DecodeString(v)
+	b, err := hexutil.Decode(v)
 	if len(b) != AddressLength {
-		return
+		return 0, errors.New("unsupported account type")
 	}
 	sum := b[len(b)-AddressChecksumLen:]
 	checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
@@ -464,11 +463,16 @@ func ValidCheckAddress(v string) (c byte, err error) {
 		fmt.Println("validateAddress byte: ", byte)
 		return byte, nil
 	}
-	return
+	return 0, errors.New("unsupported account type")
 }
 
 func ValidAddress(addr Address) (c byte, err error) {
 	b := addr.Bytes()
+	//创世块判断
+	if (addr == Address{}) {
+		byte := b[0]
+		return byte, nil
+	}
 	if len(b) == AddressLength {
 		sum := b[len(b)-AddressChecksumLen:]
 		checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
@@ -478,5 +482,5 @@ func ValidAddress(addr Address) (c byte, err error) {
 			return byte, nil
 		}
 	}
-	return 0,errors.New("unsupported account type")
+	return 0, errors.New("unsupported account type")
 }

@@ -8,6 +8,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -98,6 +101,14 @@ func randFieldElement(c elliptic.Curve, rand io.Reader) (k *big.Int, err error) 
 // GenerateKey generates a new private key.
 func GenerateKey() (*PrivateKey, error) {
 	return GenerateKeyByType(0x00)
+}
+
+func GenerateKeyByTypeForRand(k byte, rand io.Reader) (*PrivateKey, error) {
+	key, err := ecdsa.GenerateKey(S256ByType(k), rand)
+	if err != nil {
+		fmt.Println("Error: ", err.Error())
+	}
+	return ImportECDSA(key, k), nil
 }
 
 func GenerateKeyForRand(rand io.Reader) (*PrivateKey, error) {
@@ -315,4 +326,31 @@ func UnmarshalPubkey(pub []byte) (*PublicKey, error) {
 func ToECDSAUnsafe(d []byte) *PrivateKey {
 	priv, _ := toECDSA(d, false)
 	return priv
+}
+
+func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (add common.Address, err error) {
+	k1, err := common.ValidAddress(address)
+	if k1 != 0x00 || err != nil {
+		return address, err
+	}
+	data, _ := rlp.EncodeToBytes([]interface{}{address, nonce})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+}
+
+func CreatePNSAddressStr(address string, pns string, K byte) (add common.Address, err error) {
+	k1, err := common.ValidCheckAddress(address)
+	if k1 != 0x00 || err != nil {
+		log.Crit("Failed to Create PNSAddress from address", "err", err)
+		return common.HexToAddress(address), err
+	}
+	b, err := hexutil.Decode(address)
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, b, []byte(pns))[12:], K), nil
+}
+
+func CreatePNSAddress(address common.Address, pns string, K byte) (add common.Address, err error) {
+	k1, err := common.ValidAddress(address)
+	if k1 != 0x00 || err != nil {
+		return address, err
+	}
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), []byte(pns))[12:], K), nil
 }
