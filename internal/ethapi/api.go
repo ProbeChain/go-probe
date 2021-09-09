@@ -1248,22 +1248,22 @@ type RPCTransaction struct {
 	V                *hexutil.Big      `json:"v"`
 	R                *hexutil.Big      `json:"r"`
 	S                *hexutil.Big      `json:"s"`
-	K                hexutil.Uint8    `json:"k"`
+	K                hexutil.Uint8     `json:"k"`
 
-	Owner			 *common.Address	`json:"owner,omitempty"`
-	Beneficiary		 *common.Address 	`json:"beneficiary,omitempty"`
-	Vote			 *common.Address 	`json:"vote,omitempty"`
-	Loss			 *common.Address 	`json:"loss,omitempty"`
-	Asset			 *common.Address 	`json:"asset,omitempty"`
-	Old			 	 *common.Address 	`json:"old,omitempty"`
-	New				 *common.Address 	`json:"new,omitempty"`
-	Initiator		 *common.Address 	`json:"initiator,omitempty"`
-	Receiver		 *common.Address 	`json:"receiver,omitempty"`
-	Value2           *hexutil.Big    	`json:"value2,omitempty"`
-	Height           *hexutil.Uint64 	`json:"height,omitempty"`
-	Mark  			 *hexutil.Bytes 	`json:"mark,omitempty"`
-	InfoDigest  	 *hexutil.Bytes 	`json:"infoDigest,omitempty"`
-	AccType          hexutil.Uint8      `json:"accType,omitempty"`
+	Owner       *common.Address `json:"owner,omitempty"`
+	Beneficiary *common.Address `json:"beneficiary,omitempty"`
+	Vote        *common.Address `json:"vote,omitempty"`
+	Loss        *common.Address `json:"loss,omitempty"`
+	Asset       *common.Address `json:"asset,omitempty"`
+	Old         *common.Address `json:"old,omitempty"`
+	New         *common.Address `json:"new,omitempty"`
+	Initiator   *common.Address `json:"initiator,omitempty"`
+	Receiver    *common.Address `json:"receiver,omitempty"`
+	Value2      *hexutil.Big    `json:"value2,omitempty"`
+	Height      *hexutil.Uint64 `json:"height,omitempty"`
+	Mark        *hexutil.Bytes  `json:"mark,omitempty"`
+	InfoDigest  *hexutil.Bytes  `json:"infoDigest,omitempty"`
+	AccType     hexutil.Uint8   `json:"accType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1423,7 +1423,10 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 	if args.To != nil {
 		to = *args.To
 	} else {
-		to = crypto.CreateAddress(args.from(), uint64(*args.Nonce))
+		to, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType))
+		if err != nil {
+			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", args.toTransaction().Hash(), err)
+		}
 	}
 	// Retrieve the precompiles since they don't need to be added to the access list
 	precompiles := vm.ActivePrecompiles(b.ChainConfig().Rules(header.Number))
@@ -1454,11 +1457,11 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
 			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
 			args.data(), accessList, false,
-			args.Owner,args.Beneficiary,
-			args.Vote,args.Loss,args.Asset,
-			args.Old,args.New,args.Initiator,
-			args.Receiver,args.mark(), args.infoDigest(),
-			args.value2(),args.height(),uint8(*args.AccType))
+			args.Owner, args.Beneficiary,
+			args.Vote, args.Loss, args.Asset,
+			args.Old, args.New, args.Initiator,
+			args.Receiver, args.mark(), args.infoDigest(),
+			args.value2(), args.height(), uint8(*args.AccType))
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)

@@ -19,10 +19,10 @@ package tracers
 import (
 	"bytes"
 	"context"
-	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 	"reflect"
 	"sort"
@@ -38,7 +38,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/params"
@@ -167,7 +166,7 @@ func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block
 		if idx == txIndex {
 			return msg, context, statedb, nil
 		}
-		vmenv := vm.NewEVM(context, txContext, statedb, b.chainConfig, vm.Config{},nil)
+		vmenv := vm.NewEVM(context, txContext, statedb, b.chainConfig, vm.Config{}, nil)
 		if _, err := core.ApplyMessage(vmenv, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
 			return nil, vm.BlockContext{}, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
 		}
@@ -592,7 +591,7 @@ func TestTraceBlock(t *testing.T) {
 }
 
 type Account struct {
-	key  *ecdsa.PrivateKey
+	key  *probe.PrivateKey
 	addr common.Address
 }
 
@@ -604,8 +603,8 @@ func (a Accounts) Less(i, j int) bool { return bytes.Compare(a[i].addr.Bytes(), 
 
 func newAccounts(n int) (accounts Accounts) {
 	for i := 0; i < n; i++ {
-		key, _ := crypto.GenerateKey()
-		addr := crypto.PubkeyToAddress(key.PublicKey)
+		key, _ := probe.GenerateKey()
+		addr := probe.PubkeyToAddress(key.PublicKey)
 		accounts = append(accounts, Account{key: key, addr: addr})
 	}
 	sort.Sort(accounts)
