@@ -8,6 +8,10 @@ import (
 // wxc todo 交易校验
 // validateTx validate transaction of register business type
 func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) error {
+
+	if pool.currentState.Exist(*tx.New()){
+		return ErrAccountAlreadyExists
+	}
 	// Accept only legacy transactions until EIP-2718/2930 activates.
 	if !pool.eip2718 && tx.Type() != types.LegacyTxType {
 		return ErrTxTypeNotSupported
@@ -24,9 +28,9 @@ func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) erro
 	//todo 校验抵押金额
 	// Transactions can't be negative. This may never happen using RLP decoded
 	// transactions but may occur if you create a transaction using the RPC.
-/*	if tx.Value().Sign() < 0 {
+	if tx.Value().Sign() < 0 {
 		return ErrNegativeValue
-	}*/
+	}
 	// Ensure the transaction doesn't exceed the current block limit gas.
 	if pool.currentMaxGas < tx.Gas() {
 		return ErrGasLimit

@@ -103,6 +103,7 @@ type stateObject struct {
 	dirtyCode bool // true if the code was updated
 	suicided  bool
 	deleted   bool
+	isNew 	  bool
 }
 
 // empty returns whether the account is considered empty.
@@ -111,8 +112,7 @@ func (s *stateObject) empty() bool {
 	switch s.accountType {
 	case accounts.General:
 		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue == nil &&
-			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value == nil
-		//return s.regularAccount.Nonce == 0 && s.regularAccount.Balance.Sign() == 0 && bytes.Equal(s.regularAccount.CodeHash, emptyCodeHash)
+			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value == nil && !s.isNew
 	case accounts.Pns:
 		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && s.pnsAccount.Data == nil
 

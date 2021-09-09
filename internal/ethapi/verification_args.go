@@ -15,6 +15,9 @@ import (
 //wxc todo 各种业务类型的默认值设置实现
 // setDefaultsOfRegister set default parameters of register business type
 func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error{
+	if args.New == nil {
+		return errors.New(`new account is not empty`)
+	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -22,42 +25,32 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-
-	if args.Value == nil {
-		//args.Value = new(hexutil.Big)
-
-	}
-
-/*	_,err := common.ValidAddress(*args.From)
+	fromAccType,err := common.ValidAddress(*args.From)
 	if err != nil {
 		return err
-	}*/
+	}
+	if fromAccType != accounts.General {
+		return errors.New("unsupported initiator account type")
+	}
 	newAccType,err := common.ValidAddress(*args.New)
 	if err != nil {
 		return err
 	}
+	if *args.From == *args.New {
+		return errors.New("must not equals initiator")
+	}
+
+   //todo 校验存不存在
+
+
 	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(accounts.AmountOfPledgeForCreateAccount(newAccType)))
 
-	//注册账号 todo
-/*	if uint8(*args.BizType) == common.Register {
-		_,err := common.ValidAddress(*args.From)
-		if err != nil {
-			return err
-		}
-		newAccType,err := common.ValidAddress(*args.New)
-		if err != nil {
-			return err
-		}
-		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(accounts.AmountOfPledgeForCreateAccount(newAccType)))
-	}*/
 
 
 /*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
 	}*/
-	if args.New == nil {
-		return errors.New(`new account is not empty`)
-	}
+
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
 		// These fields are immutable during the estimation, safe to

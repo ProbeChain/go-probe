@@ -34,6 +34,7 @@ type LegacyTx struct {
 	K           byte
 	V, R, S     *big.Int // signature values
 
+	From			 	*common.Address `rlp:"nil"`
 	Owner			 	*common.Address `rlp:"nil"`
 	Beneficiary			*common.Address `rlp:"nil"`
 	Vote			 	*common.Address `rlp:"nil"`
@@ -78,6 +79,7 @@ func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPric
 func (tx *LegacyTx) copy() TxData {
 	cpy := &LegacyTx{
 		Nonce: 		tx.Nonce,
+		From:       tx.From,
 		To:    		tx.To,
 		New:   		tx.New,
 		Data:  		common.CopyBytes(tx.Data),
@@ -123,6 +125,7 @@ func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
 func (tx *LegacyTx) bizType() uint8     { return tx.BizType }
 
+func (tx *LegacyTx) from()			 	 *common.Address {return tx.From}
 func (tx *LegacyTx) owner()			 	 *common.Address {return tx.Owner}
 func (tx *LegacyTx) beneficiary()		 *common.Address {return tx.Beneficiary}
 func (tx *LegacyTx) vote()			 	 *common.Address {return tx.Vote}
