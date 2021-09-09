@@ -456,7 +456,7 @@ func (s *stateObject) getTrie(db Database) Trie {
 		// Try fetching from prefetcher first
 		// We don't prefetch empty tries
 		//if s.regularAccount.Root != emptyRoot && s.db.prefetcher != nil {
-		if s.assetAccount.StorageRoot != emptyRoot && s.db.prefetcher != nil {
+		if (common.Hash{}) != s.assetAccount.StorageRoot && s.assetAccount.StorageRoot != emptyRoot && s.db.prefetcher != nil {
 			// When the miner is creating the pending state, there is no
 			// prefetcher
 			//s.trie = s.db.prefetcher.trie(s.regularAccount.Root)
@@ -617,7 +617,7 @@ func (s *stateObject) finalise(prefetch bool) {
 		}
 	}
 	//if s.db.prefetcher != nil && prefetch && len(slotsToPrefetch) > 0 && s.regularAccount.Root != emptyRoot {
-	if s.db.prefetcher != nil && prefetch && len(slotsToPrefetch) > 0 && s.assetAccount.StorageRoot != emptyRoot {
+	if s.db.prefetcher != nil && prefetch && len(slotsToPrefetch) > 0 && (common.Hash{}) != s.assetAccount.StorageRoot && s.assetAccount.StorageRoot != emptyRoot {
 		//s.db.prefetcher.prefetch(s.regularAccount.Root, slotsToPrefetch)
 		s.db.prefetcher.prefetch(s.assetAccount.StorageRoot, slotsToPrefetch)
 	}
@@ -743,12 +743,14 @@ func (s *stateObject) SubBalance(amount *big.Int) {
 }
 
 func (s *stateObject) SetBalance(amount *big.Int) {
-	s.db.journal.append(balanceChange{
-		account: &s.address,
-		//prev:    new(big.Int).Set(s.regularAccount.Balance),
-		prev: new(big.Int).Set(s.regularAccount.Value),
-	})
-	s.setBalance(amount)
+	if s.accountType == accounts.General || s.accountType == accounts.Asset || s.accountType == accounts.Contract {
+		s.db.journal.append(balanceChange{
+			account: &s.address,
+			//prev:    new(big.Int).Set(s.regularAccount.Balance),
+			prev: new(big.Int).Set(s.regularAccount.Value),
+		})
+		s.setBalance(amount)
+	}
 }
 
 func (s *stateObject) setBalance(amount *big.Int) {
