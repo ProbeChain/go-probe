@@ -36,10 +36,11 @@ var (
 	EmptyUncleHash = rlpHash([]*Header(nil))
 )
 
+type DposAckType uint8
 const (
-	AckTypeAgree  = 0
-	AckTypeOppose = 1
-	AckTypeAll    = 255
+	AckTypeAgree  DposAckType = 0
+	AckTypeOppose DposAckType = 1
+	AckTypeAll    DposAckType = 255
 )
 
 // A BlockNonce is a 64-bit hash which proves (combined with the
@@ -90,7 +91,7 @@ type DposAck struct {
 	Number        *big.Int    `json:"number"          gencodec:"required"`
 	BlockHash     common.Hash `json:"blockHash"       gencodec:"required"`
 	WitnessSig    []byte      `json:"witnessSig"      gencodec:"required"`
-	AckType       uint8       `json:"ackType"   gencodec:"required"`
+	AckType       DposAckType `json:"ackType"         gencodec:"required"`
 }
 
 // Id returns the pow answer unique id

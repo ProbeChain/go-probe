@@ -691,7 +691,7 @@ func (w *worker) resultLoop() {
 					EpochPosition: uint8(rand.Int() % 255),
 					BlockHash:     block.Hash(),
 					WitnessSig:    witnessSig,
-					AckType:       uint8(rand.Int() % 2),
+					AckType:       types.DposAckType(rand.Int() % 2),
 				}
 				w.mux.Post(core.DposAckEvent{DposAck: dposAck})
 				count--

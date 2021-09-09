@@ -249,7 +249,7 @@ func (pool *DposAckPool) Contain(dposAck *types.DposAck) bool {
 	return pool.contain(dposAck)
 }
 
-func (pool *DposAckPool) List(number *big.Int, ackType uint8) []*types.DposAck {
+func (pool *DposAckPool) List(number *big.Int, ackType types.DposAckType) []*types.DposAck {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 	dposAcks := pool.dposAckMap[number.Uint64()]
@@ -2743,11 +2743,11 @@ func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 }
 
 // GetDposAck get a dpos ack list
-func (bc *BlockChain) GetDposAck(number *big.Int, ackType uint8) []*types.DposAck {
+func (bc *BlockChain) GetDposAck(number *big.Int, ackType types.DposAckType) []*types.DposAck {
 	return bc.dposAcks.List(number, ackType)
 }
 
 // GetDposAckSize get a dpos ack list size
-func (bc *BlockChain) GetDposAckSize(number *big.Int, ackType uint8) int {
+func (bc *BlockChain) GetDposAckSize(number *big.Int, ackType types.DposAckType) int {
 	return len(bc.dposAcks.List(number, ackType))
 }
