@@ -46,9 +46,6 @@ const (
 	// Endpoint resolution is throttled with bounded backoff.
 	initialResolveDelay = 60 * time.Second
 	maxResolveDelay     = time.Hour
-
-	dialTypeStatic = 0
-	dialTypeDpos   = 1
 )
 
 // NodeDialer is used to connect to nodes in the network, typically by using
@@ -119,7 +116,6 @@ type dialScheduler struct {
 	// iterator.
 	static     map[enode.ID]*dialTask
 	staticPool []*dialTask
-	dialType   int
 
 	// The dial history keeps recently dialed nodes. Members of history are not dialed.
 	history          expHeap
@@ -164,7 +160,7 @@ func (cfg dialConfig) withDefaults() dialConfig {
 	return cfg
 }
 
-func newDialScheduler(config dialConfig, it enode.Iterator, setupFunc dialSetupFunc, dialType int) *dialScheduler {
+func newDialScheduler(config dialConfig, it enode.Iterator, setupFunc dialSetupFunc) *dialScheduler {
 	d := &dialScheduler{
 		dialConfig:  config.withDefaults(),
 		setupFunc:   setupFunc,
@@ -177,7 +173,6 @@ func newDialScheduler(config dialConfig, it enode.Iterator, setupFunc dialSetupF
 		remStaticCh: make(chan *enode.Node),
 		addPeerCh:   make(chan *conn),
 		remPeerCh:   make(chan *conn),
-		dialType:    dialType,
 	}
 	d.lastStatsLog = d.clock.Now()
 	d.ctx, d.cancel = context.WithCancel(context.Background())
@@ -225,15 +220,6 @@ func (d *dialScheduler) peerRemoved(c *conn) {
 	}
 }
 
-// dialedConn updates the peer set.
-func (d *dialScheduler) dialedConn() connFlag {
-	if d.dialType == dialTypeStatic {
-		return staticDialedConn
-	} else {
-		return dposDialedConn
-	}
-}
-
 // loop is the main loop of the dialer.
 func (d *dialScheduler) loop(it enode.Iterator) {
 	var (
@@ -244,21 +230,13 @@ func (d *dialScheduler) loop(it enode.Iterator) {
 loop:
 	for {
 		// Launch new dials if slots are available.
-
-		if d.dialType == dialTypeStatic {
-			slots := d.freeDialSlots()
-			slots -= d.startStaticDials(slots)
-			if slots > 0 {
-				nodesCh = d.nodesIn
-			} else {
-				nodesCh = nil
-			}
-		} else {
-			// @todo Dpos can connect indefinitely
-			d.startStaticDials(256)
+		slots := d.freeDialSlots()
+		slots -= d.startStaticDials(slots)
+		if slots > 0 {
 			nodesCh = d.nodesIn
+		} else {
+			nodesCh = nil
 		}
-
 		d.rearmHistoryTimer(historyExp)
 		d.logStats()
 
@@ -303,7 +281,7 @@ loop:
 			if exists {
 				continue loop
 			}
-			task := newDialTask(node, d.dialedConn())
+			task := newDialTask(node, staticDialedConn)
 			d.static[id] = task
 			if d.checkDial(node) == nil {
 				d.addToStaticPool(task)

@@ -51,7 +51,7 @@ const (
 
 	// Connectivity defaults.
 	defaultMaxPendingPeers = 50
-	defaultDialRatio       = 3
+	defaultDialRatio       = 1
 
 	// This time limits inbound connection attempts per source IP.
 	inboundThrottleTime = 30 * time.Second
@@ -113,10 +113,6 @@ type Config struct {
 	// Trusted nodes are used as pre-configured connections which are always
 	// allowed to connect, even above the peer limit.
 	TrustedNodes []*enode.Node
-
-	// dpos nodes are used as dpos connections which are always
-	// allowed to connect, even above the peer limit.
-	DposNodes []*enode.Node
 
 	// Connectivity can be restricted to certain IP networks.
 	// If this option is set to a non-nil value, only hosts which match one of the
@@ -182,21 +178,17 @@ type Server struct {
 	peerFeed     event.Feed
 	log          log.Logger
 
-	nodedb        *enode.DB
-	localnode     *enode.LocalNode
-	ntab          *discover.UDPv4
-	DiscV5        *discover.UDPv5
-	discmix       *enode.FairMix
-	dialsched     *dialScheduler
-	discmixDpos   *enode.FairMix
-	dialschedDpos *dialScheduler
+	nodedb    *enode.DB
+	localnode *enode.LocalNode
+	ntab      *discover.UDPv4
+	DiscV5    *discover.UDPv5
+	discmix   *enode.FairMix
+	dialsched *dialScheduler
 
 	// Channels into the run loop.
 	quit                    chan struct{}
 	addtrusted              chan *enode.Node
 	removetrusted           chan *enode.Node
-	adddpos                 chan *enode.Node
-	removedpos              chan *enode.Node
 	peerOp                  chan peerOpFunc
 	peerOpDone              chan struct{}
 	delpeer                 chan peerDrop
@@ -222,7 +214,6 @@ const (
 	staticDialedConn
 	inboundConn
 	trustedConn
-	dposDialedConn
 )
 
 // conn wraps a network connection with information gathered
@@ -273,9 +264,6 @@ func (f connFlag) String() string {
 	}
 	if f&inboundConn != 0 {
 		s += "-inbound"
-	}
-	if f&dposDialedConn != 0 {
-		s += "-dposdial"
 	}
 	if s != "" {
 		s = s[1:]
@@ -332,7 +320,9 @@ func (srv *Server) PeerCount() int {
 // the server will connect to the node. If the connection fails for any reason, the server
 // will attempt to reconnect the peer.
 func (srv *Server) AddPeer(node *enode.Node) {
-	srv.dialsched.addStatic(node)
+	if node.ID().String() != srv.Self().ID().String() {
+		srv.dialsched.addStatic(node)
+	}
 }
 
 // RemovePeer removes a node from the static node set. It also disconnects from the given
@@ -386,7 +376,10 @@ func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
 // the server will connect to the node. If the connection fails for any reason, the server
 // will attempt to reconnect the peer.
 func (srv *Server) AddDposPeer(node *enode.Node) {
-	srv.dialschedDpos.addStatic(node)
+	if node.ID().String() != srv.Self().ID().String() {
+		srv.AddPeer(node)
+		srv.AddTrustedPeer(node)
+	}
 }
 
 // RemoveDposPeer removes a node from the static node set. It also disconnects from the given
@@ -395,28 +388,8 @@ func (srv *Server) AddDposPeer(node *enode.Node) {
 // This method blocks until all protocols have exited and the peer is removed. Do not use
 // RemovePeer in protocol implementations, call Disconnect on the Peer instead.
 func (srv *Server) RemoveDposPeer(node *enode.Node) {
-	var (
-		ch  chan *PeerEvent
-		sub event.Subscription
-	)
-	// Disconnect the peer on the main loop.
-	srv.doPeerOp(func(peers map[enode.ID]*Peer) {
-		srv.dialschedDpos.removeStatic(node)
-		if peer := peers[node.ID()]; peer != nil {
-			ch = make(chan *PeerEvent, 1)
-			sub = srv.peerFeed.Subscribe(ch)
-			peer.Disconnect(DiscRequested)
-		}
-	})
-	// Wait for the peer connection to end.
-	if ch != nil {
-		defer sub.Unsubscribe()
-		for ev := range ch {
-			if ev.Peer == node.ID() && ev.Type == PeerEventTypeDrop {
-				return
-			}
-		}
-	}
+	srv.RemovePeer(node)
+	srv.RemoveTrustedPeer(node)
 }
 
 // SubscribeEvents subscribes the given channel to peer events
@@ -516,8 +489,6 @@ func (srv *Server) Start() (err error) {
 	srv.checkpointAddPeer = make(chan *conn)
 	srv.addtrusted = make(chan *enode.Node)
 	srv.removetrusted = make(chan *enode.Node)
-	srv.adddpos = make(chan *enode.Node)
-	srv.removedpos = make(chan *enode.Node)
 	srv.peerOp = make(chan peerOpFunc)
 	srv.peerOpDone = make(chan struct{})
 
@@ -591,17 +562,6 @@ func (srv *Server) setupDiscovery() error {
 	for _, proto := range srv.Protocols {
 		if proto.DialCandidates != nil && !added[proto.Name] {
 			srv.discmix.AddSource(proto.DialCandidates)
-			added[proto.Name] = true
-		}
-	}
-
-	srv.discmixDpos = enode.NewFairMix(discmixTimeout)
-
-	// Add protocol-specific discovery sources.
-	added = make(map[string]bool)
-	for _, proto := range srv.Protocols {
-		if proto.DialCandidates != nil && !added[proto.Name] {
-			srv.discmixDpos.AddSource(proto.DialCandidates)
 			added[proto.Name] = true
 		}
 	}
@@ -692,14 +652,9 @@ func (srv *Server) setupDialScheduler() {
 	if config.dialer == nil {
 		config.dialer = tcpDialer{&net.Dialer{Timeout: defaultDialTimeout}}
 	}
-	srv.dialsched = newDialScheduler(config, srv.discmix, srv.SetupConn, dialTypeStatic)
+	srv.dialsched = newDialScheduler(config, srv.discmix, srv.SetupConn)
 	for _, n := range srv.StaticNodes {
 		srv.dialsched.addStatic(n)
-	}
-
-	srv.dialschedDpos = newDialScheduler(config, srv.discmixDpos, srv.SetupConn, dialTypeDpos)
-	for _, n := range srv.DposNodes {
-		srv.dialschedDpos.addStatic(n)
 	}
 }
 
@@ -764,23 +719,16 @@ func (srv *Server) run() {
 	defer srv.nodedb.Close()
 	defer srv.discmix.Close()
 	defer srv.dialsched.stop()
-	defer srv.discmixDpos.Close()
-	defer srv.dialschedDpos.stop()
 
 	var (
 		peers        = make(map[enode.ID]*Peer)
 		inboundCount = 0
 		trusted      = make(map[enode.ID]bool, len(srv.TrustedNodes))
-		dpos         = make(map[enode.ID]bool, len(srv.DposNodes))
 	)
 	// Put trusted nodes into a map to speed up checks.
 	// Trusted peers are loaded on startup or added via AddTrustedPeer RPC.
 	for _, n := range srv.TrustedNodes {
 		trusted[n.ID()] = true
-	}
-
-	for _, n := range srv.DposNodes {
-		dpos[n.ID()] = true
 	}
 
 running:
@@ -806,24 +754,6 @@ running:
 			delete(trusted, n.ID())
 			if p, ok := peers[n.ID()]; ok {
 				p.rw.set(trustedConn, false)
-			}
-
-		case n := <-srv.adddpos:
-			// This channel is used by AddDposPeer to add a node
-			// to the dpos node set.
-			srv.log.Trace("Adding dpos node", "node", n)
-			dpos[n.ID()] = true
-			if p, ok := peers[n.ID()]; ok {
-				p.rw.set(dposDialedConn, true)
-			}
-
-		case n := <-srv.removedpos:
-			// This channel is used by RemoveDposPeer to remove a node
-			// from the dpos node set.
-			srv.log.Trace("Removing trusted node", "node", n)
-			delete(dpos, n.ID())
-			if p, ok := peers[n.ID()]; ok {
-				p.rw.set(dposDialedConn, false)
 			}
 
 		case op := <-srv.peerOp:
@@ -894,9 +824,9 @@ running:
 
 func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	switch {
-	case !c.is(trustedConn) && !c.is(dposDialedConn) && len(peers) >= srv.MaxPeers:
+	case !c.is(trustedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
-	case !c.is(trustedConn) && !c.is(dposDialedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
+	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
 		return DiscTooManyPeers
 	case peers[c.node.ID()] != nil:
 		return DiscAlreadyConnected
