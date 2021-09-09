@@ -38,7 +38,7 @@ func (st *StateTransition) TransitionDbOfRegister() ([]byte, error) {
 	)
 	// Increment the nonce for the next transaction
 	st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
-	ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
+	ret, st.gas, vmerr = st.evm.Call(sender, common.Address{}, st.data, st.gas, st.value)
 	return ret,vmerr
 }
 

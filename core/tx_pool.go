@@ -1741,3 +1741,7 @@ func (t *txLookup) RemotesBelowTip(threshold *big.Int) types.Transactions {
 func numSlots(tx *types.Transaction) int {
 	return int((tx.Size() + txSlotSize - 1) / txSlotSize)
 }
+
+func (pool *TxPool) Exist(addr common.Address) bool {
+	return pool.currentState.Exist(addr)
+}

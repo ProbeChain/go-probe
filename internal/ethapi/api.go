@@ -1250,20 +1250,20 @@ type RPCTransaction struct {
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
 
-	Owner       *common.Address `json:"owner,omitempty"`
-	Beneficiary *common.Address `json:"beneficiary,omitempty"`
-	Vote        *common.Address `json:"vote,omitempty"`
-	Loss        *common.Address `json:"loss,omitempty"`
-	Asset       *common.Address `json:"asset,omitempty"`
-	Old         *common.Address `json:"old,omitempty"`
-	New         *common.Address `json:"new,omitempty"`
-	Initiator   *common.Address `json:"initiator,omitempty"`
-	Receiver    *common.Address `json:"receiver,omitempty"`
-	Value2      *hexutil.Big    `json:"value2,omitempty"`
-	Height      *hexutil.Uint64 `json:"height,omitempty"`
-	Mark        *hexutil.Bytes  `json:"mark,omitempty"`
-	InfoDigest  *hexutil.Bytes  `json:"infoDigest,omitempty"`
-	AccType     hexutil.Uint8   `json:"accType,omitempty"`
+	Owner			 *common.Address	`json:"owner,omitempty"`
+	Beneficiary		 *common.Address 	`json:"beneficiary,omitempty"`
+	Vote			 *common.Address 	`json:"vote,omitempty"`
+	Loss			 *common.Address 	`json:"loss,omitempty"`
+	Asset			 *common.Address 	`json:"asset,omitempty"`
+	Old			 	 *common.Address 	`json:"old,omitempty"`
+	New				 *common.Address 	`json:"new,omitempty"`
+	Initiator		 *common.Address 	`json:"initiator,omitempty"`
+	Receiver		 *common.Address 	`json:"receiver,omitempty"`
+	Value2           *hexutil.Big    	`json:"value2,omitempty"`
+	Height           *hexutil.Uint64 	`json:"height,omitempty"`
+	Mark  			 *hexutil.Bytes 	`json:"mark,omitempty"`
+	InfoDigest  	 *hexutil.Bytes 	`json:"infoDigest,omitempty"`
+	AccType          *hexutil.Uint8      `json:"accType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1305,7 +1305,8 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	switch tx.BizType() {
 	case common.Register:
 		result.New = tx.New()
-		result.AccType = hexutil.Uint8(tx.AccType())
+		accType := hexutil.Uint8(tx.AccType())
+		result.AccType = &accType
 	case common.Cancellation:
 	case common.RevokeCancellation:
 	case common.Transfer:
@@ -1729,7 +1730,13 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 	// Look up the wallet containing the requested signer
 	switch uint8(*args.BizType) {
 	case common.Register:
-		fmt.Printf("from:%s,new:%s\n", args.From.String(), args.New.String())
+		if args.New != nil {
+			fmt.Printf("from:%s,new:%s\n", args.From.String(),args.New.String())
+		}
+		if args.AccType != nil {
+			fmt.Printf("from:%s,accType:%s\n", args.From.String(),args.AccType.String())
+		}
+
 	case common.Transfer:
 		fmt.Printf("from:%s,to:%s\n", args.From.String(), args.To.String())
 	}
