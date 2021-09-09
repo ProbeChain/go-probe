@@ -490,6 +490,7 @@ func (s *StateDB) updateStateObject(obj *stateObject) {
 	// at transaction boundary level to ensure we capture state clearing.
 	if s.snap != nil {
 		//s.snapAccounts[obj.addrHash] = snapshot.SlimAccountRLP(obj.regularAccount.Nonce, obj.regularAccount.Balance, obj.regularAccount.Root, obj.regularAccount.CodeHash)
+		s.snapAccounts[obj.addrHash] = snapshot.SlimAccountRLP(obj.Nonce(), obj.Balance(), obj.assetAccount.StorageRoot, obj.assetAccount.CodeHash)
 	}
 }
 
