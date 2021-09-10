@@ -60,9 +60,9 @@ var (
 
 // commitLeaf
 type commitLeaf struct {
-	Commit bool
-	Hash   common.Hash
-	Index  int
+	Commit bool        // Whether you have committed to levelDb
+	Hash   common.Hash // the key commit to levelDb
+	Index  int         // the index in the binary leaf
 }
 
 // Database is an intermediate write layer between the trie data structures and
