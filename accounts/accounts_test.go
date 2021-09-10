@@ -237,3 +237,28 @@ func TestSign(*testing.T) {
 	fmt.Println("recoveredAddr ", recoveredAddr.String())
 	fmt.Println("recoveredAddr2 ", recoveredAddr2.String())
 }
+
+func TestHexToAddress(*testing.T) {
+	key, err := probe.GenerateKeyByType(0x04)
+	if err != nil {
+		fmt.Println("failed GenerateKey with: ", err.Error())
+	}
+
+	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(key)))
+	fmt.Println("private key no 0x \n", hex.EncodeToString(probe.FromECDSA(key)))
+
+	if err := probe.SaveECDSA("privatekey", key); err != nil {
+		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
+	}
+
+	fmt.Println("public key have 0x   \n", hexutil.Encode(probe.FromECDSAPub(&key.PublicKey)))
+	fmt.Println("public key no 0x \n", hex.EncodeToString(probe.FromECDSAPub(&key.PublicKey)))
+	oldPkAddr := probe.PubkeyToAddress(key.PublicKey)
+
+	fmt.Println("oldPkAddr", oldPkAddr.String())
+	fmt.Println("address ", common.BytesToHash(common.FromHex(oldPkAddr.String())))
+	pkHex := oldPkAddr.String()
+	b, _ := hexutil.Decode(pkHex)
+	pkAddr := common.BytesToAddress(b)
+	fmt.Printf("oldPkAddr have 0X %s,pkAddr have 0x  %s \n", hexutil.Encode(oldPkAddr[:]), hexutil.Encode(pkAddr[:]))
+}

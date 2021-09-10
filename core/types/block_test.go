@@ -18,6 +18,7 @@ package types
 
 import (
 	"bytes"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"hash"
 	"math/big"
 	"reflect"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"golang.org/x/crypto/sha3"
@@ -243,7 +243,7 @@ func (h *testHasher) Hash() common.Hash {
 
 func makeBenchBlock() *Block {
 	var (
-		key, _   = crypto.GenerateKey()
+		key, _   = probe.GenerateKey()
 		txs      = make([]*Transaction, 70)
 		receipts = make([]*Receipt, len(txs))
 		signer   = LatestSigner(params.TestChainConfig)
