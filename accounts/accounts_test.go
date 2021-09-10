@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/probe"
-	"github.com/ethereum/go-ethereum/log"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -194,9 +193,9 @@ func TestSign(*testing.T) {
 	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(key)))
 	fmt.Println("private key no 0x \n", hex.EncodeToString(probe.FromECDSA(key)))
 
-	if err := probe.SaveECDSA("privatekey", key); err != nil {
+	/*if err := probe.SaveECDSA("privatekey", key); err != nil {
 		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
-	}
+	}*/
 
 	fmt.Println("public key have 0x   \n", hexutil.Encode(probe.FromECDSAPub(&key.PublicKey)))
 	fmt.Println("public key no 0x \n", hex.EncodeToString(probe.FromECDSAPub(&key.PublicKey)))
@@ -247,9 +246,9 @@ func TestHexToAddress(*testing.T) {
 	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(key)))
 	fmt.Println("private key no 0x \n", hex.EncodeToString(probe.FromECDSA(key)))
 
-	if err := probe.SaveECDSA("privatekey", key); err != nil {
+	/*	if err := probe.SaveECDSA("privatekey", key); err != nil {
 		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
-	}
+	}*/
 
 	fmt.Println("public key have 0x   \n", hexutil.Encode(probe.FromECDSAPub(&key.PublicKey)))
 	fmt.Println("public key no 0x \n", hex.EncodeToString(probe.FromECDSAPub(&key.PublicKey)))
