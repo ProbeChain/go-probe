@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 	"net"
@@ -1615,6 +1614,5 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 }
 
 func (s *StateDB) getDPosByHeight(height big.Int) DPoSAccount {
-	b, _ := hexutil.Decode("0x003dADB65B0234669f885520BD45680AEbA49704a152999435")
-	return DPoSAccount{Ip: net.IP{12}, Port: 66, Owner: common.BytesToAddress(b)}
+	return DPoSAccount{Ip: net.IP{12}, Port: 66, Owner: common.HexToAddress("0x003dADB65B0234669f885520BD45680AEbA49704a152999435")}
 }
