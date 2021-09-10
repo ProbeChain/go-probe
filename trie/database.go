@@ -695,7 +695,9 @@ func (db *Database) dereferenceAlters() {
 	// delete levedb
 	for i, alter := range db.trie.bt.alters {
 		if i < size-rollBackMaxStep {
-			rawdb.DelAlters(db.diskdb, alter.CurRoot)
+			if alter.commit {
+				rawdb.DelAlters(db.diskdb, alter.CurRoot)
+			}
 		}
 	}
 
@@ -720,8 +722,10 @@ func (db *Database) dereferenceLeafs() {
 			curLeafIndex := curLeaf.Index
 			for i := cursor + 1; i < size; i++ {
 				leaf := db.commitLeafs[i]
-				if leaf != nil && leaf.Commit && leaf.Index == curLeafIndex {
-					rawdb.DeleteTrieNode(db.diskdb, leaf.Hash)
+				if leaf != nil && leaf.Index == curLeafIndex {
+					if leaf.Commit {
+						rawdb.DeleteTrieNode(db.diskdb, leaf.Hash)
+					}
 					db.commitLeafs[i] = nil
 				}
 			}
