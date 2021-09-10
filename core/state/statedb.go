@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 	"net"
 	"sort"
@@ -651,9 +652,22 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 	}
 }
 
-func (s *StateDB) GenerateAccount(addr common.Address) {
-	obj, _ := s.createObject(addr)
+func (s *StateDB) GenerateAccount(context vm.TxContext) {
+	obj, _ := s.createObject(*context.New)
 	obj.isNew = true
+	switch context.AccType {
+	case accounts.Pns:
+		obj.pnsAccount.Owner = context.From
+		obj.pnsAccount.Data = context.Data
+		obj.pnsAccount.Type = byte(0)
+	case accounts.Asset:
+	case accounts.Contract:
+	case accounts.Authorize:
+	case accounts.Lose:
+	case accounts.DPoS:
+	case accounts.DPoSCandidate:
+	}
+
 }
 
 func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common.Hash) bool) error {

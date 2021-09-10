@@ -41,7 +41,7 @@ type (
 	// and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
 	// RegisterFunc is the signature of a register function
-	RegisterFunc func(StateDB, common.Address, common.Address, *big.Int)
+	RegisterFunc func(StateDB, common.Address, TxContext)
 	// CancellationFunc is the signature of a cancellation function
 	CancellationFunc func(StateDB, common.Address, common.Address)
 )
@@ -110,6 +110,27 @@ type TxContext struct {
 	// Message information
 	Origin   common.Address // Provides information for ORIGIN
 	GasPrice *big.Int       // Provides information for GASPRICE
+
+	From        common.Address
+	To          *common.Address
+	Owner       *common.Address
+	Beneficiary *common.Address
+	Vote        *common.Address
+	Loss        *common.Address
+	Asset       *common.Address
+	Old         *common.Address
+	New         *common.Address
+	Initiator   *common.Address
+	Receiver    *common.Address
+
+	BizType    uint8
+	Value      *big.Int
+	Value2     *big.Int
+	Height     uint64
+	Data       []byte
+	Mark       []byte
+	InfoDigest []byte
+	AccType    uint8
 }
 
 // EVM is the Ethereum Virtual Machine base object and provides
@@ -148,66 +169,11 @@ type EVM struct {
 	// available gas is calculated in gasCall* according to the 63/64 rule and later
 	// applied in opCall*.
 	callGasTemp uint64
-
-	//
-	msg Message
-}
-
-type Message struct {
-	//From       			common.Address
-	to         			*common.Address
-	owner			 	*common.Address
-	beneficiary			*common.Address
-	vote			 	*common.Address
-	loss			 	*common.Address
-	asset			 	*common.Address
-	old			 		*common.Address
-	new					*common.Address
-	initiator			*common.Address
-	receiver			*common.Address
-
-	bizType    			uint8
-	value     			*big.Int
-	value2	     		*big.Int
-	height	   			uint64
-	//gasLimit   			uint64
-	//gasPrice   			*big.Int
-	//gasFeeCap  			*big.Int
-	//gasTipCap  			*big.Int
-	data       			[]byte
-	mark       			[]byte
-	infoDigest      	[]byte
-	accType    			uint8
-}
-
-// BuildMessage returns the transaction as a message.
-func BuildMessage(to,old,new,owner,beneficiary,vote,loss,asset,initiator,receiver	*common.Address,
-	bizType uint8,	value,value2 *big.Int,	height uint64,	data,mark,infoDigest []byte, accType uint8) *Message  {
-	return &Message{
-		to:to,
-		owner:owner,
-		beneficiary:beneficiary,
-		vote:vote,
-		loss:loss,
-		asset:asset,
-		old:old,
-		new:new,
-		initiator:initiator,
-		receiver:receiver,
-		bizType:bizType,
-		value:value,
-		value2:value2,
-		height:height,
-		data:data,
-		mark:mark,
-		infoDigest:infoDigest,
-		accType: accType,
-	}
 }
 
 // NewEVM returns a new EVM. The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config, msg *Message) *EVM {
+func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig *params.ChainConfig, config Config) *EVM {
 	evm := &EVM{
 		Context:      blockCtx,
 		TxContext:    txCtx,
@@ -216,7 +182,6 @@ func NewEVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfig
 		chainConfig:  chainConfig,
 		chainRules:   chainConfig.Rules(blockCtx.BlockNumber),
 		interpreters: make([]Interpreter, 0, 1),
-		msg: 		  *msg,
 	}
 
 	if chainConfig.IsEWASM(blockCtx.BlockNumber) {
@@ -300,9 +265,9 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		}
 	}
 
-	switch evm.msg.bizType {
+	switch evm.TxContext.BizType {
 	case common.Register:
-		evm.Context.Register(evm.StateDB, caller.Address(), *evm.msg.new, value)
+		evm.Context.Register(evm.StateDB, caller.Address(), evm.TxContext)
 	case common.Cancellation:
 		evm.Context.Cancellation(evm.StateDB, caller.Address(), to)
 	case common.RevokeCancellation:
@@ -327,7 +292,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	if isPrecompile {
 		ret, gas, err = RunPrecompiledContract(p, input, gas)
 	} else {
-		if evm.msg.bizType == common.ContractCall {
+		if evm.TxContext.BizType == common.ContractCall {
 			// Initialise a new contract and set the code that is to be used by the EVM.
 			// The contract is a scoped environment for this execution context only.
 			code := evm.StateDB.GetCode(to)

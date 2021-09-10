@@ -124,9 +124,23 @@ type CallMsg struct {
 
 	AccessList types.AccessList // EIP-2930 access list.
 
-	BizType			uint8
-	New 			*common.Address
-	AccType			uint8
+	BizType					uint8
+	New 					*common.Address
+	AccType					uint8
+
+	Owner                   *common.Address
+	Beneficiary             *common.Address
+	Vote                    *common.Address
+	Loss                    *common.Address
+	Asset                   *common.Address
+	Old                     *common.Address
+	Initiator               *common.Address
+	Receiver                *common.Address
+	Value2                  *big.Int
+	Height                  uint64
+	Mark                    []byte
+	InfoDigest              []byte
+
 }
 
 // A ContractCaller provides contract calls, essentially transactions that are executed by

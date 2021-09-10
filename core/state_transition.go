@@ -61,23 +61,35 @@ type StateTransition struct {
 
 // Message represents a message sent to a contract.
 type Message interface {
-	From() common.Address
-	To() *common.Address
+	From() 					common.Address
+	To() 					*common.Address
 
-	GasPrice() *big.Int
-	GasFeeCap() *big.Int
-	GasTipCap() *big.Int
-	Gas() uint64
-	Value() *big.Int
+	GasPrice() 				*big.Int
+	GasFeeCap() 			*big.Int
+	GasTipCap() 			*big.Int
+	Gas() 					uint64
+	Value() 				*big.Int
 
-	Nonce() uint64
-	CheckNonce() bool
-	Data() []byte
-	AccessList() types.AccessList
+	Nonce() 				uint64
+	CheckNonce() 			bool
+	Data() 					[]byte
+	AccessList() 			types.AccessList
 
-	BizType() uint8
-	AccType() uint8
-	New() *common.Address
+	BizType() 				uint8
+	AccType() 				uint8
+	Owner()					*common.Address
+	Beneficiary()		 	*common.Address
+	Vote()			 	 	*common.Address
+	Loss()			 	 	*common.Address
+	Asset()			 		*common.Address
+	Old()		 		 	*common.Address
+	New()		 		 	*common.Address
+	Initiator()		 		*common.Address
+	Receiver()			 	*common.Address
+	Value2() 			 	*big.Int
+	Height()			 	uint64
+	Mark()				 	[]byte
+	InfoDigest()		 	[]byte
 }
 
 // ExecutionResult includes all output after executing given evm

@@ -70,8 +70,29 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 // NewEVMTxContext creates a new transaction context for a single transaction.
 func NewEVMTxContext(msg Message) vm.TxContext {
 	return vm.TxContext{
-		Origin:   msg.From(),
-		GasPrice: new(big.Int).Set(msg.GasPrice()),
+		Origin:   		msg.From(),
+		GasPrice: 		new(big.Int).Set(msg.GasPrice()),
+
+		From: 			msg.From(),
+		To: 			msg.To(),
+		Owner:			msg.Owner(),
+		Beneficiary:	msg.Beneficiary(),
+		Vote:			msg.Vote(),
+		Loss:			msg.Loss(),
+		Asset:			msg.Asset(),
+		Old:			msg.Old(),
+		New:			msg.New(),
+		Initiator:		msg.Initiator(),
+		Receiver:		msg.Receiver(),
+
+		BizType:		msg.BizType(),
+		Value:			msg.Value(),
+		Value2:			msg.Value2(),
+		Height:			msg.Height(),
+		Data:			msg.Data(),
+		Mark:			msg.Mark(),
+		InfoDigest:		msg.InfoDigest(),
+		AccType:		msg.AccType(),
 	}
 }
 
@@ -117,14 +138,15 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 
 // Transfer subtracts amount from sender and adds amount to recipient using the given Db
 func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+	fmt.Printf("Register, sender:%s,to:%s,amount:%s\n",sender.String(),recipient.String(),amount.String())
 	db.SubBalance(sender, amount)
 	db.AddBalance(recipient, amount)
 }
 
-func Register(db vm.StateDB, sender, newAccount common.Address, pledgeAmount *big.Int)  {
-	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n",sender.String(),newAccount.String(),pledgeAmount.String())
-	db.SubBalance(sender, pledgeAmount)
-	db.GenerateAccount(newAccount)
+func Register(db vm.StateDB, sender common.Address, txContext vm.TxContext)  {
+	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n",sender.String(),txContext.New.String(),txContext.Value.String())
+	db.SubBalance(sender, txContext.Value)
+	db.GenerateAccount(txContext)
 
 
 }
