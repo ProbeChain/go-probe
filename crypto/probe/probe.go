@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"hash"
@@ -333,7 +332,7 @@ func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (
 	if k1 != 0x00 || err != nil {
 		return address, err
 	}
-	data, _ := rlp.EncodeToBytes([]interface{}{address, nonce})
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
 	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 
@@ -348,8 +347,8 @@ func CreatePNSAddressStr(address string, pns []byte, K byte) (add common.Address
 		return common.HexToAddress(address), errors.New("Creat PNSAddress error,PNS parameter is invalid")
 	}
 
-	b, err := hexutil.Decode(address)
-	return PubkeyBytesToAddress(Keccak256([]byte{K}, b, pns)[12:], K), nil
+	data, _ := rlp.EncodeToBytes([]interface{}{K, common.HexToAddress(address), pns})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 
 func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Address, err error) {
@@ -360,5 +359,27 @@ func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Ad
 	if k1 != 0x00 || err != nil {
 		return address, err
 	}
-	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), pns)[12:], K), nil
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, pns})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+}
+
+// CreateAddress creates an ethereum address given the bytes and the nonce
+func CreateAddress(b common.Address, nonce uint64, K byte) common.Address {
+	data, _ := rlp.EncodeToBytes([]interface{}{K, b, nonce})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K)
+}
+
+// CreateAddress2 creates an ethereum address given the address bytes, initial
+// contract code hash and a salt.
+func CreateAddress2(b common.Address, salt [32]byte, inithash []byte, K byte) common.Address {
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, b.Bytes(), salt[:], inithash)[12:], K)
+}
+
+func Keccak256Hash(data ...[]byte) (h common.Hash) {
+	d := NewKeccakState()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Read(h[:])
+	return h
 }
