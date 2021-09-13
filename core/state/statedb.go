@@ -1675,6 +1675,7 @@ func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
 	accountType, err := common.ValidAddress(addr)
 	if err != nil {
+		log.Error("Failed to ValidAddress", "addr", addr, "err", err)
 		return nil, true
 	}
 	switch accountType {
