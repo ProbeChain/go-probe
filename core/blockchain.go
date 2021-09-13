@@ -21,6 +21,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -315,10 +317,11 @@ type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
 	cacheConfig *CacheConfig        // Cache configuration for pruning
 
-	db     ethdb.Database // Low level persistent database to store final content in
-	snaps  *snapshot.Tree // Snapshot tree for fast trie leaf access
-	triegc *prque.Prque   // Priority queue mapping block numbers to tries to gc
-	gcproc time.Duration  // Accumulates canonical block processing for trie dumping
+	db        ethdb.Database // Low level persistent database to store final content in
+	snaps     *snapshot.Tree // Snapshot tree for fast trie leaf access
+	triegc    *prque.Prque   // Priority queue mapping block numbers to tries to gc
+	gcproc    time.Duration  // Accumulates canonical block processing for trie dumping
+	p2pServer *p2p.Server
 
 	// txLookupLimit is the maximum number of blocks from head whose tx indices
 	// are reserved:
@@ -339,8 +342,7 @@ type BlockChain struct {
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
 
-	DposAckMap map[*big.Int][consensus.DposWitnessNumber]*types.DposAck
-	dposAcks   *DposAckPool
+	dposAcks *DposAckPool
 
 	//Index = 0 in the array indicates the first received powanswer
 	powAnswers *PowAnswerPool
@@ -376,7 +378,7 @@ type BlockChain struct {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Ethereum Validator and
 // Processor.
-func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64) (*BlockChain, error) {
+func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -409,6 +411,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		vmConfig:       vmConfig,
 		powAnswers:     NewPowAnswerPool(),
 		dposAcks:       NewDposAckPool(),
+		p2pServer:      p2pServer,
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc, engine)
@@ -1642,6 +1645,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	}
 	triedb := bc.stateCache.TrieDB()
 
+	bc.updateP2pDposNodes()
+
 	// If we're running an archive node, always flush
 	if bc.cacheConfig.TrieDirtyDisabled {
 		if err := triedb.Commit(root, false, nil); err != nil {
@@ -2558,6 +2563,62 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 	defer bc.wg.Done()
 	_, err := bc.hc.InsertHeaderChain(chain, start)
 	return 0, err
+}
+
+func (bc *BlockChain) updateP2pDposNodes() {
+	block := bc.CurrentBlock()
+	number := block.NumberU64()
+	epoch := bc.chainConfig.Dpos.Epoch
+	if number > 0 && (number+1)%epoch == 0 {
+		state, _ := bc.State()
+		preNumber := uint64(0)
+		if number > epoch {
+			preNumber = number - epoch
+		}
+		preBlock := bc.GetBlockByNumber(preNumber)
+		preDposList := state.GetDposNodes(preBlock.Root(), preNumber, epoch)
+		curDposList := state.GetDposNodes(block.Root(), number, epoch)
+
+		// if not find in the cur dpos list, remove it
+		for _, node1 := range preDposList {
+			find := false
+			for _, node2 := range curDposList {
+				if node1.ID().String() == node2.ID().String() {
+					find = true
+					break
+				}
+			}
+			if !find {
+				log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", node1.String())
+				bc.p2pServer.RemoveDposPeer(node1)
+			}
+		}
+
+		// if not find in the pre dpos list, add it
+		for _, node1 := range curDposList {
+			find := false
+			for _, node2 := range preDposList {
+				if node1.ID().String() == node2.ID().String() {
+					find = true
+					break
+				}
+			}
+			if !find {
+				log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", node1.String())
+				bc.p2pServer.AddDposPeer(node1)
+			}
+		}
+	}
+}
+
+// GetDposNodes get latest dpos nodes
+func (bc *BlockChain) GetDposNodes() []*enode.Node {
+	block := bc.CurrentBlock()
+	number := block.NumberU64()
+	epoch := bc.chainConfig.Dpos.Epoch
+	state, _ := bc.State()
+	dposNodes := state.GetDposNodes(block.Root(), number, epoch)
+	return dposNodes
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The

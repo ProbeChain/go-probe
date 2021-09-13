@@ -826,7 +826,8 @@ func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount in
 	switch {
 	case !c.is(trustedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
-	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
+	//case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
+	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.MaxPeers/2:
 		return DiscTooManyPeers
 	case peers[c.node.ID()] != nil:
 		return DiscAlreadyConnected

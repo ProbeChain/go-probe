@@ -20,6 +20,7 @@ package state
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"math/big"
 	"sort"
 	"time"
@@ -341,6 +342,42 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 		return stateObject.GetCommittedState(s.db, hash)
 	}
 	return common.Hash{}
+}
+
+// GetDposNodes retrieves a dpos list @todo number, epoch just for test, rember remove it
+func (s *StateDB) GetDposNodes(hash common.Hash, number uint64, epoch uint64) []*enode.Node {
+	log.Info("GetDposList", "hash", hash)
+	nodelist := []string{
+		"enode://952b6fd264783e4969181c16c1080cadd1660e613adcb788c73c5eff0590fb8963c181d11cf1520508014160ef7fe1767bb9f721f5c11bbd53ed9810eee0a820@127.0.0.1:30000",
+		"enode://75a53b15ae8959929e03574ce9b11d6b8782d61271ec0346c5b55bbd2426ed804526f6b3a68867da5be1d26cf7b8faddb69e93eff3ec356ea52dea873da5649f@127.0.0.1:30001",
+		"enode://46f742611a09740511fa840def824404bac0edb7996ae02518866a4d25913cb43c8c8bb370dabc94dd68b6f5c318f6a713dd6fd5ef8690c8d6dbc4b306a757c7@127.0.0.1:30002",
+		"enode://b25927a94a7be9ee37a84e2dc9edddb536fea0503c5dfb1b6385fc8703d25f66164a32eda79df416b315ead2faac9c8c1e22edbd2ee2ff243ae8f70e7461ced9@127.0.0.1:30003",
+		"enode://78ff39b0b4d35a1bc0ac69274850783a7f4ab28a4dae897124e2d607a91c7e7f4ffdbecc9aa045424aa6d4538d42f7e23ac6ae4724ec41eaec0044162fee29d3@127.0.0.1:30004",
+	}
+
+	var nodes []*enode.Node
+	size := uint64(len(nodelist))
+	count := 1
+	startIndex := uint64(0)
+	if number > 0 {
+		startIndex = number/epoch + 1
+	}
+
+	for {
+		if count > 4 {
+			break
+		}
+		url := nodelist[startIndex%size]
+		node, err := enode.Parse(enode.ValidSchemes, url)
+		if err != nil {
+			log.Error(fmt.Sprintf("Node URL %s: %v\n", url, err))
+			continue
+		}
+		nodes = append(nodes, node)
+		startIndex++
+		count++
+	}
+	return nodes
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.

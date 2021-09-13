@@ -190,10 +190,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			Preimages:           config.Preimages,
 		}
 	)
-	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, eth.engine, vmConfig, eth.shouldPreserve, &config.TxLookupLimit)
+	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, eth.engine, vmConfig, eth.shouldPreserve, &config.TxLookupLimit, eth.p2pServer)
 	if err != nil {
 		return nil, err
 	}
+
 	// Rewind the chain in case of an incompatible config upgrade.
 	if compat, ok := genesisErr.(*params.ConfigCompatError); ok {
 		log.Warn("Rewinding chain to upgrade configuration", "err", compat)
@@ -271,6 +272,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 				"age", common.PrettyAge(t))
 		}
 	}
+
+	nodes := eth.blockchain.GetDposNodes()
+	eth.p2pServer.Config.StaticNodes = append(eth.p2pServer.Config.StaticNodes, nodes...)
+	eth.p2pServer.Config.TrustedNodes = append(eth.p2pServer.Config.TrustedNodes, nodes...)
+
 	return eth, nil
 }
 
@@ -541,6 +547,7 @@ func (s *Ethereum) Start() error {
 	}
 	// Start the networking layer and the light server if requested
 	s.handler.Start(maxPeers)
+
 	return nil
 }
 
