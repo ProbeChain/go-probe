@@ -255,7 +255,7 @@ func (pool *DposAckPool) List(number *big.Int, ackType types.DposAckType) []*typ
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 	dposAcks := pool.dposAckMap[number.Uint64()]
-	if ackType != types.AckTypeAll {
+	if ackType == types.AckTypeAll {
 		return dposAcks
 	} else {
 		ans := make([]*types.DposAck, 0, len(dposAcks))
@@ -2612,11 +2612,10 @@ func (bc *BlockChain) updateP2pDposNodes() {
 }
 
 // GetDposNodes get latest dpos nodes
-func (bc *BlockChain) GetDposNodes() []*enode.Node {
-	block := bc.CurrentBlock()
-	number := block.NumberU64()
+func (bc *BlockChain) GetDposNodes(number uint64) []*enode.Node {
+	block := bc.GetBlockByNumber(number)
 	epoch := bc.chainConfig.Dpos.Epoch
-	state, _ := bc.State()
+	state, _ := bc.StateAt(block.Root())
 	dposNodes := state.GetDposNodes(block.Root(), number, epoch)
 	return dposNodes
 }

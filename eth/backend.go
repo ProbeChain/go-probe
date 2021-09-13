@@ -273,7 +273,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		}
 	}
 
-	nodes := eth.blockchain.GetDposNodes()
+	nodes := eth.blockchain.GetDposNodes(eth.blockchain.CurrentHeader().Number.Uint64())
 	eth.p2pServer.Config.StaticNodes = append(eth.p2pServer.Config.StaticNodes, nodes...)
 	eth.p2pServer.Config.TrustedNodes = append(eth.p2pServer.Config.TrustedNodes, nodes...)
 

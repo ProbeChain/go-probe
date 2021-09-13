@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"math/big"
 	"strings"
 	"time"
@@ -580,6 +581,11 @@ type PublicBlockChainAPI struct {
 // NewPublicBlockChainAPI creates a new Ethereum blockchain API.
 func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 	return &PublicBlockChainAPI{b}
+}
+
+// DposNodes the chain dpos nodes
+func (api *PublicBlockChainAPI) DposNodes(number rpc.BlockNumber) []*enode.Node {
+	return api.b.DposNodes(number)
 }
 
 // ChainId is the EIP-155 replay-protection chain id for the current ethereum chain config.
