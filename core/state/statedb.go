@@ -1317,6 +1317,10 @@ func (s *StateDB) SetValueForRegular(addr common.Address, value *big.Int) {
 func (s *StateDB) SetVoteValueForRegular(addr common.Address, voteValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(voteValueForRegularChange{
+			account: &stateObject.address,
+			prev:    stateObject.regularAccount.VoteValue,
+		})
 		stateObject.regularAccount.VoteValue = voteValue
 	}
 }
@@ -1324,6 +1328,10 @@ func (s *StateDB) SetVoteValueForRegular(addr common.Address, voteValue *big.Int
 func (s *StateDB) SetLossTypeForRegular(addr common.Address, lossType uint8) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(lossTypeForRegularChange{
+			account: &stateObject.address,
+			prev:    stateObject.regularAccount.LossType,
+		})
 		stateObject.regularAccount.LossType = lossType
 	}
 }
@@ -1331,6 +1339,10 @@ func (s *StateDB) SetLossTypeForRegular(addr common.Address, lossType uint8) {
 func (s *StateDB) SetVoteAccountForRegular(addr common.Address, voteAccount common.Address) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(voteAccountForRegularChange{
+			account: &stateObject.address,
+			prev:    stateObject.regularAccount.VoteAccount,
+		})
 		stateObject.regularAccount.VoteAccount = voteAccount
 	}
 }
@@ -1338,6 +1350,10 @@ func (s *StateDB) SetVoteAccountForRegular(addr common.Address, voteAccount comm
 func (s *StateDB) SetNonceForRegular(addr common.Address, nonce uint64) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(nonceForRegularChange{
+			account: &stateObject.address,
+			prev:    stateObject.regularAccount.Nonce,
+		})
 		stateObject.regularAccount.Nonce = nonce
 	}
 }
@@ -1345,6 +1361,10 @@ func (s *StateDB) SetNonceForRegular(addr common.Address, nonce uint64) {
 func (s *StateDB) SetTypeForPns(addr common.Address, pnsType byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(typeForPnsChange{
+			account: &stateObject.address,
+			prev:    stateObject.pnsAccount.Type,
+		})
 		stateObject.pnsAccount.Type = pnsType
 	}
 }
@@ -1352,6 +1372,10 @@ func (s *StateDB) SetTypeForPns(addr common.Address, pnsType byte) {
 func (s *StateDB) SetOwnerForPns(addr common.Address, owner common.Address) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(ownerForPnsChange{
+			account: &stateObject.address,
+			prev:    stateObject.pnsAccount.Owner,
+		})
 		stateObject.pnsAccount.Owner = owner
 	}
 }
@@ -1359,6 +1383,10 @@ func (s *StateDB) SetOwnerForPns(addr common.Address, owner common.Address) {
 func (s *StateDB) SetDataForPns(addr common.Address, data []byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(dataForPnsChange{
+			account: &stateObject.address,
+			prev:    stateObject.pnsAccount.Data,
+		})
 		stateObject.pnsAccount.Data = data
 	}
 }
@@ -1366,6 +1394,10 @@ func (s *StateDB) SetDataForPns(addr common.Address, data []byte) {
 func (s *StateDB) SetTypeForAsset(addr common.Address, assetType byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(typeForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.Type,
+		})
 		stateObject.assetAccount.Type = assetType
 	}
 }
@@ -1373,6 +1405,10 @@ func (s *StateDB) SetTypeForAsset(addr common.Address, assetType byte) {
 func (s *StateDB) SetCodeHashForAsset(addr common.Address, codeHash []byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(codeHashForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.CodeHash,
+		})
 		stateObject.assetAccount.CodeHash = codeHash
 	}
 }
@@ -1380,6 +1416,10 @@ func (s *StateDB) SetCodeHashForAsset(addr common.Address, codeHash []byte) {
 func (s *StateDB) SetStorageRootForAsset(addr common.Address, storageRoot common.Hash) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(storageRootForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.StorageRoot,
+		})
 		stateObject.assetAccount.StorageRoot = storageRoot
 	}
 }
@@ -1387,6 +1427,10 @@ func (s *StateDB) SetStorageRootForAsset(addr common.Address, storageRoot common
 func (s *StateDB) SetValueForAsset(addr common.Address, value *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(valueForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.Value,
+		})
 		stateObject.assetAccount.Value = value
 	}
 }
@@ -1394,6 +1438,10 @@ func (s *StateDB) SetValueForAsset(addr common.Address, value *big.Int) {
 func (s *StateDB) SetVoteAccountForAsset(addr common.Address, voteAccount common.Address) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(voteAccountForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.VoteAccount,
+		})
 		stateObject.assetAccount.VoteAccount = voteAccount
 	}
 }
@@ -1401,25 +1449,32 @@ func (s *StateDB) SetVoteAccountForAsset(addr common.Address, voteAccount common
 func (s *StateDB) SetVoteValueForAsset(addr common.Address, voteAccount *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(voteValueForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.VoteValue,
+		})
 		stateObject.assetAccount.VoteValue = voteAccount
 	}
 }
 
-//func (s *StateDB) GetVoteValueForContract(addr common.Address) *big.Int {
-//	asset := s.GetContract(addr)
-//	return asset.VoteValue
-//}
-
-func (s *StateDB) SetTypeForContract(addr common.Address, voteAccount common.Address) {
+func (s *StateDB) SetTypeForContract(addr common.Address, contractType byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
-		stateObject.assetAccount.VoteAccount = voteAccount
+		stateObject.db.journal.append(typeForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.Type,
+		})
+		stateObject.assetAccount.Type = contractType
 	}
 }
 
 func (s *StateDB) SetCodeHashForContract(addr common.Address, codeHash []byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(codeHashForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.CodeHash,
+		})
 		stateObject.assetAccount.CodeHash = codeHash
 	}
 }
@@ -1427,6 +1482,10 @@ func (s *StateDB) SetCodeHashForContract(addr common.Address, codeHash []byte) {
 func (s *StateDB) SetStorageRootForContract(addr common.Address, storageRoot common.Hash) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(storageRootForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.StorageRoot,
+		})
 		stateObject.assetAccount.StorageRoot = storageRoot
 	}
 }
@@ -1434,6 +1493,10 @@ func (s *StateDB) SetStorageRootForContract(addr common.Address, storageRoot com
 func (s *StateDB) SetValueForContract(addr common.Address, value *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(valueForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.Value,
+		})
 		stateObject.assetAccount.Value = value
 	}
 }
@@ -1441,6 +1504,10 @@ func (s *StateDB) SetValueForContract(addr common.Address, value *big.Int) {
 func (s *StateDB) SetVoteAccountForContract(addr common.Address, voteAccount common.Address) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(voteAccountForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.VoteAccount,
+		})
 		stateObject.assetAccount.VoteAccount = voteAccount
 	}
 }
@@ -1448,6 +1515,10 @@ func (s *StateDB) SetVoteAccountForContract(addr common.Address, voteAccount com
 func (s *StateDB) SetVoteValueForContract(addr common.Address, voteValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(voteValueForAssetChange{
+			account: &stateObject.address,
+			prev:    stateObject.assetAccount.VoteValue,
+		})
 		stateObject.assetAccount.VoteValue = voteValue
 	}
 }
@@ -1455,6 +1526,10 @@ func (s *StateDB) SetVoteValueForContract(addr common.Address, voteValue *big.In
 func (s *StateDB) SetOwnerForAuthorize(addr common.Address, owner common.Address) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(ownerForAuthorizeChange{
+			account: &stateObject.address,
+			prev:    stateObject.authorizeAccount.Owner,
+		})
 		stateObject.authorizeAccount.Owner = owner
 	}
 }
@@ -1462,6 +1537,10 @@ func (s *StateDB) SetOwnerForAuthorize(addr common.Address, owner common.Address
 func (s *StateDB) SetPledgeValueForAuthorize(addr common.Address, pledgeValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(pledgeValueForAuthorizeChange{
+			account: &stateObject.address,
+			prev:    stateObject.authorizeAccount.PledgeValue,
+		})
 		stateObject.authorizeAccount.PledgeValue = pledgeValue
 	}
 }
@@ -1469,6 +1548,10 @@ func (s *StateDB) SetPledgeValueForAuthorize(addr common.Address, pledgeValue *b
 func (s *StateDB) SetDelegateValueForAuthorize(addr common.Address, delegateValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(delegateValueForAuthorizeChange{
+			account: &stateObject.address,
+			prev:    stateObject.authorizeAccount.DelegateValue,
+		})
 		stateObject.authorizeAccount.DelegateValue = delegateValue
 	}
 }
@@ -1476,6 +1559,10 @@ func (s *StateDB) SetDelegateValueForAuthorize(addr common.Address, delegateValu
 func (s *StateDB) SetInfoForAuthorize(addr common.Address, info []byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(infoForAuthorizeChange{
+			account: &stateObject.address,
+			prev:    stateObject.authorizeAccount.Info,
+		})
 		stateObject.authorizeAccount.Info = info
 	}
 }
@@ -1483,6 +1570,10 @@ func (s *StateDB) SetInfoForAuthorize(addr common.Address, info []byte) {
 func (s *StateDB) SetInterestRateForAuthorize(addr common.Address, interestRate *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(interestRateForAuthorizeChange{
+			account: &stateObject.address,
+			prev:    stateObject.authorizeAccount.InterestRate,
+		})
 		stateObject.authorizeAccount.InterestRate = interestRate
 	}
 }
@@ -1490,6 +1581,10 @@ func (s *StateDB) SetInterestRateForAuthorize(addr common.Address, interestRate 
 func (s *StateDB) SetValidPeriodForAuthorize(addr common.Address, validPeriod *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(validPeriodForAuthorizeChange{
+			account: &stateObject.address,
+			prev:    stateObject.authorizeAccount.ValidPeriod,
+		})
 		stateObject.authorizeAccount.ValidPeriod = validPeriod
 	}
 }
@@ -1497,6 +1592,10 @@ func (s *StateDB) SetValidPeriodForAuthorize(addr common.Address, validPeriod *b
 func (s *StateDB) SetStateForAuthorize(addr common.Address, state bool) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(stateForAuthorizeChange{
+			account: &stateObject.address,
+			prev:    stateObject.authorizeAccount.State,
+		})
 		stateObject.authorizeAccount.State = state
 	}
 }
@@ -1504,6 +1603,10 @@ func (s *StateDB) SetStateForAuthorize(addr common.Address, state bool) {
 func (s *StateDB) SetStateForLoss(addr common.Address, state byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(stateForLossChange{
+			account: &stateObject.address,
+			prev:    stateObject.lossAccount.State,
+		})
 		stateObject.lossAccount.State = state
 	}
 }
@@ -1511,6 +1614,10 @@ func (s *StateDB) SetStateForLoss(addr common.Address, state byte) {
 func (s *StateDB) SetLossAccountForLoss(addr common.Address, lossAccount common.Address) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(lossAccountForLossChange{
+			account: &stateObject.address,
+			prev:    stateObject.lossAccount.LossAccount,
+		})
 		stateObject.lossAccount.LossAccount = lossAccount
 	}
 }
@@ -1518,6 +1625,10 @@ func (s *StateDB) SetLossAccountForLoss(addr common.Address, lossAccount common.
 func (s *StateDB) SetNewAccountForLoss(addr common.Address, newAccount common.Address) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(lossAccountForLossChange{
+			account: &stateObject.address,
+			prev:    stateObject.lossAccount.LossAccount,
+		})
 		stateObject.lossAccount.NewAccount = newAccount
 	}
 }
@@ -1525,6 +1636,10 @@ func (s *StateDB) SetNewAccountForLoss(addr common.Address, newAccount common.Ad
 func (s *StateDB) SetHeightForLoss(addr common.Address, height *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(heightForLossChange{
+			account: &stateObject.address,
+			prev:    stateObject.lossAccount.Height,
+		})
 		stateObject.lossAccount.Height = height
 	}
 }
@@ -1532,6 +1647,10 @@ func (s *StateDB) SetHeightForLoss(addr common.Address, height *big.Int) {
 func (s *StateDB) SetInfoDigestForLoss(addr common.Address, infoDigest []byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		stateObject.db.journal.append(infoDigestForLossChange{
+			account: &stateObject.address,
+			prev:    stateObject.lossAccount.InfoDigest,
+		})
 		stateObject.lossAccount.InfoDigest = infoDigest
 	}
 }
@@ -1556,6 +1675,7 @@ func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
 	accountType, err := common.ValidAddress(addr)
 	if err != nil {
+		log.Error("Failed to ValidAddress", "addr", addr, "err", err)
 		return nil, true
 	}
 	switch accountType {

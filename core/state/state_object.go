@@ -927,10 +927,10 @@ func (s *stateObject) Value() *big.Int {
 
 // SetValueForAsset set asset account value and append to journal
 func (s *stateObject) SetValueForAsset(value *big.Int) {
-	//s.db.journal.append(valueForAssetChange{
-	//	account: &s.address,
-	//	prev:    s.assetAccount.Value,
-	//})
+	s.db.journal.append(valueForAssetChange{
+		account: &s.address,
+		prev:    s.assetAccount.Value,
+	})
 	s.assetAccount.Value = value
 }
 
@@ -941,10 +941,10 @@ func (s *stateObject) setValueForAsset(value *big.Int) {
 
 // SetValueForRegular set regular account value and append to journal
 func (s *stateObject) SetValueForRegular(value *big.Int) {
-	//s.db.journal.append(valueForRegularChange{
-	//	account: &s.address,
-	//	prev:    s.regularAccount.Value,
-	//})
+	s.db.journal.append(valueForRegularChange{
+		account: &s.address,
+		prev:    s.regularAccount.Value,
+	})
 	s.regularAccount.Value = value
 }
 
