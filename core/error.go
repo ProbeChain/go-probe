@@ -92,6 +92,8 @@ var (
 	ErrBizTypeNotSupported = errors.New("business transaction type not supported")
 
 	// ErrAccountAlreadyExists is returned if an account attempted to import is
-	// already present in the keystore.
 	ErrAccountAlreadyExists = errors.New("account already exists")
+
+	// ErrAccountNotExists is returned if an account not exists
+	ErrAccountNotExists = errors.New("account not exists")
 )

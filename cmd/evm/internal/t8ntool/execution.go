@@ -18,6 +18,8 @@ package t8ntool
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 	"os"
 
@@ -29,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
@@ -118,14 +119,17 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 	)
 	gaspool.AddGas(pre.Env.GasLimit)
 	vmContext := vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
-		Coinbase:    pre.Env.Coinbase,
-		BlockNumber: new(big.Int).SetUint64(pre.Env.Number),
-		Time:        new(big.Int).SetUint64(pre.Env.Timestamp),
-		Difficulty:  pre.Env.Difficulty,
-		GasLimit:    pre.Env.GasLimit,
-		GetHash:     getHash,
+		CanTransfer: 			core.CanTransfer,
+		Transfer:    			core.Transfer,
+		Coinbase:    			pre.Env.Coinbase,
+		BlockNumber: 			new(big.Int).SetUint64(pre.Env.Number),
+		Time:        			new(big.Int).SetUint64(pre.Env.Timestamp),
+		Difficulty:  			pre.Env.Difficulty,
+		GasLimit:    			pre.Env.GasLimit,
+		GetHash:     			getHash,
+		Register:	 			core.Register,
+		Cancellation:			core.Cancellation,
+		ContractTransfer: 		core.ContractTransfer,
 	}
 	// If currentBaseFee is defined, add it to the vmContext.
 	if pre.Env.BaseFee != nil {
@@ -193,7 +197,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 
 			// If the transaction created a contract, store the creation address in the receipt.
 			if msg.To() == nil {
-				receipt.ContractAddress = crypto.CreateAddress(evm.TxContext.Origin, tx.Nonce())
+				receipt.ContractAddress,_ = probe.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(),common.ACC_TYPE_OF_CONTRACT)
 			}
 
 			// Set the receipt logs and create the bloom filter.

@@ -670,6 +670,8 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		checkNonce: true,
 		new:		tx.New(),
 		accType:	tx.AccType(),
+		loss: 		tx.Loss(),
+		receiver: 	tx.Receiver(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {

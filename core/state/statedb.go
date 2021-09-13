@@ -20,7 +20,6 @@ package state
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 	"net"
@@ -456,9 +455,9 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 	//stateObject.regularAccount.Balance = new(big.Int)
 	//stateObject.regularAccount.Value = new(big.Int)
 	switch stateObject.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		stateObject.SetValueForRegular(new(big.Int))
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		stateObject.SetValueForAsset(new(big.Int))
 	default:
 	}
@@ -655,16 +654,19 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 	obj, _ := s.createObject(*context.New)
 	obj.isNew = true
 	switch context.AccType {
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(0)
-	case accounts.Asset:
-	case accounts.Contract:
-	case accounts.Authorize:
-	case accounts.Lose:
-	case accounts.DPoS:
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_ASSET:
+	case common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_AUTHORIZE:
+	case common.ACC_TYPE_OF_LOSE:
+		obj.lossAccount.LossAccount = *context.Loss
+		obj.lossAccount.NewAccount = *context.Receiver
+		obj.lossAccount.State = byte(0)
+	case common.ACC_TYPE_OF_DPOS:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	}
 
 }
@@ -1679,7 +1681,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 		return nil, true
 	}
 	switch accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		data := new(RegularAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1688,7 +1690,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newRegularAccount(s, addr, *data), false
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		data := new(PnsAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1697,7 +1699,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newPnsAccount(s, addr, *data), false
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		data := new(AssetAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1706,7 +1708,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newAssetAccount(s, addr, *data), false
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1715,7 +1717,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newAuthorizeAccount(s, addr, *data), false
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		data := new(LossAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1724,9 +1726,9 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newLossAccount(s, addr, *data), false
-	case accounts.DPoS:
+	case common.ACC_TYPE_OF_DPOS:
 		return nil, true
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 		return nil, true
 	default:
 		return nil, true

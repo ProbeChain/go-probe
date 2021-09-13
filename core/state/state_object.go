@@ -110,21 +110,21 @@ type stateObject struct {
 func (s *stateObject) empty() bool {
 
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue == nil &&
 			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value == nil && !s.isNew
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && s.pnsAccount.Data == nil
 
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Type == 0 && s.assetAccount.CodeHash == nil && s.assetAccount.StorageRoot == emptyRoot &&
 			s.assetAccount.Value == nil && s.assetAccount.VoteAccount == common.Address{} && s.assetAccount.VoteValue == nil && s.assetAccount.Nonce == 0
 
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue == nil && s.authorizeAccount.DelegateValue == nil &&
 			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.InterestRate == nil && s.authorizeAccount.ValidPeriod == nil
 
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return s.lossAccount.State == 0 && s.lossAccount.LossAccount == common.Address{} && s.lossAccount.NewAccount == common.Address{} &&
 			s.lossAccount.Height == nil && len(s.lossAccount.InfoDigest) == 0
 
@@ -154,7 +154,6 @@ type RegularAccount struct {
 // PnsAccount PNS账号
 type PnsAccount struct {
 	Type byte
-	// 24bytes地址
 	Owner common.Address
 	Data  []byte
 }
@@ -162,7 +161,6 @@ type PnsAccount struct {
 // AssetAccount 资产账户 和 合约账户
 type AssetAccount struct {
 	Type byte
-	// 24bytes地址
 	CodeHash []byte
 	//StorageRoot []byte
 	StorageRoot common.Hash
@@ -185,7 +183,7 @@ type AuthorizeAccount struct {
 
 // LossAccount 挂失账户
 type LossAccount struct {
-	State       byte           // 业务状态
+	State       byte           // 业务状态 0:1:2
 	LossAccount common.Address // 挂失账户地址
 	NewAccount  common.Address // 新账户地址
 	Height      *big.Int       // 上链高度
@@ -225,31 +223,31 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		err     error
 	)
 	switch accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		var data RegularAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.regularAccount = data
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		var data PnsAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.pnsAccount = data
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		var data AssetAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.assetAccount = data
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		var data AuthorizeAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.authorizeAccount = data
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		var data LossAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossAccount = data
-	case accounts.DPoS:
+	case common.ACC_TYPE_OF_DPOS:
 		var data DPoSAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.dPoSAccount = data
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 		var data DPoSCandidateAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.dPoSCandidateAccount = data
@@ -283,21 +281,21 @@ func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *
 // getStateObjectTireByAccountType return stateObject's tire
 func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 	/*	switch accountType {
-		case accounts.General:
+		case common.ACC_TYPE_OF_GENERAL:
 			return &s.regularTrie
-		case accounts.Pns:
+		case common.ACC_TYPE_OF_PNS:
 			return &s.pnsTrie
-		case accounts.Asset:
+		case common.ACC_TYPE_OF_ASSET:
 			return &s.digitalTrie
-		case accounts.Contract:
+		case common.ACC_TYPE_OF_CONTRACT:
 			return &s.contractTrie
-		case accounts.Authorize:
+		case common.ACC_TYPE_OF_AUTHORIZE:
 			return &s.authorizeTrie
-		case accounts.Lose:
+		case common.ACC_TYPE_OF_LOSE:
 			return &s.lossTrie
-		case accounts.DPoS:
+		case common.ACC_TYPE_OF_DPOS:
 			return &s.regularTrie
-		case accounts.DPoSCandidate:
+		case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 			return &s.trie
 		}*/
 	return &s.trie
@@ -312,7 +310,7 @@ func newRegularAccount(db *StateDB, address common.Address, data RegularAccount)
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.General,
+		accountType:    common.ACC_TYPE_OF_GENERAL,
 		regularAccount: data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -326,7 +324,7 @@ func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateO
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.Pns,
+		accountType:    common.ACC_TYPE_OF_PNS,
 		pnsAccount:     data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -352,7 +350,7 @@ func newAssetAccount(db *StateDB, address common.Address, data AssetAccount) *st
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.Asset,
+		accountType:    common.ACC_TYPE_OF_ASSET,
 		assetAccount:   data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -366,7 +364,7 @@ func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAcco
 		db:               db,
 		address:          address,
 		addrHash:         crypto.Keccak256Hash(address[:]),
-		accountType:      accounts.Authorize,
+		accountType:      common.ACC_TYPE_OF_AUTHORIZE,
 		authorizeAccount: data,
 		originStorage:    make(Storage),
 		pendingStorage:   make(Storage),
@@ -380,7 +378,7 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.Lose,
+		accountType:    common.ACC_TYPE_OF_LOSE,
 		lossAccount:    data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -394,7 +392,7 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType: 	accounts.Pns,
+		accountType: 	common.ACC_TYPE_OF_PNS,
 		dPoSAccount: 	data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -410,19 +408,19 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 // EncodeRLP implements rlp.Encoder.
 func (s *stateObject) EncodeRLP(w io.Writer) error {
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return rlp.Encode(w, s.regularAccount)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return rlp.Encode(w, s.pnsAccount)
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return rlp.Encode(w, s.assetAccount)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return rlp.Encode(w, s.authorizeAccount)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return rlp.Encode(w, s.lossAccount)
-	case accounts.DPoS:
+	case common.ACC_TYPE_OF_DPOS:
 		return rlp.Encode(w, s.db.dPoSAccounts)
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 		return rlp.Encode(w, s.db.dPoSCandidateAccounts)
 	default:
 		return accounts.ErrUnknownAccount
@@ -743,7 +741,7 @@ func (s *stateObject) SubBalance(amount *big.Int) {
 }
 
 func (s *stateObject) SetBalance(amount *big.Int) {
-	if s.accountType == accounts.General || s.accountType == accounts.Asset || s.accountType == accounts.Contract {
+	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_ASSET || s.accountType == common.ACC_TYPE_OF_CONTRACT {
 		s.db.journal.append(balanceChange{
 			account: &s.address,
 			//prev:    new(big.Int).Set(s.regularAccount.Balance),
@@ -756,9 +754,9 @@ func (s *stateObject) SetBalance(amount *big.Int) {
 func (s *stateObject) setBalance(amount *big.Int) {
 	//s.regularAccount.Balance = amount
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		s.SetValueForRegular(amount)
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		s.SetValueForAsset(amount)
 	default:
 	}
@@ -789,19 +787,19 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, address common.Addres
 		state *stateObject
 	)
 	switch accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		state = newRegularAccount(db, s.address, s.regularAccount)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		state = newPnsAccount(db, s.address, s.pnsAccount)
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		state = newAssetAccount(db, s.address, s.assetAccount)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		state = newLossAccount(db, s.address, s.lossAccount)
-	//case accounts.DPoS:
+	//case common.ACC_TYPE_OF_DPOS:
 	//
-	//case accounts.DPoSCandidate:
+	//case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	default:
 		state = nil
 	}
@@ -868,7 +866,7 @@ func (s *stateObject) setCode(codeHash common.Hash, code []byte) {
 }
 
 func (s *stateObject) SetNonce(nonce uint64) {
-	if s.accountType == accounts.General || s.accountType == accounts.Asset || s.accountType == accounts.Contract {
+	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_ASSET || s.accountType == common.ACC_TYPE_OF_CONTRACT {
 		s.db.journal.append(nonceChange{
 			account: &s.address,
 			//prev:    s.regularAccount.Nonce,
@@ -881,9 +879,9 @@ func (s *stateObject) SetNonce(nonce uint64) {
 func (s *stateObject) setNonce(nonce uint64) {
 	//s.regularAccount.Nonce = nonce
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		s.regularAccount.Nonce = nonce
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		s.assetAccount.Nonce = nonce
 	default:
 	}
@@ -897,9 +895,9 @@ func (s *stateObject) CodeHash() []byte {
 func (s *stateObject) Balance() *big.Int {
 	//return s.regularAccount.Value
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return s.regularAccount.Value
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Value
 	default:
 		return new(big.Int)
@@ -909,9 +907,9 @@ func (s *stateObject) Balance() *big.Int {
 func (s *stateObject) Nonce() uint64 {
 	//return s.regularAccount.Nonce
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return s.regularAccount.Nonce
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Nonce
 	default:
 		return 0

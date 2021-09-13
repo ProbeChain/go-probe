@@ -18,6 +18,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -122,10 +122,11 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	}
 	receipt.TxHash = tx.Hash()
 	receipt.GasUsed = result.UsedGas
-
+	receipt.BizType = msg.BizType()
 	// If the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil && msg.BizType() == common.ContractCall{
-		receipt.ContractAddress = crypto.CreateAddress(evm.TxContext.Origin, tx.Nonce())
+		receipt.ContractAddress,_ = probe.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(),common.ACC_TYPE_OF_CONTRACT)
+		fmt.Printf("contractAddress: %s\n",receipt.ContractAddress.String())
 	}
 
 	// Set the receipt logs and create the bloom filter.
@@ -134,6 +135,7 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	receipt.BlockHash = blockHash
 	receipt.BlockNumber = blockNumber
 	receipt.TransactionIndex = uint(statedb.TxIndex())
+	fmt.Printf("txHash: %s\n",receipt.TxHash.String())
 	return receipt, err
 }
 
@@ -147,8 +149,7 @@ func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *commo
 		return nil, err
 	}
 	// Create a new context to be used in the EVM environment
-	txContext := NewEVMTxContext(msg)
 	blockContext := NewEVMBlockContext(header, bc, author)
-	vmenv := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
+	vmenv := vm.NewEVM(blockContext, vm.TxContext{}, statedb, config, cfg)
 	return applyTransaction(msg, config, bc, author, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
 }

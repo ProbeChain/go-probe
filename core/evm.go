@@ -53,17 +53,18 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer: 	CanTransfer,
-		Transfer:    	Transfer,
-		GetHash:     	GetHashFn(header, chain),
-		Coinbase:    	beneficiary,
-		BlockNumber: 	new(big.Int).Set(header.Number),
-		Time:        	new(big.Int).SetUint64(header.Time),
-		Difficulty:  	new(big.Int).Set(header.Difficulty),
-		BaseFee:     	baseFee,
-		GasLimit:    	header.GasLimit,
-		Register:	 	Register,
-		Cancellation:	Cancellation,
+		CanTransfer: 			CanTransfer,
+		Transfer:    			Transfer,
+		GetHash:     			GetHashFn(header, chain),
+		Coinbase:    			beneficiary,
+		BlockNumber: 			new(big.Int).Set(header.Number),
+		Time:        			new(big.Int).SetUint64(header.Time),
+		Difficulty:  			new(big.Int).Set(header.Difficulty),
+		BaseFee:     			baseFee,
+		GasLimit:    			header.GasLimit,
+		Register:	 			Register,
+		Cancellation:			Cancellation,
+		ContractTransfer: 		ContractTransfer,
 	}
 }
 
@@ -138,7 +139,14 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 
 // Transfer subtracts amount from sender and adds amount to recipient using the given Db
 func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	fmt.Printf("Register, sender:%s,to:%s,amount:%s\n",sender.String(),recipient.String(),amount.String())
+	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n",sender.String(),recipient.String(),amount.String())
+	db.SubBalance(sender, amount)
+	db.AddBalance(recipient, amount)
+}
+
+// ContractTransfer subtracts amount from sender and adds amount to recipient using the given Db
+func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+	fmt.Printf("ContractTransfer, sender:%s,to:%s,amount:%s\n",sender.String(),recipient.String(),amount.String())
 	db.SubBalance(sender, amount)
 	db.AddBalance(recipient, amount)
 }

@@ -19,7 +19,6 @@ package state
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -276,7 +275,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 		it := trie.NewIterator(t.NodeIterator(conf.Start))
 		for it.Next() {
 			if i == 0 {
-				wrapper, err = DecodeRLP(it.Value, accounts.General)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_GENERAL)
 				if err != nil {
 					continue
 				}
@@ -296,7 +295,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 1 {
-				wrapper, err = DecodeRLP(it.Value, accounts.Pns)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_PNS)
 				if err != nil {
 					continue
 				}
@@ -308,7 +307,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 2 || i == 3 {
-				wrapper, err = DecodeRLP(it.Value, accounts.Asset)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_ASSET)
 				if err != nil {
 					continue
 				}
@@ -323,7 +322,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 4 {
-				wrapper, err = DecodeRLP(it.Value, accounts.Authorize)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_AUTHORIZE)
 				if err != nil {
 					continue
 				}
@@ -339,7 +338,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 5 {
-				wrapper, err = DecodeRLP(it.Value, accounts.Lose)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_LOSE)
 				if err != nil {
 					continue
 				}

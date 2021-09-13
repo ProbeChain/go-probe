@@ -15,9 +15,6 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 		}
 		data = &types.DynamicFeeTx{
 			From: 		args.From,
-			New:        args.New,
-			AccType:    uint8(*args.AccType),
-			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
 			Gas:        uint64(*args.Gas),
@@ -26,13 +23,15 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: al,
+			New:        args.New,
+			AccType:    uint8(*args.AccType),
+			BizType:    uint8(*args.BizType),
+			Loss: 		args.Loss,
+			Receiver: 	args.Receiver,
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
 			From: 		args.From,
-			New:        args.New,
-			AccType:    uint8(*args.AccType),
-			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
 			Gas:        uint64(*args.Gas),
@@ -40,18 +39,25 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: *args.AccessList,
+			New:        args.New,
+			AccType:    uint8(*args.AccType),
+			BizType:    uint8(*args.BizType),
+			Loss: 		args.Loss,
+			Receiver: 	args.Receiver,
 		}
 	default:
 		data = &types.LegacyTx{
 			From: 		args.From,
-			New:        args.New,
-			AccType:    uint8(*args.AccType),
-			BizType:    uint8(*args.BizType),
 			Nonce:      uint64(*args.Nonce),
 			Gas:        uint64(*args.Gas),
 			GasPrice:   (*big.Int)(args.GasPrice),
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
+			New:        args.New,
+			AccType:    uint8(*args.AccType),
+			BizType:    uint8(*args.BizType),
+			Loss: 		args.Loss,
+			Receiver: 	args.Receiver,
 		}
 	}
 	return types.NewTx(data)
@@ -112,7 +118,49 @@ func (args *TransactionArgs) transactionOfTransfer()  *types.Transaction{
 }
 
 func (args *TransactionArgs) transactionOfContractCall()  *types.Transaction{
-	return nil
+	var data types.TxData
+	switch {
+	case args.MaxFeePerGas != nil:
+		al := types.AccessList{}
+		if args.AccessList != nil {
+			al = *args.AccessList
+		}
+		data = &types.DynamicFeeTx{
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: al,
+		}
+	case args.AccessList != nil:
+		data = &types.AccessListTx{
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: *args.AccessList,
+		}
+	default:
+		data = &types.LegacyTx{
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+		}
+	}
+	return types.NewTx(data)
 }
 
 func (args *TransactionArgs) transactionOfExchangeTransaction()  *types.Transaction{

@@ -19,7 +19,6 @@ package accounts
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
@@ -41,19 +40,6 @@ const (
 	MimetypeTypedData         = "data/typed"
 	MimetypeClique            = "application/x-clique-header"
 	MimetypeTextPlain         = "text/plain"
-)
-
-// AccountType type of Probe
-// 6 kinds
-const (
-	General       = byte(0) //普通账户
-	Pns           = byte(1) //PNS账户
-	Asset         = byte(2) //资产账户
-	Contract      = byte(3) //合约账户
-	Authorize     = byte(4) //授权账户
-	Lose          = byte(5) //挂失账户
-	DPoS          = byte(6) //DPoS账户
-	DPoSCandidate = byte(7) //DPoS候选账户
 )
 
 // Wallet represents a software or hardware wallet that might contain one or more
@@ -237,27 +223,3 @@ type WalletEvent struct {
 	Kind   WalletEventType // Event type that happened in the system
 }
 
-// AmountOfPledgeForCreateAccount amount of pledge for create a account
-func AmountOfPledgeForCreateAccount(accType byte) uint64 {
-	switch accType {
-	case General:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
-	case Pns:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
-	case Asset:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET
-	case Contract:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
-	case Authorize:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
-	case Lose:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
-	default:
-		return 0
-	}
-}
-
-// CheckAccType check account type
-func CheckAccType(accType byte) bool {
-	return General <= accType && accType <= DPoSCandidate
-}

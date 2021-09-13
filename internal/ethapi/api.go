@@ -1716,7 +1716,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 	}
 
 	if tx.To() == nil && tx.BizType() == common.ContractCall {
-		addr := crypto.CreateAddress(from, tx.Nonce())
+		addr,_ := probe.CreateAddressForAccountType(from, tx.Nonce(),common.ACC_TYPE_OF_CONTRACT)
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
 		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())
@@ -1728,6 +1728,10 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
 	// Look up the wallet containing the requested signer
+	if args.From != nil && args.To == nil && args.Data != nil {
+		defaultBizType := hexutil.Uint8(common.ContractCall)
+		args.BizType = &defaultBizType
+	}
 	switch uint8(*args.BizType) {
 	case common.Register:
 		if args.New != nil {

@@ -3018,7 +3018,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
         var bytes = encodeConstructorParams(this.abi, args);
         options.data += bytes;
-
+        options.bizType = "0x02"
         if (callback) {
 
           // wait for the contract address and check if the code was deployed

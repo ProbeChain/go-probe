@@ -190,7 +190,7 @@ func EncryptDataV3(data, auth []byte, scryptN, scryptP int, c byte) (CryptoJSON,
 // blob that can be decrypted later on.
 func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
 	keyBytes := math.PaddedBigBytes(key.PrivateKey.D, 32)
-	cryptoStruct, err := EncryptDataV3(keyBytes, []byte(auth), scryptN, scryptP, accounts.General)
+	cryptoStruct, err := EncryptDataV3(keyBytes, []byte(auth), scryptN, scryptP, common.ACC_TYPE_OF_GENERAL)
 	if err != nil {
 		return nil, err
 	}

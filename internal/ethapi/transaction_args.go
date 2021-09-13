@@ -41,8 +41,8 @@ type TransactionArgs struct {
 	Asset			 	 *common.Address `json:"asset"`
 	Old			 		 *common.Address `json:"old"`
 	New					 *common.Address `json:"new"`
-	Initiator			 *common.Address `json:"initiator"` //wxc 资产对换发起方 regular account
-	Receiver			 *common.Address `json:"receiver"`  //wxc 资产对换接受方 regular account
+	Initiator			 *common.Address `json:"initiator"`
+	Receiver			 *common.Address `json:"receiver"`
 	BizType          	 *hexutil.Uint8	 `json:"bizType"`
 
 	Gas                  *hexutil.Uint64 `json:"gas"`
@@ -164,6 +164,8 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		err = args.setDefaultsOfTransfer(ctx,b)
 	case common.ContractCall:
 		err = args.setDefaultsOfContractCall(ctx,b)
+	case common.SendLossReport:
+		return args.setDefaultsOfSendLossReport(ctx,b)
 	//... todo 还有未实现的
 	default:
 		err = errors.New("unsupported business type")
@@ -245,8 +247,6 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 	if args.AccessList != nil {
 		accessList = *args.AccessList
 	}
-	fmt.Printf("NewMessage---->\nfrom：%s\nto：%s\nvalue：%s\nbizType：%d\ngas：%d\ngasPrice：%s\ngasFeeCap：%s\ngasTipCap：%s\n",
-		addr.String(), args.To.String(),value.String(),uint8(*args.BizType), gas, gasPrice.String(),gasFeeCap.String(),gasTipCap.String())
 	msg := types.NewMessage(
 		addr, args.To, uint8(*args.BizType),
 		0, value, gas,
@@ -274,6 +274,8 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		return args.transactionOfTransfer()
 	case common.ContractCall:
 		return args.transactionOfContractCall()
+	case common.SendLossReport:
+		return args.transactionOfSendLossReport()
 	//... todo 还有未实现的
 	default: return nil
 	}

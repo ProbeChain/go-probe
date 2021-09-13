@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"math/big"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -294,7 +294,7 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 		if txs[i].To() == nil {
 			// Deriving the signer is expensive, only do if it's actually needed
 			from, _ := Sender(signer, txs[i])
-			r[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
+			r[i].ContractAddress,_ = probe.CreateAddressForAccountType(from, txs[i].Nonce(),common.ACC_TYPE_OF_CONTRACT)
 		}
 		// The used gas can be calculated based on previous r
 		if i == 0 {

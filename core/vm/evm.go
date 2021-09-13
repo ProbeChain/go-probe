@@ -18,6 +18,7 @@ package vm
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -44,6 +45,8 @@ type (
 	RegisterFunc func(StateDB, common.Address, TxContext)
 	// CancellationFunc is the signature of a cancellation function
 	CancellationFunc func(StateDB, common.Address, common.Address)
+	//ContractTransferFunc is the signature of a transfer function
+	ContractTransferFunc func(StateDB, common.Address, common.Address, *big.Int)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -94,7 +97,8 @@ type BlockContext struct {
 	Register RegisterFunc
 	// Cancellation cancel an account
 	Cancellation CancellationFunc
-
+	//ContractTransfer transfers ether from one account to the other
+	ContractTransfer ContractTransferFunc
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
 	GasLimit    uint64         // Provides information for GASLIMIT
@@ -275,7 +279,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	case common.Transfer:
 		evm.Context.Transfer(evm.StateDB, caller.Address(), to, value)
 	case common.ContractCall:
-		evm.Context.Transfer(evm.StateDB, caller.Address(), to, value)
+		evm.Context.ContractTransfer(evm.StateDB, caller.Address(), to, value)
 		//... todo 还有未实现的
 	}
 
@@ -495,7 +499,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.chainRules.IsEIP158 {
 		evm.StateDB.SetNonce(address, 1)
 	}
-	evm.Context.Transfer(evm.StateDB, caller.Address(), address, value)
+	evm.Context.ContractTransfer(evm.StateDB, caller.Address(), address, value)
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
@@ -554,7 +558,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	contractAddr = crypto.CreateAddress(caller.Address(), evm.StateDB.GetNonce(caller.Address()))
+	contractAddr,_ = probe.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()),common.ACC_TYPE_OF_CONTRACT)
 	return evm.create(caller, &codeAndHash{code: code}, gas, value, contractAddr)
 }
 
@@ -564,7 +568,7 @@ func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.I
 // instead of the usual sender-and-nonce-hash as the address where the contract is initialized at.
 func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	codeAndHash := &codeAndHash{code: code}
-	contractAddr = crypto.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes())
+	contractAddr = probe.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes(),common.ACC_TYPE_OF_CONTRACT)
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr)
 }
 
