@@ -252,9 +252,9 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		return nil, gas, ErrInsufficientBalance
 	}
 	snapshot := evm.StateDB.Snapshot()
-    var p PrecompiledContract
+	var p PrecompiledContract
 	var isPrecompile bool
-	if to != (common.Address{}){
+	if to != (common.Address{}) {
 		p, isPrecompile = evm.precompile(to)
 		if !evm.StateDB.Exist(to) {
 			if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
@@ -282,8 +282,6 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		evm.Context.ContractTransfer(evm.StateDB, caller.Address(), to, value)
 		//... todo 还有未实现的
 	}
-
-
 
 	// Capture the tracer start/end events in debug mode
 	if evm.Config.Debug && evm.depth == 0 {
@@ -558,7 +556,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	contractAddr,_ = probe.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()),common.ACC_TYPE_OF_CONTRACT)
+	contractAddr, _ = probe.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()), common.ACC_TYPE_OF_CONTRACT, value)
 	return evm.create(caller, &codeAndHash{code: code}, gas, value, contractAddr)
 }
 
@@ -568,7 +566,7 @@ func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.I
 // instead of the usual sender-and-nonce-hash as the address where the contract is initialized at.
 func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	codeAndHash := &codeAndHash{code: code}
-	contractAddr = probe.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes(),common.ACC_TYPE_OF_CONTRACT)
+	contractAddr = probe.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes(), common.ACC_TYPE_OF_CONTRACT)
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr)
 }
 

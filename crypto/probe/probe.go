@@ -290,6 +290,20 @@ func NewKeccakState() KeccakState {
 	return sha3.NewLegacyKeccak256().(KeccakState)
 }
 
+func NewKeccak512State() KeccakState {
+	return sha3.NewLegacyKeccak512().(KeccakState)
+}
+
+func Keccak512(data ...[]byte) []byte {
+	b := make([]byte, 64)
+	d := NewKeccak512State()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Read(b)
+	return b
+}
+
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
 	b := make([]byte, 32)
@@ -327,12 +341,39 @@ func ToECDSAUnsafe(d []byte) *PrivateKey {
 	return priv
 }
 
-func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (add common.Address, err error) {
+func CreateAddressForAccountType(address common.Address, nonce uint64, K byte, Height *big.Int) (add common.Address, err error) {
 	k1, err := common.ValidAddress(address)
 	if k1 != 0x00 || err != nil {
+		return address, errors.New("unsupported account type for createAddress")
+	}
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce, *Height})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+}
+
+func CreateDPOSAddressStr(address string, dpos []byte, K byte, Height *big.Int) (add common.Address, err error) {
+
+	k1, err := common.ValidCheckAddress(address)
+	if k1 != 0x00 || K != common.ACC_TYPE_OF_DPOS || err != nil {
+		log.Crit("Failed to Create DPOSAddress from address", "err", err)
+		return common.HexToAddress(address), err
+	}
+
+	data, _ := rlp.EncodeToBytes([]interface{}{K, common.HexToAddress(address), dpos, *Height})
+	data = Keccak512(data)
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+}
+
+func CreateDPOSAddress(address common.Address, dpos []byte, K byte, Height *big.Int) (add common.Address, err error) {
+	if len(dpos) <= 0 {
+		return address, errors.New("Creat DPOSAddress error,DPOS parameter is invalid")
+	}
+	k1, err := common.ValidAddress(address)
+	if k1 != 0x00 || K != common.ACC_TYPE_OF_DPOS || err != nil {
+		log.Crit("Failed to Create PNSAddress from address", "err", err)
 		return address, err
 	}
-	data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, dpos, *Height})
+	data = Keccak512(data)
 	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 

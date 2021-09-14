@@ -1250,20 +1250,20 @@ type RPCTransaction struct {
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
 
-	Owner			 *common.Address	`json:"owner,omitempty"`
-	Beneficiary		 *common.Address 	`json:"beneficiary,omitempty"`
-	Vote			 *common.Address 	`json:"vote,omitempty"`
-	Loss			 *common.Address 	`json:"loss,omitempty"`
-	Asset			 *common.Address 	`json:"asset,omitempty"`
-	Old			 	 *common.Address 	`json:"old,omitempty"`
-	New				 *common.Address 	`json:"new,omitempty"`
-	Initiator		 *common.Address 	`json:"initiator,omitempty"`
-	Receiver		 *common.Address 	`json:"receiver,omitempty"`
-	Value2           *hexutil.Big    	`json:"value2,omitempty"`
-	Height           *hexutil.Uint64 	`json:"height,omitempty"`
-	Mark  			 *hexutil.Bytes 	`json:"mark,omitempty"`
-	InfoDigest  	 *hexutil.Bytes 	`json:"infoDigest,omitempty"`
-	AccType          *hexutil.Uint8      `json:"accType,omitempty"`
+	Owner       *common.Address `json:"owner,omitempty"`
+	Beneficiary *common.Address `json:"beneficiary,omitempty"`
+	Vote        *common.Address `json:"vote,omitempty"`
+	Loss        *common.Address `json:"loss,omitempty"`
+	Asset       *common.Address `json:"asset,omitempty"`
+	Old         *common.Address `json:"old,omitempty"`
+	New         *common.Address `json:"new,omitempty"`
+	Initiator   *common.Address `json:"initiator,omitempty"`
+	Receiver    *common.Address `json:"receiver,omitempty"`
+	Value2      *hexutil.Big    `json:"value2,omitempty"`
+	Height      *hexutil.Uint64 `json:"height,omitempty"`
+	Mark        *hexutil.Bytes  `json:"mark,omitempty"`
+	InfoDigest  *hexutil.Bytes  `json:"infoDigest,omitempty"`
+	AccType     *hexutil.Uint8  `json:"accType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1424,7 +1424,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 	if args.To != nil {
 		to = *args.To
 	} else {
-		to, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType))
+		to, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType), new(big.Int).SetUint64(uint64(*args.Height)))
 		if err != nil {
 			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", args.toTransaction().Hash(), err)
 		}
@@ -1716,7 +1716,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 	}
 
 	if tx.To() == nil && tx.BizType() == common.ContractCall {
-		addr,_ := probe.CreateAddressForAccountType(from, tx.Nonce(),common.ACC_TYPE_OF_CONTRACT)
+		addr, _ := probe.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT, new(big.Int).SetUint64(tx.Height()))
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
 		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())
@@ -1735,10 +1735,10 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 	switch uint8(*args.BizType) {
 	case common.Register:
 		if args.New != nil {
-			fmt.Printf("from:%s,new:%s\n", args.From.String(),args.New.String())
+			fmt.Printf("from:%s,new:%s\n", args.From.String(), args.New.String())
 		}
 		if args.AccType != nil {
-			fmt.Printf("from:%s,accType:%s\n", args.From.String(),args.AccType.String())
+			fmt.Printf("from:%s,accType:%s\n", args.From.String(), args.AccType.String())
 		}
 
 	case common.Transfer:

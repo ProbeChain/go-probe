@@ -17,14 +17,14 @@ import (
 
 //wxc todo 各种业务类型的默认值设置实现
 // setDefaultsOfRegister set default parameters of register business type
-func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error{
-	if args.AccType == nil{
+func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error {
+	if args.AccType == nil {
 		return errors.New(`account type must be specified`)
 	}
-	if !common.CheckAccType(uint8(*args.AccType)){
+	if !common.CheckAccType(uint8(*args.AccType)) {
 		return accounts.ErrWrongAccountType
 	}
-	fromAccType,err := common.ValidAddress(*args.From)
+	fromAccType, err := common.ValidAddress(*args.From)
 	if err != nil {
 		return err
 	}
@@ -41,9 +41,9 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	accountType := uint8(*args.AccType)
 	var newAccount common.Address
 	if accountType == common.ACC_TYPE_OF_PNS {
-		newAccount,err = probe.CreatePNSAddress(args.from(),*args.Data, accountType)
-	}else {
-		newAccount,err = probe.CreateAddressForAccountType(args.from(),uint64(*args.Nonce),accountType)
+		newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accountType)
+	} else {
+		newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accountType, new(big.Int).SetUint64(uint64(*args.Nonce)))
 	}
 	if err != nil {
 		return err
@@ -70,10 +70,10 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		if args.Receiver == nil {
 			return errors.New("receiver account must be specified")
 		}
-		if !b.Exist(*args.Loss){
+		if !b.Exist(*args.Loss) {
 			return accounts.ErrUnknownAccount
 		}
-		if !b.Exist(*args.Receiver){
+		if !b.Exist(*args.Receiver) {
 			return accounts.ErrUnknownAccount
 		}
 	}
@@ -91,10 +91,10 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 			Value:                args.Value,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			New:			  	  args.New,
+			New:                  args.New,
 			AccType:              args.AccType,
-			Loss: 				  args.Loss,
-			Receiver: 			  args.Receiver,
+			Loss:                 args.Loss,
+			Receiver:             args.Receiver,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
@@ -108,17 +108,17 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 }
 
 // setDefaultsOfCancellation set default parameters of cancellation business type
-func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Backend) error {
 	return nil
 }
 
 // setDefaultsOfRevokeCancellation set default parameters of revoke cancellation business type
-func (args *TransactionArgs) setDefaultsOfRevokeCancellation(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfRevokeCancellation(ctx context.Context, b Backend) error {
 	return nil
 }
 
 // setDefaultsOfTransfer set default parameters of transfer business type
-func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -132,18 +132,18 @@ func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backen
 	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
 	}
-	if args.To == nil{
+	if args.To == nil {
 		return errors.New(`to address is not empty`)
 	}
 
-	fromAccType,err := common.ValidAddress(*args.From)
+	fromAccType, err := common.ValidAddress(*args.From)
 	if err != nil {
 		return err
 	}
 	if fromAccType != common.ACC_TYPE_OF_GENERAL {
 		return accounts.ErrNotSupported
 	}
-	toAccType,err := common.ValidAddress(*args.To)
+	toAccType, err := common.ValidAddress(*args.To)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backen
 }
 
 // setDefaultsOfContractCall set default parameters of contract call business type
-func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -222,27 +222,27 @@ func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Ba
 	return nil
 }
 
-func (args *TransactionArgs) etDefaultsOfExchangeTransaction(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) etDefaultsOfExchangeTransaction(ctx context.Context, b Backend) error {
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfVotingForAnAccount(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfVotingForAnAccount(ctx context.Context, b Backend) error {
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context, b Backend) error {
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Context, b Backend) error {
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b Backend) error{
-	if args.Mark == nil{
+func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b Backend) error {
+	if args.Mark == nil {
 		return errors.New(`mark is not empty`)
 	}
-	if args.InfoDigest == nil{
+	if args.InfoDigest == nil {
 		return errors.New(`information digests is not empty`)
 	}
 	if args.Nonce == nil {
@@ -252,7 +252,7 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	fromAccType,err := common.ValidAddress(*args.From)
+	fromAccType, err := common.ValidAddress(*args.From)
 	if err != nil {
 		return err
 	}
@@ -261,22 +261,22 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	}
 
 	if args.New != nil {
-		accType,err := common.ValidAddress(*args.New)
+		accType, err := common.ValidAddress(*args.New)
 		if err != nil {
 			return err
 		}
 		args.AccType = (*hexutil.Uint8)(&accType)
 	}
 	if args.New == nil && args.AccType != nil {
-		if !common.CheckAccType(uint8(*args.AccType)){
+		if !common.CheckAccType(uint8(*args.AccType)) {
 			return accounts.ErrWrongAccountType
 		}
 		var newAccount common.Address
 		var err error
 		if uint8(*args.AccType) == common.ACC_TYPE_OF_PNS {
-			newAccount,err = probe.CreatePNSAddress(args.from(),*args.Data, uint8(*args.AccType))
-		}else {
-			newAccount,err = probe.CreateAddressForAccountType(args.from(),uint64(*args.Nonce),uint8(*args.AccType))
+			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, uint8(*args.AccType))
+		} else {
+			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), uint8(*args.AccType), new(big.Int).SetUint64(uint64(*args.Height)))
 		}
 		if err != nil {
 			return err
@@ -308,7 +308,7 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
-			New:			  	  args.New,
+			New:                  args.New,
 			AccType:              args.AccType,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
@@ -329,23 +329,21 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfRevealLossMessage(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfRevealLossMessage(ctx context.Context, b Backend) error {
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenTimeOut(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenTimeOut(ctx context.Context, b Backend) error {
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenConfirmed(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenConfirmed(ctx context.Context, b Backend) error {
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfRejectLossReportWhenTimeOut(ctx context.Context, b Backend) error{
+func (args *TransactionArgs) setDefaultsOfRejectLossReportWhenTimeOut(ctx context.Context, b Backend) error {
 	return nil
 }
-
-
 
 // AmountOfPledgeForCreateAccount amount of pledge for create a account
 func AmountOfPledgeForCreateAccount(accType byte) uint64 {
