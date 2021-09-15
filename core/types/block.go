@@ -39,6 +39,7 @@ var (
 )
 
 type DposAckType uint8
+
 const (
 	AckTypeAgree  DposAckType = 0
 	AckTypeOppose DposAckType = 1
@@ -196,7 +197,7 @@ func (h *Header) EmptyReceipts() bool {
 // Body is a simple (mutable, non-safe) data container for storing and moving
 // a block's data contents (transactions and uncles) together.
 type Body struct {
-	Transactions    []*Transaction
+	Transactions []*Transaction
 	//todo:remove
 	Uncles          []*Header
 	PowAnswerUncles []*PowAnswer
@@ -271,7 +272,7 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 	return b
 }
 
-func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnswer,  dposAcks []*DposAck, receipts []*Receipt, hasher TrieHasher) *Block {
+func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnswer, dposAcks []*DposAck, receipts []*Receipt, hasher TrieHasher) *Block {
 	b := &Block{header: CopyHeader(header), td: new(big.Int)}
 
 	// TODO: panic if len(txs) != len(receipts)
@@ -407,7 +408,7 @@ func (b *Block) BaseFee() *big.Int {
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
 
 // Body returns the non-header content of the block.
-func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles,nil,nil} }
+func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles, nil, nil} }
 
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.

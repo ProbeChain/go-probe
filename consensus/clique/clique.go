@@ -668,7 +668,7 @@ func (c *Clique) Seal(chain consensus.ChainHeaderReader, block *types.Block, res
 
 func (c *Clique) PowSeal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.PowAnswer,
 	stop <-chan struct{}, coinbase common.Address) error {
-	log.Info("input:","a:",chain,"b",block,"c",results,"d",stop, "coinbase", coinbase)
+	log.Info("input:", "a:", chain, "b", block, "c", results, "d", stop, "coinbase", coinbase)
 	return nil
 }
 

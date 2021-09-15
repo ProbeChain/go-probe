@@ -297,12 +297,12 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 
 	tmp := head
 	bs, err1 := json.Marshal(tmp)
-	if err1!= nil{
+	if err1 != nil {
 		log.Info("json encode failed")
 	}
 	var out bytes.Buffer
 	json.Indent(&out, bs, "", "\t")
-	log.Info("genesis block header:",out.String(),nil)
+	log.Info("genesis block header:", out.String(), nil)
 
 	if g.GasLimit == 0 {
 		head.GasLimit = params.GenesisGasLimit
@@ -370,14 +370,14 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 // DefaultGenesisBlock returns the Ethereum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
-		Config:     params.MainnetChainConfig,
-		Nonce:      66,
-		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
-		GasLimit:   99999999999999,
+		Config:    params.MainnetChainConfig,
+		Nonce:     66,
+		ExtraData: hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
+		GasLimit:  99999999999999,
 		//GasLimit:   5000,
 		Difficulty: big.NewInt(1),
 		//Difficulty: big.NewInt(17179869184),
-		Alloc:      decodePrealloc(mainnetAllocData),
+		Alloc: decodePrealloc(mainnetAllocData),
 	}
 }
 
