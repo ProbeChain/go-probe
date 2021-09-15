@@ -1,0 +1,5 @@
+./build.sh && ./build/bin/geth --log.debug --datadir ./data --networkid 2016  --cache 512 --http --http.corsdomain '*'  --allow-insecure-unlock  --nodiscover  --mine --miner.threads 1 console  --unlock "0x45A6A925C9203e1D19e49AaD489a5347dc655D11" --password "./data/passwd.txt"
+
+#./build.sh && ./build/bin/geth --log.debug --datadir ./data --networkid 2016  --cache 512 --http --http.corsdomain '*'  --allow-insecure-unlock  --nodiscover  --consensus dpos  --mine --miner.threads 1 console  --unlock "0x45A6A925C9203e1D19e49AaD489a5347dc655D11" --password "data.all/passwd.txt"
+#./build.sh && ./build/bin/geth --log.debug --verbosity 5 --datadir ./data --networkid 2016  --cache 512 --http --http.corsdomain '*'  --allow-insecure-unlock  --nodiscover  --consensus dpos  --mine --miner.threads 1 console  --unlock "0x45A6A925C9203e1D19e49AaD489a5347dc655D11" --password "data.all/passwd.txt"
+#./build.sh && ./build/bin/geth --datadir ./data --networkid 2016  --cache 512 --http --http.corsdomain '*'  --allow-insecure-unlock  --nodiscover  --consensus dpos  --mine --miner.threads 1 console  --unlock "0x45A6A925C9203e1D19e49AaD489a5347dc655D11" --password "data.all/passwd.txt"

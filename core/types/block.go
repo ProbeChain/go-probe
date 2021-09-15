@@ -32,8 +32,10 @@ import (
 )
 
 var (
-	EmptyRootHash  = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
-	EmptyUncleHash = rlpHash([]*Header(nil))
+	EmptyRootHash           = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+	EmptyUncleHash          = rlpHash([]*Header(nil))
+	EmptyPowAnswerUncleHash = rlpHash([]*PowAnswer(nil))
+	EmptyDposAckHash        = rlpHash([]*DposAck(nil))
 )
 
 type DposAckType uint8
@@ -90,8 +92,8 @@ type DposAck struct {
 	EpochPosition uint8       `json:"epochPosition"   gencodec:"required"`
 	Number        *big.Int    `json:"number"          gencodec:"required"`
 	BlockHash     common.Hash `json:"blockHash"       gencodec:"required"`
-	WitnessSig    []byte      `json:"witnessSig"      gencodec:"required"`
 	AckType       DposAckType `json:"ackType"         gencodec:"required"`
+	WitnessSig    []byte      `json:"witnessSig"      gencodec:"required"`
 }
 
 // Id returns the pow answer unique id
@@ -100,31 +102,36 @@ func (dposAck *DposAck) Id() common.Hash {
 	return common.BytesToHash(dposAck.WitnessSig)
 }
 
+type DposAckCount struct {
+	BlockNumber *big.Int `json:"blockNumber"        gencodec:"required"`
+	AckCount    uint     `json:"ackCount"           gencodec:"required"`
+}
+
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
 
 // Header represents a block header in the Ethereum blockchain.
 type Header struct {
-	DposSigAddr      common.Address `json:"dposMiner"        gencodec:"required"`
-	DposSig          []byte         `json:"dposSig"          gencodec:"required"`
-	BlockHash        common.Hash    `json:"blockHash"        gencodec:"required"`
-	DposAckCountList []uint8        `json:"dposAckCountList" gencodec:"required"`
-	DposAcksHash     common.Hash    `json:"dposAcksHash"     gencodec:"required"`
-	PowAnswers       []PowAnswer    `json:"powAnswers"       gencodec:"required"`
-	ParentHash       common.Hash    `json:"parentHash"       gencodec:"required"`
-	UncleHash        common.Hash    `json:"sha3Uncles"       gencodec:"required"`
-	Coinbase         common.Address `json:"miner"            gencodec:"required"`
-	Root             common.Hash    `json:"stateRoot"        gencodec:"required"`
-	TxHash           common.Hash    `json:"transactionsRoot" gencodec:"required"`
-	ReceiptHash      common.Hash    `json:"receiptsRoot"     gencodec:"required"`
-	Bloom            Bloom          `json:"logsBloom"        gencodec:"required"`
-	Difficulty       *big.Int       `json:"difficulty"       gencodec:"required"`
-	Number           *big.Int       `json:"number"           gencodec:"required"`
-	GasLimit         uint64         `json:"gasLimit"         gencodec:"required"`
-	GasUsed          uint64         `json:"gasUsed"          gencodec:"required"`
-	Time             uint64         `json:"timestamp"        gencodec:"required"`
-	Extra            []byte         `json:"extraData"        gencodec:"required"`
-	MixDigest        common.Hash    `json:"mixHash"`
-	Nonce            BlockNonce     `json:"nonce"`
+	DposSigAddr      common.Address  `json:"dposMiner"        gencodec:"required"`
+	DposSig          []byte          `json:"dposSig"          gencodec:"required"`
+	BlockHash        common.Hash     `json:"blockHash"        gencodec:"required"`
+	DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
+	DposAcksHash     common.Hash     `json:"dposAcksHash"     gencodec:"required"`
+	PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
+	ParentHash       common.Hash     `json:"parentHash"       gencodec:"required"`
+	UncleHash        common.Hash     `json:"sha3Uncles"       gencodec:"required"`
+	Coinbase         common.Address  `json:"miner"            gencodec:"required"`
+	Root             common.Hash     `json:"stateRoot"        gencodec:"required"`
+	TxHash           common.Hash     `json:"transactionsRoot" gencodec:"required"`
+	ReceiptHash      common.Hash     `json:"receiptsRoot"     gencodec:"required"`
+	Bloom            Bloom           `json:"logsBloom"        gencodec:"required"`
+	Difficulty       *big.Int        `json:"difficulty"       gencodec:"required"`
+	Number           *big.Int        `json:"number"           gencodec:"required"`
+	GasLimit         uint64          `json:"gasLimit"         gencodec:"required"`
+	GasUsed          uint64          `json:"gasUsed"          gencodec:"required"`
+	Time             uint64          `json:"timestamp"        gencodec:"required"`
+	Extra            []byte          `json:"extraData"        gencodec:"required"`
+	MixDigest        common.Hash     `json:"mixHash"`
+	Nonce            BlockNonce      `json:"nonce"`
 
 	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
 	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
@@ -189,15 +196,20 @@ func (h *Header) EmptyReceipts() bool {
 // Body is a simple (mutable, non-safe) data container for storing and moving
 // a block's data contents (transactions and uncles) together.
 type Body struct {
-	Transactions []*Transaction
-	Uncles       []*Header
+	Transactions    []*Transaction
+	//todo:remove
+	Uncles          []*Header
+	PowAnswerUncles []*PowAnswer
+	DposAcks        []*DposAck
 }
 
 // Block represents an entire block in the Ethereum blockchain.
 type Block struct {
-	header       *Header
-	uncles       []*Header
-	transactions Transactions
+	header          *Header
+	uncles          []*Header
+	transactions    Transactions
+	PowAnswerUncles []*PowAnswer
+	DposAcks        []*DposAck
 
 	// caches
 	hash atomic.Value
@@ -255,6 +267,47 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 			b.uncles[i] = CopyHeader(uncles[i])
 		}
 	}
+
+	return b
+}
+
+func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnswer,  dposAcks []*DposAck, receipts []*Receipt, hasher TrieHasher) *Block {
+	b := &Block{header: CopyHeader(header), td: new(big.Int)}
+
+	// TODO: panic if len(txs) != len(receipts)
+	if len(txs) == 0 {
+		b.header.TxHash = EmptyRootHash
+	} else {
+		b.header.TxHash = DeriveSha(Transactions(txs), hasher)
+		b.transactions = make(Transactions, len(txs))
+		copy(b.transactions, txs)
+	}
+
+	if len(receipts) == 0 {
+		b.header.ReceiptHash = EmptyRootHash
+	} else {
+		b.header.ReceiptHash = DeriveSha(Receipts(receipts), hasher)
+		b.header.Bloom = CreateBloom(receipts)
+	}
+
+	if len(powAnswerUncles) == 0 {
+		b.header.UncleHash = EmptyUncleHash
+	} else {
+		b.header.UncleHash = CalcPowAnswerUncleHash(powAnswerUncles)
+		b.PowAnswerUncles = make([]*PowAnswer, len(powAnswerUncles))
+		copy(b.PowAnswerUncles, powAnswerUncles)
+	}
+
+	if len(dposAcks) == 0 {
+		b.header.DposAcksHash = EmptyDposAckHash
+	} else {
+		b.header.DposAcksHash = CalcDposAckHash(dposAcks)
+		b.DposAcks = make([]*DposAck, len(dposAcks))
+		copy(b.DposAcks, dposAcks)
+	}
+
+	//TODO：remove
+	//b.uncles = nil;
 
 	return b
 }
@@ -339,6 +392,11 @@ func (b *Block) ReceiptHash() common.Hash { return b.header.ReceiptHash }
 func (b *Block) UncleHash() common.Hash   { return b.header.UncleHash }
 func (b *Block) Extra() []byte            { return common.CopyBytes(b.header.Extra) }
 
+func (b *Block) SetDposSig(dposSig []byte) bool {
+	b.header.DposSig = append(b.header.DposSig, dposSig...)
+	return true
+}
+
 func (b *Block) BaseFee() *big.Int {
 	if b.header.BaseFee == nil {
 		return nil
@@ -349,7 +407,7 @@ func (b *Block) BaseFee() *big.Int {
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
 
 // Body returns the non-header content of the block.
-func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles} }
+func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles,nil,nil} }
 
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.
@@ -383,9 +441,33 @@ func CalcUncleHash(uncles []*Header) common.Hash {
 	return rlpHash(uncles)
 }
 
+func CalcPowAnswerUncleHash(powAnswerUncles []*PowAnswer) common.Hash {
+	if len(powAnswerUncles) == 0 {
+		return EmptyPowAnswerUncleHash
+	}
+	return rlpHash(powAnswerUncles)
+}
+
+func CalcDposAckHash(dposAcks []*DposAck) common.Hash {
+	if len(dposAcks) == 0 {
+		return EmptyDposAckHash
+	}
+	return rlpHash(dposAcks)
+}
+
 // WithSeal returns a new block with the data from b but the header replaced with
 // the sealed one.
 func (b *Block) WithSeal(header *Header) *Block {
+	cpy := *header
+
+	return &Block{
+		header:       &cpy,
+		transactions: b.transactions,
+		uncles:       b.uncles,
+	}
+}
+
+func (b *Block) DposWithSeal(header *Header) *Block {
 	cpy := *header
 
 	return &Block{

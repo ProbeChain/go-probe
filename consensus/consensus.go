@@ -29,7 +29,9 @@ import (
 
 const (
 	// DposWitnessNumber is the total number of dpos witness nodes.
-	DposWitnessNumber = 64
+	//@todo just for oneNode test
+	DposWitnessNumber = 1
+	//DposWitnessNumber = 64
 	// number of witness to product stabilizing block
 	MostDposWitness = DposWitnessNumber*2/3 + 1
 	// the least number of witness to product block
@@ -110,7 +112,7 @@ type Engine interface {
 	// Note: The block header and state database might be updated to reflect any
 	// consensus rules that happen at finalization (e.g. block rewards).
 	FinalizeAndAssemble(chain ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
-		uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error)
+		uncles []*types.PowAnswer, receipts []*types.Receipt) (*types.Block, error)
 
 	// Seal generates a new sealing request for the given input block and pushes
 	// the result into the given channel.
@@ -118,6 +120,7 @@ type Engine interface {
 	// Note, the method returns immediately and will send the result async. More
 	// than one result may also be returned depending on the consensus algorithm.
 	Seal(chain ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error
+	PowSeal(chain ChainHeaderReader, block *types.Block, results chan<- *types.PowAnswer, stop <-chan struct{}, coinbase common.Address) error
 
 	// SealHash returns the hash of a block prior to it being sealed.
 	SealHash(header *types.Header) common.Hash

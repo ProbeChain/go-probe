@@ -249,7 +249,7 @@ var (
 	}
 	ConsensusFlag = cli.StringFlag{
 		Name:  "consensus",
-		Usage: "Choose the consensus is pow or dpos",
+		Usage: "Choose the miner type is pow or dpos",
 		Value: ethconfig.Defaults.Consensus,
 	}
 	// Light server and client settings

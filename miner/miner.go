@@ -60,20 +60,22 @@ type Miner struct {
 	coinbase common.Address
 	eth      Backend
 	engine   consensus.Engine
+	powEngine consensus.Engine
 	exitCh   chan struct{}
 	startCh  chan common.Address
 	stopCh   chan struct{}
 }
 
-func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, isLocalBlock func(block *types.Block) bool) *Miner {
+func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, powEngine consensus.Engine, isLocalBlock func(block *types.Block) bool) *Miner {
 	miner := &Miner{
-		eth:     eth,
-		mux:     mux,
-		engine:  engine,
-		exitCh:  make(chan struct{}),
-		startCh: make(chan common.Address),
-		stopCh:  make(chan struct{}),
-		worker:  newWorker(config, chainConfig, engine, eth, mux, isLocalBlock, true),
+		eth:       eth,
+		mux:       mux,
+		engine:    engine,
+		powEngine: powEngine,
+		exitCh:    make(chan struct{}),
+		startCh:   make(chan common.Address),
+		stopCh:    make(chan struct{}),
+		worker:    newWorker(config, chainConfig, engine, powEngine, eth, mux, isLocalBlock, true),
 	}
 	go miner.update()
 

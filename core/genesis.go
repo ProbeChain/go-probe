@@ -204,9 +204,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 	}
 	// Get the existing chain configuration.
 	newcfg := genesis.configOrDefault(stored)
-	if overrideLondon != nil {
-		newcfg.LondonBlock = overrideLondon
-	}
+
 	if err := newcfg.CheckConfigForkOrder(); err != nil {
 		return newcfg, common.Hash{}, err
 	}
@@ -275,19 +273,37 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	}
 	root := statedb.IntermediateRoot(false)
 	head := &types.Header{
-		Number:     new(big.Int).SetUint64(g.Number),
-		Nonce:      types.EncodeNonce(g.Nonce),
-		Time:       g.Timestamp,
-		ParentHash: g.ParentHash,
-		Extra:      g.ExtraData,
-		GasLimit:   g.GasLimit,
-		GasUsed:    g.GasUsed,
-		BaseFee:    g.BaseFee,
-		Difficulty: g.Difficulty,
-		MixDigest:  g.Mixhash,
-		Coinbase:   g.Coinbase,
-		Root:       root,
+		Number:           new(big.Int).SetUint64(g.Number),
+		Nonce:            types.EncodeNonce(g.Nonce),
+		Time:             g.Timestamp,
+		ParentHash:       g.ParentHash,
+		Extra:            g.ExtraData,
+		GasLimit:         g.GasLimit,
+		GasUsed:          g.GasUsed,
+		BaseFee:          g.BaseFee,
+		Difficulty:       g.Difficulty,
+		MixDigest:        g.Mixhash,
+		Coinbase:         g.Coinbase,
+		Root:             root,
+		DposSigAddr:      common.Address{},
+		DposAcksHash:     common.Hash{},
+		DposSig:          make([]byte, 65),
+		DposAckCountList: make([]*types.DposAckCount, 0),
+		PowAnswers:       make([]*types.PowAnswer, 0),
+		BlockHash:        common.Hash{},
 	}
+
+	fmt.Printf("genesis block header:%+v\n", head)
+
+	tmp := head
+	bs, err1 := json.Marshal(tmp)
+	if err1!= nil{
+		log.Info("json encode failed")
+	}
+	var out bytes.Buffer
+	json.Indent(&out, bs, "", "\t")
+	log.Info("genesis block header:",out.String(),nil)
+
 	if g.GasLimit == 0 {
 		head.GasLimit = params.GenesisGasLimit
 	}
@@ -304,7 +320,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true, nil)
 
-	return types.NewBlock(head, nil, nil, nil, trie.NewStackTrie(nil))
+	return types.DposNewBlock(head, nil, nil, nil, nil, trie.NewStackTrie(nil))
 }
 
 // Commit writes the block and state of a genesis specification to the database.
@@ -357,8 +373,10 @@ func DefaultGenesisBlock() *Genesis {
 		Config:     params.MainnetChainConfig,
 		Nonce:      66,
 		ExtraData:  hexutil.MustDecode("0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa"),
-		GasLimit:   5000,
-		Difficulty: big.NewInt(17179869184),
+		GasLimit:   99999999999999,
+		//GasLimit:   5000,
+		Difficulty: big.NewInt(1),
+		//Difficulty: big.NewInt(17179869184),
 		Alloc:      decodePrealloc(mainnetAllocData),
 	}
 }

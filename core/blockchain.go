@@ -2794,7 +2794,7 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 	uncles := 5
 	ans := make([]*types.PowAnswer, 0, uncles*2)
-	for uncles >= 0 {
+	for uncles >= 1 {
 		ans = append(ans, bc.powAnswers.List(big.NewInt(0).Sub(number, big.NewInt(int64(uncles))))...)
 		uncles -= 1
 	}
