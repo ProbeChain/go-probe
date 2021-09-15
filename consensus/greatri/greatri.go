@@ -365,7 +365,6 @@ func (c *Greatri) verifyCascadingFields(chain consensus.ChainHeaderReader, heade
 	return c.verifySeal(chain, header, parents)
 }
 
-////找出给出时间点的出块者？？
 //// snapshot retrieves the authorization snapshot at a given point in time.
 func (c *Greatri) snapshot(chain consensus.ChainHeaderReader, number uint64, hash common.Hash, parents []*types.Header) (*Snapshot, error) {
 	//	// Search for a snapshot in memory or on disk for checkpoints
@@ -501,14 +500,12 @@ func (c *Greatri) verifySeal(chain consensus.ChainHeaderReader, header *types.He
 	return nil
 }
 
-//填写所有共识相关的头部字段，以便后续交易的操作。
 // Prepare implements consensus.Engine, preparing all the consensus fields of the
 // header for running the transactions on top.
 func (c *Greatri) Prepare(chain consensus.ChainHeaderReader, header *types.Header) error {
 	return nil
 }
 
-//组装部分头部字段：状态树root
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given.
 func (c *Greatri) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
@@ -537,7 +534,6 @@ func (c *Greatri) Authorize(signer common.Address, signFn SignerFn) {
 	c.signFn = signFn
 }
 
-//直接签名，然后返回即可；
 func (c *Greatri) Seal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.Block, stop <-chan struct{}) error {
 	header := block.Header()
 	number := header.Number.Uint64()
