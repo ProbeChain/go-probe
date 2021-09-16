@@ -136,7 +136,7 @@ func TestDeriveFields(t *testing.T) {
 			t.Errorf("receipts[%d].ContractAddress = %s, want %s", i, receipts[i].ContractAddress.String(), (common.Address{}).String())
 		}
 		from, _ := Sender(signer, txs[i])
-		contractAddress,_ := probe.CreateAddressForAccountType(from, txs[i].Nonce(),common.ACC_TYPE_OF_CONTRACT)
+		contractAddress, _ := probe.CreateAddressForAccountType(from, txs[i].Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		if txs[i].To() == nil && receipts[i].ContractAddress != contractAddress {
 			t.Errorf("receipts[%d].ContractAddress = %s, want %s", i, receipts[i].ContractAddress.String(), contractAddress.String())
 		}

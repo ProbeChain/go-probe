@@ -125,7 +125,7 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	receipt.BizType = msg.BizType()
 	// If the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil && msg.BizType() == common.ContractCall {
-		receipt.ContractAddress, _ = probe.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT, blockNumber)
+		receipt.ContractAddress, _ = probe.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		fmt.Printf("contractAddress: %s\n", receipt.ContractAddress.String())
 	}
 

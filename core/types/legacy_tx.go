@@ -17,6 +17,7 @@
 package types
 
 import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -24,31 +25,31 @@ import (
 
 // LegacyTx is the transaction data of regular Ethereum transactions.
 type LegacyTx struct {
-	Nonce       uint64          // nonce of sender account
-	GasPrice    *big.Int        // wei per gas
-	Gas         uint64          // gas limit
-	To          *common.Address `rlp:"nil"` // nil means contract creation
-	Value       *big.Int        // wei amount
-	BizType     uint8
-	Data        []byte // contract invocation input data
-	K           byte
-	V, R, S     *big.Int // signature values
+	Nonce    uint64          // nonce of sender account
+	GasPrice *big.Int        // wei per gas
+	Gas      uint64          // gas limit
+	To       *common.Address `rlp:"nil"` // nil means contract creation
+	Value    *big.Int        // wei amount
+	BizType  uint8
+	Data     []byte // contract invocation input data
+	K        byte
+	V, R, S  *big.Int // signature values
 
-	From			 	*common.Address `rlp:"nil"`
-	Owner			 	*common.Address `rlp:"nil"`
-	Beneficiary			*common.Address `rlp:"nil"`
-	Vote			 	*common.Address `rlp:"nil"`
-	Loss			 	*common.Address `rlp:"nil"`
-	Asset			 	*common.Address `rlp:"nil"`
-	Old			 		*common.Address `rlp:"nil"`
-	New					*common.Address `rlp:"nil"`
-	Initiator			*common.Address `rlp:"nil"`
-	Receiver			*common.Address	`rlp:"nil"`
-	Value2     			*big.Int
-	Mark       			[]byte
-	InfoDigest      	[]byte
-	Height	   			uint64
-	AccType     		uint8
+	From        *common.Address `rlp:"nil"`
+	Owner       *common.Address `rlp:"nil"`
+	Beneficiary *common.Address `rlp:"nil"`
+	Vote        *common.Address `rlp:"nil"`
+	Loss        *common.Address `rlp:"nil"`
+	Asset       *common.Address `rlp:"nil"`
+	Old         *common.Address `rlp:"nil"`
+	New         *common.Address `rlp:"nil"`
+	Initiator   *common.Address `rlp:"nil"`
+	Receiver    *common.Address `rlp:"nil"`
+	Value2      *big.Int
+	Mark        []byte
+	InfoDigest  []byte
+	Height      uint64
+	AccType     *hexutil.Uint8
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -79,21 +80,21 @@ func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPric
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *LegacyTx) copy() TxData {
 	cpy := &LegacyTx{
-		Nonce: 		tx.Nonce,
-		From:       tx.From,
-		To:    		tx.To,
-		New:   		tx.New,
-		Data:  		common.CopyBytes(tx.Data),
-		BizType: 	tx.BizType,
-		Gas:   		tx.Gas,
+		Nonce:   tx.Nonce,
+		From:    tx.From,
+		To:      tx.To,
+		New:     tx.New,
+		Data:    common.CopyBytes(tx.Data),
+		BizType: tx.BizType,
+		Gas:     tx.Gas,
 		// These are initialized below.
-		Value:    	new(big.Int),
-		GasPrice: 	new(big.Int),
-		V:        	new(big.Int),
-		R:        	new(big.Int),
-		S:        	new(big.Int),
-		K:        	tx.K,
-		AccType: 	tx.AccType,
+		Value:    new(big.Int),
+		GasPrice: new(big.Int),
+		V:        new(big.Int),
+		R:        new(big.Int),
+		S:        new(big.Int),
+		K:        tx.K,
+		AccType:  tx.AccType,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -125,26 +126,26 @@ func (tx *LegacyTx) gasFeeCap() *big.Int    { return tx.GasPrice }
 func (tx *LegacyTx) value() *big.Int        { return tx.Value }
 func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
-func (tx *LegacyTx) bizType() uint8     { return tx.BizType }
+func (tx *LegacyTx) bizType() uint8         { return tx.BizType }
 
-func (tx *LegacyTx) from()			 	 *common.Address {return tx.From}
-func (tx *LegacyTx) owner()			 	 *common.Address {return tx.Owner}
-func (tx *LegacyTx) beneficiary()		 *common.Address {return tx.Beneficiary}
-func (tx *LegacyTx) vote()			 	 *common.Address {return tx.Vote}
-func (tx *LegacyTx) loss()			 	 *common.Address {return tx.Loss}
-func (tx *LegacyTx) asset()			 	 *common.Address {return tx.Asset}
-func (tx *LegacyTx) old()				 *common.Address {return tx.Old}
-func (tx *LegacyTx) new()		 		 *common.Address {return tx.New}
-func (tx *LegacyTx) initiator()			 *common.Address {return tx.Initiator}
-func (tx *LegacyTx) receiver()			 *common.Address {return tx.Receiver}
-func (tx *LegacyTx) value2() 			 *big.Int {return tx.Value2}
-func (tx *LegacyTx) height()			 uint64 {return tx.Height}
-func (tx *LegacyTx) mark()				 []byte {return tx.Mark}
-func (tx *LegacyTx) infoDigest()		 []byte {return tx.InfoDigest}
-func (tx *LegacyTx) accType() uint8      { return tx.AccType }
+func (tx *LegacyTx) from() *common.Address        { return tx.From }
+func (tx *LegacyTx) owner() *common.Address       { return tx.Owner }
+func (tx *LegacyTx) beneficiary() *common.Address { return tx.Beneficiary }
+func (tx *LegacyTx) vote() *common.Address        { return tx.Vote }
+func (tx *LegacyTx) loss() *common.Address        { return tx.Loss }
+func (tx *LegacyTx) asset() *common.Address       { return tx.Asset }
+func (tx *LegacyTx) old() *common.Address         { return tx.Old }
+func (tx *LegacyTx) new() *common.Address         { return tx.New }
+func (tx *LegacyTx) initiator() *common.Address   { return tx.Initiator }
+func (tx *LegacyTx) receiver() *common.Address    { return tx.Receiver }
+func (tx *LegacyTx) value2() *big.Int             { return tx.Value2 }
+func (tx *LegacyTx) height() uint64               { return tx.Height }
+func (tx *LegacyTx) mark() []byte                 { return tx.Mark }
+func (tx *LegacyTx) infoDigest() []byte           { return tx.InfoDigest }
+func (tx *LegacyTx) accType() *hexutil.Uint8      { return tx.AccType }
 
 func (tx *LegacyTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
-		return tx.K, tx.V, tx.R, tx.S
+	return tx.K, tx.V, tx.R, tx.S
 }
 
 func (tx *LegacyTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {

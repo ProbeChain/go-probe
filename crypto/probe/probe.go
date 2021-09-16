@@ -341,12 +341,12 @@ func ToECDSAUnsafe(d []byte) *PrivateKey {
 	return priv
 }
 
-func CreateAddressForAccountType(address common.Address, nonce uint64, K byte, Height *big.Int) (add common.Address, err error) {
+func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (add common.Address, err error) {
 	k1, err := common.ValidAddress(address)
 	if k1 != 0x00 || err != nil {
 		return address, errors.New("unsupported account type for createAddress")
 	}
-	data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce, *Height})
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
 	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 

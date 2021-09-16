@@ -21,8 +21,22 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	if args.AccType == nil {
 		return errors.New(`account type must be specified`)
 	}
-	if !common.CheckAccType(uint8(*args.AccType)) {
+	accountType := uint8(*args.AccType)
+	if !common.CheckAccType(accountType) {
 		return accounts.ErrWrongAccountType
+	}
+	if args.New != nil {
+		newAccType, err := common.ValidAddress(*args.New)
+		if err != nil {
+			return err
+		}
+		if accountType == common.ACC_TYPE_OF_GENERAL && newAccType != common.ACC_TYPE_OF_GENERAL {
+			return accounts.ErrWrongAccountFormat
+		}
+	} else {
+		if accountType == common.ACC_TYPE_OF_GENERAL {
+			return errors.New(`regular account must be specified`)
+		}
 	}
 	fromAccType, err := common.ValidAddress(*args.From)
 	if err != nil {
@@ -38,17 +52,18 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	accountType := uint8(*args.AccType)
-	var newAccount common.Address
-	if accountType == common.ACC_TYPE_OF_PNS {
-		newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accountType)
-	} else {
-		newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accountType, new(big.Int).SetUint64(uint64(*args.Nonce)))
+	if args.New == nil {
+		var newAccount common.Address
+		if accountType == common.ACC_TYPE_OF_PNS {
+			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accountType)
+		} else {
+			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accountType)
+		}
+		if err != nil {
+			return err
+		}
+		args.New = &newAccount
 	}
-	if err != nil {
-		return err
-	}
-	args.New = &newAccount
 	if *args.From == *args.New {
 		return errors.New("must not equals initiator")
 	}
@@ -276,7 +291,7 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 		if uint8(*args.AccType) == common.ACC_TYPE_OF_PNS {
 			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, uint8(*args.AccType))
 		} else {
-			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), uint8(*args.AccType), new(big.Int).SetUint64(uint64(*args.Height)))
+			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), uint8(*args.AccType))
 		}
 		if err != nil {
 			return err

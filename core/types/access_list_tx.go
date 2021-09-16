@@ -17,6 +17,7 @@
 package types
 
 import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -44,44 +45,44 @@ func (al AccessList) StorageKeys() int {
 
 // AccessListTx is the data of EIP-2930 access list transactions.
 type AccessListTx struct {
-	ChainID     *big.Int        // destination chain ID
-	Nonce       uint64          // nonce of sender account
-	GasPrice    *big.Int        // wei per gas
-	Gas         uint64          // gas limit
-	To          *common.Address `rlp:"nil"` // nil means contract creation
-	BizType 	uint8
-	Value       *big.Int   // wei amount
-	Data        []byte     // contract invocation input data
-	AccessList  AccessList // EIP-2930 access list
-	K           byte
-	V, R, S     *big.Int // signature values
+	ChainID    *big.Int        // destination chain ID
+	Nonce      uint64          // nonce of sender account
+	GasPrice   *big.Int        // wei per gas
+	Gas        uint64          // gas limit
+	To         *common.Address `rlp:"nil"` // nil means contract creation
+	BizType    uint8
+	Value      *big.Int   // wei amount
+	Data       []byte     // contract invocation input data
+	AccessList AccessList // EIP-2930 access list
+	K          byte
+	V, R, S    *big.Int // signature values
 
-	From			 	*common.Address `rlp:"nil"`
-	Owner			 	*common.Address `rlp:"nil"`
-	Beneficiary			*common.Address `rlp:"nil"`
-	Vote			 	*common.Address `rlp:"nil"`
-	Loss			 	*common.Address `rlp:"nil"`
-	Asset			 	*common.Address `rlp:"nil"`
-	Old			 		*common.Address `rlp:"nil"`
-	New					*common.Address `rlp:"nil"`
-	Initiator			*common.Address `rlp:"nil"`
-	Receiver			*common.Address	`rlp:"nil"`
-	Value2     			*big.Int
-	Mark       			[]byte
-	InfoDigest      	[]byte
-	Height	   			uint64
-	AccType 			uint8
+	From        *common.Address `rlp:"nil"`
+	Owner       *common.Address `rlp:"nil"`
+	Beneficiary *common.Address `rlp:"nil"`
+	Vote        *common.Address `rlp:"nil"`
+	Loss        *common.Address `rlp:"nil"`
+	Asset       *common.Address `rlp:"nil"`
+	Old         *common.Address `rlp:"nil"`
+	New         *common.Address `rlp:"nil"`
+	Initiator   *common.Address `rlp:"nil"`
+	Receiver    *common.Address `rlp:"nil"`
+	Value2      *big.Int
+	Mark        []byte
+	InfoDigest  []byte
+	Height      uint64
+	AccType     *hexutil.Uint8
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *AccessListTx) copy() TxData {
 	cpy := &AccessListTx{
-		Nonce: 		tx.Nonce,
-		To:    		tx.To,
-		New:   		tx.New,
-		Data:  		common.CopyBytes(tx.Data),
-		BizType: 	tx.BizType,
-		Gas:   		tx.Gas,
+		Nonce:   tx.Nonce,
+		To:      tx.To,
+		New:     tx.New,
+		Data:    common.CopyBytes(tx.Data),
+		BizType: tx.BizType,
+		Gas:     tx.Gas,
 		// These are copied below.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
@@ -91,7 +92,7 @@ func (tx *AccessListTx) copy() TxData {
 		R:          new(big.Int),
 		S:          new(big.Int),
 		K:          tx.K,
-		AccType: 	tx.AccType,
+		AccType:    tx.AccType,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -128,23 +129,23 @@ func (tx *AccessListTx) gasFeeCap() *big.Int    { return tx.GasPrice }
 func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
-func (tx *AccessListTx) bizType() uint8     { return tx.BizType }
+func (tx *AccessListTx) bizType() uint8         { return tx.BizType }
 
-func (tx *AccessListTx) from()			 	 *common.Address {return tx.From}
-func (tx *AccessListTx) owner()			 	 *common.Address {return tx.Owner}
-func (tx *AccessListTx) beneficiary()		 *common.Address {return tx.Beneficiary}
-func (tx *AccessListTx) vote()			 	 *common.Address {return tx.Vote}
-func (tx *AccessListTx) loss()			 	 *common.Address {return tx.Loss}
-func (tx *AccessListTx) asset()			 	 *common.Address {return tx.Asset}
-func (tx *AccessListTx) old()		 		 *common.Address {return tx.Old}
-func (tx *AccessListTx) new()		 		 *common.Address {return tx.New}
-func (tx *AccessListTx) initiator()			 *common.Address {return tx.Initiator}
-func (tx *AccessListTx) receiver()			 *common.Address {return tx.Receiver}
-func (tx *AccessListTx) value2() 			 *big.Int {return tx.Value2}
-func (tx *AccessListTx) height()			 uint64 {return tx.Height}
-func (tx *AccessListTx) mark()				 []byte {return tx.Mark}
-func (tx *AccessListTx) infoDigest()		 []byte {return tx.InfoDigest}
-func (tx *AccessListTx) accType() uint8     { return tx.AccType }
+func (tx *AccessListTx) from() *common.Address        { return tx.From }
+func (tx *AccessListTx) owner() *common.Address       { return tx.Owner }
+func (tx *AccessListTx) beneficiary() *common.Address { return tx.Beneficiary }
+func (tx *AccessListTx) vote() *common.Address        { return tx.Vote }
+func (tx *AccessListTx) loss() *common.Address        { return tx.Loss }
+func (tx *AccessListTx) asset() *common.Address       { return tx.Asset }
+func (tx *AccessListTx) old() *common.Address         { return tx.Old }
+func (tx *AccessListTx) new() *common.Address         { return tx.New }
+func (tx *AccessListTx) initiator() *common.Address   { return tx.Initiator }
+func (tx *AccessListTx) receiver() *common.Address    { return tx.Receiver }
+func (tx *AccessListTx) value2() *big.Int             { return tx.Value2 }
+func (tx *AccessListTx) height() uint64               { return tx.Height }
+func (tx *AccessListTx) mark() []byte                 { return tx.Mark }
+func (tx *AccessListTx) infoDigest() []byte           { return tx.InfoDigest }
+func (tx *AccessListTx) accType() *hexutil.Uint8      { return tx.AccType }
 
 func (tx *AccessListTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S

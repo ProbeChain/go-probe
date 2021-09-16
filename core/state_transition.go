@@ -18,6 +18,7 @@ package core
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math"
 	"math/big"
 
@@ -61,35 +62,35 @@ type StateTransition struct {
 
 // Message represents a message sent to a contract.
 type Message interface {
-	From() 					common.Address
-	To() 					*common.Address
+	From() common.Address
+	To() *common.Address
 
-	GasPrice() 				*big.Int
-	GasFeeCap() 			*big.Int
-	GasTipCap() 			*big.Int
-	Gas() 					uint64
-	Value() 				*big.Int
+	GasPrice() *big.Int
+	GasFeeCap() *big.Int
+	GasTipCap() *big.Int
+	Gas() uint64
+	Value() *big.Int
 
-	Nonce() 				uint64
-	CheckNonce() 			bool
-	Data() 					[]byte
-	AccessList() 			types.AccessList
+	Nonce() uint64
+	CheckNonce() bool
+	Data() []byte
+	AccessList() types.AccessList
 
-	BizType() 				uint8
-	AccType() 				uint8
-	Owner()					*common.Address
-	Beneficiary()		 	*common.Address
-	Vote()			 	 	*common.Address
-	Loss()			 	 	*common.Address
-	Asset()			 		*common.Address
-	Old()		 		 	*common.Address
-	New()		 		 	*common.Address
-	Initiator()		 		*common.Address
-	Receiver()			 	*common.Address
-	Value2() 			 	*big.Int
-	Height()			 	uint64
-	Mark()				 	[]byte
-	InfoDigest()		 	[]byte
+	BizType() uint8
+	AccType() *hexutil.Uint8
+	Owner() *common.Address
+	Beneficiary() *common.Address
+	Vote() *common.Address
+	Loss() *common.Address
+	Asset() *common.Address
+	Old() *common.Address
+	New() *common.Address
+	Initiator() *common.Address
+	Receiver() *common.Address
+	Value2() *big.Int
+	Height() uint64
+	Mark() []byte
+	InfoDigest() []byte
 }
 
 // ExecutionResult includes all output after executing given evm
@@ -295,16 +296,16 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	var ret []byte
 	switch msg.BizType() {
 	case common.Register:
-		ret,err = st.TransitionDbOfRegister()
+		ret, err = st.TransitionDbOfRegister()
 	case common.Cancellation:
-		ret,err = st.TransitionDbOfCancellation()
+		ret, err = st.TransitionDbOfCancellation()
 	case common.RevokeCancellation:
-		ret,err = st.TransitionDbOfRevokeCancellation()
+		ret, err = st.TransitionDbOfRevokeCancellation()
 	case common.Transfer:
-		ret,err = st.TransitionDbOfTransfer()
+		ret, err = st.TransitionDbOfTransfer()
 	case common.ContractCall:
-		ret,err = st.TransitionDbOfContractCall()
-	//... todo 还有未实现的
+		ret, err = st.TransitionDbOfContractCall()
+		//... todo 还有未实现的
 	}
 
 	if !st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {

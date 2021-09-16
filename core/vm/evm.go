@@ -18,6 +18,8 @@ package vm
 
 import (
 	"errors"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math/big"
 	"sync/atomic"
@@ -134,7 +136,7 @@ type TxContext struct {
 	Data       []byte
 	Mark       []byte
 	InfoDigest []byte
-	AccType    uint8
+	AccType    *hexutil.Uint8
 }
 
 // EVM is the Ethereum Virtual Machine base object and provides
@@ -252,10 +254,10 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		return nil, gas, ErrInsufficientBalance
 	}
 	snapshot := evm.StateDB.Snapshot()
-	var p PrecompiledContract
-	var isPrecompile bool
-	if to != (common.Address{}) {
+	/*	var p PrecompiledContract
+		var isPrecompile bool
 		p, isPrecompile = evm.precompile(to)
+		fmt.Printf("Call isPrecompile:%t\n", isPrecompile)
 		if !evm.StateDB.Exist(to) {
 			if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
 				// Calling a non existing account, don't do anything, but ping the tracer
@@ -266,8 +268,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 				return nil, gas, nil
 			}
 			evm.StateDB.CreateAccount(to)
-		}
-	}
+		}*/
 
 	switch evm.TxContext.BizType {
 	case common.Register:
@@ -291,26 +292,29 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		}(gas, time.Now())
 	}
 
-	if isPrecompile {
-		ret, gas, err = RunPrecompiledContract(p, input, gas)
-	} else {
-		if evm.TxContext.BizType == common.ContractCall {
-			// Initialise a new contract and set the code that is to be used by the EVM.
-			// The contract is a scoped environment for this execution context only.
-			code := evm.StateDB.GetCode(to)
-			if len(code) == 0 {
-				ret, err = nil, nil // gas is unchanged
-			} else {
-				addrCopy := to
-				// If the account has no code, we can abort here
-				// The depth-check is already done, and precompiles handled above
-				contract := NewContract(caller, AccountRef(addrCopy), value, gas)
-				contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
-				ret, err = run(evm, contract, input, false)
-				gas = contract.Gas
+	//if isPrecompile {
+	//	ret, gas, err = RunPrecompiledContract(p, input, gas)
+	//} else {
+	if evm.TxContext.BizType == common.ContractCall {
+		// Initialise a new contract and set the code that is to be used by the EVM.
+		// The contract is a scoped environment for this execution context only.
+		code := evm.StateDB.GetCode(to)
+		if len(code) == 0 {
+			ret, err = nil, nil // gas is unchanged
+		} else {
+			addrCopy := to
+			// If the account has no code, we can abort here
+			// The depth-check is already done, and precompiles handled above
+			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
+			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
+			ret, err = run(evm, contract, input, false)
+			if err != nil {
+				fmt.Printf("call contract err:%s\n", err)
 			}
+			gas = contract.Gas
 		}
 	}
+	//}
 	// When an error was returned by the EVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in homestead this also counts for code storage gas errors.
@@ -360,6 +364,9 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 		contract := NewContract(caller, AccountRef(caller.Address()), value, gas)
 		contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), evm.StateDB.GetCode(addrCopy))
 		ret, err = run(evm, contract, input, false)
+		if err != nil {
+			fmt.Printf("CallCode %s\n", err)
+		}
 		gas = contract.Gas
 	}
 	if err != nil {
@@ -395,6 +402,9 @@ func (evm *EVM) DelegateCall(caller ContractRef, addr common.Address, input []by
 		contract := NewContract(caller, AccountRef(caller.Address()), nil, gas).AsDelegate()
 		contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), evm.StateDB.GetCode(addrCopy))
 		ret, err = run(evm, contract, input, false)
+		if err != nil {
+			fmt.Printf("DelegateCall %s\n", err)
+		}
 		gas = contract.Gas
 	}
 	if err != nil {
@@ -446,6 +456,9 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 		// above we revert to the snapshot and consume any gas remaining. Additionally
 		// when we're in Homestead this also counts for code storage gas errors.
 		ret, err = run(evm, contract, input, true)
+		if err != nil {
+			fmt.Printf("StaticCall %s\n", err)
+		}
 		gas = contract.Gas
 	}
 	if err != nil {
@@ -515,6 +528,9 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 
 	ret, err := run(evm, contract, nil, false)
 
+	if err != nil {
+		fmt.Printf("create run: %s\n", err)
+	}
 	// Check whether the max code size has been exceeded, assign err if the case.
 	if err == nil && evm.chainRules.IsEIP158 && len(ret) > params.MaxCodeSize {
 		err = ErrMaxCodeSizeExceeded
@@ -531,6 +547,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	// by the error checking condition below.
 	if err == nil {
 		createDataGas := uint64(len(ret)) * params.CreateDataGas
+		fmt.Printf("create gas: %d, dataGas:%d\n", contract.Gas, createDataGas)
 		if contract.UseGas(createDataGas) {
 			evm.StateDB.SetCode(address, ret)
 		} else {
@@ -556,7 +573,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	contractAddr, _ = probe.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()), common.ACC_TYPE_OF_CONTRACT, value)
+	contractAddr, _ = probe.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()), common.ACC_TYPE_OF_CONTRACT)
 	return evm.create(caller, &codeAndHash{code: code}, gas, value, contractAddr)
 }
 

@@ -32,18 +32,18 @@ import (
 // TransactionArgs represents the arguments to construct a new transaction
 // or a message call.
 type TransactionArgs struct {
-	From                 *common.Address `json:"from"`
-	To                   *common.Address `json:"to"`
-	Owner			 	 *common.Address `json:"owner"`
-	Beneficiary			 *common.Address `json:"beneficiary"`
-	Vote			 	 *common.Address `json:"vote"`
-	Loss			 	 *common.Address `json:"loss"`
-	Asset			 	 *common.Address `json:"asset"`
-	Old			 		 *common.Address `json:"old"`
-	New					 *common.Address `json:"new"`
-	Initiator			 *common.Address `json:"initiator"`
-	Receiver			 *common.Address `json:"receiver"`
-	BizType          	 *hexutil.Uint8	 `json:"bizType"`
+	From        *common.Address `json:"from"`
+	To          *common.Address `json:"to"`
+	Owner       *common.Address `json:"owner"`
+	Beneficiary *common.Address `json:"beneficiary"`
+	Vote        *common.Address `json:"vote"`
+	Loss        *common.Address `json:"loss"`
+	Asset       *common.Address `json:"asset"`
+	Old         *common.Address `json:"old"`
+	New         *common.Address `json:"new"`
+	Initiator   *common.Address `json:"initiator"`
+	Receiver    *common.Address `json:"receiver"`
+	BizType     *hexutil.Uint8  `json:"bizType"`
 
 	Gas                  *hexutil.Uint64 `json:"gas"`
 	GasPrice             *hexutil.Big    `json:"gasPrice"`
@@ -54,14 +54,14 @@ type TransactionArgs struct {
 	Nonce                *hexutil.Uint64 `json:"nonce"`
 	Height               *hexutil.Uint64 `json:"height"`
 
-	Data  				*hexutil.Bytes	 `json:"data"`
-	Input 				*hexutil.Bytes   `json:"input"`
-	Mark  				*hexutil.Bytes   `json:"mark"`
-	InfoDigest  		*hexutil.Bytes   `json:"infoDigest"`
-	AccType          	*hexutil.Uint8	 `json:"accType"`
+	Data       *hexutil.Bytes `json:"data"`
+	Input      *hexutil.Bytes `json:"input"`
+	Mark       *hexutil.Bytes `json:"mark"`
+	InfoDigest *hexutil.Bytes `json:"infoDigest"`
+	AccType    *hexutil.Uint8 `json:"accType"`
 	// For non-legacy transactions
-	AccessList 			*types.AccessList `json:"accessList,omitempty"`
-	ChainID    			*hexutil.Big      `json:"chainId,omitempty"`
+	AccessList *types.AccessList `json:"accessList,omitempty"`
+	ChainID    *hexutil.Big      `json:"chainId,omitempty"`
 }
 
 // from retrieves the transaction sender address.
@@ -83,7 +83,6 @@ func (args *TransactionArgs) data() []byte {
 	return nil
 }
 
-
 func (args *TransactionArgs) mark() []byte {
 	if args.Mark != nil {
 		return *args.Mark
@@ -98,7 +97,7 @@ func (args *TransactionArgs) infoDigest() []byte {
 	return nil
 }
 
-func (args *TransactionArgs) value2()*big.Int {
+func (args *TransactionArgs) value2() *big.Int {
 	if args.Value2 != nil {
 		return args.Value2.ToInt()
 	}
@@ -155,17 +154,17 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 	var err error
 	switch uint8(*args.BizType) {
 	case common.Register:
-		err = args.setDefaultsOfRegister(ctx,b)
+		err = args.setDefaultsOfRegister(ctx, b)
 	case common.Cancellation:
-		err = args.setDefaultsOfCancellation(ctx,b)
+		err = args.setDefaultsOfCancellation(ctx, b)
 	case common.RevokeCancellation:
-		err = args.setDefaultsOfRevokeCancellation(ctx,b)
+		err = args.setDefaultsOfRevokeCancellation(ctx, b)
 	case common.Transfer:
-		err = args.setDefaultsOfTransfer(ctx,b)
+		err = args.setDefaultsOfTransfer(ctx, b)
 	case common.ContractCall:
-		err = args.setDefaultsOfContractCall(ctx,b)
+		err = args.setDefaultsOfContractCall(ctx, b)
 	case common.SendLossReport:
-		return args.setDefaultsOfSendLossReport(ctx,b)
+		return args.setDefaultsOfSendLossReport(ctx, b)
 	//... todo 还有未实现的
 	default:
 		err = errors.New("unsupported business type")
@@ -252,11 +251,11 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		0, value, gas,
 		gasPrice, gasFeeCap, gasTipCap,
 		data, accessList, false,
-		args.Owner,args.Beneficiary,
-		args.Vote,args.Loss,args.Asset,
-		args.Old,args.New,args.Initiator,
-		args.Receiver,args.mark(), args.infoDigest(),
-		args.value2(),args.height(),uint8(*args.AccType))
+		args.Owner, args.Beneficiary,
+		args.Vote, args.Loss, args.Asset,
+		args.Old, args.New, args.Initiator,
+		args.Receiver, args.mark(), args.infoDigest(),
+		args.value2(), args.height(), args.AccType)
 	return msg, nil
 }
 
@@ -277,7 +276,8 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 	case common.SendLossReport:
 		return args.transactionOfSendLossReport()
 	//... todo 还有未实现的
-	default: return nil
+	default:
+		return nil
 	}
 }
 

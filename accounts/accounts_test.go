@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/probe"
-	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -84,7 +83,7 @@ func TestCreateAddressForAccountType(t *testing.T) {
 		fmt.Printf("failed GenerateKey with %s.", err2)
 	}
 	fmt.Printf("flag[%T][%X]\n", c, c)
-	address_02, _ := probe.CreateAddressForAccountType(address, uint64(123456), 0x02, new(big.Int).SetUint64(123))
+	address_02, _ := probe.CreateAddressForAccountType(address, uint64(123456), 0x02)
 	fmt.Printf("address2[%d][%v]\n", len(address_02), address_02)
 
 }

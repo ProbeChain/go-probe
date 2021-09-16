@@ -10,17 +10,18 @@ import (
 // wxc todo 交易校验
 // validateTx validate transaction of register business type
 func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) error {
-	if !common.CheckAccType(tx.AccType()){
+	accType := byte(*tx.AccType())
+	if !common.CheckAccType(accType) {
 		return accounts.ErrWrongAccountType
 	}
-	if pool.currentState.Exist(*tx.New()){
+	if pool.currentState.Exist(*tx.New()) {
 		return ErrAccountAlreadyExists
 	}
-	if tx.AccType() == common.ACC_TYPE_OF_LOSE {
-		if !pool.currentState.Exist(*tx.Loss()){
+	if accType == common.ACC_TYPE_OF_LOSE {
+		if !pool.currentState.Exist(*tx.Loss()) {
 			return ErrAccountNotExists
 		}
-		if !pool.currentState.Exist(*tx.Receiver()){
+		if !pool.currentState.Exist(*tx.Receiver()) {
 			return ErrAccountNotExists
 		}
 	}
@@ -37,7 +38,6 @@ func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) erro
 		return ErrOversizedData
 	}
 
-	//todo 校验抵押金额
 	// Transactions can't be negative. This may never happen using RLP decoded
 	// transactions but may occur if you create a transaction using the RPC.
 	if tx.Value().Sign() < 0 {

@@ -39,15 +39,15 @@ func (st *StateTransition) TransitionDbOfRegister() ([]byte, error) {
 	// Increment the nonce for the next transaction
 	st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
 	ret, st.gas, vmerr = st.evm.Call(sender, common.Address{}, st.data, st.gas, st.value)
-	return ret,vmerr
+	return ret, vmerr
 }
 
 func (st *StateTransition) TransitionDbOfCancellation() ([]byte, error) {
-	return nil,nil
+	return nil, nil
 }
 
 func (st *StateTransition) TransitionDbOfRevokeCancellation() ([]byte, error) {
-	return nil,nil
+	return nil, nil
 }
 
 func (st *StateTransition) TransitionDbOfTransfer() ([]byte, error) {
@@ -83,7 +83,7 @@ func (st *StateTransition) TransitionDbOfTransfer() ([]byte, error) {
 	// Increment the nonce for the next transaction
 	st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
 	ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
-	return ret,vmerr
+	return ret, vmerr
 }
 
 func (st *StateTransition) TransitionDbOfContractCall() ([]byte, error) {
@@ -91,7 +91,7 @@ func (st *StateTransition) TransitionDbOfContractCall() ([]byte, error) {
 	sender := vm.AccountRef(msg.From())
 	homestead := st.evm.ChainConfig().IsHomestead(st.evm.Context.BlockNumber)
 	istanbul := st.evm.ChainConfig().IsIstanbul(st.evm.Context.BlockNumber)
-	contractCreation := msg.To() == nil && msg.BizType() == common.ContractCall
+	contractCreation := msg.To() == nil
 
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
 	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, homestead, istanbul)
@@ -116,7 +116,12 @@ func (st *StateTransition) TransitionDbOfContractCall() ([]byte, error) {
 		ret   []byte
 		vmerr error // vm errors do not effect consensus and are therefore not assigned to err
 	)
-	ret, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
-	return ret,vmerr
-}
+	if contractCreation {
+		ret, _, st.gas, vmerr = st.evm.Create(sender, st.data, st.gas, st.value)
+	} else {
+		st.state.SetNonce(msg.From(), st.state.GetNonce(sender.Address())+1)
+		ret, st.gas, vmerr = st.evm.Call(sender, st.to(), st.data, st.gas, st.value)
+	}
 
+	return ret, vmerr
+}

@@ -653,7 +653,7 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 func (s *StateDB) GenerateAccount(context vm.TxContext) {
 	obj, _ := s.createObject(*context.New)
 	obj.isNew = true
-	switch context.AccType {
+	switch byte(*context.AccType) {
 	case common.ACC_TYPE_OF_PNS:
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data

@@ -1305,8 +1305,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	switch tx.BizType() {
 	case common.Register:
 		result.New = tx.New()
-		accType := hexutil.Uint8(tx.AccType())
-		result.AccType = &accType
+		result.AccType = tx.AccType()
 	case common.Cancellation:
 	case common.RevokeCancellation:
 	case common.Transfer:
@@ -1424,7 +1423,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 	if args.To != nil {
 		to = *args.To
 	} else {
-		to, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType), new(big.Int).SetUint64(uint64(*args.Height)))
+		to, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType))
 		if err != nil {
 			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", args.toTransaction().Hash(), err)
 		}
@@ -1462,7 +1461,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			args.Vote, args.Loss, args.Asset,
 			args.Old, args.New, args.Initiator,
 			args.Receiver, args.mark(), args.infoDigest(),
-			args.value2(), args.height(), uint8(*args.AccType))
+			args.value2(), args.height(), args.AccType)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1716,7 +1715,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 	}
 
 	if tx.To() == nil && tx.BizType() == common.ContractCall {
-		addr, _ := probe.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT, new(big.Int).SetUint64(tx.Height()))
+		addr, _ := probe.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
 		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())
@@ -1727,11 +1726,8 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
+	fmt.Printf("current blockNumber:%s\n", s.b.CurrentBlock().Number())
 	// Look up the wallet containing the requested signer
-	if args.From != nil && args.To == nil && args.Data != nil {
-		defaultBizType := hexutil.Uint8(common.ContractCall)
-		args.BizType = &defaultBizType
-	}
 	switch uint8(*args.BizType) {
 	case common.Register:
 		if args.New != nil {
@@ -1744,8 +1740,10 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 	case common.Transfer:
 		fmt.Printf("from:%s,to:%s\n", args.From.String(), args.To.String())
 	}
+	if args.To != nil {
+		fmt.Printf("SendTransaction from: %s, to:%s\n", args.From.String(), args.To.String())
+	}
 	from := accounts.Account{Address: args.from()}
-
 	wallet, err := s.b.AccountManager().Find(from)
 	if err != nil {
 		return common.Hash{}, err
@@ -1756,6 +1754,10 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 		// the same nonce to multiple accounts.
 		s.nonceLock.LockAddr(args.from())
 		defer s.nonceLock.UnlockAddr(args.from())
+	}
+
+	if args.Data != nil {
+		fmt.Printf("args data：%s\n", args.Data.String())
 	}
 
 	// Set some sanity defaults and terminate on failure
