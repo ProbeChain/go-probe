@@ -1726,6 +1726,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
+
 	fmt.Printf("current blockNumber:%s\n", s.b.CurrentBlock().Number())
 	// Look up the wallet containing the requested signer
 	switch uint8(*args.BizType) {

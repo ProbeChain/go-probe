@@ -659,7 +659,7 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(0)
 	case common.ACC_TYPE_OF_ASSET:
-	case common.ACC_TYPE_OF_CONTRACT:
+	//case common.ACC_TYPE_OF_CONTRACT:
 	case common.ACC_TYPE_OF_AUTHORIZE:
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.LossAccount = *context.Loss

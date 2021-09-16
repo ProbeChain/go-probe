@@ -21,8 +21,8 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	if args.AccType == nil {
 		return errors.New(`account type must be specified`)
 	}
-	accountType := uint8(*args.AccType)
-	if !common.CheckAccType(accountType) {
+	accType := uint8(*args.AccType)
+	if !common.CheckRegisterAccType(accType) {
 		return accounts.ErrWrongAccountType
 	}
 	if args.New != nil {
@@ -30,11 +30,14 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		if err != nil {
 			return err
 		}
-		if accountType == common.ACC_TYPE_OF_GENERAL && newAccType != common.ACC_TYPE_OF_GENERAL {
+		if accType != common.ACC_TYPE_OF_GENERAL {
+			return accounts.ErrWrongAccountFormat
+		}
+		if accType != newAccType {
 			return accounts.ErrWrongAccountFormat
 		}
 	} else {
-		if accountType == common.ACC_TYPE_OF_GENERAL {
+		if accType == common.ACC_TYPE_OF_GENERAL {
 			return errors.New(`regular account must be specified`)
 		}
 	}
@@ -54,10 +57,10 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	}
 	if args.New == nil {
 		var newAccount common.Address
-		if accountType == common.ACC_TYPE_OF_PNS {
-			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accountType)
+		if accType == common.ACC_TYPE_OF_PNS {
+			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accType)
 		} else {
-			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accountType)
+			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accType)
 		}
 		if err != nil {
 			return err
@@ -67,7 +70,7 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	if *args.From == *args.New {
 		return errors.New("must not equals initiator")
 	}
-	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(accountType)))
+	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(accType)))
 	exist := b.Exist(*args.From)
 	if !exist {
 		return accounts.ErrUnknownAccount
@@ -78,7 +81,7 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	}
 
 	//todo 挂失账号的参数校验
-	if accountType == common.ACC_TYPE_OF_LOSE {
+	if accType == common.ACC_TYPE_OF_LOSE {
 		if args.Loss == nil {
 			return errors.New("loss account must be specified")
 		}
@@ -142,28 +145,31 @@ func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backen
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
 	if args.Value == nil {
-		args.Value = new(hexutil.Big)
+		return errors.New("value is null")
 	}
-	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	if args.Value.ToInt().Sign() != 1 {
+		return errors.New("value must be greater than 0")
 	}
+	//if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+	//	return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	//}
 	if args.To == nil {
-		return errors.New(`to address is not empty`)
+		return errors.New(`to address is null`)
 	}
 
 	fromAccType, err := common.ValidAddress(*args.From)
 	if err != nil {
 		return err
 	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrNotSupported
+	if !common.CheckTransferAccType(fromAccType) {
+		return accounts.ErrUnsupportedAccountTransfer
 	}
 	toAccType, err := common.ValidAddress(*args.To)
 	if err != nil {
 		return err
 	}
-	if toAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrNotSupported
+	if !common.CheckTransferAccType(toAccType) {
+		return accounts.ErrUnsupportedAccountTransfer
 	}
 
 	// Estimate the gas usage if necessary.

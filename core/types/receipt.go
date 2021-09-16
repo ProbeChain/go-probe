@@ -292,7 +292,7 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 		r[i].TransactionIndex = uint(i)
 
 		// The contract address can be derived from the transaction itself
-		if txs[i].To() == nil {
+		if txs[i].To() == nil && txs[i].BizType() == common.ContractCall {
 			// Deriving the signer is expensive, only do if it's actually needed
 			from, _ := Sender(signer, txs[i])
 			r[i].ContractAddress, _ = probe.CreateAddressForAccountType(from, txs[i].Nonce(), common.ACC_TYPE_OF_CONTRACT)

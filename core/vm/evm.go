@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -574,6 +575,10 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	contractAddr, _ = probe.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()), common.ACC_TYPE_OF_CONTRACT)
+	if evm.StateDB.Exist(contractAddr) {
+		log.Error("Failed to create contract address", "err", ErrContractAddressCollision)
+		return nil, common.Address{}, gas, ErrContractAddressCollision
+	}
 	return evm.create(caller, &codeAndHash{code: code}, gas, value, contractAddr)
 }
 
