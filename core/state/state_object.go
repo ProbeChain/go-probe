@@ -194,17 +194,21 @@ type LossAccount struct {
 
 // DPoSAccount DPoS账户
 type DPoSAccount struct {
-	Ip    net.IP
-	Port  uint8
-	Owner common.Address
+	Ip      net.IP
+	Port    uint64
+	Owner   common.Address
+	Info    []byte   // 信息
+	SignNum uint64   // 签名次数
+	Height  *big.Int // 上链高度
 }
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
 	Ip            net.IP
-	Port          uint8
+	Port          uint64
 	Owner         common.Address
-	DelegateValue *big.Int
+	DelegateValue *big.Int // 选票数量
+	Height        *big.Int // 上链高度
 }
 
 type Wrapper struct {
@@ -278,29 +282,6 @@ func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *
 		pendingStorage:   make(Storage),
 		dirtyStorage:     make(Storage),
 	}
-}
-
-// getStateObjectTireByAccountType return stateObject's tire
-func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
-	/*	switch accountType {
-		case accounts.General:
-			return &s.regularTrie
-		case accounts.Pns:
-			return &s.pnsTrie
-		case accounts.Asset:
-			return &s.digitalTrie
-		case accounts.Contract:
-			return &s.contractTrie
-		case accounts.Authorize:
-			return &s.authorizeTrie
-		case accounts.Lose:
-			return &s.lossTrie
-		case accounts.DPoS:
-			return &s.regularTrie
-		case accounts.DPoSCandidate:
-			return &s.trie
-		}*/
-	return &s.trie
 }
 
 // newRegularAccount creates a state object.

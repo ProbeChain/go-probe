@@ -23,8 +23,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
-	"net"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -84,14 +84,16 @@ type StateDB struct {
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
 
 	// DPoSAccount DPoS账户 64
-	dPoSAccounts []*DPoSAccount
+	dPoSAccounts []DPoSAccount
 	// DPoSCandidateAccount DPoS候选账户 64
-	dPoSCandidateAccounts []*DPoSCandidateAccount
+	dPoSCandidateAccounts []DPoSCandidateAccount
 
 	// DPoSAccount DPoS账户 64
-	oldDPoSAccounts []*DPoSAccount
+	oldDPoSAccounts []DPoSAccount
 	// DPoSCandidateAccount DPoS候选账户 64
-	oldDPoSCandidateAccounts []*DPoSCandidateAccount
+	oldDPoSCandidateAccounts []DPoSCandidateAccount
+	lock                     sync.RWMutex
+	dposList                 *dposList
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -150,6 +152,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		stateObjectsDirty:   make(map[common.Address]struct{}),
 		logs:                make(map[common.Hash][]*types.Log),
 		preimages:           make(map[common.Hash][]byte),
+		dposList:            newDposList(),
 		journal:             newJournal(),
 		accessList:          newAccessList(),
 		hasher:              crypto.NewKeccakState(),
@@ -1733,6 +1736,72 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	}
 }
 
-func (s *StateDB) getDPosByHeight(height big.Int) DPoSAccount {
-	return DPoSAccount{Ip: net.IP{12}, Port: 66, Owner: common.HexToAddress("0x003dADB65B0234669f885520BD45680AEbA49704a152999435")}
+func (s *StateDB) GetDPosByHeight(height *big.Int) DPoSAccount {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	var dPoSAccount DPoSAccount
+	for _, d := range s.dPoSAccounts {
+		if d.Height.Cmp(height) == 0 {
+			dPoSAccount = d
+		}
+	}
+	return dPoSAccount
+}
+
+func (s *StateDB) GetDPosByAddr(addr common.Address) DPoSAccount {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	var dPoSAccount DPoSAccount
+	for _, d := range s.dPoSAccounts {
+		if d.Owner == addr {
+			dPoSAccount = d
+		}
+	}
+	return dPoSAccount
+}
+
+func (s *StateDB) AddDPos(dDoSAccount DPoSAccount) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.dPoSAccounts = append(s.dPoSAccounts, dDoSAccount)
+	//sort.Sort(accountsByURL(liveList))
+}
+
+func (s *StateDB) DeleteDPosByAddr(addr common.Address) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	var i int
+	for j, d := range s.dPoSAccounts {
+		if d.Owner == addr {
+			i = j
+		}
+	}
+	s.dPoSAccounts = append(s.dPoSAccounts[:i], s.dPoSAccounts[i+1:]...)
+}
+
+// getStateObjectTireByAccountType return stateObject's tire
+func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
+	/*	switch accountType {
+		case accounts.General:
+			return &s.regularTrie
+		case accounts.Pns:
+			return &s.pnsTrie
+		case accounts.Asset:
+			return &s.digitalTrie
+		case accounts.Contract:
+			return &s.contractTrie
+		case accounts.Authorize:
+			return &s.authorizeTrie
+		case accounts.Lose:
+			return &s.lossTrie
+		case accounts.DPoS:
+			return &s.regularTrie
+		case accounts.DPoSCandidate:
+			return &s.trie
+		}*/
+	return &s.trie
 }

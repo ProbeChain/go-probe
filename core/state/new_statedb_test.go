@@ -67,11 +67,20 @@ func TestTrieAndRlp(t *testing.T) {
 
 func TestDeleteData(t *testing.T) {
 	s := newStateNewTest()
-	address := common.BytesToAddress([]byte{0x01})
+	//address := common.BytesToAddress([]byte{0x01})
+	address := common.BytesToAddress(common.Hex2Bytes("0x006F0452548E1607836D06C7B2Be28576a076698bF59e47760"))
 	obj1 := s.state.GetOrNewStateObject(address)
 	obj1.setValueForRegular(big.NewInt(20))
 	fmt.Printf(" before DeleteStateObjectByAddr：%v \n", s.state.GetRegular(address))
 	s.state.updateStateObject(obj1)
 	s.state.DeleteStateObjectByAddr(address)
 	fmt.Printf(" after DeleteStateObjectByAddr：%v \n", s.state.GetRegular(address))
+}
+
+func TestArray(t *testing.T) {
+	a := []int{0, 1, 2, 3, 4}
+	//删除第i个元素
+	i := 2
+	a = append(a[:i], a[i+1:]...)
+	fmt.Printf(" after 数组a：%v \n", a)
 }
