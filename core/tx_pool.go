@@ -559,17 +559,20 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	var err error
 	switch bizType {
 	case common.Register:
-		err = pool.validateTxOfRegister(tx,local)
+		err = pool.validateTxOfRegister(tx, local)
 	case common.Cancellation:
-		err = pool.validateTxOfCancellation(tx,local)
+		err = pool.validateTxOfCancellation(tx, local)
 	case common.RevokeCancellation:
-		err = pool.validateTxOfRevokeCancellation(tx,local)
+		err = pool.validateTxOfRevokeCancellation(tx, local)
 	case common.Transfer:
-		err = pool.validateTxOfTransfer(tx,local)
+		err = pool.validateTxOfTransfer(tx, local)
 	case common.ContractCall:
-		err = pool.validateTxOfContractCall(tx,local)
+		err = pool.validateTxOfContractCall(tx, local)
+	case common.SendLossReport:
+		err = pool.validateTxOfSendLossReport(tx, local)
 	//... todo 还有未实现的
-	default: err = ErrBizTypeNotSupported
+	default:
+		err = ErrBizTypeNotSupported
 	}
 	if err != nil {
 		return err

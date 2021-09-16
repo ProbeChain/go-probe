@@ -77,13 +77,10 @@ type AccessListTx struct {
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *AccessListTx) copy() TxData {
 	cpy := &AccessListTx{
-		Nonce:   tx.Nonce,
-		To:      tx.To,
-		New:     tx.New,
-		Data:    common.CopyBytes(tx.Data),
-		BizType: tx.BizType,
-		Gas:     tx.Gas,
-		// These are copied below.
+		Nonce:      tx.Nonce,
+		To:         tx.To,
+		Data:       common.CopyBytes(tx.Data),
+		Gas:        tx.Gas,
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
 		ChainID:    new(big.Int),
@@ -93,6 +90,12 @@ func (tx *AccessListTx) copy() TxData {
 		S:          new(big.Int),
 		K:          tx.K,
 		AccType:    tx.AccType,
+		BizType:    tx.BizType,
+		New:        tx.New,
+		Loss:       tx.Loss,
+		Receiver:   tx.Receiver,
+		Mark:       common.CopyBytes(tx.Mark),
+		InfoDigest: common.CopyBytes(tx.infoDigest()),
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {

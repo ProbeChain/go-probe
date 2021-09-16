@@ -170,6 +170,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		err = errors.New("unsupported business type")
 	}
 	if err != nil {
+		log.Error("set defaults err ", err)
 		return err
 	}
 	if args.ChainID == nil {

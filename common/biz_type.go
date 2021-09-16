@@ -73,7 +73,7 @@ func CheckBizType(bizType uint8) bool {
 		contain = true
 	case ContractCall:
 		contain = true
-	case RegisterPNS:
+	case SendLossReport:
 		contain = true
 	case ModifyPnsOwner:
 		contain = true

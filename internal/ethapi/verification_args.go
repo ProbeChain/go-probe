@@ -94,6 +94,20 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		if !b.Exist(*args.Receiver) {
 			return accounts.ErrUnknownAccount
 		}
+		lossAccType, err := common.ValidAddress(*args.Loss)
+		if err != nil {
+			return err
+		}
+		if lossAccType != common.ACC_TYPE_OF_GENERAL {
+			return accounts.ErrWrongAccountType
+		}
+		receiverAccType, err := common.ValidAddress(*args.Receiver)
+		if err != nil {
+			return err
+		}
+		if receiverAccType != common.ACC_TYPE_OF_GENERAL {
+			return accounts.ErrWrongAccountType
+		}
 	}
 
 	// Estimate the gas usage if necessary.
@@ -260,11 +274,14 @@ func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Contex
 }
 
 func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b Backend) error {
+	/*	if args.Loss == nil {
+		return errors.New(`loss account must be specified`)
+	}*/
 	if args.Mark == nil {
-		return errors.New(`mark is not empty`)
+		return errors.New(`mark must be specified`)
 	}
 	if args.InfoDigest == nil {
-		return errors.New(`information digests is not empty`)
+		return errors.New(`information digests mark must be specified`)
 	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
@@ -273,6 +290,7 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
+
 	fromAccType, err := common.ValidAddress(*args.From)
 	if err != nil {
 		return err
@@ -280,48 +298,26 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	if fromAccType != common.ACC_TYPE_OF_GENERAL {
 		return accounts.ErrWrongAccountType
 	}
-
-	if args.New != nil {
-		accType, err := common.ValidAddress(*args.New)
+	/*	lossAccType, err := common.ValidAddress(*args.Loss)
 		if err != nil {
 			return err
 		}
-		args.AccType = (*hexutil.Uint8)(&accType)
-	}
-	if args.New == nil && args.AccType != nil {
-		if !common.CheckAccType(uint8(*args.AccType)) {
+		if lossAccType != common.ACC_TYPE_OF_LOSE {
 			return accounts.ErrWrongAccountType
-		}
-		var newAccount common.Address
-		var err error
-		if uint8(*args.AccType) == common.ACC_TYPE_OF_PNS {
-			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, uint8(*args.AccType))
-		} else {
-			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), uint8(*args.AccType))
-		}
-		if err != nil {
-			return err
-		}
-		args.New = &newAccount
+		}*/
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
 	}
-
-	if *args.From == *args.New {
-		return errors.New("must not equals initiator")
-	}
-	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
+	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
 	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
 	}*/
-
-	exist := b.Exist(*args.From)
-	if !exist {
+	if !b.Exist(*args.From) {
 		return accounts.ErrUnknownAccount
 	}
-
-	exist = b.Exist(*args.New)
-	if exist {
-		return keystore.ErrAccountAlreadyExists
-	}
+	/*	if !b.Exist(*args.Loss) {
+		return accounts.ErrUnknownAccount
+	}*/
 
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
@@ -329,8 +325,6 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
-			New:                  args.New,
-			AccType:              args.AccType,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
@@ -338,6 +332,9 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 			Value:                args.Value,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
+			Loss:                 args.Loss,
+			Mark:                 args.Mark,
+			InfoDigest:           args.InfoDigest,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())

@@ -305,6 +305,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret, err = st.TransitionDbOfTransfer()
 	case common.ContractCall:
 		ret, err = st.TransitionDbOfContractCall()
+	case common.SendLossReport:
+		ret, err = st.TransitionDbOfSendLossReport()
 		//... todo 还有未实现的
 	}
 

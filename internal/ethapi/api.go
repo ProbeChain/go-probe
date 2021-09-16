@@ -1311,6 +1311,11 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	case common.Transfer:
 		result.To = tx.To()
 	case common.ContractCall:
+	case common.SendLossReport:
+		mark := hexutil.Bytes(tx.Mark())
+		infoDigest := hexutil.Bytes(tx.InfoDigest())
+		result.Mark = &mark
+		result.InfoDigest = &infoDigest
 		//todo 其它的待实现
 	}
 
@@ -1650,6 +1655,9 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	case common.RevokeCancellation:
 	case common.Transfer:
 	case common.ContractCall:
+	case common.SendLossReport:
+		fields["mark"] = string(tx.Mark())
+		fields["infoDigest"] = string(tx.InfoDigest())
 		//todo 其它的待实现
 	}
 
@@ -1770,6 +1778,7 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 
 	signed, err := wallet.SignTx(from, tx, s.b.ChainConfig().ChainID)
 	if err != nil {
+		fmt.Printf("SignTx err %s\n", err)
 		return common.Hash{}, err
 	}
 	return SubmitTransaction(ctx, s.b, signed)

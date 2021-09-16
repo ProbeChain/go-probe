@@ -181,7 +181,55 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 }
 
 func (args *TransactionArgs) transactionOfSendLossReport() *types.Transaction {
-	return nil
+	var data types.TxData
+	switch {
+	case args.MaxFeePerGas != nil:
+		al := types.AccessList{}
+		if args.AccessList != nil {
+			al = *args.AccessList
+		}
+		data = &types.DynamicFeeTx{
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: al,
+			Mark:       args.mark(),
+			InfoDigest: args.infoDigest(),
+		}
+	case args.AccessList != nil:
+		data = &types.AccessListTx{
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: *args.AccessList,
+			Mark:       args.mark(),
+			InfoDigest: args.infoDigest(),
+		}
+	default:
+		data = &types.LegacyTx{
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			Mark:       args.mark(),
+			InfoDigest: args.infoDigest(),
+		}
+	}
+	return types.NewTx(data)
 }
 
 func (args *TransactionArgs) transactionOfRevealLossMessage() *types.Transaction {

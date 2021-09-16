@@ -53,47 +53,48 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer: 			CanTransfer,
-		Transfer:    			Transfer,
-		GetHash:     			GetHashFn(header, chain),
-		Coinbase:    			beneficiary,
-		BlockNumber: 			new(big.Int).Set(header.Number),
-		Time:        			new(big.Int).SetUint64(header.Time),
-		Difficulty:  			new(big.Int).Set(header.Difficulty),
-		BaseFee:     			baseFee,
-		GasLimit:    			header.GasLimit,
-		Register:	 			Register,
-		Cancellation:			Cancellation,
-		ContractTransfer: 		ContractTransfer,
+		CanTransfer:      CanTransfer,
+		Transfer:         Transfer,
+		GetHash:          GetHashFn(header, chain),
+		Coinbase:         beneficiary,
+		BlockNumber:      new(big.Int).Set(header.Number),
+		Time:             new(big.Int).SetUint64(header.Time),
+		Difficulty:       new(big.Int).Set(header.Difficulty),
+		BaseFee:          baseFee,
+		GasLimit:         header.GasLimit,
+		Register:         Register,
+		Cancellation:     Cancellation,
+		ContractTransfer: ContractTransfer,
+		SendLossReport:   SendLossReport,
 	}
 }
 
 // NewEVMTxContext creates a new transaction context for a single transaction.
 func NewEVMTxContext(msg Message) vm.TxContext {
 	return vm.TxContext{
-		Origin:   		msg.From(),
-		GasPrice: 		new(big.Int).Set(msg.GasPrice()),
+		Origin:   msg.From(),
+		GasPrice: new(big.Int).Set(msg.GasPrice()),
 
-		From: 			msg.From(),
-		To: 			msg.To(),
-		Owner:			msg.Owner(),
-		Beneficiary:	msg.Beneficiary(),
-		Vote:			msg.Vote(),
-		Loss:			msg.Loss(),
-		Asset:			msg.Asset(),
-		Old:			msg.Old(),
-		New:			msg.New(),
-		Initiator:		msg.Initiator(),
-		Receiver:		msg.Receiver(),
+		From:        msg.From(),
+		To:          msg.To(),
+		Owner:       msg.Owner(),
+		Beneficiary: msg.Beneficiary(),
+		Vote:        msg.Vote(),
+		Loss:        msg.Loss(),
+		Asset:       msg.Asset(),
+		Old:         msg.Old(),
+		New:         msg.New(),
+		Initiator:   msg.Initiator(),
+		Receiver:    msg.Receiver(),
 
-		BizType:		msg.BizType(),
-		Value:			msg.Value(),
-		Value2:			msg.Value2(),
-		Height:			msg.Height(),
-		Data:			msg.Data(),
-		Mark:			msg.Mark(),
-		InfoDigest:		msg.InfoDigest(),
-		AccType:		msg.AccType(),
+		BizType:    msg.BizType(),
+		Value:      msg.Value(),
+		Value2:     msg.Value2(),
+		Height:     msg.Height(),
+		Data:       msg.Data(),
+		Mark:       msg.Mark(),
+		InfoDigest: msg.InfoDigest(),
+		AccType:    msg.AccType(),
 	}
 }
 
@@ -139,28 +140,32 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 
 // Transfer subtracts amount from sender and adds amount to recipient using the given Db
 func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n",sender.String(),recipient.String(),amount.String())
+	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
 	db.SubBalance(sender, amount)
 	db.AddBalance(recipient, amount)
 }
 
 // ContractTransfer subtracts amount from sender and adds amount to recipient using the given Db
 func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	fmt.Printf("ContractTransfer, sender:%s,to:%s,amount:%s\n",sender.String(),recipient.String(),amount.String())
+	fmt.Printf("ContractTransfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
 	db.SubBalance(sender, amount)
 	db.AddBalance(recipient, amount)
 }
 
-func Register(db vm.StateDB, sender common.Address, txContext vm.TxContext)  {
-	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n",sender.String(),txContext.New.String(),txContext.Value.String())
+func Register(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
+	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", sender.String(), txContext.New.String(), txContext.Value.String())
 	db.SubBalance(sender, txContext.Value)
 	db.GenerateAccount(txContext)
-
-
 }
 
-func Cancellation(db vm.StateDB, senderAccount, newAccount common.Address)  {
+func Cancellation(db vm.StateDB, senderAccount, newAccount common.Address) {
 	balance := db.GetBalance(senderAccount)
-	db.SubBalance(senderAccount,balance)
+	db.SubBalance(senderAccount, balance)
 	db.AddBalance(newAccount, balance)
+}
+
+func SendLossReport(db vm.StateDB, sender common.Address, amount *big.Int, txContext vm.TxContext) {
+	fmt.Printf("SendLossReport, sender:%s,loss:%s,mark:%s,infoDigest:%s\n", sender, txContext.Loss, txContext.Mark, txContext.InfoDigest)
+	db.SubBalance(sender, amount)
+	//db.SetInfoDigestForLoss(sender, txContext.InfoDigest)
 }

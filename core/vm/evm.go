@@ -50,6 +50,8 @@ type (
 	CancellationFunc func(StateDB, common.Address, common.Address)
 	//ContractTransferFunc is the signature of a transfer function
 	ContractTransferFunc func(StateDB, common.Address, common.Address, *big.Int)
+	//SendLossReportFunc  is the signature of a send loss report function
+	SendLossReportFunc func(StateDB, common.Address, *big.Int, TxContext)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -102,6 +104,8 @@ type BlockContext struct {
 	Cancellation CancellationFunc
 	//ContractTransfer transfers ether from one account to the other
 	ContractTransfer ContractTransferFunc
+	//SendLossReport send loss report
+	SendLossReport SendLossReportFunc
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
 	GasLimit    uint64         // Provides information for GASLIMIT
@@ -282,6 +286,8 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		evm.Context.Transfer(evm.StateDB, caller.Address(), to, value)
 	case common.ContractCall:
 		evm.Context.ContractTransfer(evm.StateDB, caller.Address(), to, value)
+	case common.SendLossReport:
+		evm.Context.SendLossReport(evm.StateDB, caller.Address(), value, evm.TxContext)
 		//... todo 还有未实现的
 	}
 

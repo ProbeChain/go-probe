@@ -60,13 +60,11 @@ type DynamicFeeTx struct {
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
-		Nonce:   tx.Nonce,
-		To:      tx.To,
-		From:    tx.From,
-		New:     tx.New,
-		BizType: tx.BizType,
-		Data:    common.CopyBytes(tx.Data),
-		Gas:     tx.Gas,
+		Nonce: tx.Nonce,
+		To:    tx.To,
+		From:  tx.From,
+		Data:  common.CopyBytes(tx.Data),
+		Gas:   tx.Gas,
 		// These are copied below.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
@@ -78,6 +76,12 @@ func (tx *DynamicFeeTx) copy() TxData {
 		S:          new(big.Int),
 		K:          tx.K,
 		AccType:    tx.AccType,
+		BizType:    tx.BizType,
+		New:        tx.New,
+		Loss:       tx.Loss,
+		Receiver:   tx.Receiver,
+		Mark:       common.CopyBytes(tx.Mark),
+		InfoDigest: common.CopyBytes(tx.infoDigest()),
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
