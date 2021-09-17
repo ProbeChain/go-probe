@@ -94,3 +94,14 @@ func DeleteTrieNode(db ethdb.KeyValueWriter, hash common.Hash) {
 		log.Crit("Failed to delete trie node", "err", err)
 	}
 }
+
+func WriteRootHash(db ethdb.KeyValueWriter, hash common.Hash, code []byte) {
+	if err := db.Put(hash.Bytes(), code); err != nil {
+		log.Crit("Failed to store RootHash", "err", err)
+	}
+}
+
+func ReadRootHash(db ethdb.KeyValueReader, hash common.Hash) []byte {
+	data, _ := db.Get(hash.Bytes())
+	return data
+}

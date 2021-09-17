@@ -47,12 +47,14 @@ func TestTrieAndRlp(t *testing.T) {
 	////obj1.setValueForRegular(big.NewInt(20))
 	//obj1.regularAccount.Value = big.NewInt(20)
 	s.state.SetValueForRegular(address, big.NewInt(210))
-
+	root := s.state.IntermediateRoot(false)
+	fmt.Printf("trie.TryGe root：%v \n", root)
 	var data2 *RegularAccount
 	// write some of them to the trie
 	//s.state.updateStateObject(obj1)
 	//s.state.updateStateObject(obj2)
-	s.state.Commit(true)
+	s.state.Commit(false)
+	s.state.Database().TrieDB().Commit(root, true, nil)
 	result, _ := s.state.trie.TryGet(address.Bytes())
 	data2 = new(RegularAccount)
 	if err := rlp.DecodeBytes(result, data2); err != nil {
