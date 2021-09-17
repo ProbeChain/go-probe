@@ -242,8 +242,12 @@ func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.P
 // handleDposAckBroadcast is invoked from a peer's message handler when it transmits a
 // dpos ack for the local node to process.
 func (h *ethHandler) handleDposAckBroadcast(peer *eth.Peer, dposAck *types.DposAck) error {
+
+	check := h.chain.CheckDposAck(dposAck)
+	future := dposAck.Number.Uint64() > h.chain.CurrentHeader().Number.Uint64()
+	broadcast := check && future
 	// boardcast dpos ack again
-	if h.chain.CheckDposAck(dposAck) {
+	if broadcast {
 		peer.KnownDposAck(dposAck.Id())
 		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
 			if err := peer.SendNewDposAck(dposAck); err != nil {
@@ -253,7 +257,6 @@ func (h *ethHandler) handleDposAckBroadcast(peer *eth.Peer, dposAck *types.DposA
 		h.chain.HandleDposAck(dposAck)
 	} else {
 		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
-		return errors.New("DposAck broadcast fail, because the dpos ack is illegality")
 	}
 	return nil
 }

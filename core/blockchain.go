@@ -2622,11 +2622,14 @@ func (bc *BlockChain) GetDposNodes(number uint64) []*enode.Node {
 		return nodes
 	}
 
+	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
-	epoch := bc.chainConfig.Dpos.Epoch
-	state, _ := bc.StateAt(block.Root())
-	nodes = state.GetDposNodes(block.Root(), number, epoch)
-	bc.dposNodes[index] = nodes // cache it
+	if block != nil {
+		epoch := bc.chainConfig.Dpos.Epoch
+		state, _ := bc.StateAt(block.Root())
+		nodes = state.GetDposNodes(block.Root(), number, epoch)
+		bc.dposNodes[index] = nodes // cache it
+	}
 
 	return nodes
 }

@@ -540,8 +540,13 @@ func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
 
 // BroadcastDposAck broadcast dpos ack to all peers
 func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
-	if h.chain.CheckDposAck(dposAck) {
+	check := h.chain.CheckDposAck(dposAck)
+	future := dposAck.Number.Uint64() > h.chain.CurrentHeader().Number.Uint64()
+	broadcast := check && future
+	if check {
 		h.chain.HandleDposAck(dposAck)
+	}
+	if broadcast {
 		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
 			if err := peer.SendNewDposAck(dposAck); err != nil {
 				log.Debug("SendNewDposAck", "err", err)
