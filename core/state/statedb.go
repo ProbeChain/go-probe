@@ -665,7 +665,7 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 		obj.authorizeAccount.PledgeValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
 		obj.authorizeAccount.Owner = context.From
 		obj.authorizeAccount.ValidPeriod = context.Height
-		obj.authorizeAccount.DelegateValue = new(big.Int).SetUint64(0)
+		obj.authorizeAccount.VoteValue = new(big.Int).SetUint64(0)
 		obj.authorizeAccount.Info = context.Data
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.LossAccount = *context.Loss
@@ -1265,9 +1265,9 @@ func (s *StateDB) GetPledgeValueForAuthorize(addr common.Address) *big.Int {
 	return authorize.PledgeValue
 }
 
-func (s *StateDB) GetDelegateValueForAuthorize(addr common.Address) *big.Int {
+func (s *StateDB) GetVoteValueForAuthorize(addr common.Address) *big.Int {
 	authorize := s.GetAuthorize(addr)
-	return authorize.DelegateValue
+	return authorize.VoteValue
 }
 
 func (s *StateDB) GetInfoForAuthorize(addr common.Address) []byte {
@@ -1566,14 +1566,14 @@ func (s *StateDB) SetPledgeValueForAuthorize(addr common.Address, pledgeValue *b
 	}
 }
 
-func (s *StateDB) AddVote(addr common.Address, delegateValue *big.Int) {
+func (s *StateDB) AddVote(addr common.Address, voteValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.db.journal.append(delegateValueForAuthorizeChange{
 			account: &stateObject.address,
-			prev:    stateObject.authorizeAccount.DelegateValue,
+			prev:    stateObject.authorizeAccount.VoteValue,
 		})
-		stateObject.authorizeAccount.DelegateValue = new(big.Int).Add(stateObject.authorizeAccount.DelegateValue, delegateValue)
+		stateObject.authorizeAccount.VoteValue = new(big.Int).Add(stateObject.authorizeAccount.VoteValue, voteValue)
 	}
 }
 

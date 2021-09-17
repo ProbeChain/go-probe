@@ -121,7 +121,7 @@ func (s *stateObject) empty() bool {
 			s.assetAccount.Value == nil && s.assetAccount.VoteAccount == common.Address{} && s.assetAccount.VoteValue == nil && s.assetAccount.Nonce == 0
 
 	case common.ACC_TYPE_OF_AUTHORIZE:
-		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue == nil && s.authorizeAccount.DelegateValue == nil &&
+		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue == nil && s.authorizeAccount.VoteValue == nil &&
 			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.InterestRate == nil && s.authorizeAccount.ValidPeriod == nil
 
 	case common.ACC_TYPE_OF_LOSE:
@@ -172,13 +172,13 @@ type AssetAccount struct {
 
 // AuthorizeAccount 授权账户
 type AuthorizeAccount struct {
-	Owner         common.Address
-	PledgeValue   *big.Int
-	DelegateValue *big.Int
-	Info          []byte
-	InterestRate  *big.Int
-	ValidPeriod   *big.Int
-	State         bool
+	Owner        common.Address
+	PledgeValue  *big.Int
+	VoteValue    *big.Int
+	Info         []byte
+	InterestRate *big.Int
+	ValidPeriod  *big.Int
+	State        bool
 }
 
 // LossAccount 挂失账户
