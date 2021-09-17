@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/probe"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 	"math/big"
 )
@@ -70,7 +69,16 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	if *args.From == *args.New {
 		return errors.New("must not equals initiator")
 	}
-	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(accType)))
+	pledgeAmount := common.AmountOfPledgeForCreateAccount(accType)
+	if accType == common.ACC_TYPE_OF_AUTHORIZE {
+		if args.Value == nil || args.Value.ToInt().Sign() < 1 {
+			return errors.New(`pledge amount must be specified and greater than 0`)
+		} else {
+			args.Value = (*hexutil.Big)(new(big.Int).Add(args.Value.ToInt(), new(big.Int).SetUint64(pledgeAmount)))
+		}
+	} else {
+		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
+	}
 	exist := b.Exist(*args.From)
 	if !exist {
 		return accounts.ErrUnknownAccount
@@ -361,24 +369,4 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenConfirmed(ctx c
 
 func (args *TransactionArgs) setDefaultsOfRejectLossReportWhenTimeOut(ctx context.Context, b Backend) error {
 	return nil
-}
-
-// AmountOfPledgeForCreateAccount amount of pledge for create a account
-func AmountOfPledgeForCreateAccount(accType byte) uint64 {
-	switch accType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
-	case common.ACC_TYPE_OF_PNS:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
-	case common.ACC_TYPE_OF_ASSET:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET
-	case common.ACC_TYPE_OF_CONTRACT:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
-	case common.ACC_TYPE_OF_LOSE:
-		return params.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
-	default:
-		return 0
-	}
 }

@@ -57,6 +57,15 @@ const (
 	ACC_TYPE_OF_DPOS_CANDIDATE = byte(7) //DPoS候选账户
 )
 
+const (
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR       uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS           uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT      uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING        uint64 = 2
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT   uint64 = 2
+)
+
 // Check business transaction type
 
 func CheckBizType(bizType uint8) bool {
@@ -119,4 +128,24 @@ func CheckTransferAccType(accType byte) bool {
 		isAllow = false
 	}
 	return isAllow
+}
+
+// AmountOfPledgeForCreateAccount amount of pledge for create a account
+func AmountOfPledgeForCreateAccount(accType byte) uint64 {
+	switch accType {
+	case ACC_TYPE_OF_GENERAL:
+		return AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
+	case ACC_TYPE_OF_PNS:
+		return AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+	case ACC_TYPE_OF_ASSET:
+		return AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET
+	case ACC_TYPE_OF_CONTRACT:
+		return AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
+	case ACC_TYPE_OF_AUTHORIZE:
+		return AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
+	case ACC_TYPE_OF_LOSE:
+		return AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
+	default:
+		return 0
+	}
 }
