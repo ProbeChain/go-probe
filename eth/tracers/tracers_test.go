@@ -159,6 +159,7 @@ func TestPrestateTracerCreate2(t *testing.T) {
 		Cancellation:     core.Cancellation,
 		ContractTransfer: core.ContractTransfer,
 		SendLossReport:   core.SendLossReport,
+		Vote:             core.Vote,
 	}
 	alloc := core.GenesisAlloc{}
 
@@ -252,6 +253,7 @@ func TestCallTracer(t *testing.T) {
 				Cancellation:     core.Cancellation,
 				ContractTransfer: core.ContractTransfer,
 				SendLossReport:   core.SendLossReport,
+				Vote:             core.Vote,
 			}
 			_, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false)
 
@@ -341,6 +343,7 @@ func BenchmarkTransactionTrace(b *testing.B) {
 		Cancellation:     core.Cancellation,
 		ContractTransfer: core.ContractTransfer,
 		SendLossReport:   core.SendLossReport,
+		Vote:             core.Vote,
 	}
 	alloc := core.GenesisAlloc{}
 	// The code pushes 'deadbeef' into memory, then the other params, and calls CREATE2, then returns

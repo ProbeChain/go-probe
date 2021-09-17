@@ -52,6 +52,8 @@ type (
 	ContractTransferFunc func(StateDB, common.Address, common.Address, *big.Int)
 	//SendLossReportFunc  is the signature of a send loss report function
 	SendLossReportFunc func(StateDB, common.Address, *big.Int, TxContext)
+	// VoteFunc is the signature of a transfer function
+	VoteFunc func(StateDB, common.Address, common.Address, *big.Int)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -106,6 +108,8 @@ type BlockContext struct {
 	ContractTransfer ContractTransferFunc
 	//SendLossReport send loss report
 	SendLossReport SendLossReportFunc
+	// Vote vote ether from one account to the other
+	Vote VoteFunc
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
 	GasLimit    uint64         // Provides information for GASLIMIT
@@ -126,7 +130,6 @@ type TxContext struct {
 	To          *common.Address
 	Owner       *common.Address
 	Beneficiary *common.Address
-	Vote        *common.Address
 	Loss        *common.Address
 	Asset       *common.Address
 	Old         *common.Address
@@ -288,6 +291,8 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		evm.Context.ContractTransfer(evm.StateDB, caller.Address(), to, value)
 	case common.SendLossReport:
 		evm.Context.SendLossReport(evm.StateDB, caller.Address(), value, evm.TxContext)
+	case common.Vote:
+		evm.Context.Vote(evm.StateDB, caller.Address(), to, value)
 		//... todo 还有未实现的
 	}
 

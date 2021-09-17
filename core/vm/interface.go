@@ -77,6 +77,10 @@ type StateDB interface {
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
 
 	SetInfoDigestForLoss(addr common.Address, infoDigest []byte)
+
+	AddVote(addr common.Address, delegateValue *big.Int)
+
+	SetVoteRecordForRegular(addr common.Address, voteAccount common.Address, voteValue *big.Int)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM

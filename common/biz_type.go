@@ -25,7 +25,7 @@ const (
 	Transfer                         = byte(0x01) //转账交易
 	ContractCall                     = byte(0x02) //合约调用
 	ExchangeTransaction              = byte(0x11) //资产兑换
-	VotingForAnAccount               = byte(0x21) //为可投票账号投票
+	Vote                             = byte(0x21) //为可投票账号投票
 	ApplyToBeDPoSNode                = byte(0x22) //申请成为DPoS节点
 	UpdatingVotesOrData              = byte(0x23) //更新投票数据
 	SendLossReport                   = byte(0x31) //发送挂失报告（申请挂失）
@@ -34,7 +34,7 @@ const (
 	TransferLostAccountWhenConfirmed = byte(0x34) //转移挂失账号的资产当挂失成功时
 	RejectLossReportWhenTimeOut      = byte(0x3f) //拒绝挂失报告
 
-	RegisterPNS                   = byte(0x20) //注册PNS账号
+	//RegisterPNS                   = byte(0x20) //注册PNS账号
 	ModifyPnsOwner                = byte(0x21) //修改PNS账号所有者
 	ModifyPnsType                 = byte(0x22) //修改PNS类型
 	ModifyPnsContent              = byte(0x23) //修改PNS内容

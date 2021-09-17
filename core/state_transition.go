@@ -80,7 +80,6 @@ type Message interface {
 	AccType() *hexutil.Uint8
 	Owner() *common.Address
 	Beneficiary() *common.Address
-	Vote() *common.Address
 	Loss() *common.Address
 	Asset() *common.Address
 	Old() *common.Address
@@ -307,6 +306,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret, err = st.TransitionDbOfContractCall()
 	case common.SendLossReport:
 		ret, err = st.TransitionDbOfSendLossReport()
+	case common.Vote:
+		ret, err = st.TransitionDbOfVote()
 		//... todo 还有未实现的
 	}
 

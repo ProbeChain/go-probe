@@ -274,7 +274,73 @@ func (args *TransactionArgs) etDefaultsOfExchangeTransaction(ctx context.Context
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfVotingForAnAccount(ctx context.Context, b Backend) error {
+//setDefaultsOfVote  set default parameters of vote business type
+func (args *TransactionArgs) setDefaultsOfVote(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+	if args.Value == nil {
+		return errors.New("value is null")
+	}
+	if args.Value.ToInt().Sign() != 1 {
+		return errors.New("value must be greater than 0")
+	}
+	//if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+	//	return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	//}
+	if args.To == nil {
+		return errors.New(`vote account must be specified`)
+	}
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	toAccType, err := common.ValidAddress(*args.To)
+	if err != nil {
+		return err
+	}
+	if toAccType != common.ACC_TYPE_OF_AUTHORIZE {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	exist := b.Exist(*args.From)
+	if !exist {
+		return accounts.ErrUnknownAccount
+	}
+	exist = b.Exist(*args.To)
+	if !exist {
+		return accounts.ErrUnknownAccount
+	}
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			To:                   args.To,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Value:                args.Value,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
 	return nil
 }
 

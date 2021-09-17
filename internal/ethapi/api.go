@@ -1463,7 +1463,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
 			args.data(), accessList, false,
 			args.Owner, args.Beneficiary,
-			args.Vote, args.Loss, args.Asset,
+			args.Loss, args.Asset,
 			args.Old, args.New, args.Initiator,
 			args.Receiver, args.mark(), args.infoDigest(),
 			args.value2(), args.height(), args.AccType)

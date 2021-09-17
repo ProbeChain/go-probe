@@ -66,6 +66,7 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		Cancellation:     Cancellation,
 		ContractTransfer: ContractTransfer,
 		SendLossReport:   SendLossReport,
+		Vote:             Vote,
 	}
 }
 
@@ -79,7 +80,6 @@ func NewEVMTxContext(msg Message) vm.TxContext {
 		To:          msg.To(),
 		Owner:       msg.Owner(),
 		Beneficiary: msg.Beneficiary(),
-		Vote:        msg.Vote(),
 		Loss:        msg.Loss(),
 		Asset:       msg.Asset(),
 		Old:         msg.Old(),
@@ -168,4 +168,13 @@ func SendLossReport(db vm.StateDB, sender common.Address, amount *big.Int, txCon
 	fmt.Printf("SendLossReport, sender:%s,loss:%s,mark:%s,infoDigest:%s\n", sender, txContext.Loss, txContext.Mark, txContext.InfoDigest)
 	db.SubBalance(sender, amount)
 	//db.SetInfoDigestForLoss(sender, txContext.InfoDigest)
+}
+
+// Vote subtracts amount from sender and adds amount to recipient using the given Db
+func Vote(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
+	fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
+	db.SubBalance(sender, amount)
+	db.SetVoteRecordForRegular(sender, recipient, amount)
+	db.AddVote(recipient, amount)
+
 }

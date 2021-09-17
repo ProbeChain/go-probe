@@ -96,4 +96,7 @@ var (
 
 	// ErrAccountNotExists is returned if an account not exists
 	ErrAccountNotExists = errors.New("account not exists")
+
+	// ErrValidPeriodTooLow is returned if valid period height less than current block height
+	ErrValidPeriodTooLow = errors.New("valid period too low")
 )

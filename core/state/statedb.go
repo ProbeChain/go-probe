@@ -665,6 +665,7 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 		obj.authorizeAccount.PledgeValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
 		obj.authorizeAccount.Owner = context.From
 		obj.authorizeAccount.ValidPeriod = context.Height
+		obj.authorizeAccount.DelegateValue = new(big.Int).SetUint64(0)
 		obj.authorizeAccount.Info = context.Data
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.LossAccount = *context.Loss
@@ -1130,12 +1131,12 @@ func (s *StateDB) GetContract(addr common.Address) AssetAccount {
 }
 
 // GetAuthorize 授权账户
-func (s *StateDB) GetAuthorize(addr common.Address) AuthorizeAccount {
+func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
-		return stateObject.authorizeAccount
+		return &stateObject.authorizeAccount
 	}
-	return AuthorizeAccount{}
+	return nil
 }
 
 // GetLoss 挂失账户
@@ -1354,6 +1355,19 @@ func (s *StateDB) SetVoteAccountForRegular(addr common.Address, voteAccount comm
 	}
 }
 
+func (s *StateDB) SetVoteRecordForRegular(addr common.Address, voteAccount common.Address, voteValue *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.db.journal.append(voteForRegularChange{
+			account:     &stateObject.address,
+			voteAccount: stateObject.regularAccount.VoteAccount,
+			voteValue:   stateObject.regularAccount.VoteValue,
+		})
+		stateObject.regularAccount.VoteAccount = voteAccount
+		stateObject.regularAccount.VoteValue = voteValue
+	}
+}
+
 func (s *StateDB) SetNonceForRegular(addr common.Address, nonce uint64) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
@@ -1552,14 +1566,14 @@ func (s *StateDB) SetPledgeValueForAuthorize(addr common.Address, pledgeValue *b
 	}
 }
 
-func (s *StateDB) SetDelegateValueForAuthorize(addr common.Address, delegateValue *big.Int) {
+func (s *StateDB) AddVote(addr common.Address, delegateValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.db.journal.append(delegateValueForAuthorizeChange{
 			account: &stateObject.address,
 			prev:    stateObject.authorizeAccount.DelegateValue,
 		})
-		stateObject.authorizeAccount.DelegateValue = delegateValue
+		stateObject.authorizeAccount.DelegateValue = new(big.Int).Add(stateObject.authorizeAccount.DelegateValue, delegateValue)
 	}
 }
 

@@ -36,7 +36,6 @@ type TransactionArgs struct {
 	To          *common.Address `json:"to"`
 	Owner       *common.Address `json:"owner"`
 	Beneficiary *common.Address `json:"beneficiary"`
-	Vote        *common.Address `json:"vote"`
 	Loss        *common.Address `json:"loss"`
 	Asset       *common.Address `json:"asset"`
 	Old         *common.Address `json:"old"`
@@ -165,6 +164,8 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		err = args.setDefaultsOfContractCall(ctx, b)
 	case common.SendLossReport:
 		return args.setDefaultsOfSendLossReport(ctx, b)
+	case common.Vote:
+		return args.setDefaultsOfVote(ctx, b)
 	//... todo 还有未实现的
 	default:
 		err = errors.New("unsupported business type")
@@ -253,7 +254,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		gasPrice, gasFeeCap, gasTipCap,
 		data, accessList, false,
 		args.Owner, args.Beneficiary,
-		args.Vote, args.Loss, args.Asset,
+		args.Loss, args.Asset,
 		args.Old, args.New, args.Initiator,
 		args.Receiver, args.mark(), args.infoDigest(),
 		args.value2(), args.height(), args.AccType)
@@ -276,6 +277,8 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		return args.transactionOfContractCall()
 	case common.SendLossReport:
 		return args.transactionOfSendLossReport()
+	case common.Vote:
+		return args.transactionOfVote()
 	//... todo 还有未实现的
 	default:
 		return nil

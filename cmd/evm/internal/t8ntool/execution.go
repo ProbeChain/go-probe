@@ -130,6 +130,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 		Cancellation:     core.Cancellation,
 		ContractTransfer: core.ContractTransfer,
 		SendLossReport:   core.SendLossReport,
+		Vote:             core.Vote,
 	}
 	// If currentBaseFee is defined, add it to the vmContext.
 	if pre.Env.BaseFee != nil {

@@ -91,7 +91,6 @@ type TxData interface {
 	from() *common.Address
 	owner() *common.Address
 	beneficiary() *common.Address
-	vote() *common.Address
 	loss() *common.Address
 	asset() *common.Address
 	old() *common.Address
@@ -457,7 +456,6 @@ func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 
 func (tx *Transaction) Owner() *common.Address       { return tx.inner.owner() }
 func (tx *Transaction) Beneficiary() *common.Address { return tx.inner.beneficiary() }
-func (tx *Transaction) Vote() *common.Address        { return tx.inner.vote() }
 func (tx *Transaction) Loss() *common.Address        { return tx.inner.loss() }
 func (tx *Transaction) Asset() *common.Address       { return tx.inner.asset() }
 func (tx *Transaction) Old() *common.Address         { return tx.inner.old() }
@@ -617,7 +615,7 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 	gasPrice, gasFeeCap, gasTipCap *big.Int,
 	data []byte, accessList AccessList, checkNonce bool,
 	owner *common.Address, beneficiary *common.Address,
-	vote *common.Address, loss *common.Address, asset *common.Address,
+	loss *common.Address, asset *common.Address,
 	old *common.Address, new *common.Address, initiator *common.Address,
 	receiver *common.Address, mark []byte, infoDigest []byte,
 	amount2 *big.Int, height *big.Int, accType *hexutil.Uint8) Message {
@@ -637,7 +635,6 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 
 		owner:       owner,
 		beneficiary: beneficiary,
-		vote:        vote,
 		loss:        loss,
 		asset:       asset,
 		old:         old,
@@ -661,15 +658,22 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		gasFeeCap:  new(big.Int).Set(tx.GasFeeCap()),
 		gasTipCap:  new(big.Int).Set(tx.GasTipCap()),
 		to:         tx.To(),
-		bizType:    tx.BizType(),
 		amount:     tx.Value(),
 		data:       tx.Data(),
 		accessList: tx.AccessList(),
 		checkNonce: true,
-		new:        tx.New(),
+		bizType:    tx.BizType(),
 		accType:    tx.AccType(),
+		new:        tx.New(),
+		old:        tx.Old(),
+		asset:      tx.Asset(),
 		loss:       tx.Loss(),
+		initiator:  tx.Initiator(),
 		receiver:   tx.Receiver(),
+		height:     tx.Height(),
+		amount2:    tx.Value2(),
+		mark:       tx.Mark(),
+		infoDigest: tx.InfoDigest(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {

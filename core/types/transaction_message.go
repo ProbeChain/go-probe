@@ -14,7 +14,6 @@ type Message struct {
 	from        common.Address
 	owner       *common.Address
 	beneficiary *common.Address
-	vote        *common.Address
 	loss        *common.Address
 	asset       *common.Address
 	old         *common.Address
@@ -54,7 +53,6 @@ func (m Message) BizType() uint8         { return m.bizType }
 
 func (m Message) Owner() *common.Address       { return m.owner }
 func (m Message) Beneficiary() *common.Address { return m.beneficiary }
-func (m Message) Vote() *common.Address        { return m.vote }
 func (m Message) Loss() *common.Address        { return m.loss }
 func (m Message) Asset() *common.Address       { return m.asset }
 func (m Message) Old() *common.Address         { return m.old }

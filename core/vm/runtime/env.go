@@ -40,6 +40,7 @@ func NewEnv(cfg *Config) *vm.EVM {
 		Cancellation:     core.Cancellation,
 		ContractTransfer: core.ContractTransfer,
 		SendLossReport:   core.SendLossReport,
+		Vote:             core.Vote,
 	}
 
 	return vm.NewEVM(blockContext, txContext, cfg.State, cfg.ChainConfig, cfg.EVMConfig)

@@ -43,7 +43,6 @@ type DynamicFeeTx struct {
 	From        *common.Address `rlp:"nil"`
 	Owner       *common.Address `rlp:"nil"`
 	Beneficiary *common.Address `rlp:"nil"`
-	Vote        *common.Address `rlp:"nil"`
 	Loss        *common.Address `rlp:"nil"`
 	Asset       *common.Address `rlp:"nil"`
 	Old         *common.Address `rlp:"nil"`
@@ -127,7 +126,6 @@ func (tx *DynamicFeeTx) bizType() uint8         { return tx.BizType }
 func (tx *DynamicFeeTx) from() *common.Address        { return tx.From }
 func (tx *DynamicFeeTx) owner() *common.Address       { return tx.Owner }
 func (tx *DynamicFeeTx) beneficiary() *common.Address { return tx.Beneficiary }
-func (tx *DynamicFeeTx) vote() *common.Address        { return tx.Vote }
 func (tx *DynamicFeeTx) loss() *common.Address        { return tx.Loss }
 func (tx *DynamicFeeTx) asset() *common.Address       { return tx.Asset }
 func (tx *DynamicFeeTx) old() *common.Address         { return tx.Old }
