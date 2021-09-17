@@ -311,7 +311,7 @@ func (i infoForAuthorizeChange) dirtied() *common.Address {
 }
 
 func (d delegateValueForAuthorizeChange) revert(db *StateDB) {
-	db.getStateObject(*d.account).authorizeAccount.DelegateValue = d.prev
+	db.getStateObject(*d.account).authorizeAccount.VoteValue = d.prev
 }
 
 func (d delegateValueForAuthorizeChange) dirtied() *common.Address {

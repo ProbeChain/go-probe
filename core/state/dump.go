@@ -57,30 +57,29 @@ type DumpAccount struct {
 	Address   *common.Address        `json:"address,omitempty"` // Address only present in iterative (line-by-line) mode
 	SecureKey hexutil.Bytes          `json:"key,omitempty"`     // If we don't have address, we can output the key
 
-	VoteAccount   *common.Address `json:"voteAccount"`
-	LossAccount   *common.Address `json:"lossAccount"`
-	NewAccount    *common.Address `json:"newAccount"`
-	Owner         *common.Address `json:"owner"`
-	VoteValue     hexutil.Big     `json:"voteValue"`
-	PledgeValue   hexutil.Big     `json:"pledgeValue"`
-	DelegateValue hexutil.Big     `json:"delegateValue"`
-	InterestRate  hexutil.Big     `json:"interestRate"`
-	ValidPeriod   hexutil.Big     `json:"validPeriod"`
-	Height        hexutil.Big     `json:"height"`
-	Value         hexutil.Big     `json:"value"`
-	Nonce         uint64          `json:"nonce"`
-	Data          hexutil.Bytes   `json:"data"`
-	CodeHash      hexutil.Bytes   `json:"codeHash"`
-	StorageRoot   common.Hash     `json:"storageRoot"`
-	Info          hexutil.Bytes   `json:"info"`
-	InfoDigest    hexutil.Bytes   `json:"infoDigest"`
-	AuthorState   bool            `json:"authorState"`
-	LossState     hexutil.Uint8   `json:"lossState"`
-	Type          hexutil.Uint8   `json:"type"`
-	Ip            hexutil.Bytes   `json:"ip"`
-	Port          hexutil.Uint8   `json:"port"`
-	LossType      hexutil.Uint8   `json:"lossType"`
-	AccountType   hexutil.Uint8   `json:"accountType"`
+	VoteAccount  *common.Address `json:"voteAccount"`
+	LossAccount  *common.Address `json:"lossAccount"`
+	NewAccount   *common.Address `json:"newAccount"`
+	Owner        *common.Address `json:"owner"`
+	VoteValue    hexutil.Big     `json:"voteValue"`
+	PledgeValue  hexutil.Big     `json:"pledgeValue"`
+	InterestRate hexutil.Big     `json:"interestRate"`
+	ValidPeriod  hexutil.Big     `json:"validPeriod"`
+	Height       hexutil.Big     `json:"height"`
+	Value        hexutil.Big     `json:"value"`
+	Nonce        uint64          `json:"nonce"`
+	Data         hexutil.Bytes   `json:"data"`
+	CodeHash     hexutil.Bytes   `json:"codeHash"`
+	StorageRoot  common.Hash     `json:"storageRoot"`
+	Info         hexutil.Bytes   `json:"info"`
+	InfoDigest   hexutil.Bytes   `json:"infoDigest"`
+	AuthorState  bool            `json:"authorState"`
+	LossState    hexutil.Uint8   `json:"lossState"`
+	Type         hexutil.Uint8   `json:"type"`
+	Ip           hexutil.Bytes   `json:"ip"`
+	Port         hexutil.Uint8   `json:"port"`
+	LossType     hexutil.Uint8   `json:"lossType"`
+	AccountType  hexutil.Uint8   `json:"accountType"`
 }
 
 // Dump represents the full dump in a collected format, as one large map.
@@ -133,34 +132,33 @@ func (d iterativeDump) OnAccount(addr common.Address, account DumpAccount) {
 				SecureKey: account.SecureKey,
 				Address:   nil,*/
 
-		Root:          account.Root,
-		Code:          account.Code,
-		Storage:       account.Storage,
-		SecureKey:     account.SecureKey,
-		VoteAccount:   account.VoteAccount,
-		LossAccount:   account.LossAccount,
-		NewAccount:    account.NewAccount,
-		Owner:         account.Owner,
-		VoteValue:     account.VoteValue,
-		PledgeValue:   account.PledgeValue,
-		DelegateValue: account.DelegateValue,
-		InterestRate:  account.InterestRate,
-		ValidPeriod:   account.ValidPeriod,
-		Height:        account.Height,
-		Value:         account.Value,
-		Nonce:         account.Nonce,
-		Data:          account.Data,
-		CodeHash:      account.CodeHash,
-		StorageRoot:   account.StorageRoot,
-		Info:          account.Info,
-		InfoDigest:    account.InfoDigest,
-		AuthorState:   account.AuthorState,
-		LossState:     account.LossState,
-		Type:          account.Type,
-		Ip:            account.Ip,
-		Port:          account.Port,
-		LossType:      account.LossType,
-		AccountType:   account.AccountType,
+		Root:         account.Root,
+		Code:         account.Code,
+		Storage:      account.Storage,
+		SecureKey:    account.SecureKey,
+		VoteAccount:  account.VoteAccount,
+		LossAccount:  account.LossAccount,
+		NewAccount:   account.NewAccount,
+		Owner:        account.Owner,
+		VoteValue:    account.VoteValue,
+		PledgeValue:  account.PledgeValue,
+		InterestRate: account.InterestRate,
+		ValidPeriod:  account.ValidPeriod,
+		Height:       account.Height,
+		Value:        account.Value,
+		Nonce:        account.Nonce,
+		Data:         account.Data,
+		CodeHash:     account.CodeHash,
+		StorageRoot:  account.StorageRoot,
+		Info:         account.Info,
+		InfoDigest:   account.InfoDigest,
+		AuthorState:  account.AuthorState,
+		LossState:    account.LossState,
+		Type:         account.Type,
+		Ip:           account.Ip,
+		Port:         account.Port,
+		LossType:     account.LossType,
+		AccountType:  account.AccountType,
 	}
 	if addr != (common.Address{}) {
 		dumpAccount.Address = &addr
@@ -327,13 +325,13 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 					continue
 				}
 				account = DumpAccount{
-					Owner:         &wrapper.authorizeAccount.Owner,
-					PledgeValue:   hexutil.Big(*wrapper.authorizeAccount.PledgeValue),
-					DelegateValue: hexutil.Big(*wrapper.authorizeAccount.DelegateValue),
-					Info:          wrapper.authorizeAccount.Info,
-					InterestRate:  hexutil.Big(*wrapper.authorizeAccount.InterestRate),
-					ValidPeriod:   hexutil.Big(*wrapper.authorizeAccount.ValidPeriod),
-					AuthorState:   wrapper.authorizeAccount.State,
+					Owner:        &wrapper.authorizeAccount.Owner,
+					PledgeValue:  hexutil.Big(*wrapper.authorizeAccount.PledgeValue),
+					VoteValue:    hexutil.Big(*wrapper.authorizeAccount.VoteValue),
+					Info:         wrapper.authorizeAccount.Info,
+					InterestRate: hexutil.Big(*wrapper.authorizeAccount.InterestRate),
+					ValidPeriod:  hexutil.Big(*wrapper.authorizeAccount.ValidPeriod),
+					AuthorState:  wrapper.authorizeAccount.State,
 					//Nonce:			wrapper.authorizeAccount.Nonce,
 				}
 			}
