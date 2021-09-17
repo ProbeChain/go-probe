@@ -18,12 +18,14 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 	"net"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -91,6 +93,9 @@ type StateDB struct {
 	oldDPoSAccounts []*DPoSAccount
 	// DPoSCandidateAccount DPoS候选账户 64
 	oldDPoSCandidateAccounts []*DPoSCandidateAccount
+
+	//Dops
+	dPoSCandidateList *SortedLinkedList
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -160,6 +165,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 			sdb.snapStorage = make(map[common.Hash]map[common.Hash][]byte)
 		}
 	}
+	sdb.dPoSCandidateList = NewSortedLinkedList(64, compareValue)
 	return sdb, nil
 }
 
@@ -675,6 +681,20 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	}
 
+}
+func (s *StateDB) UpdateDposAccount(addr common.Address, jsonData []byte) {
+	dposAddr := s.getStateObject(addr)
+	var dposMap map[string]interface{}
+	err := json.Unmarshal(jsonData, &dposMap)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	dposAddr.DPoSCandidateAccount.Ip = net.ParseIP(dposMap["ip"].(string))
+	port, err := strconv.ParseUint(dposMap["port"].(string), 10, 64)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	dposAddr.DPoSCandidateAccount.Port = uint16(port)
 }
 
 func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common.Hash) bool) error {

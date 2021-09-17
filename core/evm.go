@@ -53,20 +53,21 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer:      CanTransfer,
-		Transfer:         Transfer,
-		GetHash:          GetHashFn(header, chain),
-		Coinbase:         beneficiary,
-		BlockNumber:      new(big.Int).Set(header.Number),
-		Time:             new(big.Int).SetUint64(header.Time),
-		Difficulty:       new(big.Int).Set(header.Difficulty),
-		BaseFee:          baseFee,
-		GasLimit:         header.GasLimit,
-		Register:         Register,
-		Cancellation:     Cancellation,
-		ContractTransfer: ContractTransfer,
-		SendLossReport:   SendLossReport,
-		Vote:             Vote,
+		CanTransfer:       CanTransfer,
+		Transfer:          Transfer,
+		GetHash:           GetHashFn(header, chain),
+		Coinbase:          beneficiary,
+		BlockNumber:       new(big.Int).Set(header.Number),
+		Time:              new(big.Int).SetUint64(header.Time),
+		Difficulty:        new(big.Int).Set(header.Difficulty),
+		BaseFee:           baseFee,
+		GasLimit:          header.GasLimit,
+		Register:          Register,
+		Cancellation:      Cancellation,
+		ContractTransfer:  ContractTransfer,
+		SendLossReport:    SendLossReport,
+		ApplyToBeDPoSNode: ApplyToBeDPoSNode,
+		Vote:              Vote,
 	}
 }
 
@@ -168,6 +169,11 @@ func SendLossReport(db vm.StateDB, sender common.Address, amount *big.Int, txCon
 	fmt.Printf("SendLossReport, sender:%s,loss:%s,mark:%s,infoDigest:%s\n", sender, txContext.Loss, txContext.Mark, txContext.InfoDigest)
 	db.SubBalance(sender, amount)
 	//db.SetInfoDigestForLoss(sender, txContext.InfoDigest)
+}
+
+func ApplyToBeDPoSNode(db vm.StateDB, voteAddr common.Address, data []byte) {
+	fmt.Printf("ApplyToBeDPoSNode, voteAddr:%s,data:%s\n", voteAddr, data)
+	db.UpdateDposAccount(voteAddr, data)
 }
 
 // Vote subtracts amount from sender and adds amount to recipient using the given Db

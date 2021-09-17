@@ -81,6 +81,8 @@ type stateObject struct {
 	// 挂失账户
 	lossAccount LossAccount
 
+	DPoSCandidateAccount DPoSCandidateAccount
+
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -193,15 +195,16 @@ type LossAccount struct {
 // DPoSAccount DPoS账户
 type DPoSAccount struct {
 	Ip    net.IP
-	Port  uint8
+	Port  uint16
 	Owner common.Address
 }
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
 	Ip            net.IP
-	Port          uint8
+	Port          uint16
 	Owner         common.Address
+	Weight        *big.Int
 	DelegateValue *big.Int
 }
 

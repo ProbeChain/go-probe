@@ -3,6 +3,7 @@ package ethapi
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -345,6 +346,62 @@ func (args *TransactionArgs) setDefaultsOfVote(ctx context.Context, b Backend) e
 }
 
 func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
+	}
+	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	}
+	if *args.BizType != 0x22 {
+		return errors.New("Illegal business request")
+	}
+	if args.To == nil {
+		return errors.New("voteAccount Address is missing")
+	}
+
+	var dposMap map[string]interface{}
+	voteData, err := hexutil.Decode(args.Data.String())
+	if err != nil {
+		return errors.New("The format of the address data parameter is incorrect,data begin with 0x, eg: 0x7b226970223a223139322e3136382e302e31222c22706f7274223a2231333037227d")
+	}
+	err = json.Unmarshal(voteData, &dposMap)
+	if err != nil {
+		return errors.New("The format of the address data parameter is incorrect,data begin with 0x")
+	}
+	if nil == dposMap["ip"] || nil == dposMap["port"] {
+		return errors.New("voteAccount parameter data error ")
+	}
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			To:                   args.To,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Value:                args.Value,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
 	return nil
 }
 

@@ -308,6 +308,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret, err = st.TransitionDbOfSendLossReport()
 	case common.Vote:
 		ret, err = st.TransitionDbOfVote()
+	case common.ApplyToBeDPoSNode:
+		ret, err = st.TransitionDbOfApplyToBeDPoSNode()
 		//... todo 还有未实现的
 	}
 
