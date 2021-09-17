@@ -153,14 +153,14 @@ type RegularAccount struct {
 
 // PnsAccount PNS账号
 type PnsAccount struct {
-	Type byte
+	Type  byte
 	Owner common.Address
 	Data  []byte
 }
 
 // AssetAccount 资产账户 和 合约账户
 type AssetAccount struct {
-	Type byte
+	Type     byte
 	CodeHash []byte
 	//StorageRoot []byte
 	StorageRoot common.Hash
@@ -899,6 +899,8 @@ func (s *stateObject) Balance() *big.Int {
 		return s.regularAccount.Value
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Value
+	case common.ACC_TYPE_OF_AUTHORIZE:
+		return s.authorizeAccount.PledgeValue
 	default:
 		return new(big.Int)
 	}

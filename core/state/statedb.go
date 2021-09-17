@@ -661,8 +661,8 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 	case common.ACC_TYPE_OF_ASSET:
 	//case common.ACC_TYPE_OF_CONTRACT:
 	case common.ACC_TYPE_OF_AUTHORIZE:
-		pledgeAmount := common.AmountOfPledgeForCreateAccount(uint8(*context.AccType))
-		obj.authorizeAccount.PledgeValue = new(big.Int).SetUint64(pledgeAmount)
+		createAccountFee := common.AmountOfPledgeForCreateAccount(uint8(*context.AccType))
+		obj.authorizeAccount.PledgeValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
 		obj.authorizeAccount.Owner = context.From
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.LossAccount = *context.Loss
