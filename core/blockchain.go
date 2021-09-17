@@ -19,6 +19,7 @@ package core
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/p2p"
@@ -95,6 +96,7 @@ const (
 	TriesInMemory       = 128
 	maxChainPowAnswers  = 256
 	maxChainDposAcks    = 256
+	maxUnclePowAnswer   = 5
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -342,10 +344,9 @@ type BlockChain struct {
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
 
-	dposAcks *DposAckPool
-
-	//Index = 0 in the array indicates the first received powanswer
+	dposAcks   *DposAckPool
 	powAnswers *PowAnswerPool
+	dposNodes  map[uint64][]*enode.Node
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -411,6 +412,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		vmConfig:       vmConfig,
 		powAnswers:     NewPowAnswerPool(),
 		dposAcks:       NewDposAckPool(),
+		dposNodes:      make(map[uint64][]*enode.Node),
 		p2pServer:      p2pServer,
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
@@ -2613,11 +2615,30 @@ func (bc *BlockChain) updateP2pDposNodes() {
 
 // GetDposNodes get latest dpos nodes
 func (bc *BlockChain) GetDposNodes(number uint64) []*enode.Node {
+	index := number / bc.chainConfig.Dpos.Epoch
+
+	nodes := bc.dposNodes[index]
+	if nodes != nil {
+		return nodes
+	}
+
 	block := bc.GetBlockByNumber(number)
 	epoch := bc.chainConfig.Dpos.Epoch
 	state, _ := bc.StateAt(block.Root())
-	dposNodes := state.GetDposNodes(block.Root(), number, epoch)
-	return dposNodes
+	nodes = state.GetDposNodes(block.Root(), number, epoch)
+	bc.dposNodes[index] = nodes // cache it
+
+	return nodes
+}
+
+// GetDposNode get cur dpos node by dpos ack
+func (bc *BlockChain) GetDposNode(dposAck *types.DposAck) *enode.Node {
+	nodes := bc.GetDposNodes(dposAck.Number.Uint64())
+	ep := int(dposAck.EpochPosition)
+	if len(nodes) > ep {
+		return nodes[ep]
+	}
+	return nil
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
@@ -2745,6 +2766,13 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
 }
 
+// CheckPowAnswer check a pow answer is legal (no check the MixDigest nonce is right)
+func (bc *BlockChain) CheckPowAnswer(powAnswer *types.PowAnswer) bool {
+	number := powAnswer.Number.Uint64()
+	chainNumber := bc.CurrentBlock().NumberU64()
+	return number >= chainNumber-maxUnclePowAnswer && number <= chainNumber+maxUnclePowAnswer
+}
+
 // HandlePowAnswer send a pow answer to worker and save it
 func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	if bc.powAnswers.Contain(powAnswer) {
@@ -2755,9 +2783,15 @@ func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	}
 }
 
-// SavePowAnswer save a pow answer to set
-func (bc *BlockChain) SavePowAnswer(powAnswer *types.PowAnswer) {
-	bc.powAnswers.Add(powAnswer)
+// CheckDposAck check a dpos ack is legal
+func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
+	node := bc.GetDposNode(dposAck)
+	if node != nil {
+		pubkey := node.Pubkey()
+		pb := elliptic.Marshal(node.Pubkey(), pubkey.X, pubkey.Y)
+		return dposAck.VerifySignature(pb)
+	}
+	return false
 }
 
 // HandleDposAck send a dpos ack to worker and save it
@@ -2768,11 +2802,6 @@ func (bc *BlockChain) HandleDposAck(dposAck *types.DposAck) int {
 		bc.dposAcks.Add(dposAck)
 		return bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
 	}
-}
-
-// SaveDposAck save a dpos ack to dposAckPool
-func (bc *BlockChain) SaveDposAck(dposAck *types.DposAck) {
-	bc.dposAcks.Add(dposAck)
 }
 
 // GetPowAnswers get a pow answer list
@@ -2792,7 +2821,7 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 
 // GetUnclePowAnswers get uncle pow answer list
 func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
-	uncles := 5
+	uncles := maxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
 	for uncles >= 0 {
 		ans = append(ans, bc.powAnswers.List(big.NewInt(0).Sub(number, big.NewInt(int64(uncles))))...)

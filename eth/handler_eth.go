@@ -19,6 +19,7 @@ package eth
 import (
 	"errors"
 	"fmt"
+	"github.com/status-im/keycard-go/hexutils"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -226,13 +227,15 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 // pow answer broadcast for the local node to process.
 func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.PowAnswer) error {
 	// boardcast pow answer again
-	peer.KnownPowAnswer(powAnswer.Id())
-	for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
-		if err := peer.SendNewPowAnswer(powAnswer); err != nil {
-			log.Debug("SendNewPowAnswer", "err", err)
+	if h.chain.CheckPowAnswer(powAnswer) {
+		peer.KnownPowAnswer(powAnswer.Id())
+		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
+			if err := peer.SendNewPowAnswer(powAnswer); err != nil {
+				log.Debug("SendNewPowAnswer", "err", err)
+			}
 		}
+		h.chain.HandlePowAnswer(powAnswer)
 	}
-	h.chain.HandlePowAnswer(powAnswer)
 	return nil
 }
 
@@ -240,12 +243,17 @@ func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.P
 // dpos ack for the local node to process.
 func (h *ethHandler) handleDposAckBroadcast(peer *eth.Peer, dposAck *types.DposAck) error {
 	// boardcast dpos ack again
-	peer.KnownDposAck(dposAck.Id())
-	for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
-		if err := peer.SendNewDposAck(dposAck); err != nil {
-			log.Debug("SendNewDposAck", "err", err)
+	if h.chain.CheckDposAck(dposAck) {
+		peer.KnownDposAck(dposAck.Id())
+		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
+			if err := peer.SendNewDposAck(dposAck); err != nil {
+				log.Debug("SendNewDposAck", "err", err)
+			}
 		}
+		h.chain.HandleDposAck(dposAck)
+	} else {
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+		return errors.New("DposAck broadcast fail, because the dpos ack is illegality")
 	}
-	h.chain.HandleDposAck(dposAck)
 	return nil
 }

@@ -18,8 +18,11 @@
 package types
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"io"
 	"math/big"
 	"reflect"
@@ -37,6 +40,7 @@ var (
 )
 
 type DposAckType uint8
+
 const (
 	AckTypeAgree  DposAckType = 0
 	AckTypeOppose DposAckType = 1
@@ -98,6 +102,30 @@ type DposAck struct {
 func (dposAck *DposAck) Id() common.Hash {
 	// We assume that the miners will only give one answer in a given block number
 	return common.BytesToHash(dposAck.WitnessSig)
+}
+
+// Hash returns the dpos ack Keccak256
+func (dposAck *DposAck) Hash() []byte {
+	datas := make([]byte, 0, 1+8+32+1)
+	datas = append(datas, dposAck.EpochPosition)
+	datas = append(datas, dposAck.Number.Bytes()...)
+	datas = append(datas, dposAck.BlockHash.Bytes()...)
+	datas = append(datas, uint8(dposAck.AckType))
+	return crypto.Keccak256(datas)
+}
+
+// RecoverPubkey returns the dpos ack pubkey
+func (dposAck *DposAck) RecoverPubkey() ([]byte, error) {
+	return secp256k1.RecoverPubkey(dposAck.Hash(), dposAck.WitnessSig)
+}
+
+// VerifySignature returns the dpos ack verify signature result
+func (dposAck *DposAck) VerifySignature(_pubkey []byte) bool {
+	if pubkey, err := dposAck.RecoverPubkey(); err == nil {
+		return bytes.Compare(pubkey, _pubkey) == 0
+	} else {
+		return false
+	}
 }
 
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
