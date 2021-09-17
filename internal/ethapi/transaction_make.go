@@ -29,6 +29,7 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			BizType:    uint8(*args.BizType),
 			Loss:       args.Loss,
 			Receiver:   args.Receiver,
+			Height:     (*big.Int)(args.Height),
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -45,6 +46,7 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			BizType:    uint8(*args.BizType),
 			Loss:       args.Loss,
 			Receiver:   args.Receiver,
+			Height:     (*big.Int)(args.Height),
 		}
 	default:
 		data = &types.LegacyTx{
@@ -59,6 +61,7 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			BizType:  uint8(*args.BizType),
 			Loss:     args.Loss,
 			Receiver: args.Receiver,
+			Height:   (*big.Int)(args.Height),
 		}
 	}
 	return types.NewTx(data)

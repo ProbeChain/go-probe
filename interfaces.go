@@ -138,7 +138,7 @@ type CallMsg struct {
 	Initiator   *common.Address
 	Receiver    *common.Address
 	Value2      *big.Int
-	Height      uint64
+	Height      *big.Int
 	Mark        []byte
 	InfoDigest  []byte
 }

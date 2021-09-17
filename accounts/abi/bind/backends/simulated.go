@@ -807,7 +807,7 @@ func (m callMsg) Old() *common.Address         { return m.CallMsg.Old }
 func (m callMsg) Initiator() *common.Address   { return m.CallMsg.Initiator }
 func (m callMsg) Receiver() *common.Address    { return m.CallMsg.Receiver }
 func (m callMsg) Value2() *big.Int             { return m.CallMsg.Value2 }
-func (m callMsg) Height() uint64               { return m.CallMsg.Height }
+func (m callMsg) Height() *big.Int             { return m.CallMsg.Height }
 func (m callMsg) Mark() []byte                 { return m.CallMsg.Mark }
 func (m callMsg) InfoDigest() []byte           { return m.CallMsg.InfoDigest }
 

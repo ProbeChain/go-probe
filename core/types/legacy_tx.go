@@ -48,7 +48,7 @@ type LegacyTx struct {
 	Value2      *big.Int
 	Mark        []byte
 	InfoDigest  []byte
-	Height      uint64
+	Height      *big.Int
 	AccType     *hexutil.Uint8
 }
 
@@ -99,6 +99,7 @@ func (tx *LegacyTx) copy() TxData {
 		Receiver:   tx.Receiver,
 		Mark:       common.CopyBytes(tx.Mark),
 		InfoDigest: common.CopyBytes(tx.infoDigest()),
+		Height:     tx.Height,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -143,7 +144,7 @@ func (tx *LegacyTx) new() *common.Address         { return tx.New }
 func (tx *LegacyTx) initiator() *common.Address   { return tx.Initiator }
 func (tx *LegacyTx) receiver() *common.Address    { return tx.Receiver }
 func (tx *LegacyTx) value2() *big.Int             { return tx.Value2 }
-func (tx *LegacyTx) height() uint64               { return tx.Height }
+func (tx *LegacyTx) height() *big.Int             { return tx.Height }
 func (tx *LegacyTx) mark() []byte                 { return tx.Mark }
 func (tx *LegacyTx) infoDigest() []byte           { return tx.InfoDigest }
 func (tx *LegacyTx) accType() *hexutil.Uint8      { return tx.AccType }

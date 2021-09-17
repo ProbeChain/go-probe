@@ -99,7 +99,7 @@ type TxData interface {
 	initiator() *common.Address
 	receiver() *common.Address
 	value2() *big.Int
-	height() uint64
+	height() *big.Int
 	mark() []byte
 	infoDigest() []byte
 	accType() *hexutil.Uint8
@@ -465,7 +465,7 @@ func (tx *Transaction) New() *common.Address         { return tx.inner.new() }
 func (tx *Transaction) Initiator() *common.Address   { return tx.inner.initiator() }
 func (tx *Transaction) Receiver() *common.Address    { return tx.inner.receiver() }
 func (tx *Transaction) Value2() *big.Int             { return tx.inner.value2() }
-func (tx *Transaction) Height() uint64               { return tx.inner.height() }
+func (tx *Transaction) Height() *big.Int             { return tx.inner.height() }
 func (tx *Transaction) Mark() []byte                 { return tx.inner.mark() }
 func (tx *Transaction) InfoDigest() []byte           { return tx.inner.infoDigest() }
 
@@ -620,7 +620,7 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 	vote *common.Address, loss *common.Address, asset *common.Address,
 	old *common.Address, new *common.Address, initiator *common.Address,
 	receiver *common.Address, mark []byte, infoDigest []byte,
-	amount2 *big.Int, height uint64, accType *hexutil.Uint8) Message {
+	amount2 *big.Int, height *big.Int, accType *hexutil.Uint8) Message {
 	return Message{
 		from:       from,
 		to:         to,

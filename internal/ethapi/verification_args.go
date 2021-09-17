@@ -17,6 +17,7 @@ import (
 //wxc todo 各种业务类型的默认值设置实现
 // setDefaultsOfRegister set default parameters of register business type
 func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error {
+	currentBlockNumber := b.CurrentBlock().Number()
 	if args.AccType == nil {
 		return errors.New(`account type must be specified`)
 	}
@@ -75,6 +76,9 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 			return errors.New(`pledge amount must be specified and greater than 0`)
 		} else {
 			args.Value = (*hexutil.Big)(new(big.Int).Add(args.Value.ToInt(), new(big.Int).SetUint64(pledgeAmount)))
+		}
+		if args.Height == nil || args.Height.ToInt().Cmp(currentBlockNumber) < 1 {
+			return errors.New(`valid period block number must be specified and greater than current block number`)
 		}
 	} else {
 		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
@@ -135,6 +139,7 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 			AccType:              args.AccType,
 			Loss:                 args.Loss,
 			Receiver:             args.Receiver,
+			Height:               args.Height,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())

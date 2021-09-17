@@ -137,7 +137,7 @@ type TxContext struct {
 	BizType    uint8
 	Value      *big.Int
 	Value2     *big.Int
-	Height     uint64
+	Height     *big.Int
 	Data       []byte
 	Mark       []byte
 	InfoDigest []byte

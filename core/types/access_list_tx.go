@@ -70,7 +70,7 @@ type AccessListTx struct {
 	Value2      *big.Int
 	Mark        []byte
 	InfoDigest  []byte
-	Height      uint64
+	Height      *big.Int
 	AccType     *hexutil.Uint8
 }
 
@@ -96,6 +96,7 @@ func (tx *AccessListTx) copy() TxData {
 		Receiver:   tx.Receiver,
 		Mark:       common.CopyBytes(tx.Mark),
 		InfoDigest: common.CopyBytes(tx.infoDigest()),
+		Height:     tx.Height,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -145,7 +146,7 @@ func (tx *AccessListTx) new() *common.Address         { return tx.New }
 func (tx *AccessListTx) initiator() *common.Address   { return tx.Initiator }
 func (tx *AccessListTx) receiver() *common.Address    { return tx.Receiver }
 func (tx *AccessListTx) value2() *big.Int             { return tx.Value2 }
-func (tx *AccessListTx) height() uint64               { return tx.Height }
+func (tx *AccessListTx) height() *big.Int             { return tx.Height }
 func (tx *AccessListTx) mark() []byte                 { return tx.Mark }
 func (tx *AccessListTx) infoDigest() []byte           { return tx.InfoDigest }
 func (tx *AccessListTx) accType() *hexutil.Uint8      { return tx.AccType }

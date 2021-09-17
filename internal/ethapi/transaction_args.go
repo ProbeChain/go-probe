@@ -52,7 +52,7 @@ type TransactionArgs struct {
 	Value                *hexutil.Big    `json:"value"`
 	Value2               *hexutil.Big    `json:"value2"`
 	Nonce                *hexutil.Uint64 `json:"nonce"`
-	Height               *hexutil.Uint64 `json:"height"`
+	Height               *hexutil.Big    `json:"height"`
 
 	Data       *hexutil.Bytes `json:"data"`
 	Input      *hexutil.Bytes `json:"input"`
@@ -104,11 +104,11 @@ func (args *TransactionArgs) value2() *big.Int {
 	return nil
 }
 
-func (args *TransactionArgs) height() uint64 {
+func (args *TransactionArgs) height() *big.Int {
 	if args.Height != nil {
-		return uint64(*args.Height)
+		return args.Height.ToInt()
 	}
-	return 0
+	return nil
 }
 
 // setDefaults fills in default values for unspecified tx fields.

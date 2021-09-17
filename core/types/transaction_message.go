@@ -26,7 +26,7 @@ type Message struct {
 	nonce      uint64
 	amount     *big.Int
 	amount2    *big.Int
-	height     uint64
+	height     *big.Int
 	gasLimit   uint64
 	gasPrice   *big.Int
 	gasFeeCap  *big.Int
@@ -62,7 +62,7 @@ func (m Message) New() *common.Address         { return m.new }
 func (m Message) Initiator() *common.Address   { return m.initiator }
 func (m Message) Receiver() *common.Address    { return m.receiver }
 func (m Message) Value2() *big.Int             { return m.amount2 }
-func (m Message) Height() uint64               { return m.height }
+func (m Message) Height() *big.Int             { return m.height }
 func (m Message) Mark() []byte                 { return m.mark }
 func (m Message) InfoDigest() []byte           { return m.infoDigest }
 func (m Message) AccType() *hexutil.Uint8      { return m.accType }

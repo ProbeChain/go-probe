@@ -53,7 +53,7 @@ type DynamicFeeTx struct {
 	Value2      *big.Int
 	Mark        []byte
 	InfoDigest  []byte
-	Height      uint64
+	Height      *big.Int
 	AccType     *hexutil.Uint8
 }
 
@@ -82,6 +82,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 		Receiver:   tx.Receiver,
 		Mark:       common.CopyBytes(tx.Mark),
 		InfoDigest: common.CopyBytes(tx.infoDigest()),
+		Height:     tx.Height,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -134,7 +135,7 @@ func (tx *DynamicFeeTx) new() *common.Address         { return tx.New }
 func (tx *DynamicFeeTx) initiator() *common.Address   { return tx.Initiator }
 func (tx *DynamicFeeTx) receiver() *common.Address    { return tx.Receiver }
 func (tx *DynamicFeeTx) value2() *big.Int             { return tx.Value2 }
-func (tx *DynamicFeeTx) height() uint64               { return tx.Height }
+func (tx *DynamicFeeTx) height() *big.Int             { return tx.Height }
 func (tx *DynamicFeeTx) mark() []byte                 { return tx.Mark }
 func (tx *DynamicFeeTx) infoDigest() []byte           { return tx.InfoDigest }
 func (tx *DynamicFeeTx) accType() *hexutil.Uint8      { return tx.AccType }
