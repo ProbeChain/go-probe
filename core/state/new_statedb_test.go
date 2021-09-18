@@ -41,20 +41,20 @@ func TestSetData(t *testing.T) {
 func TestTrieAndRlp(t *testing.T) {
 	s := newStateNewTest()
 	//address := common.BytesToAddress([]byte{0x01})
-	address := common.BytesToAddress(common.Hex2Bytes("0x006F0452548E1607836D06C7B2Be28576a076698bF59e47760"))
+	address := common.HexToAddress("0x0085c9ef121fbdcb1bf8d0a7c606c363c0b3f172068cc3507b")
 	//obj1 := s.state.GetOrNewStateObject(address)
 	//fmt.Printf(" before GetOrNewStateObject：%v \n", obj1.regularAccount)
 	////obj1.setValueForRegular(big.NewInt(20))
 	//obj1.regularAccount.Value = big.NewInt(20)
 	s.state.SetValueForRegular(address, big.NewInt(210))
-	root := s.state.IntermediateRoot(false)
-	fmt.Printf("trie.TryGe root：%v \n", root)
+	//root := s.state.IntermediateRoot(false)
+	//fmt.Printf("trie.TryGe root：%v \n", root)
 	var data2 *RegularAccount
 	// write some of them to the trie
 	//s.state.updateStateObject(obj1)
 	//s.state.updateStateObject(obj2)
 	s.state.Commit(false)
-	s.state.Database().TrieDB().Commit(root, true, nil)
+	//s.state.Database().TrieDB().Commit(root, true, nil)
 	result, _ := s.state.trie.TryGet(address.Bytes())
 	data2 = new(RegularAccount)
 	if err := rlp.DecodeBytes(result, data2); err != nil {

@@ -229,13 +229,14 @@ func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err erro
 	//	return common.Hash{}, fmt.Errorf("trieType no exsist")
 	//}
 	root0, err := t.regularTrie.Commit(onleaf)
-	root1, err := t.pnsTrie.Commit(onleaf)
-	root2, err := t.digitalTrie.Commit(onleaf)
-	root3, err := t.contractTrie.Commit(onleaf)
-	root4, err := t.authorizeTrie.Commit(onleaf)
-	root5, err := t.lossTrie.Commit(onleaf)
+	//root1, err := t.pnsTrie.Commit(onleaf)
+	//root2, err := t.digitalTrie.Commit(onleaf)
+	//root3, err := t.contractTrie.Commit(onleaf)
+	//root4, err := t.authorizeTrie.Commit(onleaf)
+	//root5, err := t.lossTrie.Commit(onleaf)
 
-	hashes := []common.Hash{root0, root1, root2, root3, root4, root5}
+	//hashes := []common.Hash{root0, root1, root2, root3, root4, root5}
+	hashes := []common.Hash{root0, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 
 	return BuildHash(hashes), err
 }
