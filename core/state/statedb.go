@@ -2007,53 +2007,6 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	}
 }
 
-func (s *StateDB) GetDPosByHeight(height *big.Int) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var dPoSAccount DPoSAccount
-	for _, d := range s.dPoSAccounts {
-		if d.Height.Cmp(height) == 0 {
-			dPoSAccount = d
-		}
-	}
-	return dPoSAccount
-}
-
-func (s *StateDB) GetDPosByAddr(addr common.Address) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var dPoSAccount DPoSAccount
-	for _, d := range s.dPoSAccounts {
-		if d.Owner == addr {
-			dPoSAccount = d
-		}
-	}
-	return dPoSAccount
-}
-
-func (s *StateDB) AddDPos(dDoSAccount DPoSAccount) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	s.dPoSAccounts = append(s.dPoSAccounts, dDoSAccount)
-	//sort.Sort(accountsByURL(liveList))
-}
-
-func (s *StateDB) DeleteDPosByAddr(addr common.Address) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var i int
-	for j, d := range s.dPoSAccounts {
-		if d.Owner == addr {
-			i = j
-		}
-	}
-	s.dPoSAccounts = append(s.dPoSAccounts[:i], s.dPoSAccounts[i+1:]...)
-}
-
 // getStateObjectTireByAccountType return stateObject's tire
 func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 	switch accountType {
