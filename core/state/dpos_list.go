@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 	"sync"
 )
 
@@ -26,19 +25,6 @@ func newDposList() *dposList {
 		oldDPoSAccounts:          make([]DPoSAccount, 64),
 		oldDPoSCandidateAccounts: make([]DPoSCandidateAccount, 64),
 	}
-}
-
-func (s *dposList) GetDPosByHeight(height *big.Int) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var dPoSAccount DPoSAccount
-	for _, d := range s.dPoSAccounts {
-		if d.Height.Cmp(height) == 0 {
-			dPoSAccount = d
-		}
-	}
-	return dPoSAccount
 }
 
 func (s *dposList) GetDPosByAddr(addr common.Address) DPoSAccount {
@@ -75,19 +61,6 @@ func (s *dposList) DeleteDPosByAddr(addr common.Address) {
 	s.dPoSAccounts = append(s.dPoSAccounts[:i], s.dPoSAccounts[i+1:]...)
 }
 
-func (s *dposList) GetDPoSCandidateByHeight(height *big.Int) DPoSCandidateAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var account DPoSCandidateAccount
-	for _, d := range s.dPoSCandidateAccounts {
-		if d.Height.Cmp(height) == 0 {
-			account = d
-		}
-	}
-	return account
-}
-
 func (s *dposList) GetDPoSCandidateByAddr(addr common.Address) DPoSCandidateAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -122,19 +95,6 @@ func (s *dposList) DeleteDPoSCandidateByAddr(addr common.Address) {
 	s.dPoSCandidateAccounts = append(s.dPoSCandidateAccounts[:i], s.dPoSCandidateAccounts[i+1:]...)
 }
 
-func (s *dposList) GetOldDPoSCandidateByHeight(height *big.Int) DPoSCandidateAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var account DPoSCandidateAccount
-	for _, d := range s.oldDPoSCandidateAccounts {
-		if d.Height.Cmp(height) == 0 {
-			account = d
-		}
-	}
-	return account
-}
-
 func (s *dposList) GetOldDPoSCandidateByAddr(addr common.Address) DPoSCandidateAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -167,19 +127,6 @@ func (s *dposList) DeleteOldDPoSCandidateByAddr(addr common.Address) {
 		}
 	}
 	s.oldDPoSCandidateAccounts = append(s.oldDPoSCandidateAccounts[:i], s.oldDPoSCandidateAccounts[i+1:]...)
-}
-
-func (s *dposList) GetOldDPoSByHeight(height *big.Int) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var account DPoSAccount
-	for _, d := range s.oldDPoSAccounts {
-		if d.Height.Cmp(height) == 0 {
-			account = d
-		}
-	}
-	return account
 }
 
 func (s *dposList) GetOldDPoSByAddr(addr common.Address) DPoSAccount {
