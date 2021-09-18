@@ -164,15 +164,24 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 	return trie, nil
 }
 
-var normalBtOnce sync.Once
-var normalBt *BinaryTree
+var rwMutes sync.RWMutex
+var btMap map[string]*BinaryTree
 
-// NewNormalBinary creates a normal account binary trie.
-func NewNormalBinary(root common.Hash, db *Database) (*Trie, error) {
-	normalBtOnce.Do(func() {
-		normalBt = initBinaryTree(root, db, 2, "./data/geth/trie.bin")
-	})
-	return newBinary(root, db, normalBt)
+func init() {
+	btMap = make(map[string]*BinaryTree)
+}
+
+// NewBinary creates a binary trie. path must be the same!!!!
+// WARN: If called twice, the path passes once to the absolute path and once to the relative path. An unknown error occurs!
+func NewBinary(root common.Hash, db *Database, path string, depth int) (*Trie, error) {
+	rwMutes.Lock()
+	defer rwMutes.Unlock()
+	bt, exists := btMap[path]
+	if !exists {
+		bt = initBinaryTree(root, db, path, depth)
+		btMap[path] = bt
+	}
+	return newBinary(root, db, bt)
 }
 
 // newBinary creates a binary trie.
@@ -204,7 +213,7 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 }
 
 // initBinaryTree init a binary tree.
-func initBinaryTree(root common.Hash, db *Database, depth int, triePath string) *BinaryTree {
+func initBinaryTree(root common.Hash, db *Database, triePath string, depth int) *BinaryTree {
 	binaryTree := &BinaryTree{
 		depth: depth,
 	}

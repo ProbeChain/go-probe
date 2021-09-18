@@ -28,8 +28,10 @@ import (
 	"math/rand"
 	"os"
 	"os/user"
+	"path"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 	"testing/quick"
 
@@ -54,8 +56,8 @@ func newEmpty() *Trie {
 	return trie
 }
 
-func newEmptyBinary(depth int) *Trie {
-	trie, _ := NewNormalBinary(common.Hash{}, NewDatabase(memorydb.New()))
+func newEmptyBinary(path string, depth int) *Trie {
+	trie, _ := NewBinary(common.Hash{}, NewDatabase(memorydb.New()), path, depth)
 	return trie
 }
 
@@ -66,6 +68,56 @@ func TestEmptyTrie(t *testing.T) {
 	if res != exp {
 		t.Errorf("expected %x got %x", exp, res)
 	}
+}
+
+func TestEmptyBinaryTrie(t *testing.T) {
+	dir := os.TempDir()
+	path1 := path.Join(dir, "t1.bin")
+	path2 := path.Join(dir, "t2.bin")
+	depth1 := 2
+	depth2 := 5
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	trie1 := newEmptyBinary(path1, depth1)
+	println("trie1 bt = ", trie1.bt)
+	go func() {
+		count := 1
+		for count <= 10 {
+			trie := newEmptyBinary(path1, depth1)
+			println("trie r1  bt = ", trie.bt, count)
+			if trie.bt != trie1.bt {
+				t.Logf("Error occurred")
+			}
+			count++
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		count := 11
+		for count <= 20 {
+			trie := newEmptyBinary(path1, depth1)
+			println("trie r2  bt = ", trie.bt, count)
+			if trie.bt != trie1.bt {
+				t.Logf("Error occurred")
+			}
+			count++
+		}
+		wg.Done()
+	}()
+
+	trie2 := newEmptyBinary(path2, depth2)
+	println("trie2 bt = ", trie2.bt)
+	if trie1.bt == trie2.bt {
+		t.Fatal("trie1.bt must not the trie2.bt")
+	}
+
+	defer os.Remove(path1)
+	defer os.Remove(path2)
+	defer trie1.Close()
+	defer trie2.Close()
+	wg.Wait()
 }
 
 func TestNull(t *testing.T) {
@@ -303,7 +355,8 @@ func TestDecodeAlters(t *testing.T) {
 
 func TestBinaryInsert(t *testing.T) {
 	depth := 2
-	trie := newEmptyBinary(depth)
+	path := "./trie.bin"
+	trie := newEmptyBinary(path, depth)
 	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
 	trie.TryUpdate(key, []byte("000000000"))
 	trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0xff}, []byte("111111111"))
@@ -329,14 +382,18 @@ func TestBinaryInsert(t *testing.T) {
 	trie.Commit(nil)
 	trie.db.Commit(hash, true, nil)
 	trie.Close()
+
+	os.RemoveAll(path)
 }
 
 func TestBinaryWriteToDB(t *testing.T) {
 	usr, _ := user.Current()
 	dir := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "DB")
 	diskdb, _ := leveldb.New(dir, 256, 0, "", false)
+	depth := 2
+	path := "./trie.bin"
 
-	trie, _ := NewNormalBinary(common.Hash{}, NewDatabase(diskdb))
+	trie, _ := NewBinary(common.Hash{}, NewDatabase(diskdb), path, depth)
 	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
 	//trie.TryUpdate(key, []byte("000000000"))
 	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0xff}, []byte("111111111"))
@@ -351,6 +408,8 @@ func TestBinaryWriteToDB(t *testing.T) {
 	trie.db.Commit(rootHash, true, nil)
 	ldb := trie.db.diskdb.(*leveldb.Database)
 	ldb.Close()
+	os.RemoveAll(path)
+	os.RemoveAll(ldb.Path())
 }
 
 func TestGet(t *testing.T) {
