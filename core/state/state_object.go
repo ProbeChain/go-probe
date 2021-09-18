@@ -192,23 +192,25 @@ type LossAccount struct {
 	InfoDigest  []byte         // 挂失内容摘要
 }
 
+// DPoSData DPoS账户公共数据
+type DPoSData struct {
+	Ip     net.IP
+	Port   uint16
+	Owner  common.Address
+	Pubkey []byte
+}
+
 // DPoSAccount DPoS账户
 type DPoSAccount struct {
-	Ip      net.IP
-	Port    uint64
-	Owner   common.Address
-	Info    []byte   // 信息
-	SignNum uint64   // 签名次数
-	Height  *big.Int // 上链高度
+	DPoSData
+	Info    []byte // 信息
+	SignNum uint64 // 签名次数
 }
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	Ip            net.IP
-	Port          uint64
-	Owner         common.Address
+	DPoSData
 	DelegateValue *big.Int // 选票数量
-	Height        *big.Int // 上链高度
 }
 
 type Wrapper struct {
