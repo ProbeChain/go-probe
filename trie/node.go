@@ -101,10 +101,13 @@ func (n *binaryHashNode) CalcHash() common.Hash {
 
 func (n *binaryLeaf) Copy() binaryLeaf {
 	var leaf binaryLeaf
+
 	for _, node := range *n {
+		Val := make([]byte, len(node.Val), len(node.Val))
+		copy(Val, node.Val)
 		leaf = append(leaf, binaryNode{
 			node.Key,
-			node.Val,
+			Val,
 		})
 	}
 	return leaf

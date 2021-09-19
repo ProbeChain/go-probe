@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/status-im/keycard-go/hexutils"
 	"os"
 	"path"
 	"reflect"
@@ -562,7 +561,7 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
-	log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "value", hexutils.BytesToHex(value))
+	//log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "value", hexutils.BytesToHex(value))
 	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
@@ -1170,10 +1169,20 @@ func (bt *BinaryTree) print() {
 	}
 }
 
+func (bt *BinaryTree) printCurDiffLeafs(info string) {
+	for _, diffLeaf := range bt.curDiffLeafs {
+		for _, leaf := range diffLeaf.Leaf {
+			log.Info("printCurDiffLeafs", "info", info, "Key", common.Bytes2Hex(leaf.Key), "Val", common.Bytes2Hex(leaf.Val))
+		}
+	}
+}
+
 func (alter *Alter) print() {
 	log.Info("Alter", "PreRoot", common.Bytes2Hex(alter.PreRoot[:]), "CurRoot", common.Bytes2Hex(alter.CurRoot[:]))
 	for _, diffLeaf := range alter.DiffLeafs {
-		log.Info("Alter", "Index", diffLeaf.Index, "diffLeaf", diffLeaf.Leaf)
+		for _, leaf := range diffLeaf.Leaf {
+			log.Info("Alter", "leafKey", common.Bytes2Hex(leaf.Key), "leafVal", common.Bytes2Hex(leaf.Val))
+		}
 	}
 }
 

@@ -1025,13 +1025,15 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 
 // commitAlter commit alters
 func (db *Database) commitAlter(batch ethdb.Batch) {
-	alters := db.trie.bt.alters
-	for i, alter := range alters {
-		if !alter.commit {
-			if bytes, err := rlp.EncodeToBytes(alter); err == nil {
-				rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
+	if db.trie.Binary() {
+		alters := db.trie.bt.alters
+		for i, alter := range alters {
+			if !alter.commit {
+				if bytes, err := rlp.EncodeToBytes(alter); err == nil {
+					rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
+				}
+				alters[i].commit = true
 			}
-			alters[i].commit = true
 		}
 	}
 }

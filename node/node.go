@@ -28,6 +28,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/log"
@@ -78,6 +79,7 @@ func New(conf *Config) (*Node, error) {
 			return nil, err
 		}
 		conf.DataDir = absdatadir
+		state.TrieDir = absdatadir
 	}
 	if conf.Logger == nil {
 		conf.Logger = log.New()

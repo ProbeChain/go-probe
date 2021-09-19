@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/trie"
 	lru "github.com/hashicorp/golang-lru"
+	"path"
 )
 
 const (
@@ -127,9 +128,12 @@ type cachingDB struct {
 }
 
 // OpenTrie opens the main account trie at a specific root hash.
+var TrieDir string
 func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
 	//tr, err := trie.NewSecure(root, db.db)
-	tr, err := trie.NewBinary(root, db.db, "./data/geth/trie.bin", 5)
+	//tr, err := trie.NewBinary(root, db.db, "./data/geth/trie.bin", 5)
+	triePath := path.Join(TrieDir, "trie.bin")
+	tr, err := trie.NewBinary(root, db.db, triePath, 5)
 	if err != nil {
 		return nil, err
 	}
