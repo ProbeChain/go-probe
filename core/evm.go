@@ -174,7 +174,7 @@ func SendLossReport(db vm.StateDB, sender common.Address, amount *big.Int, txCon
 
 func ApplyToBeDPoSNode(db vm.StateDB, sender common.Address, voteAddr common.Address, data []byte) {
 	fmt.Printf("ApplyToBeDPoSNode, ower:%s voteAddr:%s,data:%s\n", sender, voteAddr, data)
-	db.CreateDposAccount(sender, voteAddr, data)
+	db.CreateDPoSCandidateAccount(sender, voteAddr, data)
 }
 
 func UpdatingVotesOrData(db vm.StateDB, sender common.Address, voteAddr common.Address, data []byte) {

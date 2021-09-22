@@ -278,29 +278,6 @@ func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *
 	}
 }
 
-// getStateObjectTireByAccountType return stateObject's tire
-func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
-	/*	switch accountType {
-		case common.ACC_TYPE_OF_GENERAL:
-			return &s.regularTrie
-		case common.ACC_TYPE_OF_PNS:
-			return &s.pnsTrie
-		case common.ACC_TYPE_OF_ASSET:
-			return &s.digitalTrie
-		case common.ACC_TYPE_OF_CONTRACT:
-			return &s.contractTrie
-		case common.ACC_TYPE_OF_AUTHORIZE:
-			return &s.authorizeTrie
-		case common.ACC_TYPE_OF_LOSE:
-			return &s.lossTrie
-		case common.ACC_TYPE_OF_DPOS:
-			return &s.regularTrie
-		case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-			return &s.trie
-		}*/
-	return &s.trie
-}
-
 // newRegularAccount creates a state object.
 func newRegularAccount(db *StateDB, address common.Address, data RegularAccount) *stateObject {
 	if data.Value == nil {
@@ -419,9 +396,9 @@ func (s *stateObject) EncodeRLP(w io.Writer) error {
 	case common.ACC_TYPE_OF_LOSE:
 		return rlp.Encode(w, s.lossAccount)
 	case common.ACC_TYPE_OF_DPOS:
-		return rlp.Encode(w, s.db.dPoSAccounts)
+		return accounts.ErrUnknownAccount
 	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return rlp.Encode(w, s.db.dPoSCandidateAccounts)
+		return accounts.ErrUnknownAccount
 	default:
 		return accounts.ErrUnknownAccount
 	}

@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
 )
 
 // wxc todo 交易校验
@@ -348,9 +349,15 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 	if pool.currentState.GetNonce(from) > tx.Nonce() {
 		return ErrNonceTooLow
 	}
+
+	limitMaxValue := big.NewInt(1)
+	limitMaxValue.Mul(voteAccount.PledgeValue, big.NewInt(10))
+	if limitMaxValue.Cmp(tx.Value()) < 0 {
+		fmt.Println("dpos的value值大于10倍的质押数量")
+		return ErrInsufficientFunds
+	}
 	// Transactor should have enough funds to cover the costs
 	// cost == V + GP * GL
-
 	balacne := pool.currentState.GetBalance(from)
 	cost := tx.Cost()
 	fmt.Printf("from:%s, 余额：%s,cost: %d\n", from.String(), balacne.String(), cost.Int64())
@@ -358,7 +365,7 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 		fmt.Println("余额不足，无法支付GAS")
 		return ErrInsufficientFunds
 	}
-	//TODO DOPSvalue > 1/10
+
 	// Ensure the transaction has more gas than the basic tx fee.
 	intrGas, err := IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, pool.istanbul)
 	if err != nil {

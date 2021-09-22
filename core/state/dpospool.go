@@ -2,6 +2,7 @@ package state
 
 import (
 	"container/list"
+	"strings"
 	"sync"
 )
 
@@ -45,6 +46,21 @@ func (this SortedLinkedList) PutOnTop(value interface{}) {
 	}
 	if this.Len() > this.Limit {
 		this.Remove(this.Back())
+	}
+}
+
+func (this SortedLinkedList) remove(value interface{}) {
+	defer this.lock.Unlock()
+	this.lock.Lock()
+	if this.List.Len() == 0 {
+		return
+	}
+	var next *list.Element
+	for e := this.List.Front(); e != nil; e = next {
+		next = e.Next()
+		if strings.EqualFold(e.Value.(DPoSCandidateAccount).Owner.Hex(), value.(DPoSCandidateAccount).Owner.Hex()) {
+			this.Remove(e)
+		}
 	}
 }
 

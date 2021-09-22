@@ -83,15 +83,7 @@ type StateDB struct {
 	stateObjectsPending map[common.Address]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
 
-	// DPoSAccount DPoS账户 64
-	dPoSAccounts []*DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 64
-	dPoSCandidateAccounts []*DPoSCandidateAccount
-
-	// DPoSAccount DPoS账户 64
-	oldDPoSAccounts []*DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 64
-	oldDPoSCandidateAccounts []*DPoSCandidateAccount
+	dposList *dposList
 
 	//Dops
 	dPoSCandidateList *SortedLinkedList
@@ -153,6 +145,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		stateObjectsDirty:   make(map[common.Address]struct{}),
 		logs:                make(map[common.Hash][]*types.Log),
 		preimages:           make(map[common.Hash][]byte),
+		dposList:            newDposList(),
 		journal:             newJournal(),
 		accessList:          newAccessList(),
 		hasher:              crypto.NewKeccakState(),
@@ -164,7 +157,6 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 			sdb.snapStorage = make(map[common.Hash]map[common.Hash][]byte)
 		}
 	}
-	sdb.dPoSCandidateList = NewSortedLinkedList(64, compareValue)
 	return sdb, nil
 }
 
@@ -682,7 +674,7 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 
 }
 
-func (s *StateDB) CreateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
+func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Address, jsonData []byte) {
 	dposAddr := s.getStateObject(addr)
 	if nil != dposAddr {
 		return
@@ -703,6 +695,7 @@ func (s *StateDB) CreateDposAccount(ower common.Address, addr common.Address, js
 	enode.WriteString(remotePort)
 	dposAddr.DPoSCandidateAccount.Enode = []byte(enode.String())
 	dposAddr.DPoSCandidateAccount.Owner = ower
+	s.dPoSCandidateList.PutOnTop(dposAddr.DPoSCandidateAccount)
 
 }
 
@@ -1808,19 +1801,8 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	}
 }
 
-func (s *StateDB) getDPoSCandidateAccountList() []DPoSCandidateAccount {
-	var dPoSCandidateAccounts []DPoSCandidateAccount = make([]DPoSCandidateAccount, s.dPoSCandidateList.Limit)
-	i := 0
-	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
-		fmt.Println(element.Value.(DPoSCandidateAccount))
-		dPoSCandidateAccounts[i] = element.Value.(DPoSCandidateAccount)
-		i++
-	}
-	return dPoSCandidateAccounts
-}
-
 func (s *StateDB) getDpostList() []DPoSAccount {
-	var dPoSAccounts []DPoSAccount = make([]DPoSAccount, s.dPoSCandidateList.Limit)
+	var dPoSAccounts = make([]DPoSAccount, s.dPoSCandidateList.Limit)
 	i := 0
 	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
 		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
@@ -1829,4 +1811,27 @@ func (s *StateDB) getDpostList() []DPoSAccount {
 		i++
 	}
 	return dPoSAccounts
+}
+
+// getStateObjectTireByAccountType return stateObject's tire
+func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
+	/*	switch accountType {
+		case accounts.General:
+			return &s.regularTrie
+		case accounts.Pns:
+			return &s.pnsTrie
+		case accounts.Asset:
+			return &s.digitalTrie
+		case accounts.Contract:
+			return &s.contractTrie
+		case accounts.Authorize:
+			return &s.authorizeTrie
+		case accounts.Lose:
+			return &s.lossTrie
+		case accounts.DPoS:
+			return &s.regularTrie
+		case accounts.DPoSCandidate:
+			return &s.trie
+		}*/
+	return &s.trie
 }

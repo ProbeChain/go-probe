@@ -99,4 +99,6 @@ var (
 
 	// ErrValidPeriodTooLow is returned if valid period height less than current block height
 	ErrValidPeriodTooLow = errors.New("valid period too low")
+
+	ErrValidCandidateDPOSValue = errors.New("valid apply candidate dposAccout value too large")
 )
