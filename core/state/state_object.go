@@ -80,6 +80,8 @@ type stateObject struct {
 	// 挂失账户
 	lossAccount LossAccount
 
+	DPoSCandidateAccount DPoSCandidateAccount
+
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -109,21 +111,21 @@ type stateObject struct {
 func (s *stateObject) empty() bool {
 
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue == nil &&
 			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value == nil && !s.isNew
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && s.pnsAccount.Data == nil
 
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Type == 0 && s.assetAccount.CodeHash == nil && s.assetAccount.StorageRoot == emptyRoot &&
 			s.assetAccount.Value == nil && s.assetAccount.VoteAccount == common.Address{} && s.assetAccount.VoteValue == nil && s.assetAccount.Nonce == 0
 
-	case accounts.Authorize:
-		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue == nil && s.authorizeAccount.DelegateValue == nil &&
+	case common.ACC_TYPE_OF_AUTHORIZE:
+		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue == nil && s.authorizeAccount.VoteValue == nil &&
 			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.InterestRate == nil && s.authorizeAccount.ValidPeriod == nil
 
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return s.lossAccount.State == 0 && s.lossAccount.LossAccount == common.Address{} && s.lossAccount.NewAccount == common.Address{} &&
 			s.lossAccount.Height == nil && len(s.lossAccount.InfoDigest) == 0
 
@@ -152,16 +154,14 @@ type RegularAccount struct {
 
 // PnsAccount PNS账号
 type PnsAccount struct {
-	Type byte
-	// 24bytes地址
+	Type  byte
 	Owner common.Address
 	Data  []byte
 }
 
 // AssetAccount 资产账户 和 合约账户
 type AssetAccount struct {
-	Type byte
-	// 24bytes地址
+	Type     byte
 	CodeHash []byte
 	//StorageRoot []byte
 	StorageRoot common.Hash
@@ -173,18 +173,18 @@ type AssetAccount struct {
 
 // AuthorizeAccount 授权账户
 type AuthorizeAccount struct {
-	Owner         common.Address
-	PledgeValue   *big.Int
-	DelegateValue *big.Int
-	Info          []byte
-	InterestRate  *big.Int
-	ValidPeriod   *big.Int
-	State         bool
+	Owner        common.Address
+	PledgeValue  *big.Int
+	VoteValue    *big.Int
+	Info         []byte
+	InterestRate *big.Int
+	ValidPeriod  *big.Int
+	State        bool
 }
 
 // LossAccount 挂失账户
 type LossAccount struct {
-	State       byte           // 业务状态
+	State       byte           // 业务状态 0:1:2
 	LossAccount common.Address // 挂失账户地址
 	NewAccount  common.Address // 新账户地址
 	Height      *big.Int       // 上链高度
@@ -229,31 +229,31 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		err     error
 	)
 	switch accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		var data RegularAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.regularAccount = data
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		var data PnsAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.pnsAccount = data
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		var data AssetAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.assetAccount = data
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		var data AuthorizeAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.authorizeAccount = data
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		var data LossAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossAccount = data
-	case accounts.DPoS:
+	case common.ACC_TYPE_OF_DPOS:
 		var data DPoSAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.dPoSAccount = data
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 		var data DPoSCandidateAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.dPoSCandidateAccount = data
@@ -284,6 +284,29 @@ func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *
 	}
 }
 
+// getStateObjectTireByAccountType return stateObject's tire
+func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
+	/*	switch accountType {
+		case common.ACC_TYPE_OF_GENERAL:
+			return &s.regularTrie
+		case common.ACC_TYPE_OF_PNS:
+			return &s.pnsTrie
+		case common.ACC_TYPE_OF_ASSET:
+			return &s.digitalTrie
+		case common.ACC_TYPE_OF_CONTRACT:
+			return &s.contractTrie
+		case common.ACC_TYPE_OF_AUTHORIZE:
+			return &s.authorizeTrie
+		case common.ACC_TYPE_OF_LOSE:
+			return &s.lossTrie
+		case common.ACC_TYPE_OF_DPOS:
+			return &s.regularTrie
+		case common.ACC_TYPE_OF_DPOS_CANDIDATE:
+			return &s.trie
+		}*/
+	return &s.trie
+}
+
 // newRegularAccount creates a state object.
 func newRegularAccount(db *StateDB, address common.Address, data RegularAccount) *stateObject {
 	if data.Value == nil {
@@ -293,7 +316,7 @@ func newRegularAccount(db *StateDB, address common.Address, data RegularAccount)
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.General,
+		accountType:    common.ACC_TYPE_OF_GENERAL,
 		regularAccount: data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -307,7 +330,7 @@ func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateO
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.Pns,
+		accountType:    common.ACC_TYPE_OF_PNS,
 		pnsAccount:     data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -333,7 +356,7 @@ func newAssetAccount(db *StateDB, address common.Address, data AssetAccount) *st
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.Asset,
+		accountType:    common.ACC_TYPE_OF_ASSET,
 		assetAccount:   data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -347,7 +370,7 @@ func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAcco
 		db:               db,
 		address:          address,
 		addrHash:         crypto.Keccak256Hash(address[:]),
-		accountType:      accounts.Authorize,
+		accountType:      common.ACC_TYPE_OF_AUTHORIZE,
 		authorizeAccount: data,
 		originStorage:    make(Storage),
 		pendingStorage:   make(Storage),
@@ -361,7 +384,7 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accounts.Lose,
+		accountType:    common.ACC_TYPE_OF_LOSE,
 		lossAccount:    data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -375,7 +398,7 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType: 	accounts.Pns,
+		accountType: 	common.ACC_TYPE_OF_PNS,
 		dPoSAccount: 	data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -391,21 +414,19 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 // EncodeRLP implements rlp.Encoder.
 func (s *stateObject) EncodeRLP(w io.Writer) error {
 	switch s.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return rlp.Encode(w, s.regularAccount)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return rlp.Encode(w, s.pnsAccount)
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return rlp.Encode(w, s.assetAccount)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return rlp.Encode(w, s.authorizeAccount)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return rlp.Encode(w, s.lossAccount)
-	case accounts.DPoS:
-		// todo 代写
+	case common.ACC_TYPE_OF_DPOS:
 		return accounts.ErrUnknownAccount
-	case accounts.DPoSCandidate:
-		// todo 代写
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 		return accounts.ErrUnknownAccount
 	default:
 		return accounts.ErrUnknownAccount

@@ -18,12 +18,13 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -83,6 +84,9 @@ type StateDB struct {
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
 
 	dposList *dposList
+
+	//Dops
+	dPoSCandidateList *SortedLinkedList
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -153,6 +157,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 			sdb.snapStorage = make(map[common.Hash]map[common.Hash][]byte)
 		}
 	}
+	sdb.dPoSCandidateList = NewSortedLinkedList(64, compareValue)
 	return sdb, nil
 }
 
@@ -448,9 +453,9 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 	//stateObject.regularAccount.Balance = new(big.Int)
 	//stateObject.regularAccount.Value = new(big.Int)
 	switch stateObject.accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		stateObject.SetValueForRegular(new(big.Int))
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		stateObject.SetValueForAsset(new(big.Int))
 	default:
 	}
@@ -646,19 +651,42 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 func (s *StateDB) GenerateAccount(context vm.TxContext) {
 	obj, _ := s.createObject(*context.New)
 	obj.isNew = true
-	switch context.AccType {
-	case accounts.Pns:
+	switch byte(*context.AccType) {
+	case common.ACC_TYPE_OF_PNS:
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(0)
-	case accounts.Asset:
-	case accounts.Contract:
-	case accounts.Authorize:
-	case accounts.Lose:
-	case accounts.DPoS:
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_ASSET:
+	//case common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_AUTHORIZE:
+		createAccountFee := common.AmountOfPledgeForCreateAccount(uint8(*context.AccType))
+		obj.authorizeAccount.PledgeValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
+		obj.authorizeAccount.Owner = context.From
+		obj.authorizeAccount.ValidPeriod = context.Height
+		obj.authorizeAccount.VoteValue = new(big.Int).SetUint64(0)
+		obj.authorizeAccount.Info = context.Data
+	case common.ACC_TYPE_OF_LOSE:
+		obj.lossAccount.LossAccount = *context.Loss
+		obj.lossAccount.NewAccount = *context.Receiver
+		obj.lossAccount.State = byte(0)
+	case common.ACC_TYPE_OF_DPOS:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	}
 
+}
+func (s *StateDB) UpdateDposAccount(addr common.Address, jsonData []byte) {
+	dposAddr := s.getStateObject(addr)
+	var dposMap map[string]interface{}
+	err := json.Unmarshal(jsonData, &dposMap)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	dposAddr.DPoSCandidateAccount.Ip = net.ParseIP(dposMap["ip"].(string))
+	port, err := strconv.ParseUint(dposMap["port"].(string), 10, 64)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	dposAddr.DPoSCandidateAccount.Port = uint16(port)
 }
 
 func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common.Hash) bool) error {
@@ -1115,12 +1143,12 @@ func (s *StateDB) GetContract(addr common.Address) AssetAccount {
 }
 
 // GetAuthorize 授权账户
-func (s *StateDB) GetAuthorize(addr common.Address) AuthorizeAccount {
+func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
-		return stateObject.authorizeAccount
+		return &stateObject.authorizeAccount
 	}
-	return AuthorizeAccount{}
+	return nil
 }
 
 // GetLoss 挂失账户
@@ -1249,9 +1277,9 @@ func (s *StateDB) GetPledgeValueForAuthorize(addr common.Address) *big.Int {
 	return authorize.PledgeValue
 }
 
-func (s *StateDB) GetDelegateValueForAuthorize(addr common.Address) *big.Int {
+func (s *StateDB) GetVoteValueForAuthorize(addr common.Address) *big.Int {
 	authorize := s.GetAuthorize(addr)
-	return authorize.DelegateValue
+	return authorize.VoteValue
 }
 
 func (s *StateDB) GetInfoForAuthorize(addr common.Address) []byte {
@@ -1336,6 +1364,19 @@ func (s *StateDB) SetVoteAccountForRegular(addr common.Address, voteAccount comm
 			prev:    stateObject.regularAccount.VoteAccount,
 		})
 		stateObject.regularAccount.VoteAccount = voteAccount
+	}
+}
+
+func (s *StateDB) SetVoteRecordForRegular(addr common.Address, voteAccount common.Address, voteValue *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.db.journal.append(voteForRegularChange{
+			account:     &stateObject.address,
+			voteAccount: stateObject.regularAccount.VoteAccount,
+			voteValue:   stateObject.regularAccount.VoteValue,
+		})
+		stateObject.regularAccount.VoteAccount = voteAccount
+		stateObject.regularAccount.VoteValue = voteValue
 	}
 }
 
@@ -1537,14 +1578,14 @@ func (s *StateDB) SetPledgeValueForAuthorize(addr common.Address, pledgeValue *b
 	}
 }
 
-func (s *StateDB) SetDelegateValueForAuthorize(addr common.Address, delegateValue *big.Int) {
+func (s *StateDB) AddVote(addr common.Address, voteValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.db.journal.append(delegateValueForAuthorizeChange{
 			account: &stateObject.address,
-			prev:    stateObject.authorizeAccount.DelegateValue,
+			prev:    stateObject.authorizeAccount.VoteValue,
 		})
-		stateObject.authorizeAccount.DelegateValue = delegateValue
+		stateObject.authorizeAccount.VoteValue = new(big.Int).Add(stateObject.authorizeAccount.VoteValue, voteValue)
 	}
 }
 
@@ -1671,7 +1712,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 		return nil, true
 	}
 	switch accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		data := new(RegularAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1680,7 +1721,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newRegularAccount(s, addr, *data), false
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		data := new(PnsAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1689,7 +1730,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newPnsAccount(s, addr, *data), false
-	case accounts.Asset, accounts.Contract:
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		data := new(AssetAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1698,7 +1739,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newAssetAccount(s, addr, *data), false
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1707,7 +1748,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newAuthorizeAccount(s, addr, *data), false
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		data := new(LossAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1716,9 +1757,9 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newLossAccount(s, addr, *data), false
-	case accounts.DPoS:
+	case common.ACC_TYPE_OF_DPOS:
 		return nil, true
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 		return nil, true
 	default:
 		return nil, true

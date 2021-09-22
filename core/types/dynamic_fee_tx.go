@@ -17,55 +17,53 @@
 package types
 
 import (
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type DynamicFeeTx struct {
-	ChainID     *big.Int
-	Nonce       uint64
-	GasTipCap   *big.Int
-	GasFeeCap   *big.Int
-	Gas         uint64
-	To          *common.Address `rlp:"nil"` // nil means contract creation
-	BizType 	uint8
-	Value       *big.Int
-	Data        []byte
-	AccessList  AccessList
-	K           byte `json:"k" gencodec:"required"`
+	ChainID    *big.Int
+	Nonce      uint64
+	GasTipCap  *big.Int
+	GasFeeCap  *big.Int
+	Gas        uint64
+	To         *common.Address `rlp:"nil"` // nil means contract creation
+	BizType    uint8
+	Value      *big.Int
+	Data       []byte
+	AccessList AccessList
+	K          byte `json:"k" gencodec:"required"`
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
 
-	From			 	*common.Address `rlp:"nil"`
-	Owner			 	*common.Address `rlp:"nil"`
-	Beneficiary			*common.Address `rlp:"nil"`
-	Vote			 	*common.Address `rlp:"nil"`
-	Loss			 	*common.Address `rlp:"nil"`
-	Asset			 	*common.Address `rlp:"nil"`
-	Old			 		*common.Address `rlp:"nil"`
-	New					*common.Address `rlp:"nil"`
-	Initiator			*common.Address `rlp:"nil"`
-	Receiver			*common.Address	`rlp:"nil"`
-	Value2     			*big.Int
-	Mark       			[]byte
-	InfoDigest      	[]byte
-	Height	   			uint64
-	AccType 			uint8
+	From        *common.Address `rlp:"nil"`
+	Owner       *common.Address `rlp:"nil"`
+	Beneficiary *common.Address `rlp:"nil"`
+	Loss        *common.Address `rlp:"nil"`
+	Asset       *common.Address `rlp:"nil"`
+	Old         *common.Address `rlp:"nil"`
+	New         *common.Address `rlp:"nil"`
+	Initiator   *common.Address `rlp:"nil"`
+	Receiver    *common.Address `rlp:"nil"`
+	Value2      *big.Int
+	Mark        []byte
+	InfoDigest  []byte
+	Height      *big.Int
+	AccType     *hexutil.Uint8
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
 func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
-		Nonce:       tx.Nonce,
-		To:          tx.To,
-		From:        tx.From,
-		New:   		 tx.New,
-		BizType:     tx.BizType,
-		Data:        common.CopyBytes(tx.Data),
-		Gas:         tx.Gas,
+		Nonce: tx.Nonce,
+		To:    tx.To,
+		From:  tx.From,
+		Data:  common.CopyBytes(tx.Data),
+		Gas:   tx.Gas,
 		// These are copied below.
 		AccessList: make(AccessList, len(tx.AccessList)),
 		Value:      new(big.Int),
@@ -77,6 +75,13 @@ func (tx *DynamicFeeTx) copy() TxData {
 		S:          new(big.Int),
 		K:          tx.K,
 		AccType:    tx.AccType,
+		BizType:    tx.BizType,
+		New:        tx.New,
+		Loss:       tx.Loss,
+		Receiver:   tx.Receiver,
+		Mark:       common.CopyBytes(tx.Mark),
+		InfoDigest: common.CopyBytes(tx.infoDigest()),
+		Height:     tx.Height,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -116,23 +121,22 @@ func (tx *DynamicFeeTx) gasPrice() *big.Int     { return tx.GasFeeCap }
 func (tx *DynamicFeeTx) value() *big.Int        { return tx.Value }
 func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
-func (tx *DynamicFeeTx) bizType() uint8     { return tx.BizType }
+func (tx *DynamicFeeTx) bizType() uint8         { return tx.BizType }
 
-func (tx *DynamicFeeTx) from()			 	 *common.Address {return tx.From}
-func (tx *DynamicFeeTx) owner()			 	 *common.Address {return tx.Owner}
-func (tx *DynamicFeeTx) beneficiary()		 *common.Address {return tx.Beneficiary}
-func (tx *DynamicFeeTx) vote()			 	 *common.Address {return tx.Vote}
-func (tx *DynamicFeeTx) loss()			 	 *common.Address {return tx.Loss}
-func (tx *DynamicFeeTx) asset()			 	 *common.Address {return tx.Asset}
-func (tx *DynamicFeeTx) old()		 		 *common.Address {return tx.Old}
-func (tx *DynamicFeeTx) new()		 		 *common.Address {return tx.New}
-func (tx *DynamicFeeTx) initiator()			 *common.Address {return tx.Initiator}
-func (tx *DynamicFeeTx) receiver()			 *common.Address {return tx.Receiver}
-func (tx *DynamicFeeTx) value2() 			 *big.Int {return tx.Value2}
-func (tx *DynamicFeeTx) height()			 uint64 {return tx.Height}
-func (tx *DynamicFeeTx) mark()				 []byte {return tx.Mark}
-func (tx *DynamicFeeTx) infoDigest()		 []byte {return tx.InfoDigest}
-func (tx *DynamicFeeTx) accType() uint8     { return tx.AccType }
+func (tx *DynamicFeeTx) from() *common.Address        { return tx.From }
+func (tx *DynamicFeeTx) owner() *common.Address       { return tx.Owner }
+func (tx *DynamicFeeTx) beneficiary() *common.Address { return tx.Beneficiary }
+func (tx *DynamicFeeTx) loss() *common.Address        { return tx.Loss }
+func (tx *DynamicFeeTx) asset() *common.Address       { return tx.Asset }
+func (tx *DynamicFeeTx) old() *common.Address         { return tx.Old }
+func (tx *DynamicFeeTx) new() *common.Address         { return tx.New }
+func (tx *DynamicFeeTx) initiator() *common.Address   { return tx.Initiator }
+func (tx *DynamicFeeTx) receiver() *common.Address    { return tx.Receiver }
+func (tx *DynamicFeeTx) value2() *big.Int             { return tx.Value2 }
+func (tx *DynamicFeeTx) height() *big.Int             { return tx.Height }
+func (tx *DynamicFeeTx) mark() []byte                 { return tx.Mark }
+func (tx *DynamicFeeTx) infoDigest() []byte           { return tx.InfoDigest }
+func (tx *DynamicFeeTx) accType() *hexutil.Uint8      { return tx.AccType }
 func (tx *DynamicFeeTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S
 }

@@ -1250,20 +1250,20 @@ type RPCTransaction struct {
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
 
-	Owner			 *common.Address	`json:"owner,omitempty"`
-	Beneficiary		 *common.Address 	`json:"beneficiary,omitempty"`
-	Vote			 *common.Address 	`json:"vote,omitempty"`
-	Loss			 *common.Address 	`json:"loss,omitempty"`
-	Asset			 *common.Address 	`json:"asset,omitempty"`
-	Old			 	 *common.Address 	`json:"old,omitempty"`
-	New				 *common.Address 	`json:"new,omitempty"`
-	Initiator		 *common.Address 	`json:"initiator,omitempty"`
-	Receiver		 *common.Address 	`json:"receiver,omitempty"`
-	Value2           *hexutil.Big    	`json:"value2,omitempty"`
-	Height           *hexutil.Uint64 	`json:"height,omitempty"`
-	Mark  			 *hexutil.Bytes 	`json:"mark,omitempty"`
-	InfoDigest  	 *hexutil.Bytes 	`json:"infoDigest,omitempty"`
-	AccType          *hexutil.Uint8      `json:"accType,omitempty"`
+	Owner       *common.Address `json:"owner,omitempty"`
+	Beneficiary *common.Address `json:"beneficiary,omitempty"`
+	Vote        *common.Address `json:"vote,omitempty"`
+	Loss        *common.Address `json:"loss,omitempty"`
+	Asset       *common.Address `json:"asset,omitempty"`
+	Old         *common.Address `json:"old,omitempty"`
+	New         *common.Address `json:"new,omitempty"`
+	Initiator   *common.Address `json:"initiator,omitempty"`
+	Receiver    *common.Address `json:"receiver,omitempty"`
+	Value2      *hexutil.Big    `json:"value2,omitempty"`
+	Height      *hexutil.Uint64 `json:"height,omitempty"`
+	Mark        *hexutil.Bytes  `json:"mark,omitempty"`
+	InfoDigest  *hexutil.Bytes  `json:"infoDigest,omitempty"`
+	AccType     *hexutil.Uint8  `json:"accType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1305,13 +1305,17 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	switch tx.BizType() {
 	case common.Register:
 		result.New = tx.New()
-		accType := hexutil.Uint8(tx.AccType())
-		result.AccType = &accType
+		result.AccType = tx.AccType()
 	case common.Cancellation:
 	case common.RevokeCancellation:
 	case common.Transfer:
 		result.To = tx.To()
 	case common.ContractCall:
+	case common.SendLossReport:
+		mark := hexutil.Bytes(tx.Mark())
+		infoDigest := hexutil.Bytes(tx.InfoDigest())
+		result.Mark = &mark
+		result.InfoDigest = &infoDigest
 		//todo 其它的待实现
 	}
 
@@ -1459,10 +1463,10 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
 			args.data(), accessList, false,
 			args.Owner, args.Beneficiary,
-			args.Vote, args.Loss, args.Asset,
+			args.Loss, args.Asset,
 			args.Old, args.New, args.Initiator,
 			args.Receiver, args.mark(), args.infoDigest(),
-			args.value2(), args.height(), uint8(*args.AccType))
+			args.value2(), args.height(), args.AccType)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1651,6 +1655,9 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	case common.RevokeCancellation:
 	case common.Transfer:
 	case common.ContractCall:
+	case common.SendLossReport:
+		fields["mark"] = string(tx.Mark())
+		fields["infoDigest"] = string(tx.InfoDigest())
 		//todo 其它的待实现
 	}
 
@@ -1716,7 +1723,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 	}
 
 	if tx.To() == nil && tx.BizType() == common.ContractCall {
-		addr := crypto.CreateAddress(from, tx.Nonce())
+		addr, _ := probe.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
 		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())
@@ -1727,21 +1734,25 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
+
+	fmt.Printf("current blockNumber:%s\n", s.b.CurrentBlock().Number())
 	// Look up the wallet containing the requested signer
 	switch uint8(*args.BizType) {
 	case common.Register:
 		if args.New != nil {
-			fmt.Printf("from:%s,new:%s\n", args.From.String(),args.New.String())
+			fmt.Printf("from:%s,new:%s\n", args.From.String(), args.New.String())
 		}
 		if args.AccType != nil {
-			fmt.Printf("from:%s,accType:%s\n", args.From.String(),args.AccType.String())
+			fmt.Printf("from:%s,accType:%s\n", args.From.String(), args.AccType.String())
 		}
 
 	case common.Transfer:
 		fmt.Printf("from:%s,to:%s\n", args.From.String(), args.To.String())
 	}
+	if args.To != nil {
+		fmt.Printf("SendTransaction from: %s, to:%s\n", args.From.String(), args.To.String())
+	}
 	from := accounts.Account{Address: args.from()}
-
 	wallet, err := s.b.AccountManager().Find(from)
 	if err != nil {
 		return common.Hash{}, err
@@ -1754,6 +1765,10 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 		defer s.nonceLock.UnlockAddr(args.from())
 	}
 
+	if args.Data != nil {
+		fmt.Printf("args data：%s\n", args.Data.String())
+	}
+
 	// Set some sanity defaults and terminate on failure
 	if err := args.setDefaults(ctx, s.b); err != nil {
 		return common.Hash{}, err
@@ -1763,6 +1778,7 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 
 	signed, err := wallet.SignTx(from, tx, s.b.ChainConfig().ChainID)
 	if err != nil {
+		fmt.Printf("SignTx err %s\n", err)
 		return common.Hash{}, err
 	}
 	return SubmitTransaction(ctx, s.b, signed)

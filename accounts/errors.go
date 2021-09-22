@@ -48,6 +48,12 @@ var ErrWalletClosed = errors.New("wallet closed")
 //ErrWrongAccountType is returned if account type is wrong
 var ErrWrongAccountType = errors.New("wrong account type")
 
+//ErrWrongAccountFormat is returned if account format is wrong
+var ErrWrongAccountFormat = errors.New("wrong account format")
+
+// ErrUnsupportedAccountTransfer is returned if unsupported account transfer
+var ErrUnsupportedAccountTransfer = errors.New("unsupported account transfer")
+
 // AuthNeededError is returned by backends for signing requests where the user
 // is required to provide further authentication before signing can succeed.
 //

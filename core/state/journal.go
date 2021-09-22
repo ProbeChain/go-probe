@@ -155,6 +155,11 @@ type (
 		account *common.Address
 		prev    common.Address
 	}
+	voteForRegularChange struct {
+		account     *common.Address
+		voteAccount common.Address
+		voteValue   *big.Int
+	}
 	lossTypeForRegularChange struct {
 		account *common.Address
 		prev    uint8
@@ -306,7 +311,7 @@ func (i infoForAuthorizeChange) dirtied() *common.Address {
 }
 
 func (d delegateValueForAuthorizeChange) revert(db *StateDB) {
-	db.getStateObject(*d.account).authorizeAccount.DelegateValue = d.prev
+	db.getStateObject(*d.account).authorizeAccount.VoteValue = d.prev
 }
 
 func (d delegateValueForAuthorizeChange) dirtied() *common.Address {
@@ -412,6 +417,16 @@ func (v voteAccountForRegularChange) revert(db *StateDB) {
 }
 
 func (v voteAccountForRegularChange) dirtied() *common.Address {
+	return v.account
+}
+
+func (v voteForRegularChange) revert(db *StateDB) {
+	regularAccount := db.getStateObject(*v.account).regularAccount
+	regularAccount.VoteAccount = v.voteAccount
+	regularAccount.VoteValue = v.voteValue
+}
+
+func (v voteForRegularChange) dirtied() *common.Address {
 	return v.account
 }
 

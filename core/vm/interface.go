@@ -27,6 +27,7 @@ import (
 type StateDB interface {
 	CreateAccount(common.Address)
 	GenerateAccount(TxContext)
+	UpdateDposAccount(common.Address, []byte)
 
 	SubBalance(common.Address, *big.Int)
 	AddBalance(common.Address, *big.Int)
@@ -75,6 +76,12 @@ type StateDB interface {
 	AddPreimage(common.Hash, []byte)
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
+
+	SetInfoDigestForLoss(addr common.Address, infoDigest []byte)
+
+	AddVote(addr common.Address, delegateValue *big.Int)
+
+	SetVoteRecordForRegular(addr common.Address, voteAccount common.Address, voteValue *big.Int)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM

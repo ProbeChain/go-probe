@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"hash"
@@ -291,6 +290,20 @@ func NewKeccakState() KeccakState {
 	return sha3.NewLegacyKeccak256().(KeccakState)
 }
 
+func NewKeccak512State() KeccakState {
+	return sha3.NewLegacyKeccak512().(KeccakState)
+}
+
+func Keccak512(data ...[]byte) []byte {
+	b := make([]byte, 64)
+	d := NewKeccak512State()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Read(b)
+	return b
+}
+
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
 	b := make([]byte, 32)
@@ -331,9 +344,36 @@ func ToECDSAUnsafe(d []byte) *PrivateKey {
 func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (add common.Address, err error) {
 	k1, err := common.ValidAddress(address)
 	if k1 != 0x00 || err != nil {
+		return address, errors.New("unsupported account type for createAddress")
+	}
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+}
+
+func CreateDPOSAddressStr(address string, dpos []byte, K byte, Height *big.Int) (add common.Address, err error) {
+
+	k1, err := common.ValidCheckAddress(address)
+	if k1 != 0x00 || K != common.ACC_TYPE_OF_DPOS || err != nil {
+		log.Crit("Failed to Create DPOSAddress from address", "err", err)
+		return common.HexToAddress(address), err
+	}
+
+	data, _ := rlp.EncodeToBytes([]interface{}{K, common.HexToAddress(address), dpos, *Height})
+	data = Keccak512(data)
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+}
+
+func CreateDPOSAddress(address common.Address, dpos []byte, K byte, Height *big.Int) (add common.Address, err error) {
+	if len(dpos) <= 0 {
+		return address, errors.New("Creat DPOSAddress error,DPOS parameter is invalid")
+	}
+	k1, err := common.ValidAddress(address)
+	if k1 != 0x00 || K != common.ACC_TYPE_OF_DPOS || err != nil {
+		log.Crit("Failed to Create PNSAddress from address", "err", err)
 		return address, err
 	}
-	data, _ := rlp.EncodeToBytes([]interface{}{address, nonce})
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, dpos, *Height})
+	data = Keccak512(data)
 	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 
@@ -348,8 +388,8 @@ func CreatePNSAddressStr(address string, pns []byte, K byte) (add common.Address
 		return common.HexToAddress(address), errors.New("Creat PNSAddress error,PNS parameter is invalid")
 	}
 
-	b, err := hexutil.Decode(address)
-	return PubkeyBytesToAddress(Keccak256([]byte{K}, b, pns)[12:], K), nil
+	data, _ := rlp.EncodeToBytes([]interface{}{K, common.HexToAddress(address), pns})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 
 func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Address, err error) {
@@ -360,5 +400,27 @@ func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Ad
 	if k1 != 0x00 || err != nil {
 		return address, err
 	}
-	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), pns)[12:], K), nil
+	data, _ := rlp.EncodeToBytes([]interface{}{K, address, pns})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+}
+
+// CreateAddress creates an ethereum address given the bytes and the nonce
+func CreateAddress(b common.Address, nonce uint64, K byte) common.Address {
+	data, _ := rlp.EncodeToBytes([]interface{}{K, b, nonce})
+	return PubkeyBytesToAddress(Keccak256(data)[12:], K)
+}
+
+// CreateAddress2 creates an ethereum address given the address bytes, initial
+// contract code hash and a salt.
+func CreateAddress2(b common.Address, salt [32]byte, inithash []byte, K byte) common.Address {
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, b.Bytes(), salt[:], inithash)[12:], K)
+}
+
+func Keccak256Hash(data ...[]byte) (h common.Hash) {
+	d := NewKeccakState()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Read(h[:])
+	return h
 }

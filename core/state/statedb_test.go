@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"math"
 	"math/big"
 	"math/rand"
@@ -87,18 +88,27 @@ func TestIntermediateLeaks(t *testing.T) {
 			state.SetCode(addr, []byte{i, i, i, i, i, tweak})
 		}
 	}
-
+	var accountMap map[byte]common.Address
+	accountMap = make(map[byte]common.Address)
+	for i := byte(0); i < 5; i++ {
+		key, err := probe.GenerateKeyByType(0x00)
+		if err != nil {
+			fmt.Println("Error: ", err.Error())
+		}
+		address := probe.PubkeyToAddress(key.PublicKey)
+		accountMap[i] = address
+	}
 	// Modify the transient state.
-	for i := byte(0); i < 255; i++ {
-		modify(transState, common.Address{i}, i, 0)
+	for i := byte(0); i < 5; i++ {
+		modify(transState, accountMap[i], i, 0)
 	}
 	// Write modifications to trie.
 	transState.IntermediateRoot(false)
 
 	// Overwrite all the data with new values in the transient database.
-	for i := byte(0); i < 255; i++ {
-		modify(transState, common.Address{i}, i, 99)
-		modify(finalState, common.Address{i}, i, 99)
+	for i := byte(0); i < 5; i++ {
+		modify(transState, accountMap[i], i, 99)
+		modify(finalState, accountMap[i], i, 99)
 	}
 
 	// Commit and cross check the databases.

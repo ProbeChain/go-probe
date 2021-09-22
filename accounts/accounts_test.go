@@ -261,3 +261,16 @@ func TestHexToAddress(*testing.T) {
 	pkAddr := common.BytesToAddress(b)
 	fmt.Printf("oldPkAddr have 0X %s,pkAddr have 0x  %s \n", hexutil.Encode(oldPkAddr[:]), hexutil.Encode(pkAddr[:]))
 }
+
+func TestStrToHex(*testing.T) {
+	str := "{\"ip\":\"192.168.0.1\",\"port\":\"1307\"}"
+	hexutil.Encode([]byte(str))
+
+	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str)))
+
+	var emptyCodeHash = crypto.Keccak256(nil)
+	fmt.Println("address ", hexutil.Encode(emptyCodeHash))
+
+	var emptyCodeHash2 = probe.Keccak256(nil)
+	fmt.Println("address ", hexutil.Encode(emptyCodeHash2))
+}

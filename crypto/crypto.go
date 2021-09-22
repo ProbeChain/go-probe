@@ -122,7 +122,7 @@ func CreateAddressForAccountType(b common.Address, nonce uint64, t byte) common.
 	return common.BytesToAddress(append(c, checkSumBytes...))
 }
 
-func CreateAddressForPNSString(b common.Address, pns string) common.Address {
+/*func CreateAddressForPNSString(b common.Address, pns string) common.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, pns})
 	k := Keccak256(data[1:])[12:]
 	c := make([]byte, len(k)+1)
@@ -138,7 +138,7 @@ func CreateAddressForPNS(b common.Address, pns []byte) common.Address {
 	c[0] = 0x01
 	copy(c[1:], k)
 	return common.BytesToAddress(c)
-}
+}*/
 
 // CreateAddress2 creates an ethereum address given the address bytes, initial
 // contract code hash and a salt.

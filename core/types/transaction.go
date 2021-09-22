@@ -21,6 +21,7 @@ import (
 	"container/heap"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -82,26 +83,25 @@ type TxData interface {
 	gasFeeCap() *big.Int
 	value() *big.Int
 	nonce() uint64
-	to() 				*common.Address
+	to() *common.Address
 	bizType() uint8
 	rawSignatureValues() (k byte, v, r, s *big.Int)
 	setSignatureValues(k byte, chainID, v, r, s *big.Int)
 
-	from()			 	 *common.Address
-	owner()			 	 *common.Address
-	beneficiary()		 *common.Address
-	vote()			 	 *common.Address
-	loss()			 	 *common.Address
-	asset()			 	 *common.Address
-	old()		 		 *common.Address
-	new()		 		 *common.Address
-	initiator()			 *common.Address
-	receiver()			 *common.Address
-	value2() 			 *big.Int
-	height()			 uint64
-	mark()				 []byte
-	infoDigest()		 []byte
-	accType() 			uint8
+	from() *common.Address
+	owner() *common.Address
+	beneficiary() *common.Address
+	loss() *common.Address
+	asset() *common.Address
+	old() *common.Address
+	new() *common.Address
+	initiator() *common.Address
+	receiver() *common.Address
+	value2() *big.Int
+	height() *big.Int
+	mark() []byte
+	infoDigest() []byte
+	accType() *hexutil.Uint8
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -300,7 +300,7 @@ func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
 func (tx *Transaction) BizType() uint8 { return tx.inner.bizType() }
 
-func (tx *Transaction) AccType() uint8 { return tx.inner.accType() }
+func (tx *Transaction) AccType() *hexutil.Uint8 { return tx.inner.accType() }
 
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
@@ -454,20 +454,18 @@ func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 	}
 }
 
-
-func (tx *Transaction) Owner()*common.Address       {return tx.inner.owner()}
-func (tx *Transaction) Beneficiary()*common.Address {return tx.inner.beneficiary()}
-func (tx *Transaction) Vote()*common.Address  {return tx.inner.vote()}
-func (tx *Transaction) Loss()*common.Address  {return tx.inner.loss()}
-func (tx *Transaction) Asset()*common.Address {return tx.inner.asset()}
-func (tx *Transaction) Old()*common.Address       {return tx.inner.old()}
-func (tx *Transaction) New()*common.Address       {return tx.inner.new()}
-func (tx *Transaction) Initiator()*common.Address {return tx.inner.initiator()}
-func (tx *Transaction) Receiver()*common.Address {return tx.inner.receiver()}
-func (tx *Transaction) Value2()*big.Int {return tx.inner.value2()}
-func (tx *Transaction) Height()uint64 {return tx.inner.height()}
-func (tx *Transaction) Mark()[]byte { return tx.inner.mark() }
-func (tx *Transaction) InfoDigest()[]byte { return tx.inner.infoDigest() }
+func (tx *Transaction) Owner() *common.Address       { return tx.inner.owner() }
+func (tx *Transaction) Beneficiary() *common.Address { return tx.inner.beneficiary() }
+func (tx *Transaction) Loss() *common.Address        { return tx.inner.loss() }
+func (tx *Transaction) Asset() *common.Address       { return tx.inner.asset() }
+func (tx *Transaction) Old() *common.Address         { return tx.inner.old() }
+func (tx *Transaction) New() *common.Address         { return tx.inner.new() }
+func (tx *Transaction) Initiator() *common.Address   { return tx.inner.initiator() }
+func (tx *Transaction) Receiver() *common.Address    { return tx.inner.receiver() }
+func (tx *Transaction) Value2() *big.Int             { return tx.inner.value2() }
+func (tx *Transaction) Height() *big.Int             { return tx.inner.height() }
+func (tx *Transaction) Mark() []byte                 { return tx.inner.mark() }
+func (tx *Transaction) InfoDigest() []byte           { return tx.inner.infoDigest() }
 
 // TxDifference returns a New set which is the difference between a and b.
 func TxDifference(a, b Transactions) Transactions {
@@ -612,45 +610,42 @@ func (t *TransactionsByPriceAndNonce) Pop() {
 	heap.Pop(&t.heads)
 }
 
-
-
 func NewMessage(from common.Address, to *common.Address, bizType uint8,
 	nonce uint64, amount *big.Int, gasLimit uint64,
 	gasPrice, gasFeeCap, gasTipCap *big.Int,
 	data []byte, accessList AccessList, checkNonce bool,
-	owner *common.Address,beneficiary *common.Address,
-	vote *common.Address,loss *common.Address,asset *common.Address,
-	old *common.Address,new *common.Address,initiator *common.Address,
-	receiver *common.Address,mark []byte,infoDigest []byte,
-	amount2 *big.Int, height uint64, accType uint8) Message {
+	owner *common.Address, beneficiary *common.Address,
+	loss *common.Address, asset *common.Address,
+	old *common.Address, new *common.Address, initiator *common.Address,
+	receiver *common.Address, mark []byte, infoDigest []byte,
+	amount2 *big.Int, height *big.Int, accType *hexutil.Uint8) Message {
 	return Message{
-		from:       	from,
-		to:         	to,
-		bizType:    	bizType,
-		nonce:      	nonce,
-		amount:     	amount,
-		gasLimit:   	gasLimit,
-		gasPrice:   	gasPrice,
-		gasFeeCap:  	gasFeeCap,
-		gasTipCap:  	gasTipCap,
-		data:       	data,
-		accessList: 	accessList,
-		checkNonce: 	checkNonce,
+		from:       from,
+		to:         to,
+		bizType:    bizType,
+		nonce:      nonce,
+		amount:     amount,
+		gasLimit:   gasLimit,
+		gasPrice:   gasPrice,
+		gasFeeCap:  gasFeeCap,
+		gasTipCap:  gasTipCap,
+		data:       data,
+		accessList: accessList,
+		checkNonce: checkNonce,
 
-		owner:			owner,
-		beneficiary:	beneficiary,
-		vote:			vote,
-		loss:			loss,
-		asset:			asset,
-		old:			old,
-		new:			new,
-		initiator:		initiator,
-		receiver:		receiver,
-		mark:			mark,
-		infoDigest:		infoDigest,
-		amount2:		amount2,
-		height:			height,
-		accType:		accType,
+		owner:       owner,
+		beneficiary: beneficiary,
+		loss:        loss,
+		asset:       asset,
+		old:         old,
+		new:         new,
+		initiator:   initiator,
+		receiver:    receiver,
+		mark:        mark,
+		infoDigest:  infoDigest,
+		amount2:     amount2,
+		height:      height,
+		accType:     accType,
 	}
 }
 
@@ -663,13 +658,22 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		gasFeeCap:  new(big.Int).Set(tx.GasFeeCap()),
 		gasTipCap:  new(big.Int).Set(tx.GasTipCap()),
 		to:         tx.To(),
-		bizType:    tx.BizType(),
 		amount:     tx.Value(),
 		data:       tx.Data(),
 		accessList: tx.AccessList(),
 		checkNonce: true,
-		new:		tx.New(),
-		accType:	tx.AccType(),
+		bizType:    tx.BizType(),
+		accType:    tx.AccType(),
+		new:        tx.New(),
+		old:        tx.Old(),
+		asset:      tx.Asset(),
+		loss:       tx.Loss(),
+		initiator:  tx.Initiator(),
+		receiver:   tx.Receiver(),
+		height:     tx.Height(),
+		amount2:    tx.Value2(),
+		mark:       tx.Mark(),
+		infoDigest: tx.InfoDigest(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {

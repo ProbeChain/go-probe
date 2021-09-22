@@ -148,13 +148,18 @@ func TestPrestateTracerCreate2(t *testing.T) {
 		GasPrice: big.NewInt(1),
 	}
 	context := vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
-		Coinbase:    common.Address{},
-		BlockNumber: new(big.Int).SetUint64(8000000),
-		Time:        new(big.Int).SetUint64(5),
-		Difficulty:  big.NewInt(0x30000),
-		GasLimit:    uint64(6000000),
+		CanTransfer:      core.CanTransfer,
+		Transfer:         core.Transfer,
+		Coinbase:         common.Address{},
+		BlockNumber:      new(big.Int).SetUint64(8000000),
+		Time:             new(big.Int).SetUint64(5),
+		Difficulty:       big.NewInt(0x30000),
+		GasLimit:         uint64(6000000),
+		Register:         core.Register,
+		Cancellation:     core.Cancellation,
+		ContractTransfer: core.ContractTransfer,
+		SendLossReport:   core.SendLossReport,
+		Vote:             core.Vote,
 	}
 	alloc := core.GenesisAlloc{}
 
@@ -237,13 +242,18 @@ func TestCallTracer(t *testing.T) {
 				GasPrice: tx.GasPrice(),
 			}
 			context := vm.BlockContext{
-				CanTransfer: core.CanTransfer,
-				Transfer:    core.Transfer,
-				Coinbase:    test.Context.Miner,
-				BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
-				Time:        new(big.Int).SetUint64(uint64(test.Context.Time)),
-				Difficulty:  (*big.Int)(test.Context.Difficulty),
-				GasLimit:    uint64(test.Context.GasLimit),
+				CanTransfer:      core.CanTransfer,
+				Transfer:         core.Transfer,
+				Coinbase:         test.Context.Miner,
+				BlockNumber:      new(big.Int).SetUint64(uint64(test.Context.Number)),
+				Time:             new(big.Int).SetUint64(uint64(test.Context.Time)),
+				Difficulty:       (*big.Int)(test.Context.Difficulty),
+				GasLimit:         uint64(test.Context.GasLimit),
+				Register:         core.Register,
+				Cancellation:     core.Cancellation,
+				ContractTransfer: core.ContractTransfer,
+				SendLossReport:   core.SendLossReport,
+				Vote:             core.Vote,
 			}
 			_, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false)
 
@@ -322,13 +332,18 @@ func BenchmarkTransactionTrace(b *testing.B) {
 		GasPrice: tx.GasPrice(),
 	}
 	context := vm.BlockContext{
-		CanTransfer: core.CanTransfer,
-		Transfer:    core.Transfer,
-		Coinbase:    common.Address{},
-		BlockNumber: new(big.Int).SetUint64(uint64(5)),
-		Time:        new(big.Int).SetUint64(uint64(5)),
-		Difficulty:  big.NewInt(0xffffffff),
-		GasLimit:    gas,
+		CanTransfer:      core.CanTransfer,
+		Transfer:         core.Transfer,
+		Coinbase:         common.Address{},
+		BlockNumber:      new(big.Int).SetUint64(uint64(5)),
+		Time:             new(big.Int).SetUint64(uint64(5)),
+		Difficulty:       big.NewInt(0xffffffff),
+		GasLimit:         gas,
+		Register:         core.Register,
+		Cancellation:     core.Cancellation,
+		ContractTransfer: core.ContractTransfer,
+		SendLossReport:   core.SendLossReport,
+		Vote:             core.Vote,
 	}
 	alloc := core.GenesisAlloc{}
 	// The code pushes 'deadbeef' into memory, then the other params, and calls CREATE2, then returns

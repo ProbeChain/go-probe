@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"math/big"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 )
@@ -70,8 +70,8 @@ type Receipt struct {
 	BlockHash        common.Hash `json:"blockHash,omitempty"`
 	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
 	TransactionIndex uint        `json:"transactionIndex"`
-	BizType      	 uint8       `json:"bizType"`
-	AccType      	 uint8       `json:"accType,omitempty"`
+	BizType          uint8       `json:"bizType"`
+	AccType          uint8       `json:"accType,omitempty"`
 }
 
 type receiptMarshaling struct {
@@ -287,14 +287,15 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 
 		// block location fields
 		r[i].BlockHash = hash
-		r[i].BlockNumber = new(big.Int).SetUint64(number)
+		blockNumber := new(big.Int).SetUint64(number)
+		r[i].BlockNumber = blockNumber
 		r[i].TransactionIndex = uint(i)
 
 		// The contract address can be derived from the transaction itself
-		if txs[i].To() == nil {
+		if txs[i].To() == nil && txs[i].BizType() == common.ContractCall {
 			// Deriving the signer is expensive, only do if it's actually needed
 			from, _ := Sender(signer, txs[i])
-			r[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
+			r[i].ContractAddress, _ = probe.CreateAddressForAccountType(from, txs[i].Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		}
 		// The used gas can be calculated based on previous r
 		if i == 0 {
