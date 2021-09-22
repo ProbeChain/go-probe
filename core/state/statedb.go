@@ -18,14 +18,13 @@
 package state
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
-	"net"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -682,19 +681,54 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 	}
 
 }
-func (s *StateDB) UpdateDposAccount(addr common.Address, jsonData []byte) {
+
+func (s *StateDB) CreateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
 	dposAddr := s.getStateObject(addr)
+	if nil != dposAddr {
+		return
+	}
 	var dposMap map[string]interface{}
 	err := json.Unmarshal(jsonData, &dposMap)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	dposAddr.DPoSCandidateAccount.Ip = net.ParseIP(dposMap["ip"].(string))
-	port, err := strconv.ParseUint(dposMap["port"].(string), 10, 64)
-	if err != nil {
-		fmt.Println(err.Error())
+	remoteIp := dposMap["ip"].(string)
+	remotePort := dposMap["port"].(string)
+	var enode bytes.Buffer
+	enode.WriteString("enode://")
+	enode.WriteString(ower.String()[2:])
+	enode.WriteString("@")
+	enode.WriteString(remoteIp)
+	enode.WriteString(":")
+	enode.WriteString(remotePort)
+	dposAddr.DPoSCandidateAccount.Enode = []byte(enode.String())
+	dposAddr.DPoSCandidateAccount.Owner = ower
+
+}
+
+func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
+	dposAddr := s.getStateObject(addr)
+	if nil == dposAddr {
+		return
 	}
-	dposAddr.DPoSCandidateAccount.Port = uint16(port)
+	var dposMap map[string]interface{}
+	err := json.Unmarshal(jsonData, &dposMap)
+	if err != nil {
+		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", addr.Bytes(), err))
+		return
+	}
+	remoteIp := dposMap["ip"].(string)
+	remotePort := dposMap["port"].(string)
+	var enode bytes.Buffer
+	enode.WriteString("enode://")
+	enode.WriteString(ower.String()[2:])
+	enode.WriteString("@")
+	enode.WriteString(remoteIp)
+	enode.WriteString(":")
+	enode.WriteString(remotePort)
+	dposAddr.DPoSCandidateAccount.Enode = []byte(enode.String())
+	dposAddr.DPoSCandidateAccount.Owner = ower
+
 }
 
 func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common.Hash) bool) error {
@@ -1774,6 +1808,25 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	}
 }
 
-func (s *StateDB) getDPosByHeight(height big.Int) DPoSAccount {
-	return DPoSAccount{Ip: net.IP{12}, Port: 66, Owner: common.HexToAddress("0x003dADB65B0234669f885520BD45680AEbA49704a152999435")}
+func (s *StateDB) getDPoSCandidateAccountList() []DPoSCandidateAccount {
+	var dPoSCandidateAccounts []DPoSCandidateAccount = make([]DPoSCandidateAccount, s.dPoSCandidateList.Limit)
+	i := 0
+	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
+		fmt.Println(element.Value.(DPoSCandidateAccount))
+		dPoSCandidateAccounts[i] = element.Value.(DPoSCandidateAccount)
+		i++
+	}
+	return dPoSCandidateAccounts
+}
+
+func (s *StateDB) getDpostList() []DPoSAccount {
+	var dPoSAccounts []DPoSAccount = make([]DPoSAccount, s.dPoSCandidateList.Limit)
+	i := 0
+	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
+		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
+		dPoSAccount := &DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
+		dPoSAccounts[i] = *dPoSAccount
+		i++
+	}
+	return dPoSAccounts
 }

@@ -55,7 +55,9 @@ type (
 	// VoteFunc is the signature of a transfer function
 	VoteFunc func(StateDB, common.Address, common.Address, *big.Int)
 	//ApplyToBeDPoSNodeFunc  is the update candidate dposNode  function
-	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, []byte)
+	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, common.Address, []byte)
+	//UpdatingVotesOrDataFunc  is the update candidate dposNode  function
+	UpdatingVotesOrDataFunc func(StateDB, common.Address, common.Address, []byte)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -114,6 +116,8 @@ type BlockContext struct {
 	Vote VoteFunc
 	//ApplyToBeDPoSNode send DPOS report
 	ApplyToBeDPoSNode ApplyToBeDPoSNodeFunc
+	//UpdatingVotesOrData update DPOS report
+	UpdatingVotesOrData UpdatingVotesOrDataFunc
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
 	GasLimit    uint64         // Provides information for GASLIMIT
@@ -298,7 +302,9 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	case common.Vote:
 		evm.Context.Vote(evm.StateDB, caller.Address(), to, value)
 	case common.ApplyToBeDPoSNode:
-		evm.Context.ApplyToBeDPoSNode(evm.StateDB, to, evm.Data)
+		evm.Context.ApplyToBeDPoSNode(evm.StateDB, caller.Address(), to, evm.Data)
+	case common.UpdatingVotesOrData:
+		evm.Context.UpdatingVotesOrData(evm.StateDB, caller.Address(), to, evm.Data)
 		//... todo 还有未实现的
 	}
 

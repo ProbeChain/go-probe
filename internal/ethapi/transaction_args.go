@@ -168,6 +168,8 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		return args.setDefaultsOfVote(ctx, b)
 	case common.ApplyToBeDPoSNode:
 		return args.setDefaultsOfApplyToBeDPoSNode(ctx, b)
+	case common.UpdatingVotesOrData:
+		return args.setDefaultsOfUpdatingVotesOrData(ctx, b)
 	default:
 		err = errors.New("unsupported business type")
 	}
@@ -282,6 +284,8 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		return args.transactionOfVote()
 	case common.ApplyToBeDPoSNode:
 		return args.transactionOfApplyToBeDPoSNode()
+	case common.UpdatingVotesOrData:
+		return args.transactionOfUpdatingVotesOrData()
 		//... todo 还有未实现的
 	default:
 		return nil

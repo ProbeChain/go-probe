@@ -574,6 +574,8 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		err = pool.validateTxOfVote(tx, local)
 	case common.ApplyToBeDPoSNode:
 		err = pool.validateTxOfApplyToBeDPoSNode(tx, local)
+	case common.UpdatingVotesOrData:
+		err = pool.validateTxOfUpdatingVotesOrData(tx, local)
 		//... todo 还有未实现的
 	default:
 		err = ErrBizTypeNotSupported

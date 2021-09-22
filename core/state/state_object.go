@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"io"
 	"math/big"
-	"net"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -194,15 +193,13 @@ type LossAccount struct {
 
 // DPoSAccount DPoS账户
 type DPoSAccount struct {
-	Ip    net.IP
-	Port  uint16
+	Enode []byte
 	Owner common.Address
 }
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	Ip            net.IP
-	Port          uint16
+	Enode         []byte
 	Owner         common.Address
 	Weight        *big.Int
 	DelegateValue *big.Int
