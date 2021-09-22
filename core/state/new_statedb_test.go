@@ -116,7 +116,7 @@ func TestRlp1(t *testing.T) {
 	fmt.Printf("result：%v \n", result)
 	//arrdata, _ := rlp.EncodeToBytes([]common.Hash{common.Hash{}, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot})
 	arrdata := []common.Hash{common.Hash{}, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	rawdb.WriteAllStateRootHash(s.db, arrdata, address1)
+	rawdb.WriteAllStateRootHash1(s.db, arrdata, address1)
 	fmt.Printf("arrdata：%v \n", arrdata)
 	//var b []byte
 	//for _, d := range hash {
