@@ -19,7 +19,6 @@ package types
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	crand "crypto/rand"
 	"hash"
 	"math/big"
@@ -209,7 +208,7 @@ func TestUncleHash(t *testing.T) {
 func TestDposAckVerifySignture(t *testing.T) {
 	prv, err := ecdsa.GenerateKey(crypto.S256(), crand.Reader)
 	pubkey := prv.PublicKey
-	pb := elliptic.Marshal(pubkey, pubkey.X, pubkey.Y)
+	address := crypto.PubkeyToAddress(pubkey)
 
 	dposAck := &DposAck{
 		EpochPosition: 0,
@@ -222,8 +221,8 @@ func TestDposAckVerifySignture(t *testing.T) {
 	if err == nil {
 		sig, _ := crypto.Sign(dposAck.Hash(), prv)
 		dposAck.WitnessSig = sig
-		exp := dposAck.VerifySignature(pb)
-		if !exp {
+		owner, err := dposAck.RecoverOwner()
+		if bytes.Compare(address.Bytes(), owner.Bytes()) != 0 || err != nil {
 			t.Fatalf("sign dpos ack is wrong, except true got false")
 		}
 	}
@@ -232,8 +231,8 @@ func TestDposAckVerifySignture(t *testing.T) {
 	if err == nil {
 		sig, _ := crypto.Sign(dposAck.Hash(), prv)
 		dposAck.WitnessSig = sig
-		exp := dposAck.VerifySignature(pb)
-		if exp {
+		owner, err := dposAck.RecoverOwner()
+		if bytes.Compare(address.Bytes(), owner.Bytes()) == 0 || err != nil {
 			t.Fatalf("sign dpos ack is wrong, except false got right")
 		}
 	}

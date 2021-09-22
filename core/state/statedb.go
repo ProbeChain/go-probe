@@ -20,7 +20,6 @@ package state
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 	"math/big"
 	"sort"
 	"time"
@@ -344,19 +343,38 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 	return common.Hash{}
 }
 
-// GetDposNodes retrieves a dpos list @todo number, epoch just for test, rember remove it
-func (s *StateDB) GetDposNodes(hash common.Hash, number uint64, epoch uint64) []*enode.Node {
-	log.Info("GetDposList", "hash", hash)
+// GetDposAccounts retrieves a dpos list @todo number, epoch just for test, rember remove it
+func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
+	log.Info("GetDposAccounts", "hash", hash, "number", number)
 	nodelist := []string{
-		"enode://952b6fd264783e4969181c16c1080cadd1660e613adcb788c73c5eff0590fb8963c181d11cf1520508014160ef7fe1767bb9f721f5c11bbd53ed9810eee0a820@127.0.0.1:30000",
-		"enode://75a53b15ae8959929e03574ce9b11d6b8782d61271ec0346c5b55bbd2426ed804526f6b3a68867da5be1d26cf7b8faddb69e93eff3ec356ea52dea873da5649f@127.0.0.1:30001",
-		"enode://46f742611a09740511fa840def824404bac0edb7996ae02518866a4d25913cb43c8c8bb370dabc94dd68b6f5c318f6a713dd6fd5ef8690c8d6dbc4b306a757c7@127.0.0.1:30002",
-		"enode://b25927a94a7be9ee37a84e2dc9edddb536fea0503c5dfb1b6385fc8703d25f66164a32eda79df416b315ead2faac9c8c1e22edbd2ee2ff243ae8f70e7461ced9@127.0.0.1:30003",
-		"enode://78ff39b0b4d35a1bc0ac69274850783a7f4ab28a4dae897124e2d607a91c7e7f4ffdbecc9aa045424aa6d4538d42f7e23ac6ae4724ec41eaec0044162fee29d3@127.0.0.1:30004",
+		"enode://05e1c4d3305a5dc74dd88d55e973cc3157758a749578b64b910ad3ae3c40dc8191a41d9ae7ded15e6792e8a1111ab00c4e2cd3e270c52b6cbb148180a892935d@127.0.0.1:30000",
+		"enode://5a6305139ac194cc248e7dd1c35bee1912d09edbee09b01097b498ec8006b04ac01cecea1853957398c085584622a8b4c6e5926f69edeed24b3e3875e49688f9@127.0.0.1:30001",
+		"enode://2e7b27a1115e80a2f3eb9aa9a301257f0e571304eac4ac2868fa8849da604ec33d995d37a49fa7bb6674fba759afd31ac8cef6d94a9535670edbdb23b2562b75@127.0.0.1:30002",
+		"enode://a52e61021e26a330cef2c370d5ef26f5da49253f6afab267f9a5edf7403e14456ee4422531aba687b496b92fc201f556999ad273a39dba9264247e996711b2a3@127.0.0.1:30003",
+		"enode://f38cccdbed081dfb258324c1f9582509c893203efb2030c7d7d16d39b37183d7655c3d6a20c326e757697f6bf8437d3de6ab61207225670a156b748c10d8de29@127.0.0.1:30004",
+	}
+	ownerList := []string{
+		"eb2a97bae8d39ea1834348d88a9951eb86900abc",
+		"74c040cad84eb03eb337b0e6f9de5e0d943a2cf1",
+		"941b6dc9df35c3f3a9e2e65a70909ed95c705e3b",
+		"cc516921f61f019ba2206c62d7727ea9e1e89170",
+		"ff168ed2dcc593dcffc48d9f2ae7e130235b39e2",
 	}
 
-	var nodes []*enode.Node
-	size := uint64(len(nodelist))
+	mockDposAccounts := make([]*DPoSAccount, 0, len(nodelist))
+	for i, url := range nodelist {
+		dposAccount := &DPoSAccount{
+			DPoSData: DPoSData{},
+			Info:     []byte("http://eth.lucq.fun/#/"),
+			SignNum:  0,
+		}
+		dposAccount.DPoSData.Enode = []byte(url)
+		dposAccount.DPoSData.Owner = common.HexToAddress(ownerList[i])
+		mockDposAccounts = append(mockDposAccounts, dposAccount)
+	}
+
+	var dposAccounts []*DPoSAccount
+	size := uint64(len(mockDposAccounts))
 	count := 1
 	startIndex := uint64(0)
 	if number > 0 {
@@ -364,20 +382,21 @@ func (s *StateDB) GetDposNodes(hash common.Hash, number uint64, epoch uint64) []
 	}
 
 	for {
-		if count > 4 {
+		if count > len(nodelist) {
 			break
 		}
-		url := nodelist[startIndex%size]
-		node, err := enode.Parse(enode.ValidSchemes, url)
-		if err != nil {
-			log.Error(fmt.Sprintf("Node URL %s: %v\n", url, err))
-			continue
-		}
-		nodes = append(nodes, node)
+		dposAccount := mockDposAccounts[startIndex%size]
+		dposAccounts = append(dposAccounts, dposAccount)
 		startIndex++
 		count++
 	}
-	return nodes
+	return dposAccounts
+}
+
+// GetNextDposAccounts retrieves a dpos list @todo number, epoch just for test, rember remove it
+func (s *StateDB) GetNextDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
+	log.Info("GetNextDposAccounts", "hash", hash, "number", number)
+	return s.GetDposAccounts(hash, number+epoch, epoch)
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.

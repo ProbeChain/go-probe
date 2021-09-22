@@ -19,7 +19,6 @@ package core
 
 import (
 	"bytes"
-	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/p2p"
@@ -97,6 +96,7 @@ const (
 	maxChainPowAnswers  = 256
 	maxChainDposAcks    = 256
 	maxUnclePowAnswer   = 5
+	confirmDpos         = 64
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -344,9 +344,9 @@ type BlockChain struct {
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
 
-	dposAcks   *DposAckPool
-	powAnswers *PowAnswerPool
-	dposNodes  map[uint64][]*enode.Node
+	dposAcks     *DposAckPool
+	powAnswers   *PowAnswerPool
+	dposAccounts map[uint64][]*state.DPoSAccount
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -412,7 +412,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		vmConfig:       vmConfig,
 		powAnswers:     NewPowAnswerPool(),
 		dposAcks:       NewDposAckPool(),
-		dposNodes:      make(map[uint64][]*enode.Node),
+		dposAccounts:   make(map[uint64][]*state.DPoSAccount),
 		p2pServer:      p2pServer,
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
@@ -2571,77 +2571,142 @@ func (bc *BlockChain) updateP2pDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
 	epoch := bc.chainConfig.Dpos.Epoch
-	if number > 0 && (number+1)%epoch == 0 {
-		state, _ := bc.State()
-		preNumber := uint64(0)
-		if number > epoch {
-			preNumber = number - epoch
-		}
-		preBlock := bc.GetBlockByNumber(preNumber)
-		preDposList := state.GetDposNodes(preBlock.Root(), preNumber, epoch)
-		curDposList := state.GetDposNodes(block.Root(), number, epoch)
 
-		// if not find in the cur dpos list, remove it
-		for _, node1 := range preDposList {
-			find := false
-			for _, node2 := range curDposList {
-				if node1.ID().String() == node2.ID().String() {
-					find = true
-					break
+	confirmBlockNum := epoch / 2
+	if epoch > confirmDpos {
+		confirmBlockNum = epoch - confirmDpos
+	}
+
+	if number > 0 {
+		// next dpos if not find in the pre dpos list, add it
+		if (number+confirmBlockNum)%epoch == 0 {
+			curDposAccounts := bc.GetDposAccounts(number)
+			nextDposAccounts := bc.GetNextDposAccounts(number)
+			for _, da1 := range nextDposAccounts {
+				find := false
+				for _, da2 := range curDposAccounts {
+					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
+						find = true
+						break
+					}
+				}
+				if !find {
+					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", string(da1.Enode))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					if err != nil {
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						continue
+					}
+					bc.p2pServer.AddDposPeer(dposEnode)
 				}
 			}
-			if !find {
-				log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", node1.String())
-				bc.p2pServer.RemoveDposPeer(node1)
-			}
 		}
 
-		// if not find in the pre dpos list, add it
-		for _, node1 := range curDposList {
-			find := false
-			for _, node2 := range preDposList {
-				if node1.ID().String() == node2.ID().String() {
-					find = true
-					break
+		// pre dpos if not find in the pre dpos list, remove it
+		if number%epoch == 0 {
+			curDposAccounts := bc.GetDposAccounts(number)
+			preDposAccounts := bc.GetDposAccounts(number - confirmBlockNum)
+			for _, da1 := range preDposAccounts {
+				find := false
+				for _, da2 := range curDposAccounts {
+					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
+						find = true
+						break
+					}
 				}
-			}
-			if !find {
-				log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", node1.String())
-				bc.p2pServer.AddDposPeer(node1)
+				if !find {
+					log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", string(da1.Enode))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					if err != nil {
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						continue
+					}
+					bc.p2pServer.RemovePeer(dposEnode)
+				}
 			}
 		}
 	}
 }
 
-// GetDposNodes get latest dpos nodes
-func (bc *BlockChain) GetDposNodes(number uint64) []*enode.Node {
+// GetDposAccounts get latest dpos nodes
+func (bc *BlockChain) GetDposAccounts(number uint64) []*state.DPoSAccount {
 	index := number / bc.chainConfig.Dpos.Epoch
 
-	nodes := bc.dposNodes[index]
-	if nodes != nil {
-		return nodes
+	accounts := bc.dposAccounts[index]
+	if accounts != nil {
+		return accounts
 	}
 
 	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
 	if block != nil {
 		epoch := bc.chainConfig.Dpos.Epoch
-		state, _ := bc.StateAt(block.Root())
-		nodes = state.GetDposNodes(block.Root(), number, epoch)
-		bc.dposNodes[index] = nodes // cache it
+		stateDB, _ := bc.StateAt(block.Root())
+		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
+		bc.dposAccounts[index] = accounts // cache it
 	}
 
-	return nodes
+	return accounts
 }
 
-// GetDposNode get cur dpos node by dpos ack
-func (bc *BlockChain) GetDposNode(dposAck *types.DposAck) *enode.Node {
-	nodes := bc.GetDposNodes(dposAck.Number.Uint64())
-	ep := int(dposAck.EpochPosition)
-	if len(nodes) > ep {
-		return nodes[ep]
+// GetNextDposAccounts get next dpos nodes
+func (bc *BlockChain) GetNextDposAccounts(number uint64) []*state.DPoSAccount {
+	index := (number + confirmDpos) / bc.chainConfig.Dpos.Epoch
+
+	accounts := bc.dposAccounts[index]
+	if accounts != nil {
+		return accounts
+	}
+
+	// The blocks haven't been synchronized yet but we got the answers first
+	block := bc.GetBlockByNumber(number)
+	if block != nil {
+		epoch := bc.chainConfig.Dpos.Epoch
+		stateDB, _ := bc.StateAt(block.Root())
+		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
+		bc.dposAccounts[index] = accounts // cache it
+	}
+
+	return accounts
+}
+
+// GetSealDposAccount get seal dpos account
+func (bc *BlockChain) GetSealDposAccount(number uint64) *state.DPoSAccount {
+	accounts := bc.GetDposAccounts(number)
+	if accounts != nil {
+		size := uint64(len(accounts))
+		return accounts[number%bc.chainConfig.Dpos.Epoch%size]
 	}
 	return nil
+}
+
+// GetDposAccountIndex get dpos account in list index
+func (bc *BlockChain) GetDposAccountIndex(number uint64, owner common.Address) (int, error) {
+	accounts := bc.GetDposAccounts(number)
+	for i, account := range accounts {
+		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+			return i, nil
+		}
+	}
+	return -1, errors.New("not found:" + owner.String())
+}
+
+func (bc *BlockChain) GetLatestDposAccountIndex(owner common.Address) (int, error) {
+	return bc.GetDposAccountIndex(bc.CurrentHeader().Number.Uint64(), owner)
+}
+
+func (bc *BlockChain) CheckIsDposAccount(number uint64, owner common.Address) bool {
+	accounts := bc.GetDposAccounts(number)
+	for _, account := range accounts {
+		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (bc *BlockChain) CheckIsLatestDposAccount(owner common.Address) bool {
+	return bc.CheckIsDposAccount(bc.CurrentHeader().Number.Uint64(), owner)
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
@@ -2788,11 +2853,14 @@ func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 
 // CheckDposAck check a dpos ack is legal
 func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
-	node := bc.GetDposNode(dposAck)
-	if node != nil {
-		pubkey := node.Pubkey()
-		pb := elliptic.Marshal(node.Pubkey(), pubkey.X, pubkey.Y)
-		return dposAck.VerifySignature(pb)
+	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
+	owner, err := dposAck.RecoverOwner()
+	if err == nil {
+		for _, account := range accounts {
+			if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+				return true
+			}
+		}
 	}
 	return false
 }

@@ -107,10 +107,17 @@ type Account struct {
 	CodeHash []byte
 }
 
-type DPoSAccount struct {
-	//Address common.Hash
-	Ip    net.IP
+// DPoSData DPoS账户公共数据
+type DPoSData struct {
+	Enode []byte
 	Owner common.Address
+}
+
+// DPoSAccount DPoS账户
+type DPoSAccount struct {
+	DPoSData
+	Info    []byte // 信息
+	SignNum uint64 // 签名次数
 }
 
 type DPoSCandidateAccount struct {

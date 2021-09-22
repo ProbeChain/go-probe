@@ -19,7 +19,6 @@ package les
 import (
 	"context"
 	"errors"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -321,6 +320,6 @@ func (b *LesApiBackend) StateAtTransaction(ctx context.Context, block *types.Blo
 	return b.eth.stateAtTransaction(ctx, block, txIndex, reexec)
 }
 
-func (b *LesApiBackend) DposNodes(number rpc.BlockNumber) []*enode.Node {
+func (b *LesApiBackend) DposAccounts(number rpc.BlockNumber) []*state.DPoSAccount {
 	return nil
 }

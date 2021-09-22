@@ -19,7 +19,6 @@ package ethapi
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -58,7 +57,7 @@ type Backend interface {
 	HeaderByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Header, error)
 	CurrentHeader() *types.Header
 	CurrentBlock() *types.Block
-	DposNodes(number rpc.BlockNumber) []*enode.Node
+	DposAccounts(number rpc.BlockNumber) []*state.DPoSAccount
 	BlockByNumber(ctx context.Context, number rpc.BlockNumber) (*types.Block, error)
 	BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error)
 	BlockByNumberOrHash(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (*types.Block, error)

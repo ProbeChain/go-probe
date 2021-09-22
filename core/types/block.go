@@ -18,7 +18,6 @@
 package types
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -114,18 +113,16 @@ func (dposAck *DposAck) Hash() []byte {
 	return crypto.Keccak256(datas)
 }
 
-// RecoverPubkey returns the dpos ack pubkey
-func (dposAck *DposAck) RecoverPubkey() ([]byte, error) {
-	return secp256k1.RecoverPubkey(dposAck.Hash(), dposAck.WitnessSig)
-}
-
-// VerifySignature returns the dpos ack verify signature result
-func (dposAck *DposAck) VerifySignature(_pubkey []byte) bool {
-	if pubkey, err := dposAck.RecoverPubkey(); err == nil {
-		return bytes.Compare(pubkey, _pubkey) == 0
-	} else {
-		return false
+// RecoverOwner returns the dpos ack pubkey
+func (dposAck *DposAck) RecoverOwner() (common.Address, error) {
+	pubkey, err := secp256k1.RecoverPubkey(dposAck.Hash(), dposAck.WitnessSig)
+	if err == nil {
+		publicKey, err := crypto.UnmarshalPubkey(pubkey)
+		if err == nil {
+			return crypto.PubkeyToAddress(*publicKey), nil
+		}
 	}
+	return common.Address{}, err
 }
 
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
