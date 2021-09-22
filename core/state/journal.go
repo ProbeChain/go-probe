@@ -216,17 +216,13 @@ type (
 		account *common.Address
 		prev    []byte
 	}
-	interestRateForAuthorizeChange struct {
-		account *common.Address
-		prev    *big.Int
-	}
 	validPeriodForAuthorizeChange struct {
 		account *common.Address
 		prev    *big.Int
 	}
 	stateForAuthorizeChange struct {
 		account *common.Address
-		prev    bool
+		prev    byte
 	}
 	stateForLossChange struct {
 		account *common.Address
@@ -243,6 +239,19 @@ type (
 	infoDigestForLossChange struct {
 		account *common.Address
 		prev    []byte
+	}
+
+	redemptionForRegularChange struct {
+		account     *common.Address
+		voteAccount common.Address
+		voteValue   *big.Int
+		value       *big.Int
+	}
+
+	redemptionForAuthorizeChange struct {
+		account     *common.Address
+		pledgeValue *big.Int
+		voteValue   *big.Int
 	}
 )
 
@@ -292,14 +301,6 @@ func (v validPeriodForAuthorizeChange) revert(db *StateDB) {
 
 func (v validPeriodForAuthorizeChange) dirtied() *common.Address {
 	return v.account
-}
-
-func (i interestRateForAuthorizeChange) revert(db *StateDB) {
-	db.getStateObject(*i.account).authorizeAccount.InterestRate = i.prev
-}
-
-func (i interestRateForAuthorizeChange) dirtied() *common.Address {
-	return i.account
 }
 
 func (i infoForAuthorizeChange) revert(db *StateDB) {
@@ -580,4 +581,25 @@ func (ch accessListAddSlotChange) revert(s *StateDB) {
 
 func (ch accessListAddSlotChange) dirtied() *common.Address {
 	return nil
+}
+
+func (ch redemptionForRegularChange) revert(s *StateDB) {
+	regularAccount := s.getStateObject(*ch.account).regularAccount
+	regularAccount.VoteAccount = ch.voteAccount
+	regularAccount.VoteValue = ch.voteValue
+	regularAccount.Value = ch.value
+}
+
+func (ch redemptionForRegularChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch redemptionForAuthorizeChange) revert(s *StateDB) {
+	authorizeAccount := s.getStateObject(*ch.account).authorizeAccount
+	authorizeAccount.PledgeValue = ch.pledgeValue
+	authorizeAccount.VoteValue = ch.voteValue
+}
+
+func (ch redemptionForAuthorizeChange) dirtied() *common.Address {
+	return ch.account
 }

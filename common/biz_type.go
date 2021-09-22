@@ -18,28 +18,25 @@ package common
 
 // BizType is probe business transaction type
 const (
-	//Mint															= byte(0x00)		//铸币交易
-	Register                         = byte(0x00) //注册账户
-	Cancellation                     = byte(0xff) //注销账户
-	RevokeCancellation               = byte(0xfe) //撤销注销账户操作
-	Transfer                         = byte(0x01) //转账交易
-	ContractCall                     = byte(0x02) //合约调用
-	ExchangeTransaction              = byte(0x11) //资产兑换
-	Vote                             = byte(0x21) //为可投票账号投票
-	ApplyToBeDPoSNode                = byte(0x22) //申请成为DPoS节点
-	UpdatingVotesOrData              = byte(0x23) //更新投票数据
-	SendLossReport                   = byte(0x31) //发送挂失报告（申请挂失）
-	RevealLossMessage                = byte(0x32) //显示链上挂失信息
-	TransferLostAccountWhenTimeOut   = byte(0x33) //转移挂失账号的资产当挂失报告超时时
-	TransferLostAccountWhenConfirmed = byte(0x34) //转移挂失账号的资产当挂失成功时
-	RejectLossReportWhenTimeOut      = byte(0x3f) //拒绝挂失报告
-
-	//RegisterPNS                   = byte(0x20) //注册PNS账号
-	ModifyPnsOwner                = byte(0x21) //修改PNS账号所有者
-	ModifyPnsType                 = byte(0x22) //修改PNS类型
-	ModifyPnsContent              = byte(0x23) //修改PNS内容
-	CancellationPns               = byte(0x2f) //注销PNS账号
-	CreateDigitalSecuritiesAssets = byte(0x30) //创建数字证券资产
+	Register                 = byte(0x00) //注册账户
+	Cancellation             = byte(0xff) //注销账户
+	RevokeCancellation       = byte(0xfe) //撤销注销账户操作
+	Transfer                 = byte(0x01) //转账交易
+	ContractCall             = byte(0x02) //合约调用
+	ExchangeAsset            = byte(0x11) //资产兑换
+	Vote                     = byte(0x21) //投票
+	ApplyToBeDPoSNode        = byte(0x22) //申请成为DPoS节点
+	Redemption               = byte(0x24) //赎回投票
+	SendLossReport           = byte(0x31) //申请挂失
+	RevealLossReport         = byte(0x32) //挂失公告
+	TransferLostAccount      = byte(0x33) //转移挂失账号的资产
+	TransferLostAssetAccount = byte(0x34) //转移挂失账号的数字证券资产
+	RemoveLossReport         = byte(0x3f) //发起挂失不揭示内容删除掉
+	RejectLossReport         = byte(0x3e) //拒绝挂失报告
+	ModifyLossType           = byte(0x30) //修改挂失类型
+	ModifyPnsOwner           = byte(0x25) //修改PNS账号所有者
+	ModifyPnsContent         = byte(0x26) //修改PNS内容
+	//CancellationPns          = byte(0x27) //注销PNS账号
 
 	//.... ... todo 还有其它待列
 )
@@ -66,6 +63,14 @@ const (
 	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT   uint64 = 2
 )
 
+const (
+	LOSS_TYPE_ZERO  = byte(0)
+	LOSS_TYPE_ONE   = byte(1)
+	LOSS_TYPE_TWO   = byte(2)
+	LOSS_TYPE_THREE = byte(3)
+	LOSS_TYPE_FOUR  = byte(4)
+)
+
 // Check business transaction type
 
 func CheckBizType(bizType uint8) bool {
@@ -82,17 +87,31 @@ func CheckBizType(bizType uint8) bool {
 		contain = true
 	case ContractCall:
 		contain = true
+	case ExchangeAsset:
+		contain = true
+	case Vote:
+		contain = true
+	case ApplyToBeDPoSNode:
+		contain = true
+	case Redemption:
+		contain = true
 	case SendLossReport:
+		contain = true
+	case RevealLossReport:
+		contain = true
+	case TransferLostAccount:
+		contain = true
+	case TransferLostAssetAccount:
+		contain = true
+	case RemoveLossReport:
+		contain = true
+	case RejectLossReport:
+		contain = true
+	case ModifyLossType:
 		contain = true
 	case ModifyPnsOwner:
 		contain = true
-	case ModifyPnsType:
-		contain = true
 	case ModifyPnsContent:
-		contain = true
-	case CancellationPns:
-		contain = true
-	case CreateDigitalSecuritiesAssets:
 		contain = true
 	//.... ... todo 还有其它待列
 	default:
@@ -104,6 +123,11 @@ func CheckBizType(bizType uint8) bool {
 // CheckAccType check account type
 func CheckAccType(accType byte) bool {
 	return ACC_TYPE_OF_GENERAL <= accType && accType <= ACC_TYPE_OF_DPOS_CANDIDATE
+}
+
+// CheckLossType check loss report type
+func CheckLossType(accType byte) bool {
+	return LOSS_TYPE_ZERO <= accType && accType <= LOSS_TYPE_FOUR
 }
 
 // CheckRegisterAccType check allow register account type

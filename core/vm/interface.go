@@ -82,6 +82,10 @@ type StateDB interface {
 	AddVote(addr common.Address, delegateValue *big.Int)
 
 	SetVoteRecordForRegular(addr common.Address, voteAccount common.Address, voteValue *big.Int)
+
+	Redemption(addr common.Address, to common.Address, value *big.Int)
+
+	SetLossTypeForRegular(addr common.Address, lossType uint8)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM

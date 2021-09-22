@@ -78,6 +78,7 @@ type Message interface {
 
 	BizType() uint8
 	AccType() *hexutil.Uint8
+	LossType() *hexutil.Uint8
 	Owner() *common.Address
 	Beneficiary() *common.Address
 	Loss() *common.Address
@@ -310,6 +311,8 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret, err = st.TransitionDbOfVote()
 	case common.ApplyToBeDPoSNode:
 		ret, err = st.TransitionDbOfApplyToBeDPoSNode()
+	case common.Redemption:
+		ret, err = st.TransitionDbOfRedemption()
 		//... todo 还有未实现的
 	}
 

@@ -113,22 +113,22 @@ func (s *stateObject) empty() bool {
 
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
-		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue == nil &&
-			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value == nil && !s.isNew
+		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue.Sign() < 1 &&
+			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value.Sign() < 1 && !s.isNew
 	case common.ACC_TYPE_OF_PNS:
-		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && s.pnsAccount.Data == nil
+		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && len(s.pnsAccount.Data) == 0
 
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		return s.assetAccount.Type == 0 && s.assetAccount.CodeHash == nil && s.assetAccount.StorageRoot == emptyRoot &&
-			s.assetAccount.Value == nil && s.assetAccount.VoteAccount == common.Address{} && s.assetAccount.VoteValue == nil && s.assetAccount.Nonce == 0
+		return s.assetAccount.Type == 0 && len(s.assetAccount.CodeHash) == 0 && s.assetAccount.StorageRoot == emptyRoot &&
+			s.assetAccount.Value.Sign() < 1 && s.assetAccount.VoteAccount == common.Address{} && s.assetAccount.VoteValue.Sign() < 1 && s.assetAccount.Nonce == 0
 
 	case common.ACC_TYPE_OF_AUTHORIZE:
-		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue == nil && s.authorizeAccount.VoteValue == nil &&
-			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.InterestRate == nil && s.authorizeAccount.ValidPeriod == nil
+		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue.Sign() < 1 && s.authorizeAccount.VoteValue.Sign() < 1 &&
+			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.ValidPeriod.Sign() < 1
 
 	case common.ACC_TYPE_OF_LOSE:
 		return s.lossAccount.State == 0 && s.lossAccount.LossAccount == common.Address{} && s.lossAccount.NewAccount == common.Address{} &&
-			s.lossAccount.Height == nil && len(s.lossAccount.InfoDigest) == 0
+			s.lossAccount.Height.Sign() < 1 && len(s.lossAccount.InfoDigest) == 0
 
 	default:
 		return false
@@ -174,13 +174,13 @@ type AssetAccount struct {
 
 // AuthorizeAccount 授权账户
 type AuthorizeAccount struct {
-	Owner        common.Address
-	PledgeValue  *big.Int
-	VoteValue    *big.Int
-	Info         []byte
-	InterestRate *big.Int
-	ValidPeriod  *big.Int
-	State        bool
+	Owner       common.Address
+	PledgeValue *big.Int
+	VoteValue   *big.Int
+	Info        []byte
+	//InterestRate *big.Int
+	ValidPeriod *big.Int
+	State       byte //授权状态 0：投票中，1：过期或禁止申请成为DPos候选账户
 }
 
 // LossAccount 挂失账户
