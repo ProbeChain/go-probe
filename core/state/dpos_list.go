@@ -2,7 +2,6 @@ package state
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 	"sync"
 )
 
@@ -28,30 +27,11 @@ func newDposList() *dposList {
 	}
 }
 
-func (s *dposList) GetDPosByHeight(height *big.Int) DPoSAccount {
+func (s *dposList) GetAllDPos() []DPoSAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	var dPoSAccount DPoSAccount
-	for _, d := range s.dPoSAccounts {
-		if d.Height.Cmp(height) == 0 {
-			dPoSAccount = d
-		}
-	}
-	return dPoSAccount
-}
-
-func (s *dposList) GetDPosByAddr(addr common.Address) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var dPoSAccount DPoSAccount
-	for _, d := range s.dPoSAccounts {
-		if d.Owner == addr {
-			dPoSAccount = d
-		}
-	}
-	return dPoSAccount
+	return s.dPoSAccounts
 }
 
 func (s *dposList) AddDPos(dDoSAccount DPoSAccount) {
@@ -75,30 +55,11 @@ func (s *dposList) DeleteDPosByAddr(addr common.Address) {
 	s.dPoSAccounts = append(s.dPoSAccounts[:i], s.dPoSAccounts[i+1:]...)
 }
 
-func (s *dposList) GetDPoSCandidateByHeight(height *big.Int) DPoSCandidateAccount {
+func (s *dposList) GetAllDPoSCandidate() []DPoSCandidateAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	var account DPoSCandidateAccount
-	for _, d := range s.dPoSCandidateAccounts {
-		if d.Height.Cmp(height) == 0 {
-			account = d
-		}
-	}
-	return account
-}
-
-func (s *dposList) GetDPoSCandidateByAddr(addr common.Address) DPoSCandidateAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var account DPoSCandidateAccount
-	for _, d := range s.dPoSCandidateAccounts {
-		if d.Owner == addr {
-			account = d
-		}
-	}
-	return account
+	return s.dPoSCandidateAccounts
 }
 
 func (s *dposList) AddDPoSCandidate(account DPoSCandidateAccount) {
@@ -122,30 +83,11 @@ func (s *dposList) DeleteDPoSCandidateByAddr(addr common.Address) {
 	s.dPoSCandidateAccounts = append(s.dPoSCandidateAccounts[:i], s.dPoSCandidateAccounts[i+1:]...)
 }
 
-func (s *dposList) GetOldDPoSCandidateByHeight(height *big.Int) DPoSCandidateAccount {
+func (s *dposList) GetAllOldDPoSCandidate() []DPoSCandidateAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	var account DPoSCandidateAccount
-	for _, d := range s.oldDPoSCandidateAccounts {
-		if d.Height.Cmp(height) == 0 {
-			account = d
-		}
-	}
-	return account
-}
-
-func (s *dposList) GetOldDPoSCandidateByAddr(addr common.Address) DPoSCandidateAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var account DPoSCandidateAccount
-	for _, d := range s.oldDPoSCandidateAccounts {
-		if d.Owner == addr {
-			account = d
-		}
-	}
-	return account
+	return s.oldDPoSCandidateAccounts
 }
 
 func (s *dposList) AddOldDPoSCandidate(account DPoSCandidateAccount) {
@@ -169,30 +111,11 @@ func (s *dposList) DeleteOldDPoSCandidateByAddr(addr common.Address) {
 	s.oldDPoSCandidateAccounts = append(s.oldDPoSCandidateAccounts[:i], s.oldDPoSCandidateAccounts[i+1:]...)
 }
 
-func (s *dposList) GetOldDPoSByHeight(height *big.Int) DPoSAccount {
+func (s *dposList) GetAllOldDPoS() []DPoSAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	var account DPoSAccount
-	for _, d := range s.oldDPoSAccounts {
-		if d.Height.Cmp(height) == 0 {
-			account = d
-		}
-	}
-	return account
-}
-
-func (s *dposList) GetOldDPoSByAddr(addr common.Address) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var account DPoSAccount
-	for _, d := range s.oldDPoSAccounts {
-		if d.Owner == addr {
-			account = d
-		}
-	}
-	return account
+	return s.oldDPoSAccounts
 }
 
 func (s *dposList) AddOldDPoS(account DPoSAccount) {

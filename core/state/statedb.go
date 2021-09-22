@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -83,17 +82,7 @@ type StateDB struct {
 	stateObjectsPending map[common.Address]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
 
-	// DPoSAccount DPoS账户 64
-	dPoSAccounts []DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 64
-	dPoSCandidateAccounts []DPoSCandidateAccount
-
-	// DPoSAccount DPoS账户 64
-	oldDPoSAccounts []DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 64
-	oldDPoSCandidateAccounts []DPoSCandidateAccount
-	lock                     sync.RWMutex
-	dposList                 *dposList
+	dposList *dposList
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -1734,53 +1723,6 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	default:
 		return nil, true
 	}
-}
-
-func (s *StateDB) GetDPosByHeight(height *big.Int) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var dPoSAccount DPoSAccount
-	for _, d := range s.dPoSAccounts {
-		if d.Height.Cmp(height) == 0 {
-			dPoSAccount = d
-		}
-	}
-	return dPoSAccount
-}
-
-func (s *StateDB) GetDPosByAddr(addr common.Address) DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var dPoSAccount DPoSAccount
-	for _, d := range s.dPoSAccounts {
-		if d.Owner == addr {
-			dPoSAccount = d
-		}
-	}
-	return dPoSAccount
-}
-
-func (s *StateDB) AddDPos(dDoSAccount DPoSAccount) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	s.dPoSAccounts = append(s.dPoSAccounts, dDoSAccount)
-	//sort.Sort(accountsByURL(liveList))
-}
-
-func (s *StateDB) DeleteDPosByAddr(addr common.Address) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var i int
-	for j, d := range s.dPoSAccounts {
-		if d.Owner == addr {
-			i = j
-		}
-	}
-	s.dPoSAccounts = append(s.dPoSAccounts[:i], s.dPoSAccounts[i+1:]...)
 }
 
 // getStateObjectTireByAccountType return stateObject's tire
