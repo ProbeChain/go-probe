@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts"
 	"io"
 	"math/big"
-	"net"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -194,10 +193,10 @@ type LossAccount struct {
 
 // DPoSData DPoS账户公共数据
 type DPoSData struct {
-	Ip     net.IP
-	Port   uint16
+	//Ip     net.IP
+	//Port   uint16
 	Owner  common.Address
-	Pubkey []byte
+	Encode []byte
 }
 
 // DPoSAccount DPoS账户

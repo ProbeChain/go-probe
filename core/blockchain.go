@@ -1476,12 +1476,9 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	if err != nil {
 		return NonStatTy, err
 	}
-	// add trie root
-	arrdata, err := rlp.EncodeToBytes(state.GetStateDbTrie().GetTallHash())
-	if err != nil {
-		log.Crit("Failed to EncodeToBytes", "err", err)
-	}
-	rawdb.WriteRootHash(blockBatch, root, arrdata)
+	// 更新root映射
+	hashes := state.GetStateDbTrie().GetTallHash()
+	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
 
 	// If we're running an archive node, always flush

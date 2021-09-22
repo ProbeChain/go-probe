@@ -20,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // ReadPreimage retrieves a single preimage of the provided hash.
@@ -96,12 +97,34 @@ func DeleteTrieNode(db ethdb.KeyValueWriter, hash common.Hash) {
 }
 
 func WriteRootHash(db ethdb.KeyValueWriter, hash common.Hash, code []byte) {
-	if err := db.Put(hash.Bytes(), code); err != nil {
+	//if err := db.Put(hash.Bytes(), code); err != nil {
+	//	log.Crit("Failed to store RootHash", "err", err)
+	//}
+	if err := db.Put(StateRootKey(hash), code); err != nil {
+		log.Crit("Failed to store RootHash", "err", err)
+	}
+}
+
+func WriteAllStateRootHash(db ethdb.Database, hashes []common.Hash, root common.Hash) {
+	blockBatch := db.NewBatch()
+	// add trie root
+	arrdata, err := rlp.EncodeToBytes(hashes)
+	if err != nil {
+		log.Crit("Failed to EncodeToBytes", "err", err)
+	}
+	if err := blockBatch.Put(StateRootKey(root), arrdata); err != nil {
 		log.Crit("Failed to store RootHash", "err", err)
 	}
 }
 
 func ReadRootHash(db ethdb.KeyValueReader, hash common.Hash) []byte {
-	data, _ := db.Get(hash.Bytes())
+	data, _ := db.Get(StateRootKey(hash))
 	return data
+}
+func ReadRootHashForNew(db ethdb.KeyValueReader, hash common.Hash) []common.Hash {
+	var intarray []common.Hash
+	//hash := rawdb.ReadRootHash(db.TrieDB().DiskDB(), root)
+	data, _ := db.Get(StateRootKey(hash))
+	rlp.DecodeBytes(data, &intarray)
+	return intarray
 }

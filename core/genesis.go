@@ -281,6 +281,22 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		}
 	}
 	root := statedb.IntermediateRoot(false)
+
+	// 更新所有
+	hash := statedb.GetStateDbTrie().GetTallHash()
+	rawdb.WriteAllStateRootHash(db, hash, root)
+	//var b []byte
+	//for _, d := range hash {
+	//	b = append(b, d.Bytes()...)
+	//}
+	//rawdb.WriteRootHash(db, root, b)
+
+	//rootHash := rawdb.ReadRootHash(db, root)
+	rootHash := rawdb.ReadRootHashForNew(db, root)
+	fmt.Printf("所有root before：%v \n", root)
+	fmt.Printf("所有hash before：%v \n", hash)
+	fmt.Printf("所有rootHash after：%v \n", rootHash)
+
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
 		Nonce:      types.EncodeNonce(g.Nonce),
@@ -426,7 +442,7 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 		Period: period,
 		Epoch:  config.Clique.Epoch,
 	}
-
+	fmt.Printf("faucet地址：%v \n", faucet)
 	// Assemble and return the genesis with the precompiles and faucet pre-funded
 	return &Genesis{
 		Config:     &config,
@@ -435,16 +451,17 @@ func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 		BaseFee:    big.NewInt(params.InitialBaseFee),
 		Difficulty: big.NewInt(1),
 		Alloc: map[common.Address]GenesisAccount{
-			common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
-			common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
-			common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // RIPEMD
-			common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
-			common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
-			common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
-			common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
-			common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
-			common.BytesToAddress([]byte{9}): {Balance: big.NewInt(1)}, // BLAKE2b
-			faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
+			//common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
+			//common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
+			//common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // RIPEMD
+			//common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
+			//common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
+			//common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
+			//common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
+			//common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
+			//common.BytesToAddress([]byte{9}): {Balance: big.NewInt(1)}, // BLAKE2b
+			common.BytesToAddress(common.Hex2Bytes("0x0003e9989287524fa09830d39951c8ad4051d756b3bdcb36e8")): {Balance: big.NewInt(100)}, // BLAKE2b
+			faucet: {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
 		},
 	}
 }
