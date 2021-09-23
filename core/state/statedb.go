@@ -675,8 +675,8 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 }
 
 func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Address, jsonData []byte) {
-	dposAddr := s.getStateObject(addr)
-	if nil != dposAddr {
+	stateObject := s.getStateObject(addr)
+	if nil != stateObject {
 		return
 	}
 	var dposMap map[string]interface{}
@@ -693,15 +693,16 @@ func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Ad
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")
 	enode.WriteString(remotePort)
-	dposAddr.DPoSCandidateAccount.Enode = []byte(enode.String())
-	dposAddr.DPoSCandidateAccount.Owner = ower
-	s.dPoSCandidateList.PutOnTop(dposAddr.DPoSCandidateAccount)
+	stateObject.dposCandidateAccount.Enode = []byte(enode.String())
+	stateObject.dposCandidateAccount.Owner = ower
 
+	//TODO 计算权重
+	s.dPoSCandidateList.PutOnTop(stateObject.dposCandidateAccount)
 }
 
 func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
-	dposAddr := s.getStateObject(addr)
-	if nil == dposAddr {
+	stateObject := s.getStateObject(addr)
+	if nil == stateObject {
 		return
 	}
 	var dposMap map[string]interface{}
@@ -719,8 +720,8 @@ func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, js
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")
 	enode.WriteString(remotePort)
-	dposAddr.DPoSCandidateAccount.Enode = []byte(enode.String())
-	dposAddr.DPoSCandidateAccount.Owner = ower
+	stateObject.dposCandidateAccount.Enode = []byte(enode.String())
+	stateObject.dposCandidateAccount.Owner = ower
 
 }
 
@@ -1801,16 +1802,17 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	}
 }
 
-func (s *StateDB) getDpostList() []DPoSAccount {
-	var dPoSAccounts = make([]DPoSAccount, s.dPoSCandidateList.Limit)
+func (s *StateDB) GetDpostList() []common.DPoSAccount {
+	/*var dPoSAccounts = make([]common.DPoSAccount, s.dPoSCandidateList.Limit)
 	i := 0
 	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
 		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
-		dPoSAccount := &DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
+		dPoSAccount := &common.DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
 		dPoSAccounts[i] = *dPoSAccount
 		i++
 	}
-	return dPoSAccounts
+	return dPoSAccounts*/
+	return s.dPoSCandidateList.GetDpostList()
 }
 
 // getStateObjectTireByAccountType return stateObject's tire

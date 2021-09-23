@@ -80,7 +80,7 @@ type stateObject struct {
 	// 挂失账户
 	lossAccount LossAccount
 
-	DPoSCandidateAccount DPoSCandidateAccount
+	dposCandidateAccount DPoSCandidateAccount
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -191,12 +191,6 @@ type LossAccount struct {
 	InfoDigest  []byte         // 挂失内容摘要
 }
 
-// DPoSAccount DPoS账户
-type DPoSAccount struct {
-	Enode []byte
-	Owner common.Address
-}
-
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
 	Enode         []byte
@@ -212,7 +206,7 @@ type Wrapper struct {
 	assetAccount         AssetAccount
 	authorizeAccount     AuthorizeAccount
 	lossAccount          LossAccount
-	dPoSAccount          DPoSAccount
+	dPoSAccount          common.DPoSAccount
 	dPoSCandidateAccount DPoSCandidateAccount
 }
 
@@ -244,7 +238,7 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossAccount = data
 	case common.ACC_TYPE_OF_DPOS:
-		var data DPoSAccount
+		var data common.DPoSAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.dPoSAccount = data
 	case common.ACC_TYPE_OF_DPOS_CANDIDATE:

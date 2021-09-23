@@ -92,6 +92,7 @@ var Defaults = Config{
 	RPCGasCap:   50000000,
 	GPO:         FullNodeGPO,
 	RPCTxFeeCap: 1, // 1 ether
+	Consensus:   "pow",
 }
 
 func init() {
@@ -207,6 +208,9 @@ type Config struct {
 
 	// Berlin block override (TODO: remove after the fork)
 	OverrideLondon *big.Int `toml:",omitempty"`
+
+	// Choose the consensus is pow or dpos
+	Consensus string `toml:"-"`
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain configuration.
@@ -215,6 +219,11 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)
 	}
+
+	if chainConfig.Dpos != nil {
+		log.Info("CreateConsensusEngine is dpos")
+	}
+
 	// Otherwise assume proof-of-work
 	switch config.PowMode {
 	case ethash.ModeFake:

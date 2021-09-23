@@ -18,8 +18,11 @@
 package core
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -90,7 +93,9 @@ const (
 	maxFutureBlocks     = 256
 	maxTimeFutureBlocks = 30
 	TriesInMemory       = 128
-
+	maxChainPowAnswers  = 256
+	maxChainDposAcks    = 256
+	maxUnclePowAnswer   = 5
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -182,6 +187,8 @@ type BlockChain struct {
 	blockProcFeed event.Feed
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
+
+	dposNodes map[uint64][]*enode.Node
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -1478,6 +1485,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	}
 	triedb := bc.stateCache.TrieDB()
 
+	bc.writeDposNodes()
+
 	// If we're running an archive node, always flush
 	if bc.cacheConfig.TrieDirtyDisabled {
 		if err := triedb.Commit(root, false, nil); err != nil {
@@ -2394,6 +2403,29 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 	defer bc.wg.Done()
 	_, err := bc.hc.InsertHeaderChain(chain, start)
 	return 0, err
+}
+
+func (bc *BlockChain) writeDposNodes() {
+	block := bc.CurrentBlock()
+	number := block.NumberU64()
+	epoch := bc.chainConfig.Dpos.Epoch
+	if number == 0 || (number+1)%epoch == 0 {
+		db := bc.stateCache.TrieDB().DiskDB()
+		state, _ := bc.StateAt(block.Root())
+		dposList := state.GetDpostList()
+		data, _ := json.Marshal(dposList)
+		batch := bc.db.NewBatch()
+
+		var buf bytes.Buffer
+		buf.WriteString("DPOS_NODES:")
+		buf.WriteString(block.Root().Hex())
+
+		if err := db.Put(buf.Bytes(), data); err != nil {
+			log.Crit("Failed to store dposNodesList", "err", err)
+		}
+		batch.Write()
+	}
+
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
