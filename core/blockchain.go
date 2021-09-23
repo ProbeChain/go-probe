@@ -1480,59 +1480,63 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	hashes := state.GetStateDbTrie().GetTallHash()
 	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
-
+	fmt.Printf("2所有root：%v \n", root)
 	// If we're running an archive node, always flush
-	if bc.cacheConfig.TrieDirtyDisabled {
-		if err := triedb.Commit(root, false, nil); err != nil {
-			return NonStatTy, err
-		}
-	} else {
-		// Full but not archive node, do proper garbage collection
-		triedb.Reference(root, common.Hash{}) // metadata reference to keep trie alive
-		bc.triegc.Push(root, -int64(block.NumberU64()))
+	triedb.CommitForNew(hashes, false, nil)
+	//if bc.cacheConfig.TrieDirtyDisabled {
+	//	//if err := triedb.Commit(root, false, nil); err != nil {
+	//	if err := triedb.CommitForNew(hashes, false, nil); err != nil {
+	//		return NonStatTy, err
+	//	}
+	//} else {
+	//	// Full but not archive node, do proper garbage collection
+	//	triedb.Reference(root, common.Hash{}) // metadata reference to keep trie alive
+	//	bc.triegc.Push(root, -int64(block.NumberU64()))
+	//
+	//	if current := block.NumberU64(); current > TriesInMemory {
+	//		// If we exceeded our memory allowance, flush matured singleton nodes to disk
+	//		var (
+	//			nodes, imgs = triedb.Size()
+	//			limit       = common.StorageSize(bc.cacheConfig.TrieDirtyLimit) * 1024 * 1024
+	//		)
+	//		if nodes > limit || imgs > 4*1024*1024 {
+	//			triedb.Cap(limit - ethdb.IdealBatchSize)
+	//		}
+	//		// Find the next state trie we need to commit
+	//		chosen := current - TriesInMemory
+	//
+	//		// If we exceeded out time allowance, flush an entire trie to disk
+	//		if bc.gcproc > bc.cacheConfig.TrieTimeLimit {
+	//			// If the header is missing (canonical chain behind), we're reorging a low
+	//			// diff sidechain. Suspend committing until this operation is completed.
+	//			header := bc.GetHeaderByNumber(chosen)
+	//			if header == nil {
+	//				log.Warn("Reorg in progress, trie commit postponed", "number", chosen)
+	//			} else {
+	//				// If we're exceeding limits but haven't reached a large enough memory gap,
+	//				// warn the user that the system is becoming unstable.
+	//				if chosen < lastWrite+TriesInMemory && bc.gcproc >= 2*bc.cacheConfig.TrieTimeLimit {
+	//					log.Info("State in memory for too long, committing", "time", bc.gcproc, "allowance", bc.cacheConfig.TrieTimeLimit, "optimum", float64(chosen-lastWrite)/TriesInMemory)
+	//				}
+	//				// Flush an entire trie and restart the counters
+	//				//triedb.Commit(header.Root, true, nil)
+	//				triedb.CommitForNew(hashes, true, nil)
+	//				lastWrite = chosen
+	//				bc.gcproc = 0
+	//			}
+	//		}
+	//		// Garbage collect anything below our required write retention
+	//		for !bc.triegc.Empty() {
+	//			root, number := bc.triegc.Pop()
+	//			if uint64(-number) > chosen {
+	//				bc.triegc.Push(root, number)
+	//				break
+	//			}
+	//			triedb.Dereference(root.(common.Hash))
+	//		}
+	//	}
+	//}
 
-		if current := block.NumberU64(); current > TriesInMemory {
-			// If we exceeded our memory allowance, flush matured singleton nodes to disk
-			var (
-				nodes, imgs = triedb.Size()
-				limit       = common.StorageSize(bc.cacheConfig.TrieDirtyLimit) * 1024 * 1024
-			)
-			if nodes > limit || imgs > 4*1024*1024 {
-				triedb.Cap(limit - ethdb.IdealBatchSize)
-			}
-			// Find the next state trie we need to commit
-			chosen := current - TriesInMemory
-
-			// If we exceeded out time allowance, flush an entire trie to disk
-			if bc.gcproc > bc.cacheConfig.TrieTimeLimit {
-				// If the header is missing (canonical chain behind), we're reorging a low
-				// diff sidechain. Suspend committing until this operation is completed.
-				header := bc.GetHeaderByNumber(chosen)
-				if header == nil {
-					log.Warn("Reorg in progress, trie commit postponed", "number", chosen)
-				} else {
-					// If we're exceeding limits but haven't reached a large enough memory gap,
-					// warn the user that the system is becoming unstable.
-					if chosen < lastWrite+TriesInMemory && bc.gcproc >= 2*bc.cacheConfig.TrieTimeLimit {
-						log.Info("State in memory for too long, committing", "time", bc.gcproc, "allowance", bc.cacheConfig.TrieTimeLimit, "optimum", float64(chosen-lastWrite)/TriesInMemory)
-					}
-					// Flush an entire trie and restart the counters
-					triedb.Commit(header.Root, true, nil)
-					lastWrite = chosen
-					bc.gcproc = 0
-				}
-			}
-			// Garbage collect anything below our required write retention
-			for !bc.triegc.Empty() {
-				root, number := bc.triegc.Pop()
-				if uint64(-number) > chosen {
-					bc.triegc.Push(root, number)
-					break
-				}
-				triedb.Dereference(root.(common.Hash))
-			}
-		}
-	}
 	// If the total difficulty is higher than our known, add it to the canonical chain
 	// Second clause in the if statement reduces the vulnerability to selfish mining.
 	// Please refer to http://www.cs.cornell.edu/~ie53/publications/btcProcFC.pdf

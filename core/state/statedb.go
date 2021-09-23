@@ -968,16 +968,35 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 // Snapshots of the copied state cannot be applied to the copy.
 func (s *StateDB) Copy() *StateDB {
 	// Copy all the basic fields, initialize the memory ones
+	var regularTrie, pnsTrie, digitalTrie, contractTrie, authorizeTrie, lossTrie Trie
+	if s.trie.regularTrie != nil {
+		regularTrie = s.db.CopyTrie(s.trie.regularTrie)
+	}
+	if s.trie.pnsTrie != nil {
+		pnsTrie = s.db.CopyTrie(s.trie.pnsTrie)
+	}
+	if s.trie.digitalTrie != nil {
+		digitalTrie = s.db.CopyTrie(s.trie.digitalTrie)
+	}
+	if s.trie.contractTrie != nil {
+		contractTrie = s.db.CopyTrie(s.trie.contractTrie)
+	}
+	if s.trie.authorizeTrie != nil {
+		authorizeTrie = s.db.CopyTrie(s.trie.authorizeTrie)
+	}
+	if s.trie.lossTrie != nil {
+		lossTrie = s.db.CopyTrie(s.trie.lossTrie)
+	}
 	state := &StateDB{
 		db: s.db,
 		//trie:                s.db.CopyTrie(s.trie),
 		trie: TotalTrie{
-			regularTrie:   s.db.CopyTrie(s.trie.regularTrie),
-			pnsTrie:       s.db.CopyTrie(s.trie.pnsTrie),
-			digitalTrie:   s.db.CopyTrie(s.trie.digitalTrie),
-			contractTrie:  s.db.CopyTrie(s.trie.contractTrie),
-			authorizeTrie: s.db.CopyTrie(s.trie.authorizeTrie),
-			lossTrie:      s.db.CopyTrie(s.trie.lossTrie),
+			regularTrie:   regularTrie,
+			pnsTrie:       pnsTrie,
+			digitalTrie:   digitalTrie,
+			contractTrie:  contractTrie,
+			authorizeTrie: authorizeTrie,
+			lossTrie:      lossTrie,
 		},
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),

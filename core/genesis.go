@@ -285,17 +285,6 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	// 更新所有
 	hash := statedb.GetStateDbTrie().GetTallHash()
 	rawdb.WriteAllStateRootHash(db, hash, root)
-	//var b []byte
-	//for _, d := range hash {
-	//	b = append(b, d.Bytes()...)
-	//}
-	//rawdb.WriteRootHash(db, root, b)
-
-	//rootHash := rawdb.ReadRootHash(db, root)
-	rootHash := rawdb.ReadRootHashForNew(db, root)
-	fmt.Printf("所有root before：%v \n", root)
-	fmt.Printf("所有hash before：%v \n", hash)
-	fmt.Printf("所有rootHash after：%v \n", rootHash)
 
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
@@ -325,7 +314,8 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		}
 	}
 	statedb.Commit(false)
-	statedb.Database().TrieDB().Commit(root, true, nil)
+	//statedb.Database().TrieDB().Commit(hash[0], true, nil)
+	statedb.Database().TrieDB().CommitForNew(hash, true, nil)
 
 	return types.NewBlock(head, nil, nil, nil, trie.NewStackTrie(nil))
 }
