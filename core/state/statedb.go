@@ -382,7 +382,7 @@ func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64)
 	}
 
 	for {
-		if count > len(nodelist) {
+		if count > len(nodelist)-1 {
 			break
 		}
 		dposAccount := mockDposAccounts[startIndex%size]
