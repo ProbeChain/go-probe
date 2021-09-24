@@ -26,6 +26,7 @@ const (
 	ExchangeAsset            = byte(0x11) //资产兑换
 	Vote                     = byte(0x21) //投票
 	ApplyToBeDPoSNode        = byte(0x22) //申请成为DPoS节点
+	UpdatingVotesOrData      = byte(0x23) //更新投票数据
 	Redemption               = byte(0x24) //赎回投票
 	SendLossReport           = byte(0x31) //申请挂失
 	RevealLossReport         = byte(0x32) //挂失公告

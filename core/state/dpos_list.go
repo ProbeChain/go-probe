@@ -7,34 +7,31 @@ import (
 
 type dposList struct {
 	// DPoSAccount DPoS账户 64
-	dPoSAccounts []DPoSAccount
+	dPoSAccounts []common.DPoSAccount
 	// DPoSCandidateAccount DPoS候选账户 64
-	dPoSCandidateAccounts []DPoSCandidateAccount
+	dPoSCandidateAccounts *SortedLinkedList
 
 	// DPoSAccount DPoS账户 64
-	oldDPoSAccounts []DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 64
-	oldDPoSCandidateAccounts []DPoSCandidateAccount
-	lock                     sync.RWMutex
+	oldDPoSAccounts []common.DPoSAccount
+	lock            sync.RWMutex
 }
 
 func newDposList() *dposList {
 	return &dposList{
-		dPoSAccounts:             make([]DPoSAccount, 64),
-		dPoSCandidateAccounts:    make([]DPoSCandidateAccount, 64),
-		oldDPoSAccounts:          make([]DPoSAccount, 64),
-		oldDPoSCandidateAccounts: make([]DPoSCandidateAccount, 64),
+		dPoSAccounts:          make([]common.DPoSAccount, 64),
+		dPoSCandidateAccounts: NewSortedLinkedList(64, compareValue),
+		oldDPoSAccounts:       make([]common.DPoSAccount, 64),
 	}
 }
 
-func (s *dposList) GetAllDPos() []DPoSAccount {
+func (s *dposList) GetAllDPos() []common.DPoSAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	return s.dPoSAccounts
 }
 
-func (s *dposList) AddDPos(dDoSAccount DPoSAccount) {
+func (s *dposList) AddDPos(dDoSAccount common.DPoSAccount) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -58,18 +55,32 @@ func (s *dposList) DeleteDPosByAddr(addr common.Address) {
 func (s *dposList) GetAllDPoSCandidate() []DPoSCandidateAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	var dPoSCandidateAccounts = make([]DPoSCandidateAccount, s.dPoSCandidateAccounts.Limit)
+	i := 0
+	for element := s.dPoSCandidateAccounts.List.Front(); element != nil; element = element.Next() {
+		dPoSCandidateAccounts[i] = element.Value.(DPoSCandidateAccount)
+		i++
+	}
+	return dPoSCandidateAccounts
+}
 
-	return s.dPoSCandidateAccounts
+func (s *StateDB) getNextDPOSList() []common.DPoSAccount {
+	var dPoSAccounts = make([]common.DPoSAccount, s.dPoSCandidateList.Limit)
+	i := 0
+	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
+		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
+		dPoSAccount := &common.DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
+		dPoSAccounts[i] = *dPoSAccount
+		i++
+	}
+	return dPoSAccounts
 }
 
 func (s *dposList) AddDPoSCandidate(account DPoSCandidateAccount) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	s.dPoSCandidateAccounts = append(s.dPoSCandidateAccounts, account)
-	//sort.Sort(accountsByURL(liveList))
+	s.dPoSCandidateAccounts.PutOnTop(account)
 }
 
+/*
 func (s *dposList) DeleteDPoSCandidateByAddr(addr common.Address) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -86,7 +97,6 @@ func (s *dposList) DeleteDPoSCandidateByAddr(addr common.Address) {
 func (s *dposList) GetAllOldDPoSCandidate() []DPoSCandidateAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-
 	return s.oldDPoSCandidateAccounts
 }
 
@@ -109,16 +119,16 @@ func (s *dposList) DeleteOldDPoSCandidateByAddr(addr common.Address) {
 		}
 	}
 	s.oldDPoSCandidateAccounts = append(s.oldDPoSCandidateAccounts[:i], s.oldDPoSCandidateAccounts[i+1:]...)
-}
+}*/
 
-func (s *dposList) GetAllOldDPoS() []DPoSAccount {
+func (s *dposList) GetAllOldDPoS() []common.DPoSAccount {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	return s.oldDPoSAccounts
 }
 
-func (s *dposList) AddOldDPoS(account DPoSAccount) {
+func (s *dposList) AddOldDPoS(account common.DPoSAccount) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

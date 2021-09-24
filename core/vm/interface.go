@@ -27,7 +27,9 @@ import (
 type StateDB interface {
 	CreateAccount(common.Address)
 	GenerateAccount(TxContext)
-	UpdateDposAccount(common.Address, []byte)
+
+	CreateDPoSCandidateAccount(common.Address, common.Address, []byte)
+	UpdateDposAccount(common.Address, common.Address, []byte)
 
 	SubBalance(common.Address, *big.Int)
 	AddBalance(common.Address, *big.Int)

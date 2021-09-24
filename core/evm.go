@@ -188,9 +188,14 @@ func SendLossReport(db vm.StateDB, sender common.Address, amount *big.Int, txCon
 	db.SubBalance(sender, amount)
 }
 
-func ApplyToBeDPoSNode(db vm.StateDB, voteAddr common.Address, data []byte) {
-	fmt.Printf("ApplyToBeDPoSNode, voteAddr:%s,data:%s\n", voteAddr, data)
-	db.UpdateDposAccount(voteAddr, data)
+func ApplyToBeDPoSNode(db vm.StateDB, sender common.Address, voteAddr common.Address, data []byte) {
+	fmt.Printf("ApplyToBeDPoSNode, ower:%s voteAddr:%s,data:%s\n", sender, voteAddr, data)
+	db.CreateDPoSCandidateAccount(sender, voteAddr, data)
+}
+
+func UpdatingVotesOrData(db vm.StateDB, sender common.Address, voteAddr common.Address, data []byte) {
+	fmt.Printf("ApplyToBeDPoSNode, ower:%s voteAddr:%s,data:%s\n", sender, voteAddr, data)
+	db.UpdateDposAccount(sender, voteAddr, data)
 }
 
 // Vote subtracts amount from sender and adds amount to recipient using the given Db

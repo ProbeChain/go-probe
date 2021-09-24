@@ -592,6 +592,8 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		err = pool.validateTxOfVote(tx, local)
 	case common.ApplyToBeDPoSNode:
 		err = pool.validateTxOfApplyToBeDPoSNode(tx, local)
+	case common.UpdatingVotesOrData:
+		err = pool.validateTxOfUpdatingVotesOrData(tx, local)
 	case common.Redemption:
 		err = pool.validateTxOfRedemption(tx, local)
 	case common.ModifyLossType:

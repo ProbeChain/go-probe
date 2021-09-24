@@ -268,6 +268,9 @@ func TestStrToHex(*testing.T) {
 
 	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str)))
 
+	str2 := "{\"ip\":\"192.169.1.3\",\"port\":\"1307\"}"
+	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str2)))
+
 	var emptyCodeHash = crypto.Keccak256(nil)
 	fmt.Println("address ", hexutil.Encode(emptyCodeHash))
 

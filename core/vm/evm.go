@@ -55,7 +55,9 @@ type (
 	// VoteFunc is the signature of a transfer function
 	VoteFunc func(StateDB, common.Address, common.Address, *big.Int)
 	//ApplyToBeDPoSNodeFunc  is the update candidate dposNode  function
-	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, []byte)
+	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, common.Address, []byte)
+	//UpdatingVotesOrDataFunc  is the update candidate dposNode  function
+	UpdatingVotesOrDataFunc func(StateDB, common.Address, common.Address, []byte)
 	//RedemptionFunc redemption vote
 	RedemptionFunc func(StateDB, common.Address, common.Address, *big.Int)
 	//RevealLossReportFunc reveal loss report
@@ -136,6 +138,8 @@ type BlockContext struct {
 	Vote VoteFunc
 	//ApplyToBeDPoSNode send DPOS report
 	ApplyToBeDPoSNode ApplyToBeDPoSNodeFunc
+	//UpdatingVotesOrData update DPOS report
+	UpdatingVotesOrData UpdatingVotesOrDataFunc
 	// Redemption redemption vote
 	Redemption RedemptionFunc
 	//RevealLossReport reveal loss report
@@ -351,7 +355,9 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	case common.Vote:
 		evm.Context.Vote(evm.StateDB, caller.Address(), to, value)
 	case common.ApplyToBeDPoSNode:
-		evm.Context.ApplyToBeDPoSNode(evm.StateDB, to, evm.Data)
+		evm.Context.ApplyToBeDPoSNode(evm.StateDB, caller.Address(), to, evm.Data)
+	case common.UpdatingVotesOrData:
+		evm.Context.UpdatingVotesOrData(evm.StateDB, caller.Address(), to, evm.Data)
 	case common.Redemption:
 		evm.Context.Redemption(evm.StateDB, caller.Address(), to, value)
 	case common.ModifyLossType:

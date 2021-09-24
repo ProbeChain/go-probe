@@ -18,8 +18,11 @@
 package core
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -90,7 +93,9 @@ const (
 	maxFutureBlocks     = 256
 	maxTimeFutureBlocks = 30
 	TriesInMemory       = 128
-
+	maxChainPowAnswers  = 256
+	maxChainDposAcks    = 256
+	maxUnclePowAnswer   = 5
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -182,6 +187,8 @@ type BlockChain struct {
 	blockProcFeed event.Feed
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
+
+	dposNodes map[uint64][]*enode.Node
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -1480,7 +1487,9 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	hashes := state.GetStateDbTrie().GetTallHash()
 	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
-	fmt.Printf("2所有root：%v \n", root)
+
+	bc.writeDposNodes()
+
 	// If we're running an archive node, always flush
 	//triedb.CommitForNew(hashes, false, nil)
 	if bc.cacheConfig.TrieDirtyDisabled {
@@ -1519,8 +1528,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 						log.Info("State in memory for too long, committing", "time", bc.gcproc, "allowance", bc.cacheConfig.TrieTimeLimit, "optimum", float64(chosen-lastWrite)/TriesInMemory)
 					}
 					// Flush an entire trie and restart the counters
-					//triedb.Commit(header.Root, true, nil)
-					triedb.CommitForNew(hashes, true, nil)
+					triedb.Commit(header.Root, true, nil)
 					lastWrite = chosen
 					bc.gcproc = 0
 				}
@@ -1536,7 +1544,6 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 			}
 		}
 	}
-
 	// If the total difficulty is higher than our known, add it to the canonical chain
 	// Second clause in the if statement reduces the vulnerability to selfish mining.
 	// Please refer to http://www.cs.cornell.edu/~ie53/publications/btcProcFC.pdf
@@ -2401,6 +2408,29 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 	defer bc.wg.Done()
 	_, err := bc.hc.InsertHeaderChain(chain, start)
 	return 0, err
+}
+
+func (bc *BlockChain) writeDposNodes() {
+	block := bc.CurrentBlock()
+	number := block.NumberU64()
+	epoch := bc.chainConfig.Dpos.Epoch
+	if number == 0 || (number+1)%epoch == 0 {
+		db := bc.stateCache.TrieDB().DiskDB()
+		state, _ := bc.StateAt(block.Root())
+		dposList := state.GetDpostList()
+		data, _ := json.Marshal(dposList)
+		batch := bc.db.NewBatch()
+
+		var buf bytes.Buffer
+		buf.WriteString("DPOS_NODES:")
+		buf.WriteString(block.Root().Hex())
+
+		if err := db.Put(buf.Bytes(), data); err != nil {
+			log.Crit("Failed to store dposNodesList", "err", err)
+		}
+		batch.Write()
+	}
+
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The

@@ -2,6 +2,8 @@ package state
 
 import (
 	"container/list"
+	"github.com/ethereum/go-ethereum/common"
+	"strings"
 	"sync"
 )
 
@@ -46,6 +48,35 @@ func (this SortedLinkedList) PutOnTop(value interface{}) {
 	if this.Len() > this.Limit {
 		this.Remove(this.Back())
 	}
+}
+
+func (this SortedLinkedList) remove(value interface{}) {
+	defer this.lock.Unlock()
+	this.lock.Lock()
+	if this.List.Len() == 0 {
+		return
+	}
+	var next *list.Element
+	for e := this.List.Front(); e != nil; e = next {
+		next = e.Next()
+		if strings.EqualFold(e.Value.(DPoSCandidateAccount).Owner.Hex(), value.(DPoSCandidateAccount).Owner.Hex()) {
+			this.Remove(e)
+		}
+	}
+}
+
+func (this SortedLinkedList) GetDpostList() []common.DPoSAccount {
+	defer this.lock.Unlock()
+	this.lock.Lock()
+	var dPoSAccounts = make([]common.DPoSAccount, this.Limit)
+	i := 0
+	for element := this.Front(); element != nil; element = element.Next() {
+		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
+		dPoSAccount := &common.DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
+		dPoSAccounts[i] = *dPoSAccount
+		i++
+	}
+	return dPoSAccounts
 }
 
 func compareValue(old, new interface{}) bool {

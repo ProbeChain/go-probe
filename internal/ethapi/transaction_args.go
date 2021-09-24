@@ -181,6 +181,8 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		return args.setDefaultsOfVote(ctx, b)
 	case common.ApplyToBeDPoSNode:
 		return args.setDefaultsOfApplyToBeDPoSNode(ctx, b)
+	case common.UpdatingVotesOrData:
+		return args.setDefaultsOfUpdatingVotesOrData(ctx, b)
 	case common.Redemption:
 		return args.setDefaultsOfRedemption(ctx, b)
 	case common.ModifyLossType:
@@ -315,6 +317,8 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		return args.transactionOfVote()
 	case common.ApplyToBeDPoSNode:
 		return args.transactionOfApplyToBeDPoSNode()
+	case common.UpdatingVotesOrData:
+		return args.transactionOfUpdatingVotesOrData()
 	case common.Redemption:
 		return args.transactionOfRedemption()
 	case common.ModifyLossType:

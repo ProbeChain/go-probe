@@ -80,6 +80,8 @@ type stateObject struct {
 	// 挂失账户
 	lossAccount LossAccount
 
+	dposCandidateAccount DPoSCandidateAccount
+
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -189,24 +191,12 @@ type LossAccount struct {
 	InfoDigest  []byte         // 挂失内容摘要
 }
 
-// DPoSData DPoS账户公共数据
-type DPoSData struct {
-	Owner common.Address
-	// 包含 ip/port/pubkey
-	Encode []byte
-}
-
-// DPoSAccount DPoS账户
-type DPoSAccount struct {
-	DPoSData
-	Info    []byte // 信息
-	SignNum uint64 // 签名次数
-}
-
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	DPoSData
-	DelegateValue *big.Int // 选票数量
+	Enode         []byte
+	Owner         common.Address
+	Weight        *big.Int
+	DelegateValue *big.Int
 }
 
 type Wrapper struct {
@@ -216,7 +206,7 @@ type Wrapper struct {
 	assetAccount         AssetAccount
 	authorizeAccount     AuthorizeAccount
 	lossAccount          LossAccount
-	dPoSAccount          DPoSAccount
+	dPoSAccount          common.DPoSAccount
 	dPoSCandidateAccount DPoSCandidateAccount
 }
 
@@ -248,7 +238,7 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossAccount = data
 	case common.ACC_TYPE_OF_DPOS:
-		var data DPoSAccount
+		var data common.DPoSAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.dPoSAccount = data
 	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
@@ -778,9 +768,9 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, address common.Addres
 		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
 	case common.ACC_TYPE_OF_LOSE:
 		state = newLossAccount(db, s.address, s.lossAccount)
-	//case accounts.DPoS:
+	//case common.ACC_TYPE_OF_DPOS:
 	//
-	//case accounts.DPoSCandidate:
+	//case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	default:
 		state = nil
 	}
@@ -880,6 +870,8 @@ func (s *stateObject) Balance() *big.Int {
 		return s.regularAccount.Value
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Value
+	case common.ACC_TYPE_OF_AUTHORIZE:
+		return s.authorizeAccount.PledgeValue
 	default:
 		return new(big.Int)
 	}
