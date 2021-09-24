@@ -35,7 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -551,10 +550,12 @@ func (c *Greatri) Seal(chain consensus.ChainHeaderReader, block *types.Block, re
 	return nil
 }
 
-func (c *Greatri) PowSeal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.PowAnswer,
-	stop <-chan struct{}, coinbase common.Address) error {
-	log.Info("input:", "a:", chain.CurrentHeader().Number, "b", block.Header().Number, "c", results, "d", stop, "coinbase", coinbase)
-	return nil
+func (c *Greatri) DposAckSig(ack *types.DposAck) ([]byte, error) {
+	sighash, err := c.signFn(accounts.Account{Address: c.signer}, accounts.MimetypeDataWithValidator, GreatriDposAckRLP(ack))
+	if err != nil {
+		return nil, err
+	}
+	return sighash, nil
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
@@ -643,6 +644,24 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 	}
 	if header.BaseFee != nil {
 		enc = append(enc, header.BaseFee)
+	}
+	if err := rlp.Encode(w, enc); err != nil {
+		panic("can't encode: " + err.Error())
+	}
+}
+
+func GreatriDposAckRLP(DposAck *types.DposAck) []byte {
+	b := new(bytes.Buffer)
+	encodeSigDposAck(b, DposAck)
+	return b.Bytes()
+}
+
+func encodeSigDposAck(w io.Writer, DposAck *types.DposAck) {
+	enc := []interface{}{
+		DposAck.EpochPosition,
+		DposAck.Number,
+		DposAck.BlockHash,
+		DposAck.AckType,
 	}
 	if err := rlp.Encode(w, enc); err != nil {
 		panic("can't encode: " + err.Error())

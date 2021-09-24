@@ -290,19 +290,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		DposSig:          make([]byte, 65),
 		DposAckCountList: make([]*types.DposAckCount, 0),
 		PowAnswers:       make([]*types.PowAnswer, 0),
-		BlockHash:        common.Hash{},
 	}
-
-	fmt.Printf("genesis block header:%+v\n", head)
-
-	tmp := head
-	bs, err1 := json.Marshal(tmp)
-	if err1 != nil {
-		log.Info("json encode failed")
-	}
-	var out bytes.Buffer
-	json.Indent(&out, bs, "", "\t")
-	log.Info("genesis block header:", out.String(), nil)
 
 	if g.GasLimit == 0 {
 		head.GasLimit = params.GenesisGasLimit
@@ -320,7 +308,18 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true, nil)
 
-	return types.DposNewBlock(head, nil, nil, nil, nil, trie.NewStackTrie(nil))
+	block := types.DposNewBlock(head, nil, nil, nil, nil, trie.NewStackTrie(nil))
+
+	tmp := block.Header()
+	bs, err1 := json.Marshal(tmp)
+	if err1 != nil {
+		log.Info("json encode failed")
+	}
+	var out bytes.Buffer
+	json.Indent(&out, bs, "", "\t")
+	log.Info("genesis block header:", out.String(), nil)
+
+	return block
 }
 
 // Commit writes the block and state of a genesis specification to the database.

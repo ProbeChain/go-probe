@@ -347,18 +347,10 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
 	log.Info("GetDposAccounts", "hash", hash, "number", number)
 	nodelist := []string{
-		"enode://05e1c4d3305a5dc74dd88d55e973cc3157758a749578b64b910ad3ae3c40dc8191a41d9ae7ded15e6792e8a1111ab00c4e2cd3e270c52b6cbb148180a892935d@127.0.0.1:30000",
-		"enode://5a6305139ac194cc248e7dd1c35bee1912d09edbee09b01097b498ec8006b04ac01cecea1853957398c085584622a8b4c6e5926f69edeed24b3e3875e49688f9@127.0.0.1:30001",
-		"enode://2e7b27a1115e80a2f3eb9aa9a301257f0e571304eac4ac2868fa8849da604ec33d995d37a49fa7bb6674fba759afd31ac8cef6d94a9535670edbdb23b2562b75@127.0.0.1:30002",
-		"enode://a52e61021e26a330cef2c370d5ef26f5da49253f6afab267f9a5edf7403e14456ee4422531aba687b496b92fc201f556999ad273a39dba9264247e996711b2a3@127.0.0.1:30003",
-		"enode://f38cccdbed081dfb258324c1f9582509c893203efb2030c7d7d16d39b37183d7655c3d6a20c326e757697f6bf8437d3de6ab61207225670a156b748c10d8de29@127.0.0.1:30004",
+		"enode://07086fc9fcbaf3a1739d2e9a07a049905e3245abf4987e1be91fdfbc3a6d1b6e9f0ba4418c663c6fc91edb10c6737dfa429cb587a07806934099e4672ea037a1@127.0.0.1:8545",
 	}
 	ownerList := []string{
-		"eb2a97bae8d39ea1834348d88a9951eb86900abc",
-		"74c040cad84eb03eb337b0e6f9de5e0d943a2cf1",
-		"941b6dc9df35c3f3a9e2e65a70909ed95c705e3b",
-		"cc516921f61f019ba2206c62d7727ea9e1e89170",
-		"ff168ed2dcc593dcffc48d9f2ae7e130235b39e2",
+		"45a6a925c9203e1d19e49aad489a5347dc655d11",
 	}
 
 	mockDposAccounts := make([]*DPoSAccount, 0, len(nodelist))
@@ -382,7 +374,7 @@ func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64)
 	}
 
 	for {
-		if count > len(nodelist)-1 {
+		if count > len(nodelist) {
 			break
 		}
 		dposAccount := mockDposAccounts[startIndex%size]

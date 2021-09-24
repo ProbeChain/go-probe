@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	ethhash2 "github.com/ethereum/go-ethereum/consensus/ethash"
+	greatri2 "github.com/ethereum/go-ethereum/consensus/greatri"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -341,17 +343,21 @@ func (w *worker) isRunning() bool {
 	return atomic.LoadInt32(&w.running) == 1
 }
 func (w *worker) imProducer() bool {
-	return true
-	//producer,err := w.getCurrentDposProducer()
-	//if nil == err && producer.Owner == w.coinbase {
-	//	return true
-	//}else{
-	//	return false
-	//}
+	blockNumber := w.chain.CurrentHeader().Number.Uint64()
+	account := w.chain.GetSealDposAccount(blockNumber)
+	if account == nil {
+		log.Error("something wrong in get dpos account, need to check", "blockNumber", blockNumber)
+		return false
+	}
+	if account.Owner == w.coinbase {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (w *worker) imDpostWorkNode() bool {
-	return true
+	return w.chain.CheckIsLatestDposAccount(w.coinbase)
 }
 
 // close terminates all background threads maintained by the worker.
@@ -444,13 +450,29 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 
 		case <-w.chainHeadCh:
 			if w.imDpostWorkNode() {
+				position, err := w.chain.GetLatestDposAccountIndex(w.coinbase)
+				if err != nil {
+					log.Error("something wrong in get dpos account postion", "blockNumber", w.chain.CurrentHeader().Number)
+					continue
+				}
 				ack := &types.DposAck{
-					//todo filfull by right data
-					EpochPosition: 2,
+					EpochPosition: uint8(position),
 					Number:        w.eth.BlockChain().CurrentHeader().Number,
-					BlockHash:     w.eth.BlockChain().CurrentHeader().BlockHash,
+					BlockHash:     w.eth.BlockChain().CurrentBlock().Hash(),
 					AckType:       types.AckTypeAgree,
-					WitnessSig:    make([]byte, 65)}
+				}
+				greatri, ok := w.engine.(*greatri2.Greatri)
+				if !ok {
+					log.Error("something wrong in produce dposAck", "blockNumber", ack.Number)
+					continue
+				}
+				ackSig, err := greatri.DposAckSig(ack)
+				if err != nil {
+					log.Error("something wrong in DposAckSig", "blockNumber", ack.Number)
+					continue
+				}
+				ack.WitnessSig = append(ack.WitnessSig, ackSig...)
+
 				log.Info("received new block, send dposAck to all", "addr", w.coinbase,
 					"current block number", w.chain.CurrentHeader().Number)
 				w.mux.Post(core.DposAckEvent{DposAck: ack})
@@ -459,7 +481,13 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			if w.chainConfig.Ethash != nil {
 				interruptSeal()
 				stopCh = make(chan struct{})
-				if err := w.powEngine.PowSeal(w.chain, w.chain.CurrentBlock(), w.powMinerResultCh, stopCh, w.coinbase); err != nil {
+				ethash, ok := w.powEngine.(*ethhash2.Ethash)
+				if !ok {
+					log.Error("something wrong in produce dposAck", "blockNumber", w.chain.CurrentBlock().Number())
+					continue
+				}
+
+				if err := ethash.PowSeal(w.chain, w.chain.CurrentBlock(), w.powMinerResultCh, stopCh, w.coinbase); err != nil {
 					log.Warn("pow Miner failed", "err", err)
 				}
 			}
@@ -609,21 +637,13 @@ func (w *worker) taskLoop() {
 			json.Indent(&out, bs, "", "\t")
 			log.Info("new block header in step 3:", out.String(), nil)
 
-			bs2, err2 := json.Marshal(block)
+			bs2, err2 := json.Marshal(block.Body())
 			if err2 != nil {
 				log.Info("json encode failed")
 			}
 			var out2 bytes.Buffer
 			json.Indent(&out2, bs2, "", "\t")
 			log.Info("new block body in step 3:", out2.String(), nil)
-
-			bs3, err3 := json.Marshal(block.Transactions())
-			if err3 != nil {
-				log.Info("json encode failed")
-			}
-			var out3 bytes.Buffer
-			json.Indent(&out3, bs3, "", "\t")
-			log.Info("new block tx in step 3:", out3.String(), nil)
 
 			// Different block could share same sealhash, deep copy here to prevent write-write conflict.
 			var (
@@ -1003,6 +1023,10 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool) {
 	//}
 
 	w.current.header.PowAnswers = append(w.current.header.PowAnswers, w.eth.BlockChain().GetLatestPowAnswer(parentBlockNum))
+	if len(w.current.header.PowAnswers) <= 0 {
+		log.Error("Refusing to mine without PowAnswers, something error, need to check")
+		return
+	}
 	w.current.header.DposSigAddr = w.coinbase
 
 	// Deep copy receipts here to avoid interaction between different tasks.

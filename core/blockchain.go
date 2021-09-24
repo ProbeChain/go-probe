@@ -2838,7 +2838,11 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 func (bc *BlockChain) CheckPowAnswer(powAnswer *types.PowAnswer) bool {
 	number := powAnswer.Number.Uint64()
 	chainNumber := bc.CurrentBlock().NumberU64()
-	return number >= chainNumber-maxUnclePowAnswer && number <= chainNumber+maxUnclePowAnswer
+	if chainNumber > maxUnclePowAnswer {
+		return number >= chainNumber-maxUnclePowAnswer && number <= chainNumber+maxUnclePowAnswer
+	} else {
+		return number >= 0 && number <= chainNumber+maxUnclePowAnswer
+	}
 }
 
 // HandlePowAnswer send a pow answer to worker and save it

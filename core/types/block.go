@@ -18,6 +18,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -105,14 +106,25 @@ func (dposAck *DposAck) Id() common.Hash {
 	return common.BytesToHash(dposAck.WitnessSig)
 }
 
+type DposAckCount struct {
+	BlockNumber *big.Int `json:"blockNumber"        gencodec:"required"`
+	AckCount    uint     `json:"ackCount"           gencodec:"required"`
+}
+
 // Hash returns the dpos ack Keccak256
 func (dposAck *DposAck) Hash() []byte {
-	datas := make([]byte, 0, 1+8+32+1)
-	datas = append(datas, dposAck.EpochPosition)
-	datas = append(datas, dposAck.Number.Bytes()...)
-	datas = append(datas, dposAck.BlockHash.Bytes()...)
-	datas = append(datas, uint8(dposAck.AckType))
-	return crypto.Keccak256(datas)
+	b := new(bytes.Buffer)
+	enc := []interface{}{
+		dposAck.EpochPosition,
+		dposAck.Number,
+		dposAck.BlockHash,
+		dposAck.AckType,
+	}
+	if err := rlp.Encode(b, enc); err != nil {
+		panic("can't encode: " + err.Error())
+	}
+
+	return crypto.Keccak256(b.Bytes())
 }
 
 // RecoverOwner returns the dpos ack pubkey
@@ -131,9 +143,9 @@ func (dposAck *DposAck) RecoverOwner() (common.Address, error) {
 
 // Header represents a block header in the Ethereum blockchain.
 type Header struct {
-	DposSigAddr      common.Address  `json:"dposMiner"        gencodec:"required"`
-	DposSig          []byte          `json:"dposSig"          gencodec:"required"`
-	BlockHash        common.Hash     `json:"blockHash"        gencodec:"required"`
+	DposSigAddr common.Address `json:"dposMiner"        gencodec:"required"`
+	DposSig     []byte         `json:"dposSig"          gencodec:"required"`
+	//BlockHash        common.Hash     `json:"blockHash"        gencodec:"required"`
 	DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
 	DposAcksHash     common.Hash     `json:"dposAcksHash"     gencodec:"required"`
 	PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
@@ -228,8 +240,8 @@ type Block struct {
 	header          *Header
 	uncles          []*Header
 	transactions    Transactions
-	PowAnswerUncles []*PowAnswer
-	DposAcks        []*DposAck
+	powAnswerUncles []*PowAnswer
+	dposAcks        []*DposAck
 
 	// caches
 	hash atomic.Value
@@ -314,16 +326,16 @@ func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnsw
 		b.header.UncleHash = EmptyUncleHash
 	} else {
 		b.header.UncleHash = CalcPowAnswerUncleHash(powAnswerUncles)
-		b.PowAnswerUncles = make([]*PowAnswer, len(powAnswerUncles))
-		copy(b.PowAnswerUncles, powAnswerUncles)
+		b.powAnswerUncles = make([]*PowAnswer, len(powAnswerUncles))
+		copy(b.powAnswerUncles, powAnswerUncles)
 	}
 
 	if len(dposAcks) == 0 {
 		b.header.DposAcksHash = EmptyDposAckHash
 	} else {
 		b.header.DposAcksHash = CalcDposAckHash(dposAcks)
-		b.DposAcks = make([]*DposAck, len(dposAcks))
-		copy(b.DposAcks, dposAcks)
+		b.dposAcks = make([]*DposAck, len(dposAcks))
+		copy(b.dposAcks, dposAcks)
 	}
 
 	//TODO：remove
@@ -382,8 +394,10 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 
 // TODO: copies
 
-func (b *Block) Uncles() []*Header          { return b.uncles }
-func (b *Block) Transactions() Transactions { return b.transactions }
+func (b *Block) Uncles() []*Header             { return b.uncles }
+func (b *Block) Transactions() Transactions    { return b.transactions }
+func (b *Block) PowAnswerUncles() []*PowAnswer { return b.powAnswerUncles }
+func (b *Block) DposAcks() []*DposAck          { return b.dposAcks }
 
 func (b *Block) Transaction(hash common.Hash) *Transaction {
 	for _, transaction := range b.transactions {
@@ -427,7 +441,7 @@ func (b *Block) BaseFee() *big.Int {
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
 
 // Body returns the non-header content of the block.
-func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles, nil, nil} }
+func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles, b.powAnswerUncles, b.dposAcks} }
 
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.

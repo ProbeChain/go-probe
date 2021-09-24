@@ -1164,6 +1164,11 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 // RPCMarshalHeader converts the given header to the RPC output .
 func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 	result := map[string]interface{}{
+		"dposSigAddr":      head.DposSigAddr,
+		"dposSig":          hexutil.Bytes(head.DposSig),
+		"dposAckCountList": head.DposAckCountList,
+		"dposAckHash":      head.DposAcksHash,
+		"powAnswers":       head.PowAnswers,
 		"number":           (*hexutil.Big)(head.Number),
 		"hash":             head.Hash(),
 		"parentHash":       head.ParentHash,
@@ -1222,7 +1227,8 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool) (map[string]i
 		uncleHashes[i] = uncle.Hash()
 	}
 	fields["uncles"] = uncleHashes
-
+	fields["powAnswerUncles"] = block.PowAnswerUncles()
+	fields["dposAcks"] = block.DposAcks()
 	return fields, nil
 }
 

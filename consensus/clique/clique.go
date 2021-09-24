@@ -666,12 +666,6 @@ func (c *Clique) Seal(chain consensus.ChainHeaderReader, block *types.Block, res
 	return nil
 }
 
-func (c *Clique) PowSeal(chain consensus.ChainHeaderReader, block *types.Block, results chan<- *types.PowAnswer,
-	stop <-chan struct{}, coinbase common.Address) error {
-	log.Info("input:", "a:", chain, "b", block, "c", results, "d", stop, "coinbase", coinbase)
-	return nil
-}
-
 // CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
 // that a new block should have:
 // * DIFF_NOTURN(2) if BLOCK_NUMBER % SIGNER_COUNT != SIGNER_INDEX

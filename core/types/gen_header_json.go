@@ -18,7 +18,6 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	type Header struct {
 		DposSigAddr      common.Address  `json:"dposMiner"        gencodec:"required"`
 		DposSig          []byte          `json:"dposSig"          gencodec:"required"`
-		BlockHash        common.Hash     `json:"blockHash"        gencodec:"required"`
 		DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
 		DposAcksHash     common.Hash     `json:"dposAcksHash"     gencodec:"required"`
 		PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
@@ -43,7 +42,6 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	var enc Header
 	enc.DposSigAddr = h.DposSigAddr
 	enc.DposSig = h.DposSig
-	enc.BlockHash = h.BlockHash
 	enc.DposAckCountList = h.DposAckCountList
 	enc.DposAcksHash = h.DposAcksHash
 	enc.PowAnswers = h.PowAnswers
@@ -72,7 +70,6 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	type Header struct {
 		DposSigAddr      *common.Address `json:"dposMiner"        gencodec:"required"`
 		DposSig          []byte          `json:"dposSig"          gencodec:"required"`
-		BlockHash        *common.Hash    `json:"blockHash"        gencodec:"required"`
 		DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
 		DposAcksHash     *common.Hash    `json:"dposAcksHash"     gencodec:"required"`
 		PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
@@ -105,10 +102,6 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 		return errors.New("missing required field 'dposSig' for Header")
 	}
 	h.DposSig = dec.DposSig
-	if dec.BlockHash == nil {
-		return errors.New("missing required field 'blockHash' for Header")
-	}
-	h.BlockHash = *dec.BlockHash
 	if dec.DposAckCountList == nil {
 		return errors.New("missing required field 'dposAckCountList' for Header")
 	}
