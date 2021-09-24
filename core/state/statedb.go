@@ -62,12 +62,14 @@ func (n *proofList) Delete(key []byte) error {
 
 type TotalTrie struct {
 	//trie          Trie // storage trie, which becomes non-nil on first access
-	regularTrie   Trie // storage trie, which becomes non-nil on first access
-	pnsTrie       Trie // storage trie, which becomes non-nil on first access
-	digitalTrie   Trie // storage trie, which becomes non-nil on first access
-	contractTrie  Trie // storage trie, which becomes non-nil on first access
-	authorizeTrie Trie // storage trie, which becomes non-nil on first access
-	lossTrie      Trie // storage trie, which becomes non-nil on first access
+	regularTrie       Trie // storage trie, which becomes non-nil on first access
+	pnsTrie           Trie // storage trie, which becomes non-nil on first access
+	digitalTrie       Trie // storage trie, which becomes non-nil on first access
+	contractTrie      Trie // storage trie, which becomes non-nil on first access
+	authorizeTrie     Trie // storage trie, which becomes non-nil on first access
+	lossTrie          Trie // storage trie, which becomes non-nil on first access
+	dPosTrie          Trie // storage trie, which becomes non-nil on first access
+	dPosCandidateTrie Trie // storage trie, which becomes non-nil on first access
 }
 
 func (t *TotalTrie) GetKey(shaKey []byte) []byte {
@@ -2150,9 +2152,9 @@ func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 	case common.ACC_TYPE_OF_LOSE:
 		return &s.trie.lossTrie
 	case common.ACC_TYPE_OF_DPOS:
-		return &s.trie.regularTrie
+		return &s.trie.dPosTrie
 	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return &s.trie.regularTrie
+		return &s.trie.dPosCandidateTrie
 	default:
 		return nil
 	}
@@ -2173,4 +2175,12 @@ func (s *StateDB) GetDpostList() []common.DPoSAccount {
 	}
 	return dPoSAccounts*/
 	return s.dposList.dPoSCandidateAccounts.GetDpostList()
+}
+
+func (s *StateDB) GetDPosListByRoot(root common.Hash) []common.DPoSAccount {
+	return []common.DPoSAccount{}
+}
+
+func (s *StateDB) IntermediateRootForDPos(dPosList []common.DPoSAccount) common.Hash {
+	return common.Hash{}
 }
