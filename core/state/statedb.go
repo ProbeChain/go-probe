@@ -207,38 +207,32 @@ func BuildHash(hashes []common.Hash) common.Hash {
 }
 
 func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err error) {
-	//trieType, err := common.ValidAddress(common.BytesToAddress(onleaf))
-	//if err != nil {
-	//	log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-	//	return common.Hash{}, err
-	//}
-	//switch trieType {
-	//case accounts.General:
-	//	return t.regularTrie.Commit(onleaf)
-	//case accounts.Pns:
-	//	return t.pnsTrie.Commit(onleaf)
-	//case accounts.Asset:
-	//	return t.digitalTrie.Commit(onleaf)
-	//case accounts.Contract:
-	//	return t.contractTrie.Commit(onleaf)
-	//case accounts.Authorize:
-	//	return t.authorizeTrie.Commit(onleaf)
-	//case accounts.Lose:
-	//	return t.lossTrie.Commit(onleaf)
-	//default:
-	//	return common.Hash{}, fmt.Errorf("trieType no exsist")
-	//}
-	root0, err := t.regularTrie.Commit(onleaf)
-	//root1, err := t.pnsTrie.Commit(onleaf)
-	//root2, err := t.digitalTrie.Commit(onleaf)
-	//root3, err := t.contractTrie.Commit(onleaf)
-	//root4, err := t.authorizeTrie.Commit(onleaf)
-	//root5, err := t.lossTrie.Commit(onleaf)
+	root0, err0 := t.regularTrie.Commit(onleaf)
+	root1, err1 := t.pnsTrie.Commit(onleaf)
+	if err1 != nil {
+		err0 = err1
+	}
+	root2, err2 := t.digitalTrie.Commit(onleaf)
+	if err2 != nil {
+		err0 = err2
+	}
+	root3, err3 := t.contractTrie.Commit(onleaf)
+	if err3 != nil {
+		err0 = err3
+	}
+	root4, err4 := t.authorizeTrie.Commit(onleaf)
+	if err4 != nil {
+		err0 = err4
+	}
+	root5, err5 := t.lossTrie.Commit(onleaf)
+	if err5 != nil {
+		err0 = err5
+	}
 
-	//hashes := []common.Hash{root0, root1, root2, root3, root4, root5}
-	hashes := []common.Hash{root0, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
+	hashes := []common.Hash{root0, root1, root2, root3, root4, root5}
+	//hashes := []common.Hash{root0, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 
-	return BuildHash(hashes), err
+	return BuildHash(hashes), err0
 }
 
 //func (t *TotalTrie) NodeIterator(start []byte) trie.NodeIterator {
