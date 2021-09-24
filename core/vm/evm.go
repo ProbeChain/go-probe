@@ -55,7 +55,7 @@ type (
 	// VoteFunc is the signature of a transfer function
 	VoteFunc func(StateDB, common.Address, common.Address, *big.Int)
 	//ApplyToBeDPoSNodeFunc  is the update candidate dposNode  function
-	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, []byte)
+	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, common.Address, []byte)
 	//UpdatingVotesOrDataFunc  is the update candidate dposNode  function
 	UpdatingVotesOrDataFunc func(StateDB, common.Address, common.Address, []byte)
 	//RedemptionFunc redemption vote
