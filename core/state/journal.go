@@ -236,9 +236,24 @@ type (
 		account *common.Address
 		prev    *big.Int
 	}
-	infoDigestForLossChange struct {
+	sendLossReportChange struct {
+		account    *common.Address
+		state      byte
+		height     *big.Int
+		infoDigest []byte
+	}
+
+	revealLossReportChange struct {
+		account     *common.Address
+		lossAccount common.Address
+		newAccount  common.Address
+		height      *big.Int
+		state       byte
+	}
+
+	transferLostAccountChange struct {
 		account *common.Address
-		prev    []byte
+		state   byte
 	}
 
 	redemptionForRegularChange struct {
@@ -248,6 +263,16 @@ type (
 		value       *big.Int
 	}
 
+	modifyPnsOwnerChange struct {
+		account *common.Address
+		owner   common.Address
+	}
+
+	modifyPnsContentChange struct {
+		account *common.Address
+		pnsType byte
+		data    []byte
+	}
 	redemptionForAuthorizeChange struct {
 		account     *common.Address
 		pledgeValue *big.Int
@@ -255,11 +280,14 @@ type (
 	}
 )
 
-func (i infoDigestForLossChange) revert(db *StateDB) {
-	db.getStateObject(*i.account).lossAccount.InfoDigest = i.prev
+func (i sendLossReportChange) revert(db *StateDB) {
+	var lossAccount = db.getStateObject(*i.account).lossAccount
+	lossAccount.InfoDigest = i.infoDigest
+	lossAccount.State = i.state
+	lossAccount.Height = i.height
 }
 
-func (i infoDigestForLossChange) dirtied() *common.Address {
+func (i sendLossReportChange) dirtied() *common.Address {
 	return i.account
 }
 
@@ -601,5 +629,40 @@ func (ch redemptionForAuthorizeChange) revert(s *StateDB) {
 }
 
 func (ch redemptionForAuthorizeChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch revealLossReportChange) revert(s *StateDB) {
+	lossAccount := s.getStateObject(*ch.account).lossAccount
+	lossAccount.LossAccount = ch.lossAccount
+	lossAccount.NewAccount = ch.newAccount
+	lossAccount.State = ch.state
+}
+func (ch revealLossReportChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch transferLostAccountChange) revert(s *StateDB) {
+	lossAccount := s.getStateObject(*ch.account).lossAccount
+	lossAccount.State = ch.state
+}
+func (ch transferLostAccountChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch modifyPnsOwnerChange) revert(s *StateDB) {
+	pnsAccount := s.getStateObject(*ch.account).pnsAccount
+	pnsAccount.Owner = ch.owner
+}
+func (ch modifyPnsOwnerChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch modifyPnsContentChange) revert(s *StateDB) {
+	pnsAccount := s.getStateObject(*ch.account).pnsAccount
+	pnsAccount.Type = ch.pnsType
+	pnsAccount.Data = ch.data
+}
+func (ch modifyPnsContentChange) dirtied() *common.Address {
 	return ch.account
 }

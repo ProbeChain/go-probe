@@ -798,6 +798,7 @@ func (m callMsg) New() *common.Address     { return m.CallMsg.New }
 func (m callMsg) BizType() uint8           { return m.CallMsg.BizType }
 func (m callMsg) AccType() *hexutil.Uint8  { return m.CallMsg.AccType }
 func (m callMsg) LossType() *hexutil.Uint8 { return m.CallMsg.LossType }
+func (m callMsg) PnsType() *hexutil.Uint8  { return m.CallMsg.PnsType }
 
 func (m callMsg) Owner() *common.Address       { return m.CallMsg.Owner }
 func (m callMsg) Beneficiary() *common.Address { return m.CallMsg.Beneficiary }

@@ -127,7 +127,7 @@ func (s *stateObject) empty() bool {
 			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.ValidPeriod.Sign() < 1
 
 	case common.ACC_TYPE_OF_LOSE:
-		return s.lossAccount.State == 0 && s.lossAccount.LossAccount == common.Address{} && s.lossAccount.NewAccount == common.Address{} &&
+		return s.lossAccount.LossAccount == common.Address{} && s.lossAccount.NewAccount == common.Address{} &&
 			s.lossAccount.Height.Sign() < 1 && len(s.lossAccount.InfoDigest) == 0
 
 	default:
@@ -185,10 +185,10 @@ type AuthorizeAccount struct {
 
 // LossAccount 挂失账户
 type LossAccount struct {
-	State       byte           // 业务状态 0:1:2
+	State       byte           // 业务状态 0:初始化，1:挂失申请，2：揭示中
 	LossAccount common.Address // 挂失账户地址
 	NewAccount  common.Address // 新账户地址
-	Height      *big.Int       // 上链高度
+	Height      *big.Int       // 揭示时区块高度
 	InfoDigest  []byte         // 挂失内容摘要
 }
 

@@ -103,6 +103,7 @@ type TxData interface {
 	infoDigest() []byte
 	accType() *hexutil.Uint8
 	lossType() *hexutil.Uint8
+	pnsType() *hexutil.Uint8
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -304,6 +305,7 @@ func (tx *Transaction) BizType() uint8 { return tx.inner.bizType() }
 func (tx *Transaction) AccType() *hexutil.Uint8 { return tx.inner.accType() }
 
 func (tx *Transaction) LossType() *hexutil.Uint8 { return tx.inner.lossType() }
+func (tx *Transaction) PnsType() *hexutil.Uint8  { return tx.inner.pnsType() }
 
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
@@ -621,7 +623,8 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 	loss *common.Address, asset *common.Address,
 	old *common.Address, new *common.Address, initiator *common.Address,
 	receiver *common.Address, mark []byte, infoDigest []byte,
-	amount2 *big.Int, height *big.Int, accType *hexutil.Uint8, lossType *hexutil.Uint8) Message {
+	amount2 *big.Int, height *big.Int, accType *hexutil.Uint8,
+	lossType *hexutil.Uint8, pnsType *hexutil.Uint8) Message {
 	return Message{
 		from:       from,
 		to:         to,
@@ -650,6 +653,7 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 		height:      height,
 		accType:     accType,
 		lossType:    lossType,
+		pnsType:     pnsType,
 	}
 }
 
@@ -669,6 +673,7 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		bizType:    tx.BizType(),
 		accType:    tx.AccType(),
 		lossType:   tx.LossType(),
+		pnsType:    tx.PnsType(),
 		new:        tx.New(),
 		old:        tx.Old(),
 		asset:      tx.Asset(),

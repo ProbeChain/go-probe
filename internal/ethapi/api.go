@@ -1467,7 +1467,8 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			args.Loss, args.Asset,
 			args.Old, args.New, args.Initiator,
 			args.Receiver, args.mark(), args.infoDigest(),
-			args.value2(), args.height(), args.AccType, args.LossType)
+			args.value2(), args.height(), args.AccType,
+			args.LossType, args.PnsType)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)

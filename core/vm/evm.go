@@ -39,45 +39,15 @@ var emptyCodeHash = crypto.Keccak256Hash(nil)
 type (
 	// CanTransferFunc is the signature of a transfer guard function
 	CanTransferFunc func(StateDB, common.Address, *big.Int) bool
-	// TransferFunc is the signature of a transfer function
-	TransferFunc func(StateDB, common.Address, common.Address, *big.Int)
 	// GetHashFunc returns the n'th block hash in the blockchain
 	// and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
-	// RegisterFunc is the signature of a register function
-	RegisterFunc func(StateDB, common.Address, TxContext)
 	// CancellationFunc is the signature of a cancellation function
 	CancellationFunc func(StateDB, common.Address, common.Address)
 	//ContractTransferFunc is the signature of a transfer function
 	ContractTransferFunc func(StateDB, common.Address, common.Address, *big.Int)
-	//SendLossReportFunc  is the signature of a send loss report function
-	SendLossReportFunc func(StateDB, common.Address, *big.Int, TxContext)
-	// VoteFunc is the signature of a transfer function
-	VoteFunc func(StateDB, common.Address, common.Address, *big.Int)
-	//ApplyToBeDPoSNodeFunc  is the update candidate dposNode  function
-	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, common.Address, []byte)
-	//UpdatingVotesOrDataFunc  is the update candidate dposNode  function
-	UpdatingVotesOrDataFunc func(StateDB, common.Address, common.Address, []byte)
-	//RedemptionFunc redemption vote
-	RedemptionFunc func(StateDB, common.Address, common.Address, *big.Int)
-	//RevealLossReportFunc reveal loss report
-	RevealLossReportFunc func(StateDB, common.Address, TxContext)
-	//TransferLostAccountFunc transfer lost account value
-	TransferLostAccountFunc func(StateDB, common.Address, TxContext)
-	//TransferLostAssetAccountFunc transfer loss asset account value
-	TransferLostAssetAccountFunc func(StateDB, common.Address, TxContext)
-	//RemoveLossReportFunc remove loss report
-	RemoveLossReportFunc func(StateDB, common.Address, TxContext)
-	//RejectLossReportFunc reject loss report
-	RejectLossReportFunc func(StateDB, common.Address, TxContext)
-	//ModifyLossTypeFunc modify loss type
-	ModifyLossTypeFunc func(StateDB, common.Address, *big.Int, TxContext)
-	//ExchangeAssetFunc exchange asset
-	ExchangeAssetFunc func(StateDB, common.Address, common.Address, *big.Int)
-	//ModifyPnsOwnerFunc modify pns owner
-	ModifyPnsOwnerFunc func(StateDB, common.Address, TxContext)
-	//ModifyPnsContentFunc modify pns content
-	ModifyPnsContentFunc func(StateDB, common.Address, TxContext)
+	//CallDBFunc call database
+	CallDBFunc func(StateDB, *big.Int, TxContext)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -121,43 +91,43 @@ type BlockContext struct {
 	// sufficient ether to transfer the value
 	CanTransfer CanTransferFunc
 	// Transfer transfers ether from one account to the other
-	Transfer TransferFunc
+	//Transfer TransferFunc
 	//ExchangeAsset exchange asset
-	ExchangeAsset ExchangeAssetFunc
+	//ExchangeAsset ExchangeAssetFunc
 	// GetHash returns the hash corresponding to n
 	GetHash GetHashFunc
 	// Register register a new account
-	Register RegisterFunc
+	//Register RegisterFunc
 	// Cancellation cancel an account
-	Cancellation CancellationFunc
+	//Cancellation CancellationFunc
 	//ContractTransfer transfers ether from one account to the other
 	ContractTransfer ContractTransferFunc
 	//SendLossReport send loss report
-	SendLossReport SendLossReportFunc
+	//SendLossReport SendLossReportFunc
 	// Vote vote ether from one account to the other
-	Vote VoteFunc
+	//Vote VoteFunc
 	//ApplyToBeDPoSNode send DPOS report
-	ApplyToBeDPoSNode ApplyToBeDPoSNodeFunc
-	//UpdatingVotesOrData update DPOS report
-	UpdatingVotesOrData UpdatingVotesOrDataFunc
+	//ApplyToBeDPoSNode ApplyToBeDPoSNodeFunc
 	// Redemption redemption vote
-	Redemption RedemptionFunc
+	//Redemption RedemptionFunc
 	//RevealLossReport reveal loss report
-	RevealLossReport RevealLossReportFunc
+	//RevealLossReport RevealLossReportFunc
 	//TransferLostAccount transfer lost account value
-	TransferLostAccount TransferLostAccountFunc
+	//TransferLostAccount TransferLostAccountFunc
 	//TransferLostAssetAccount transfer loss asset account value
-	TransferLostAssetAccount TransferLostAssetAccountFunc
+	//TransferLostAssetAccount TransferLostAssetAccountFunc
 	//RemoveLossReport remove loss report
-	RemoveLossReport RemoveLossReportFunc
+	//RemoveLossReport RemoveLossReportFunc
 	//RejectLossReport reject loss report
-	RejectLossReport RejectLossReportFunc
+	//RejectLossReport RejectLossReportFunc
 	//ModifyLossType modify loss type
-	ModifyLossType ModifyLossTypeFunc
+	//ModifyLossType ModifyLossTypeFunc
 	//ModifyPnsOwner modify pns owner
-	ModifyPnsOwner ModifyPnsOwnerFunc
+	//ModifyPnsOwner ModifyPnsOwnerFunc
 	//ModifyPnsContent modify pns content
-	ModifyPnsContent ModifyPnsContentFunc
+	//ModifyPnsContent ModifyPnsContentFunc
+	//CallDB call database for update operation
+	CallDB CallDBFunc
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
 	GasLimit    uint64         // Provides information for GASLIMIT
@@ -194,6 +164,7 @@ type TxContext struct {
 	InfoDigest []byte
 	AccType    *hexutil.Uint8
 	LossType   *hexutil.Uint8
+	PnsType    *hexutil.Uint8
 }
 
 // EVM is the Ethereum Virtual Machine base object and provides
@@ -327,47 +298,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 			evm.StateDB.CreateAccount(to)
 		}*/
 
-	switch evm.TxContext.BizType {
-	case common.Register:
-		evm.Context.Register(evm.StateDB, caller.Address(), evm.TxContext)
-	case common.Cancellation:
-		evm.Context.Cancellation(evm.StateDB, caller.Address(), to)
-	case common.RevokeCancellation:
-		//evm.Context.RevokeCancellation(evm.StateDB, caller.Address(), addr, value)
-	case common.Transfer:
-		evm.Context.Transfer(evm.StateDB, caller.Address(), to, value)
-	case common.ExchangeAsset:
-		evm.Context.ExchangeAsset(evm.StateDB, caller.Address(), to, value)
-	case common.ContractCall:
-		evm.Context.ContractTransfer(evm.StateDB, caller.Address(), to, value)
-	case common.SendLossReport:
-		evm.Context.SendLossReport(evm.StateDB, caller.Address(), value, evm.TxContext)
-	case common.RevealLossReport:
-		evm.Context.RevealLossReport(evm.StateDB, caller.Address(), evm.TxContext)
-	case common.TransferLostAccount:
-		evm.Context.TransferLostAccount(evm.StateDB, caller.Address(), evm.TxContext)
-	case common.TransferLostAssetAccount:
-		evm.Context.TransferLostAssetAccount(evm.StateDB, caller.Address(), evm.TxContext)
-	case common.RemoveLossReport:
-		evm.Context.RemoveLossReport(evm.StateDB, caller.Address(), evm.TxContext)
-	case common.RejectLossReport:
-		evm.Context.RejectLossReport(evm.StateDB, caller.Address(), evm.TxContext)
-	case common.Vote:
-		evm.Context.Vote(evm.StateDB, caller.Address(), to, value)
-	case common.ApplyToBeDPoSNode:
-		evm.Context.ApplyToBeDPoSNode(evm.StateDB, caller.Address(), to, evm.Data)
-	case common.UpdatingVotesOrData:
-		evm.Context.UpdatingVotesOrData(evm.StateDB, caller.Address(), to, evm.Data)
-	case common.Redemption:
-		evm.Context.Redemption(evm.StateDB, caller.Address(), to, value)
-	case common.ModifyLossType:
-		evm.Context.ModifyLossType(evm.StateDB, caller.Address(), value, evm.TxContext)
-	case common.ModifyPnsOwner:
-		evm.Context.ModifyPnsOwner(evm.StateDB, caller.Address(), evm.TxContext)
-	case common.ModifyPnsContent:
-		evm.Context.ModifyPnsContent(evm.StateDB, caller.Address(), evm.TxContext)
-	}
-
+	evm.Context.CallDB(evm.StateDB, evm.Context.BlockNumber, evm.TxContext)
 	// Capture the tracer start/end events in debug mode
 	if evm.Config.Debug && evm.depth == 0 {
 		evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
@@ -594,6 +525,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.chainRules.IsEIP158 {
 		evm.StateDB.SetNonce(address, 1)
 	}
+
 	evm.Context.ContractTransfer(evm.StateDB, caller.Address(), address, value)
 
 	// Initialise a new contract and set the code that is to be used by the EVM.

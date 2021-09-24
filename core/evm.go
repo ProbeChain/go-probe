@@ -53,31 +53,16 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer:              CanTransfer,
-		Transfer:                 Transfer,
-		GetHash:                  GetHashFn(header, chain),
-		Coinbase:                 beneficiary,
-		BlockNumber:              new(big.Int).Set(header.Number),
-		Time:                     new(big.Int).SetUint64(header.Time),
-		Difficulty:               new(big.Int).Set(header.Difficulty),
-		BaseFee:                  baseFee,
-		GasLimit:                 header.GasLimit,
-		Register:                 Register,
-		Cancellation:             Cancellation,
-		ContractTransfer:         ContractTransfer,
-		SendLossReport:           SendLossReport,
-		ApplyToBeDPoSNode:        ApplyToBeDPoSNode,
-		Vote:                     Vote,
-		Redemption:               Redemption,
-		RevealLossReport:         RevealLossReport,
-		TransferLostAccount:      TransferLostAccount,
-		TransferLostAssetAccount: TransferLostAssetAccount,
-		RemoveLossReport:         RemoveLossReport,
-		RejectLossReport:         RejectLossReport,
-		ExchangeAsset:            ExchangeAsset,
-		ModifyLossType:           ModifyLossType,
-		ModifyPnsOwner:           ModifyPnsOwner,
-		ModifyPnsContent:         ModifyPnsContent,
+		CanTransfer:      CanTransfer,
+		GetHash:          GetHashFn(header, chain),
+		Coinbase:         beneficiary,
+		BlockNumber:      new(big.Int).Set(header.Number),
+		Time:             new(big.Int).SetUint64(header.Time),
+		Difficulty:       new(big.Int).Set(header.Difficulty),
+		BaseFee:          baseFee,
+		GasLimit:         header.GasLimit,
+		ContractTransfer: ContractTransfer,
+		CallDB:           CallDB,
 	}
 }
 
@@ -107,6 +92,7 @@ func NewEVMTxContext(msg Message) vm.TxContext {
 		InfoDigest: msg.InfoDigest(),
 		AccType:    msg.AccType(),
 		LossType:   msg.LossType(),
+		PnsType:    msg.PnsType(),
 	}
 }
 
@@ -150,20 +136,6 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 	return db.GetBalance(addr).Cmp(amount) >= 0
 }
 
-// Transfer subtracts amount from sender and adds amount to recipient using the given Db
-func Transfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
-	db.SubBalance(sender, amount)
-	db.AddBalance(recipient, amount)
-}
-
-// ExchangeAsset subtracts amount from sender and adds amount to recipient using the given Db
-func ExchangeAsset(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
-	db.SubBalance(sender, amount)
-	db.AddBalance(recipient, amount)
-}
-
 // ContractTransfer subtracts amount from sender and adds amount to recipient using the given Db
 func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
 	fmt.Printf("ContractTransfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
@@ -171,84 +143,44 @@ func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *b
 	db.AddBalance(recipient, amount)
 }
 
-func Register(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", sender.String(), txContext.New.String(), txContext.Value.String())
-	db.SubBalance(sender, txContext.Value)
-	db.GenerateAccount(txContext)
-}
-
-func Cancellation(db vm.StateDB, senderAccount, newAccount common.Address) {
-	balance := db.GetBalance(senderAccount)
-	db.SubBalance(senderAccount, balance)
-	db.AddBalance(newAccount, balance)
-}
-
-func SendLossReport(db vm.StateDB, sender common.Address, amount *big.Int, txContext vm.TxContext) {
-	fmt.Printf("SendLossReport, sender:%s,loss:%s,mark:%s,infoDigest:%s\n", sender, txContext.Loss, txContext.Mark, txContext.InfoDigest)
-	db.SubBalance(sender, amount)
-}
-
-func ApplyToBeDPoSNode(db vm.StateDB, sender common.Address, voteAddr common.Address, data []byte) {
-	fmt.Printf("ApplyToBeDPoSNode, ower:%s voteAddr:%s,data:%s\n", sender, voteAddr, data)
-	db.CreateDPoSCandidateAccount(sender, voteAddr, data)
-}
-
-func UpdatingVotesOrData(db vm.StateDB, sender common.Address, voteAddr common.Address, data []byte) {
-	fmt.Printf("ApplyToBeDPoSNode, ower:%s voteAddr:%s,data:%s\n", sender, voteAddr, data)
-	db.UpdateDposAccount(sender, voteAddr, data)
-}
-
-// Vote subtracts amount from sender and adds amount to recipient using the given Db
-func Vote(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
-	db.SubBalance(sender, amount)
-	db.SetVoteRecordForRegular(sender, recipient, amount)
-	db.AddVote(recipient, amount)
-}
-
-// Redemption redemption vote value
-func Redemption(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	db.SubBalance(sender, amount)
-	db.Redemption(sender, recipient, amount)
-}
-
-//RevealLossReport reveal loss report
-func RevealLossReport(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-
-}
-
-//TransferLostAccount transfer lost account value
-func TransferLostAccount(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-
-}
-
-//TransferLostAssetAccount transfer loss asset account value
-func TransferLostAssetAccount(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-
-}
-
-//RemoveLossReport remove loss report
-func RemoveLossReport(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-
-}
-
-//RejectLossReport reject loss report
-func RejectLossReport(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-
-}
-
-//ModifyLossType modify loss type
-func ModifyLossType(db vm.StateDB, sender common.Address, amount *big.Int, txContext vm.TxContext) {
-	db.SubBalance(sender, amount)
-	db.SetLossTypeForRegular(sender, uint8(*txContext.LossType))
-}
-
-//ModifyPnsOwner modify pns owner
-func ModifyPnsOwner(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-
-}
-
-//ModifyPnsContent modify pns content
-func ModifyPnsContent(db vm.StateDB, sender common.Address, txContext vm.TxContext) {
-
+//CallDB call database for update operation
+func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
+	switch txContext.BizType {
+	case common.Register:
+		db.Register(txContext)
+	case common.Cancellation:
+		db.Cancellation(txContext)
+	case common.RevokeCancellation:
+		db.RevokeCancellation(txContext)
+	case common.Transfer:
+		db.Transfer(txContext)
+	case common.ExchangeAsset:
+		db.ExchangeAsset(txContext)
+	case common.ContractCall:
+		ContractTransfer(db, txContext.From, *txContext.To, txContext.Value)
+	case common.SendLossReport:
+		db.SendLossReport(blockNumber, txContext)
+	case common.RevealLossReport:
+		db.RevealLossReport(blockNumber, txContext)
+	case common.TransferLostAccount:
+		db.TransferLostAccount(txContext)
+	case common.TransferLostAssetAccount:
+		db.TransferLostAssetAccount(txContext)
+	case common.RemoveLossReport:
+		db.RemoveLossReport(txContext)
+	case common.RejectLossReport:
+		db.RejectLossReport(txContext)
+	case common.Vote:
+		db.Vote(txContext)
+	case common.ApplyToBeDPoSNode:
+		db.ApplyToBeDPoSNode(txContext)
+	case common.Redemption:
+		db.Redemption(txContext)
+	case common.ModifyLossType:
+		db.ModifyLossType(txContext)
+	case common.ModifyPnsOwner:
+		db.ModifyPnsOwner(txContext)
+	case common.ModifyPnsContent:
+		db.ModifyPnsContent(txContext)
+	}
 }

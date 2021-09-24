@@ -73,6 +73,7 @@ type AccessListTx struct {
 	Height      *big.Int
 	AccType     *hexutil.Uint8
 	LossType    *hexutil.Uint8
+	PnsType     *hexutil.Uint8
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -93,6 +94,7 @@ func (tx *AccessListTx) copy() TxData {
 		AccType:    tx.AccType,
 		BizType:    tx.BizType,
 		LossType:   tx.LossType,
+		PnsType:    tx.PnsType,
 		New:        tx.New,
 		Loss:       tx.Loss,
 		Receiver:   tx.Receiver,
@@ -153,6 +155,7 @@ func (tx *AccessListTx) mark() []byte                 { return tx.Mark }
 func (tx *AccessListTx) infoDigest() []byte           { return tx.InfoDigest }
 func (tx *AccessListTx) accType() *hexutil.Uint8      { return tx.AccType }
 func (tx *AccessListTx) lossType() *hexutil.Uint8     { return tx.LossType }
+func (tx *AccessListTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
 
 func (tx *AccessListTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S

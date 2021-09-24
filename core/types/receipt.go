@@ -73,6 +73,7 @@ type Receipt struct {
 	BizType          uint8       `json:"bizType"`
 	AccType          uint8       `json:"accType,omitempty"`
 	LossType         uint8       `json:"lossType,omitempty"`
+	PnsType          uint8       `json:"pnsType,omitempty"`
 }
 
 type receiptMarshaling struct {

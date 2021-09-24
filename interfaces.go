@@ -129,6 +129,7 @@ type CallMsg struct {
 	New      *common.Address
 	AccType  *hexutil.Uint8
 	LossType *hexutil.Uint8
+	PnsType  *hexutil.Uint8
 
 	Owner       *common.Address
 	Beneficiary *common.Address

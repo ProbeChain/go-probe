@@ -55,6 +55,7 @@ type DynamicFeeTx struct {
 	Height      *big.Int
 	AccType     *hexutil.Uint8
 	LossType    *hexutil.Uint8
+	PnsType     *hexutil.Uint8
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -78,6 +79,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 		AccType:    tx.AccType,
 		BizType:    tx.BizType,
 		LossType:   tx.LossType,
+		PnsType:    tx.PnsType,
 		New:        tx.New,
 		Loss:       tx.Loss,
 		Receiver:   tx.Receiver,
@@ -140,6 +142,7 @@ func (tx *DynamicFeeTx) mark() []byte                 { return tx.Mark }
 func (tx *DynamicFeeTx) infoDigest() []byte           { return tx.InfoDigest }
 func (tx *DynamicFeeTx) accType() *hexutil.Uint8      { return tx.AccType }
 func (tx *DynamicFeeTx) lossType() *hexutil.Uint8     { return tx.LossType }
+func (tx *DynamicFeeTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
 func (tx *DynamicFeeTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S
 }
