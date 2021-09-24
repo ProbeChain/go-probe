@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"math/big"
+	"net"
 	"sort"
 	"strconv"
 	"time"
@@ -77,17 +78,17 @@ func (t *TotalTrie) GetKey(shaKey []byte) []byte {
 		return nil
 	}
 	switch trieType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return t.regularTrie.GetKey(shaKey)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return t.pnsTrie.GetKey(shaKey)
-	case accounts.Asset:
+	case common.ACC_TYPE_OF_ASSET:
 		return t.digitalTrie.GetKey(shaKey)
-	case accounts.Contract:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return t.contractTrie.GetKey(shaKey)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return t.authorizeTrie.GetKey(shaKey)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return t.lossTrie.GetKey(shaKey)
 	default:
 		return nil
@@ -101,17 +102,17 @@ func (t *TotalTrie) TryGet(key []byte) ([]byte, error) {
 		return nil, err
 	}
 	switch trieType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return t.regularTrie.TryGet(key)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return t.pnsTrie.TryGet(key)
-	case accounts.Asset:
+	case common.ACC_TYPE_OF_ASSET:
 		return t.digitalTrie.TryGet(key)
-	case accounts.Contract:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return t.contractTrie.TryGet(key)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return t.authorizeTrie.TryGet(key)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return t.lossTrie.TryGet(key)
 	default:
 		return nil, fmt.Errorf("trieType no exsist")
@@ -125,17 +126,17 @@ func (t *TotalTrie) TryUpdate(key, value []byte) error {
 		return err
 	}
 	switch trieType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return t.regularTrie.TryUpdate(key, value)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return t.pnsTrie.TryUpdate(key, value)
-	case accounts.Asset:
+	case common.ACC_TYPE_OF_ASSET:
 		return t.digitalTrie.TryUpdate(key, value)
-	case accounts.Contract:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return t.contractTrie.TryUpdate(key, value)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return t.authorizeTrie.TryUpdate(key, value)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return t.lossTrie.TryUpdate(key, value)
 	default:
 		return fmt.Errorf("trieType no exsist")
@@ -149,17 +150,17 @@ func (t *TotalTrie) TryDelete(key []byte) error {
 		return err
 	}
 	switch trieType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return t.regularTrie.TryDelete(key)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return t.pnsTrie.TryDelete(key)
-	case accounts.Asset:
+	case common.ACC_TYPE_OF_ASSET:
 		return t.digitalTrie.TryDelete(key)
-	case accounts.Contract:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return t.contractTrie.TryDelete(key)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return t.authorizeTrie.TryDelete(key)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return t.lossTrie.TryDelete(key)
 	default:
 		return fmt.Errorf("trieType no exsist")
@@ -242,17 +243,17 @@ func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err erro
 //		return nil
 //	}
 //	switch trieType {
-//	case accounts.General:
+//	case common.General:
 //		return t.regularTrie.NodeIterator(start)
-//	case accounts.Pns:
+//	case common.Pns:
 //		return t.pnsTrie.NodeIterator(start)
-//	case accounts.Asset:
+//	case common.Asset:
 //		return t.digitalTrie.NodeIterator(start)
-//	case accounts.Contract:
+//	case common.Contract:
 //		return t.contractTrie.NodeIterator(start)
-//	case accounts.Authorize:
+//	case common.Authorize:
 //		return t.authorizeTrie.NodeIterator(start)
-//	case accounts.Lose:
+//	case common.Lose:
 //		return t.lossTrie.NodeIterator(start)
 //	default:
 //		return nil
@@ -266,17 +267,17 @@ func (t *TotalTrie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWrit
 		return err
 	}
 	switch trieType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return t.regularTrie.Prove(key, fromLevel, proofDb)
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return t.pnsTrie.Prove(key, fromLevel, proofDb)
-	case accounts.Asset:
+	case common.ACC_TYPE_OF_ASSET:
 		return t.digitalTrie.Prove(key, fromLevel, proofDb)
-	case accounts.Contract:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return t.contractTrie.Prove(key, fromLevel, proofDb)
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return t.authorizeTrie.Prove(key, fromLevel, proofDb)
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return t.lossTrie.Prove(key, fromLevel, proofDb)
 	default:
 		return nil
@@ -414,7 +415,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 			sdb.snapStorage = make(map[common.Hash]map[common.Hash][]byte)
 		}
 	}
-	sdb.dPoSCandidateList = NewSortedLinkedList(64, compareValue)
+	//sdb.dPoSCandidateList = NewSortedLinkedList(64, compareValue)
 	return sdb, nil
 }
 
@@ -1193,13 +1194,13 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	// This is weird pre-byzantium since the first tx runs with a prefetcher and
 	// the remainder without, but pre-byzantium even the initial prefetcher is
 	// useless, so no sleep lost.
-	prefetcher := s.prefetcher
-	if s.prefetcher != nil {
-		defer func() {
-			s.prefetcher.close()
-			s.prefetcher = nil
-		}()
-	}
+	//prefetcher := s.prefetcher
+	//if s.prefetcher != nil {
+	//	defer func() {
+	//		s.prefetcher.close()
+	//		s.prefetcher = nil
+	//	}()
+	//}
 	// Although naively it makes sense to retrieve the account trie and then do
 	// the contract storage and account updates sequentially, that short circuits
 	// the account prefetcher. Instead, let's process all the storage updates
@@ -1213,11 +1214,11 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	// Now we're about to start to write changes to the trie. The trie is so far
 	// _untouched_. We can check with the prefetcher, if it can give us a trie
 	// which has the same root, but also has some content loaded into it.
-	if prefetcher != nil {
-		if trie := prefetcher.trie(s.originalRoot); trie != nil {
-			s.trie = trie
-		}
-	}
+	//if prefetcher != nil {
+	//	if trie := prefetcher.trie(s.originalRoot); trie != nil {
+	//		//s.trie = trie
+	//	}
+	//}
 	usedAddrs := make([][]byte, 0, len(s.stateObjectsPending))
 	for addr := range s.stateObjectsPending {
 		if obj := s.stateObjects[addr]; obj.deleted {
@@ -1227,9 +1228,9 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 		}
 		usedAddrs = append(usedAddrs, common.CopyBytes(addr[:])) // Copy needed for closure
 	}
-	if prefetcher != nil {
-		prefetcher.used(s.originalRoot, usedAddrs)
-	}
+	//if prefetcher != nil {
+	//	prefetcher.used(s.originalRoot, usedAddrs)
+	//}
 	if len(s.stateObjectsPending) > 0 {
 		s.stateObjectsPending = make(map[common.Address]struct{})
 	}
@@ -2109,21 +2110,21 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 // getStateObjectTireByAccountType return stateObject's tire
 func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 	switch accountType {
-	case accounts.General:
+	case common.ACC_TYPE_OF_GENERAL:
 		return &s.trie.regularTrie
-	case accounts.Pns:
+	case common.ACC_TYPE_OF_PNS:
 		return &s.trie.pnsTrie
-	case accounts.Asset:
+	case common.ACC_TYPE_OF_ASSET:
 		return &s.trie.digitalTrie
-	case accounts.Contract:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return &s.trie.contractTrie
-	case accounts.Authorize:
+	case common.ACC_TYPE_OF_AUTHORIZE:
 		return &s.trie.authorizeTrie
-	case accounts.Lose:
+	case common.ACC_TYPE_OF_LOSE:
 		return &s.trie.lossTrie
-	case accounts.DPoS:
+	case common.ACC_TYPE_OF_DPOS:
 		return &s.trie.regularTrie
-	case accounts.DPoSCandidate:
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 		return &s.trie.regularTrie
 	default:
 		return nil
