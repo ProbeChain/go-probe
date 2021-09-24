@@ -55,9 +55,29 @@ type (
 	// VoteFunc is the signature of a transfer function
 	VoteFunc func(StateDB, common.Address, common.Address, *big.Int)
 	//ApplyToBeDPoSNodeFunc  is the update candidate dposNode  function
-	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, common.Address, []byte)
+	ApplyToBeDPoSNodeFunc func(StateDB, common.Address, []byte)
 	//UpdatingVotesOrDataFunc  is the update candidate dposNode  function
 	UpdatingVotesOrDataFunc func(StateDB, common.Address, common.Address, []byte)
+	//RedemptionFunc redemption vote
+	RedemptionFunc func(StateDB, common.Address, common.Address, *big.Int)
+	//RevealLossReportFunc reveal loss report
+	RevealLossReportFunc func(StateDB, common.Address, TxContext)
+	//TransferLostAccountFunc transfer lost account value
+	TransferLostAccountFunc func(StateDB, common.Address, TxContext)
+	//TransferLostAssetAccountFunc transfer loss asset account value
+	TransferLostAssetAccountFunc func(StateDB, common.Address, TxContext)
+	//RemoveLossReportFunc remove loss report
+	RemoveLossReportFunc func(StateDB, common.Address, TxContext)
+	//RejectLossReportFunc reject loss report
+	RejectLossReportFunc func(StateDB, common.Address, TxContext)
+	//ModifyLossTypeFunc modify loss type
+	ModifyLossTypeFunc func(StateDB, common.Address, *big.Int, TxContext)
+	//ExchangeAssetFunc exchange asset
+	ExchangeAssetFunc func(StateDB, common.Address, common.Address, *big.Int)
+	//ModifyPnsOwnerFunc modify pns owner
+	ModifyPnsOwnerFunc func(StateDB, common.Address, TxContext)
+	//ModifyPnsContentFunc modify pns content
+	ModifyPnsContentFunc func(StateDB, common.Address, TxContext)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -102,6 +122,8 @@ type BlockContext struct {
 	CanTransfer CanTransferFunc
 	// Transfer transfers ether from one account to the other
 	Transfer TransferFunc
+	//ExchangeAsset exchange asset
+	ExchangeAsset ExchangeAssetFunc
 	// GetHash returns the hash corresponding to n
 	GetHash GetHashFunc
 	// Register register a new account
@@ -118,6 +140,24 @@ type BlockContext struct {
 	ApplyToBeDPoSNode ApplyToBeDPoSNodeFunc
 	//UpdatingVotesOrData update DPOS report
 	UpdatingVotesOrData UpdatingVotesOrDataFunc
+	// Redemption redemption vote
+	Redemption RedemptionFunc
+	//RevealLossReport reveal loss report
+	RevealLossReport RevealLossReportFunc
+	//TransferLostAccount transfer lost account value
+	TransferLostAccount TransferLostAccountFunc
+	//TransferLostAssetAccount transfer loss asset account value
+	TransferLostAssetAccount TransferLostAssetAccountFunc
+	//RemoveLossReport remove loss report
+	RemoveLossReport RemoveLossReportFunc
+	//RejectLossReport reject loss report
+	RejectLossReport RejectLossReportFunc
+	//ModifyLossType modify loss type
+	ModifyLossType ModifyLossTypeFunc
+	//ModifyPnsOwner modify pns owner
+	ModifyPnsOwner ModifyPnsOwnerFunc
+	//ModifyPnsContent modify pns content
+	ModifyPnsContent ModifyPnsContentFunc
 	// Block information
 	Coinbase    common.Address // Provides information for COINBASE
 	GasLimit    uint64         // Provides information for GASLIMIT
@@ -153,6 +193,7 @@ type TxContext struct {
 	Mark       []byte
 	InfoDigest []byte
 	AccType    *hexutil.Uint8
+	LossType   *hexutil.Uint8
 }
 
 // EVM is the Ethereum Virtual Machine base object and provides
@@ -295,17 +336,36 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		//evm.Context.RevokeCancellation(evm.StateDB, caller.Address(), addr, value)
 	case common.Transfer:
 		evm.Context.Transfer(evm.StateDB, caller.Address(), to, value)
+	case common.ExchangeAsset:
+		evm.Context.ExchangeAsset(evm.StateDB, caller.Address(), to, value)
 	case common.ContractCall:
 		evm.Context.ContractTransfer(evm.StateDB, caller.Address(), to, value)
 	case common.SendLossReport:
 		evm.Context.SendLossReport(evm.StateDB, caller.Address(), value, evm.TxContext)
+	case common.RevealLossReport:
+		evm.Context.RevealLossReport(evm.StateDB, caller.Address(), evm.TxContext)
+	case common.TransferLostAccount:
+		evm.Context.TransferLostAccount(evm.StateDB, caller.Address(), evm.TxContext)
+	case common.TransferLostAssetAccount:
+		evm.Context.TransferLostAssetAccount(evm.StateDB, caller.Address(), evm.TxContext)
+	case common.RemoveLossReport:
+		evm.Context.RemoveLossReport(evm.StateDB, caller.Address(), evm.TxContext)
+	case common.RejectLossReport:
+		evm.Context.RejectLossReport(evm.StateDB, caller.Address(), evm.TxContext)
 	case common.Vote:
 		evm.Context.Vote(evm.StateDB, caller.Address(), to, value)
 	case common.ApplyToBeDPoSNode:
 		evm.Context.ApplyToBeDPoSNode(evm.StateDB, caller.Address(), to, evm.Data)
 	case common.UpdatingVotesOrData:
 		evm.Context.UpdatingVotesOrData(evm.StateDB, caller.Address(), to, evm.Data)
-		//... todo 还有未实现的
+	case common.Redemption:
+		evm.Context.Redemption(evm.StateDB, caller.Address(), to, value)
+	case common.ModifyLossType:
+		evm.Context.ModifyLossType(evm.StateDB, caller.Address(), value, evm.TxContext)
+	case common.ModifyPnsOwner:
+		evm.Context.ModifyPnsOwner(evm.StateDB, caller.Address(), evm.TxContext)
+	case common.ModifyPnsContent:
+		evm.Context.ModifyPnsContent(evm.StateDB, caller.Address(), evm.TxContext)
 	}
 
 	// Capture the tracer start/end events in debug mode

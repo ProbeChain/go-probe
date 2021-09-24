@@ -659,10 +659,11 @@ func (s *StateDB) GenerateAccount(context vm.TxContext) {
 	//case common.ACC_TYPE_OF_CONTRACT:
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		createAccountFee := common.AmountOfPledgeForCreateAccount(uint8(*context.AccType))
-		obj.authorizeAccount.PledgeValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
+		pledgeValue := new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
+		obj.authorizeAccount.PledgeValue = pledgeValue
 		obj.authorizeAccount.Owner = context.From
 		obj.authorizeAccount.ValidPeriod = context.Height
-		obj.authorizeAccount.VoteValue = new(big.Int).SetUint64(0)
+		obj.authorizeAccount.VoteValue = pledgeValue
 		obj.authorizeAccount.Info = context.Data
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.LossAccount = *context.Loss
@@ -1143,12 +1144,12 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 }
 
 // GetRegular 获取普通账户
-func (s *StateDB) GetRegular(addr common.Address) RegularAccount {
+func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
-		return stateObject.regularAccount
+		return &stateObject.regularAccount
 	}
-	return RegularAccount{}
+	return nil
 }
 
 // GetPns PNS账号
@@ -1323,17 +1324,17 @@ func (s *StateDB) GetInfoForAuthorize(addr common.Address) []byte {
 	return authorize.Info
 }
 
-func (s *StateDB) GetInterestRateForAuthorize(addr common.Address) *big.Int {
+/*func (s *StateDB) GetInterestRateForAuthorize(addr common.Address) *big.Int {
 	authorize := s.GetAuthorize(addr)
 	return authorize.InterestRate
-}
+}*/
 
 func (s *StateDB) GetValidPeriodForAuthorize(addr common.Address) *big.Int {
 	authorize := s.GetAuthorize(addr)
 	return authorize.ValidPeriod
 }
 
-func (s *StateDB) GetStateForAuthorize(addr common.Address) bool {
+func (s *StateDB) GetStateForAuthorize(addr common.Address) byte {
 	authorize := s.GetAuthorize(addr)
 	return authorize.State
 }
@@ -1406,13 +1407,14 @@ func (s *StateDB) SetVoteAccountForRegular(addr common.Address, voteAccount comm
 func (s *StateDB) SetVoteRecordForRegular(addr common.Address, voteAccount common.Address, voteValue *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
+		lastVoteValue := common.If(stateObject.regularAccount.VoteValue == nil, new(big.Int).SetUint64(0), stateObject.regularAccount.VoteValue).(big.Int)
 		stateObject.db.journal.append(voteForRegularChange{
 			account:     &stateObject.address,
 			voteAccount: stateObject.regularAccount.VoteAccount,
-			voteValue:   stateObject.regularAccount.VoteValue,
+			voteValue:   &lastVoteValue,
 		})
 		stateObject.regularAccount.VoteAccount = voteAccount
-		stateObject.regularAccount.VoteValue = voteValue
+		stateObject.regularAccount.VoteValue = new(big.Int).Add(voteValue, &lastVoteValue)
 	}
 }
 
@@ -1636,7 +1638,7 @@ func (s *StateDB) SetInfoForAuthorize(addr common.Address, info []byte) {
 	}
 }
 
-func (s *StateDB) SetInterestRateForAuthorize(addr common.Address, interestRate *big.Int) {
+/*func (s *StateDB) SetInterestRateForAuthorize(addr common.Address, interestRate *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.db.journal.append(interestRateForAuthorizeChange{
@@ -1645,7 +1647,7 @@ func (s *StateDB) SetInterestRateForAuthorize(addr common.Address, interestRate 
 		})
 		stateObject.authorizeAccount.InterestRate = interestRate
 	}
-}
+}*/
 
 func (s *StateDB) SetValidPeriodForAuthorize(addr common.Address, validPeriod *big.Int) {
 	stateObject := s.GetOrNewStateObject(addr)
@@ -1658,7 +1660,7 @@ func (s *StateDB) SetValidPeriodForAuthorize(addr common.Address, validPeriod *b
 	}
 }
 
-func (s *StateDB) SetStateForAuthorize(addr common.Address, state bool) {
+func (s *StateDB) SetStateForAuthorize(addr common.Address, state byte) {
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.db.journal.append(stateForAuthorizeChange{
@@ -1721,6 +1723,60 @@ func (s *StateDB) SetInfoDigestForLoss(addr common.Address, infoDigest []byte) {
 			prev:    stateObject.lossAccount.InfoDigest,
 		})
 		stateObject.lossAccount.InfoDigest = infoDigest
+	}
+}
+
+func (s *StateDB) RedemptionForRegular(addr common.Address) (common.Address, *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	var VoteAccount common.Address
+	var voteValue *big.Int
+	if stateObject != nil {
+		stateObject.db.journal.append(redemptionForRegularChange{
+			account:     &stateObject.address,
+			voteAccount: stateObject.regularAccount.VoteAccount,
+			voteValue:   stateObject.regularAccount.VoteValue,
+			value:       stateObject.regularAccount.Value,
+		})
+		VoteAccount = stateObject.regularAccount.VoteAccount
+		voteValue = stateObject.regularAccount.VoteValue
+		stateObject.regularAccount.Value = new(big.Int).Add(stateObject.regularAccount.Value, voteValue)
+		stateObject.regularAccount.VoteAccount = common.Address{}
+		stateObject.regularAccount.VoteValue = new(big.Int).SetUint64(0)
+	}
+	return VoteAccount, voteValue
+}
+func (s *StateDB) RedemptionForAuthorize(addr common.Address, voteValue *big.Int) {
+	stateObject := s.GetOrNewStateObject(addr)
+	if stateObject != nil {
+		stateObject.db.journal.append(redemptionForAuthorizeChange{
+			account:     &stateObject.address,
+			pledgeValue: stateObject.authorizeAccount.PledgeValue,
+			voteValue:   stateObject.authorizeAccount.VoteValue,
+		})
+		if voteValue == nil {
+			stateObject.authorizeAccount.VoteValue = new(big.Int).Sub(stateObject.authorizeAccount.VoteValue, stateObject.authorizeAccount.PledgeValue)
+			stateObject.authorizeAccount.PledgeValue = new(big.Int).SetUint64(0)
+		} else {
+			stateObject.authorizeAccount.VoteValue = new(big.Int).Sub(stateObject.authorizeAccount.VoteValue, voteValue)
+		}
+	}
+}
+
+func (s *StateDB) Redemption(from common.Address, to common.Address, value *big.Int) {
+	s1 := s.GetOrNewStateObject(from)
+	if s1 != nil {
+		regularAccount := s1.regularAccount
+		s2 := s.GetOrNewStateObject(to)
+		if s2 != nil {
+			authorizeAccount := s1.authorizeAccount
+			if from == authorizeAccount.Owner {
+				s.RedemptionForAuthorize(to, nil)
+			}
+			if to == regularAccount.VoteAccount {
+				s.RedemptionForRegular(from)
+				s.RedemptionForAuthorize(to, regularAccount.VoteValue)
+			}
+		}
 	}
 }
 

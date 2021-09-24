@@ -58,6 +58,7 @@ type TransactionArgs struct {
 	Mark       *hexutil.Bytes `json:"mark"`
 	InfoDigest *hexutil.Bytes `json:"infoDigest"`
 	AccType    *hexutil.Uint8 `json:"accType"`
+	LossType   *hexutil.Uint8 `json:"lossType"`
 	// For non-legacy transactions
 	AccessList *types.AccessList `json:"accessList,omitempty"`
 	ChainID    *hexutil.Big      `json:"chainId,omitempty"`
@@ -160,16 +161,36 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		err = args.setDefaultsOfRevokeCancellation(ctx, b)
 	case common.Transfer:
 		err = args.setDefaultsOfTransfer(ctx, b)
+	case common.ExchangeAsset:
+		err = args.setDefaultsOfExchangeAsset(ctx, b)
 	case common.ContractCall:
 		err = args.setDefaultsOfContractCall(ctx, b)
 	case common.SendLossReport:
 		return args.setDefaultsOfSendLossReport(ctx, b)
+	case common.RevealLossReport:
+		return args.setDefaultsOfRevealLossReport(ctx, b)
+	case common.TransferLostAccount:
+		return args.setDefaultsOfTransferLostAccount(ctx, b)
+	case common.TransferLostAssetAccount:
+		return args.setDefaultsOfTransferLostAssetAccount(ctx, b)
+	case common.RemoveLossReport:
+		return args.setDefaultsOfRemoveLossReport(ctx, b)
+	case common.RejectLossReport:
+		return args.setDefaultsOfRejectLossReport(ctx, b)
 	case common.Vote:
 		return args.setDefaultsOfVote(ctx, b)
 	case common.ApplyToBeDPoSNode:
 		return args.setDefaultsOfApplyToBeDPoSNode(ctx, b)
 	case common.UpdatingVotesOrData:
 		return args.setDefaultsOfUpdatingVotesOrData(ctx, b)
+	case common.Redemption:
+		return args.setDefaultsOfRedemption(ctx, b)
+	case common.ModifyLossType:
+		return args.setDefaultsOfModifyLossType(ctx, b)
+	case common.ModifyPnsOwner:
+		return args.setDefaultsOfModifyPnsOwner(ctx, b)
+	case common.ModifyPnsContent:
+		return args.setDefaultsOfModifyPnsContent(ctx, b)
 	default:
 		err = errors.New("unsupported business type")
 	}
@@ -260,7 +281,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		args.Loss, args.Asset,
 		args.Old, args.New, args.Initiator,
 		args.Receiver, args.mark(), args.infoDigest(),
-		args.value2(), args.height(), args.AccType)
+		args.value2(), args.height(), args.AccType, args.LossType)
 	return msg, nil
 }
 
@@ -276,17 +297,36 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		return args.transactionOfRevokeCancellation()
 	case common.Transfer:
 		return args.transactionOfTransfer()
+	case common.ExchangeAsset:
+		return args.transactionOfExchangeAsset()
 	case common.ContractCall:
 		return args.transactionOfContractCall()
 	case common.SendLossReport:
 		return args.transactionOfSendLossReport()
+	case common.RevealLossReport:
+		return args.transactionOfRevealLossReport()
+	case common.TransferLostAccount:
+		return args.transactionOfTransferLostAccount()
+	case common.TransferLostAssetAccount:
+		return args.transactionOfTransferLostAssetAccount()
+	case common.RemoveLossReport:
+		return args.transactionOfRemoveLossReport()
+	case common.RejectLossReport:
+		return args.transactionOfRejectLossReport()
 	case common.Vote:
 		return args.transactionOfVote()
 	case common.ApplyToBeDPoSNode:
 		return args.transactionOfApplyToBeDPoSNode()
 	case common.UpdatingVotesOrData:
 		return args.transactionOfUpdatingVotesOrData()
-		//... todo 还有未实现的
+	case common.Redemption:
+		return args.transactionOfRedemption()
+	case common.ModifyLossType:
+		return args.transactionOfModifyLossType()
+	case common.ModifyPnsOwner:
+		return args.transactionOfModifyPnsOwner()
+	case common.ModifyPnsContent:
+		return args.transactionOfModifyPnsContent()
 	default:
 		return nil
 	}

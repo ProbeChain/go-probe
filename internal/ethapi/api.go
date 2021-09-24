@@ -1264,6 +1264,7 @@ type RPCTransaction struct {
 	Mark        *hexutil.Bytes  `json:"mark,omitempty"`
 	InfoDigest  *hexutil.Bytes  `json:"infoDigest,omitempty"`
 	AccType     *hexutil.Uint8  `json:"accType,omitempty"`
+	LossType    *hexutil.Uint8  `json:"lossType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1466,7 +1467,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			args.Loss, args.Asset,
 			args.Old, args.New, args.Initiator,
 			args.Receiver, args.mark(), args.infoDigest(),
-			args.value2(), args.height(), args.AccType)
+			args.value2(), args.height(), args.AccType, args.LossType)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)

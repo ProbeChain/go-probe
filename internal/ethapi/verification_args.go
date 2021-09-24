@@ -271,7 +271,7 @@ func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Ba
 	return nil
 }
 
-func (args *TransactionArgs) etDefaultsOfExchangeTransaction(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) setDefaultsOfExchangeAsset(ctx context.Context, b Backend) error {
 	return nil
 }
 
@@ -358,9 +358,6 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 	}
 	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
 		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
-	}
-	if *args.BizType != 0x22 {
-		return errors.New("Illegal business request")
 	}
 	if args.To == nil {
 		return errors.New("voteAccount Address is missing")
@@ -539,18 +536,567 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfRevealLossMessage(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, b Backend) error {
+	/*	if args.Loss == nil {
+		return errors.New(`loss account must be specified`)
+	}*/
+	if args.Mark == nil {
+		return errors.New(`mark must be specified`)
+	}
+	if args.InfoDigest == nil {
+		return errors.New(`information digests mark must be specified`)
+	}
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrWrongAccountType
+	}
+	/*	lossAccType, err := common.ValidAddress(*args.Loss)
+		if err != nil {
+			return err
+		}
+		if lossAccType != common.ACC_TYPE_OF_LOSE {
+			return accounts.ErrWrongAccountType
+		}*/
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
+	}
+	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
+	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	}*/
+	if !b.Exist(*args.From) {
+		return accounts.ErrUnknownAccount
+	}
+	/*	if !b.Exist(*args.Loss) {
+		return accounts.ErrUnknownAccount
+	}*/
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Value:                args.Value,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+			Loss:                 args.Loss,
+			Mark:                 args.Mark,
+			InfoDigest:           args.InfoDigest,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
+	return nil
+}
+func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Context, b Backend) error {
+	/*	if args.Loss == nil {
+		return errors.New(`loss account must be specified`)
+	}*/
+	if args.Mark == nil {
+		return errors.New(`mark must be specified`)
+	}
+	if args.InfoDigest == nil {
+		return errors.New(`information digests mark must be specified`)
+	}
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrWrongAccountType
+	}
+	/*	lossAccType, err := common.ValidAddress(*args.Loss)
+		if err != nil {
+			return err
+		}
+		if lossAccType != common.ACC_TYPE_OF_LOSE {
+			return accounts.ErrWrongAccountType
+		}*/
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
+	}
+	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
+	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	}*/
+	if !b.Exist(*args.From) {
+		return accounts.ErrUnknownAccount
+	}
+	/*	if !b.Exist(*args.Loss) {
+		return accounts.ErrUnknownAccount
+	}*/
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Value:                args.Value,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+			Loss:                 args.Loss,
+			Mark:                 args.Mark,
+			InfoDigest:           args.InfoDigest,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
+	return nil
+}
+func (args *TransactionArgs) setDefaultsOfTransferLostAssetAccount(ctx context.Context, b Backend) error {
+	/*	if args.Loss == nil {
+		return errors.New(`loss account must be specified`)
+	}*/
+	if args.Mark == nil {
+		return errors.New(`mark must be specified`)
+	}
+	if args.InfoDigest == nil {
+		return errors.New(`information digests mark must be specified`)
+	}
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrWrongAccountType
+	}
+	/*	lossAccType, err := common.ValidAddress(*args.Loss)
+		if err != nil {
+			return err
+		}
+		if lossAccType != common.ACC_TYPE_OF_LOSE {
+			return accounts.ErrWrongAccountType
+		}*/
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
+	}
+	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
+	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	}*/
+	if !b.Exist(*args.From) {
+		return accounts.ErrUnknownAccount
+	}
+	/*	if !b.Exist(*args.Loss) {
+		return accounts.ErrUnknownAccount
+	}*/
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Value:                args.Value,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+			Loss:                 args.Loss,
+			Mark:                 args.Mark,
+			InfoDigest:           args.InfoDigest,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
+	return nil
+}
+func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, b Backend) error {
+	/*	if args.Loss == nil {
+		return errors.New(`loss account must be specified`)
+	}*/
+	if args.Mark == nil {
+		return errors.New(`mark must be specified`)
+	}
+	if args.InfoDigest == nil {
+		return errors.New(`information digests mark must be specified`)
+	}
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrWrongAccountType
+	}
+	/*	lossAccType, err := common.ValidAddress(*args.Loss)
+		if err != nil {
+			return err
+		}
+		if lossAccType != common.ACC_TYPE_OF_LOSE {
+			return accounts.ErrWrongAccountType
+		}*/
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
+	}
+	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
+	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	}*/
+	if !b.Exist(*args.From) {
+		return accounts.ErrUnknownAccount
+	}
+	/*	if !b.Exist(*args.Loss) {
+		return accounts.ErrUnknownAccount
+	}*/
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Value:                args.Value,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+			Loss:                 args.Loss,
+			Mark:                 args.Mark,
+			InfoDigest:           args.InfoDigest,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
+	return nil
+}
+func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, b Backend) error {
+	/*	if args.Loss == nil {
+		return errors.New(`loss account must be specified`)
+	}*/
+	if args.Mark == nil {
+		return errors.New(`mark must be specified`)
+	}
+	if args.InfoDigest == nil {
+		return errors.New(`information digests mark must be specified`)
+	}
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrWrongAccountType
+	}
+	/*	lossAccType, err := common.ValidAddress(*args.Loss)
+		if err != nil {
+			return err
+		}
+		if lossAccType != common.ACC_TYPE_OF_LOSE {
+			return accounts.ErrWrongAccountType
+		}*/
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
+	}
+	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
+	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
+		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	}*/
+	if !b.Exist(*args.From) {
+		return accounts.ErrUnknownAccount
+	}
+	/*	if !b.Exist(*args.Loss) {
+		return accounts.ErrUnknownAccount
+	}*/
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Value:                args.Value,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+			Loss:                 args.Loss,
+			Mark:                 args.Mark,
+			InfoDigest:           args.InfoDigest,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenTimeOut(ctx context.Context, b Backend) error {
+//setDefaultsOfRedemption  set default parameters of redemption business type
+func (args *TransactionArgs) setDefaultsOfRedemption(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	if args.To == nil {
+		return errors.New(`vote account must be specified`)
+	}
+	toAccType, err := common.ValidAddress(*args.To)
+	if err != nil {
+		return err
+	}
+	if toAccType != common.ACC_TYPE_OF_AUTHORIZE {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	exist := b.Exist(*args.From)
+	if !exist {
+		return accounts.ErrUnknownAccount
+	}
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			To:                   args.To,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
 	return nil
 }
 
-func (args *TransactionArgs) setDefaultsOfTransferLostAccountWhenConfirmed(ctx context.Context, b Backend) error {
+// setDefaultsOfModifyLossType set default parameters of modify loss report type
+func (args *TransactionArgs) setDefaultsOfModifyLossType(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	exist := b.Exist(*args.From)
+	if !exist {
+		return accounts.ErrUnknownAccount
+	}
+	lossType := args.LossType
+	if lossType == nil {
+		return errors.New("loss type must be specified")
+	}
+	if !common.CheckLossType(byte(*lossType)) {
+		return errors.New("wrong loss type")
+	}
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+			LossType:             args.LossType,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
 	return nil
 }
+func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL && fromAccType != common.ACC_TYPE_OF_AUTHORIZE {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	exist := b.Exist(*args.From)
+	if !exist {
+		return accounts.ErrUnknownAccount
+	}
 
-func (args *TransactionArgs) setDefaultsOfRejectLossReportWhenTimeOut(ctx context.Context, b Backend) error {
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From: args.From,
+			//To:                   args.To,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			//Value:                args.Value,
+			Data:       args.Data,
+			AccessList: args.AccessList,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
+	return nil
+}
+func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+	fromAccType, err := common.ValidAddress(*args.From)
+	if err != nil {
+		return err
+	}
+	if fromAccType != common.ACC_TYPE_OF_GENERAL && fromAccType != common.ACC_TYPE_OF_AUTHORIZE {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	exist := b.Exist(*args.From)
+	if !exist {
+		return accounts.ErrUnknownAccount
+	}
+
+	// Estimate the gas usage if necessary.
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From: args.From,
+			//To:                   args.To,
+			BizType:              args.BizType,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			//Value:                args.Value,
+			Data:       args.Data,
+			AccessList: args.AccessList,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
 	return nil
 }

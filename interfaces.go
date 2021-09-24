@@ -125,9 +125,10 @@ type CallMsg struct {
 
 	AccessList types.AccessList // EIP-2930 access list.
 
-	BizType uint8
-	New     *common.Address
-	AccType *hexutil.Uint8
+	BizType  uint8
+	New      *common.Address
+	AccType  *hexutil.Uint8
+	LossType *hexutil.Uint8
 
 	Owner       *common.Address
 	Beneficiary *common.Address
