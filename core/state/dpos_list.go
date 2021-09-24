@@ -65,9 +65,9 @@ func (s *dposList) GetAllDPoSCandidate() []DPoSCandidateAccount {
 }
 
 func (s *StateDB) getNextDPOSList() []common.DPoSAccount {
-	var dPoSAccounts = make([]common.DPoSAccount, s.dPoSCandidateList.Limit)
+	var dPoSAccounts = make([]common.DPoSAccount, s.dposList.dPoSCandidateAccounts.Limit)
 	i := 0
-	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
+	for element := s.dposList.dPoSCandidateAccounts.List.Front(); element != nil; element = element.Next() {
 		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
 		dPoSAccount := &common.DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
 		dPoSAccounts[i] = *dPoSAccount

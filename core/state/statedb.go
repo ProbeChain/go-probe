@@ -85,9 +85,6 @@ type StateDB struct {
 
 	dposList *dposList
 
-	//Dops
-	dPoSCandidateList *SortedLinkedList
-
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -698,7 +695,7 @@ func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Ad
 	stateObject.dposCandidateAccount.Owner = ower
 
 	//TODO 计算权重
-	s.dPoSCandidateList.PutOnTop(stateObject.dposCandidateAccount)
+	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
 }
 
 func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
@@ -1868,7 +1865,7 @@ func (s *StateDB) GetDpostList() []common.DPoSAccount {
 		i++
 	}
 	return dPoSAccounts*/
-	return s.dPoSCandidateList.GetDpostList()
+	return s.dposList.dPoSCandidateAccounts.GetDpostList()
 }
 
 // getStateObjectTireByAccountType return stateObject's tire

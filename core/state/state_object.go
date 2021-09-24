@@ -112,8 +112,9 @@ func (s *stateObject) empty() bool {
 
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
-		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue.Sign() < 1 &&
-			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value.Sign() < 1 && !s.isNew
+		/*return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue.Sign() < 1 &&
+		s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value.Sign() < 1 && !s.isNew*/
+		return !s.isNew
 	case common.ACC_TYPE_OF_PNS:
 		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && len(s.pnsAccount.Data) == 0
 
