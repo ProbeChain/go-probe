@@ -794,9 +794,10 @@ func (m callMsg) Value() *big.Int              { return m.CallMsg.Value }
 func (m callMsg) Data() []byte                 { return m.CallMsg.Data }
 func (m callMsg) AccessList() types.AccessList { return m.CallMsg.AccessList }
 
-func (m callMsg) New() *common.Address    { return m.CallMsg.New }
-func (m callMsg) BizType() uint8          { return m.CallMsg.BizType }
-func (m callMsg) AccType() *hexutil.Uint8 { return m.CallMsg.AccType }
+func (m callMsg) New() *common.Address     { return m.CallMsg.New }
+func (m callMsg) BizType() uint8           { return m.CallMsg.BizType }
+func (m callMsg) AccType() *hexutil.Uint8  { return m.CallMsg.AccType }
+func (m callMsg) LossType() *hexutil.Uint8 { return m.CallMsg.LossType }
 
 func (m callMsg) Owner() *common.Address       { return m.CallMsg.Owner }
 func (m callMsg) Beneficiary() *common.Address { return m.CallMsg.Beneficiary }

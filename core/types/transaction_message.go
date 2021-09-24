@@ -36,6 +36,7 @@ type Message struct {
 	accessList AccessList
 	checkNonce bool
 	accType    *hexutil.Uint8
+	lossType   *hexutil.Uint8
 }
 
 func (m Message) From() common.Address   { return m.from }
@@ -64,3 +65,4 @@ func (m Message) Height() *big.Int             { return m.height }
 func (m Message) Mark() []byte                 { return m.mark }
 func (m Message) InfoDigest() []byte           { return m.infoDigest }
 func (m Message) AccType() *hexutil.Uint8      { return m.accType }
+func (m Message) LossType() *hexutil.Uint8     { return m.lossType }

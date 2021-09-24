@@ -84,6 +84,12 @@ var (
 	// than some meaningful limit a user might use. This is not a consensus error
 	// making the transaction invalid, rather a DOS protection.
 	ErrOversizedData = errors.New("oversized data")
+
+	// ErrInvalidCandidate is returned if vote other candidate
+	ErrInvalidCandidate = errors.New("invalid candidate")
+
+	// ErrNoVote is returned if no vote
+	ErrNoVote = errors.New("no vote")
 )
 
 var (
@@ -566,15 +572,34 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		err = pool.validateTxOfRevokeCancellation(tx, local)
 	case common.Transfer:
 		err = pool.validateTxOfTransfer(tx, local)
+	case common.ExchangeAsset:
+		err = pool.validateTxOfExchangeAsset(tx, local)
 	case common.ContractCall:
 		err = pool.validateTxOfContractCall(tx, local)
 	case common.SendLossReport:
 		err = pool.validateTxOfSendLossReport(tx, local)
+	case common.RevealLossReport:
+		return pool.validateTxOfRevealLossReport(tx, local)
+	case common.TransferLostAccount:
+		return pool.validateTxOfTransferLostAccount(tx, local)
+	case common.TransferLostAssetAccount:
+		return pool.validateTxOfTransferLostAssetAccount(tx, local)
+	case common.RemoveLossReport:
+		return pool.validateTxOfRemoveLossReport(tx, local)
+	case common.RejectLossReport:
+		return pool.validateTxOfRejectLossReport(tx, local)
 	case common.Vote:
 		err = pool.validateTxOfVote(tx, local)
 	case common.ApplyToBeDPoSNode:
 		err = pool.validateTxOfApplyToBeDPoSNode(tx, local)
-		//... todo 还有未实现的
+	case common.Redemption:
+		err = pool.validateTxOfRedemption(tx, local)
+	case common.ModifyLossType:
+		return pool.validateTxOfModifyLossType(tx, local)
+	case common.ModifyPnsOwner:
+		return pool.validateTxOfModifyPnsOwner(tx, local)
+	case common.ModifyPnsContent:
+		return pool.validateTxOfModifyPnsContent(tx, local)
 	default:
 		err = ErrBizTypeNotSupported
 	}
