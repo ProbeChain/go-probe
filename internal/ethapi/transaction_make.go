@@ -181,6 +181,7 @@ func (args *TransactionArgs) transactionOfVote() *types.Transaction {
 		}
 		data = &types.DynamicFeeTx{
 			To:         args.To,
+			From:       args.From,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -194,6 +195,7 @@ func (args *TransactionArgs) transactionOfVote() *types.Transaction {
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
 			To:         args.To,
+			From:       args.From,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -206,6 +208,7 @@ func (args *TransactionArgs) transactionOfVote() *types.Transaction {
 	default:
 		data = &types.LegacyTx{
 			To:       args.To,
+			From:     args.From,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
 			Gas:      uint64(*args.Gas),
@@ -226,6 +229,7 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -241,6 +245,7 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -255,6 +260,7 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 		}
 	default:
 		data = &types.LegacyTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			Nonce:      uint64(*args.Nonce),
@@ -278,6 +284,7 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -293,6 +300,7 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -307,6 +315,7 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 		}
 	default:
 		data = &types.LegacyTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			Nonce:      uint64(*args.Nonce),

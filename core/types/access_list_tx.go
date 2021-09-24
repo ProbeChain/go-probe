@@ -81,6 +81,7 @@ func (tx *AccessListTx) copy() TxData {
 	cpy := &AccessListTx{
 		Nonce:      tx.Nonce,
 		To:         tx.To,
+		From:       tx.From,
 		Data:       common.CopyBytes(tx.Data),
 		Gas:        tx.Gas,
 		AccessList: make(AccessList, len(tx.AccessList)),
