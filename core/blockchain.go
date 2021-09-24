@@ -1476,11 +1476,16 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	if err != nil {
 		return NonStatTy, err
 	}
+	// 更新root映射
+	hashes := state.GetStateDbTrie().GetTallHash()
+	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
-
+	fmt.Printf("2所有root：%v \n", root)
 	// If we're running an archive node, always flush
+	//triedb.CommitForNew(hashes, false, nil)
 	if bc.cacheConfig.TrieDirtyDisabled {
-		if err := triedb.Commit(root, false, nil); err != nil {
+		//if err := triedb.Commit(root, false, nil); err != nil {
+		if err := triedb.CommitForNew(hashes, false, nil); err != nil {
 			return NonStatTy, err
 		}
 	} else {
@@ -1514,7 +1519,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 						log.Info("State in memory for too long, committing", "time", bc.gcproc, "allowance", bc.cacheConfig.TrieTimeLimit, "optimum", float64(chosen-lastWrite)/TriesInMemory)
 					}
 					// Flush an entire trie and restart the counters
-					triedb.Commit(header.Root, true, nil)
+					//triedb.Commit(header.Root, true, nil)
+					triedb.CommitForNew(hashes, true, nil)
 					lastWrite = chosen
 					bc.gcproc = 0
 				}
@@ -1530,6 +1536,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 			}
 		}
 	}
+
 	// If the total difficulty is higher than our known, add it to the canonical chain
 	// Second clause in the if statement reduces the vulnerability to selfish mining.
 	// Please refer to http://www.cs.cornell.edu/~ie53/publications/btcProcFC.pdf

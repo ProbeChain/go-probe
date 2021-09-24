@@ -80,8 +80,6 @@ type stateObject struct {
 	// 挂失账户
 	lossAccount LossAccount
 
-	DPoSCandidateAccount DPoSCandidateAccount
-
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -283,29 +281,6 @@ func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *
 		dirtyStorage:     make(Storage),
 	}
 }
-
-// getStateObjectTireByAccountType return stateObject's tire
-//func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
-/*	switch accountType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return &s.regularTrie
-	case common.ACC_TYPE_OF_PNS:
-		return &s.pnsTrie
-	case common.ACC_TYPE_OF_ASSET:
-		return &s.digitalTrie
-	case common.ACC_TYPE_OF_CONTRACT:
-		return &s.contractTrie
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return &s.authorizeTrie
-	case common.ACC_TYPE_OF_LOSE:
-		return &s.lossTrie
-	case common.ACC_TYPE_OF_DPOS:
-		return &s.regularTrie
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return &s.trie
-	}*/
-//return &s.trie
-//}
 
 // newRegularAccount creates a state object.
 func newRegularAccount(db *StateDB, address common.Address, data RegularAccount) *stateObject {

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"math/big"
 	"sort"
 	"strconv"
@@ -59,6 +60,229 @@ func (n *proofList) Delete(key []byte) error {
 	panic("not supported")
 }
 
+type TotalTrie struct {
+	//trie          Trie // storage trie, which becomes non-nil on first access
+	regularTrie   Trie // storage trie, which becomes non-nil on first access
+	pnsTrie       Trie // storage trie, which becomes non-nil on first access
+	digitalTrie   Trie // storage trie, which becomes non-nil on first access
+	contractTrie  Trie // storage trie, which becomes non-nil on first access
+	authorizeTrie Trie // storage trie, which becomes non-nil on first access
+	lossTrie      Trie // storage trie, which becomes non-nil on first access
+}
+
+func (t *TotalTrie) GetKey(shaKey []byte) []byte {
+	trieType, err := common.ValidAddress(common.BytesToAddress(shaKey))
+	if err != nil {
+		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
+		return nil
+	}
+	switch trieType {
+	case accounts.General:
+		return t.regularTrie.GetKey(shaKey)
+	case accounts.Pns:
+		return t.pnsTrie.GetKey(shaKey)
+	case accounts.Asset:
+		return t.digitalTrie.GetKey(shaKey)
+	case accounts.Contract:
+		return t.contractTrie.GetKey(shaKey)
+	case accounts.Authorize:
+		return t.authorizeTrie.GetKey(shaKey)
+	case accounts.Lose:
+		return t.lossTrie.GetKey(shaKey)
+	default:
+		return nil
+	}
+}
+
+func (t *TotalTrie) TryGet(key []byte) ([]byte, error) {
+	trieType, err := common.ValidAddress(common.BytesToAddress(key))
+	if err != nil {
+		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
+		return nil, err
+	}
+	switch trieType {
+	case accounts.General:
+		return t.regularTrie.TryGet(key)
+	case accounts.Pns:
+		return t.pnsTrie.TryGet(key)
+	case accounts.Asset:
+		return t.digitalTrie.TryGet(key)
+	case accounts.Contract:
+		return t.contractTrie.TryGet(key)
+	case accounts.Authorize:
+		return t.authorizeTrie.TryGet(key)
+	case accounts.Lose:
+		return t.lossTrie.TryGet(key)
+	default:
+		return nil, fmt.Errorf("trieType no exsist")
+	}
+}
+
+func (t *TotalTrie) TryUpdate(key, value []byte) error {
+	trieType, err := common.ValidAddress(common.BytesToAddress(key))
+	if err != nil {
+		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
+		return err
+	}
+	switch trieType {
+	case accounts.General:
+		return t.regularTrie.TryUpdate(key, value)
+	case accounts.Pns:
+		return t.pnsTrie.TryUpdate(key, value)
+	case accounts.Asset:
+		return t.digitalTrie.TryUpdate(key, value)
+	case accounts.Contract:
+		return t.contractTrie.TryUpdate(key, value)
+	case accounts.Authorize:
+		return t.authorizeTrie.TryUpdate(key, value)
+	case accounts.Lose:
+		return t.lossTrie.TryUpdate(key, value)
+	default:
+		return fmt.Errorf("trieType no exsist")
+	}
+}
+
+func (t *TotalTrie) TryDelete(key []byte) error {
+	trieType, err := common.ValidAddress(common.BytesToAddress(key))
+	if err != nil {
+		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
+		return err
+	}
+	switch trieType {
+	case accounts.General:
+		return t.regularTrie.TryDelete(key)
+	case accounts.Pns:
+		return t.pnsTrie.TryDelete(key)
+	case accounts.Asset:
+		return t.digitalTrie.TryDelete(key)
+	case accounts.Contract:
+		return t.contractTrie.TryDelete(key)
+	case accounts.Authorize:
+		return t.authorizeTrie.TryDelete(key)
+	case accounts.Lose:
+		return t.lossTrie.TryDelete(key)
+	default:
+		return fmt.Errorf("trieType no exsist")
+	}
+}
+
+func (t *TotalTrie) Hash() common.Hash {
+	hashes := t.GetTallHash()
+	return BuildHash(hashes)
+}
+
+func (t *TotalTrie) GetTallHash() []common.Hash {
+	hashes := []common.Hash{t.regularTrie.Hash(),
+		t.pnsTrie.Hash(),
+		t.digitalTrie.Hash(),
+		t.contractTrie.Hash(),
+		t.authorizeTrie.Hash(),
+		t.lossTrie.Hash()}
+	return hashes
+}
+
+//func (s *StateDB) GetTallHash() []common.Hash {
+//	hashes := []common.Hash{s.trie.regularTrie.Hash(),
+//		s.trie.pnsTrie.Hash(),
+//		s.trie.digitalTrie.Hash(),
+//		s.trie.contractTrie.Hash(),
+//		s.trie.authorizeTrie.Hash(),
+//		s.trie.lossTrie.Hash()}
+//	return hashes
+//}
+
+func BuildHash(hashes []common.Hash) common.Hash {
+	num := big.NewInt(0) // 利用 x ⊕ 0 == x
+	for _, hash := range hashes {
+		curNum := new(big.Int).SetBytes(crypto.Keccak256(hash.Bytes()))
+		num = new(big.Int).Xor(curNum, num)
+	}
+	hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
+	hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
+
+	var ret [32]byte
+	copy(ret[:], hash[32:64])
+
+	return common.BytesToHash(ret[:])
+}
+
+func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err error) {
+	root0, err0 := t.regularTrie.Commit(onleaf)
+	root1, err1 := t.pnsTrie.Commit(onleaf)
+	if err1 != nil {
+		err0 = err1
+	}
+	root2, err2 := t.digitalTrie.Commit(onleaf)
+	if err2 != nil {
+		err0 = err2
+	}
+	root3, err3 := t.contractTrie.Commit(onleaf)
+	if err3 != nil {
+		err0 = err3
+	}
+	root4, err4 := t.authorizeTrie.Commit(onleaf)
+	if err4 != nil {
+		err0 = err4
+	}
+	root5, err5 := t.lossTrie.Commit(onleaf)
+	if err5 != nil {
+		err0 = err5
+	}
+
+	hashes := []common.Hash{root0, root1, root2, root3, root4, root5}
+	//hashes := []common.Hash{root0, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
+
+	return BuildHash(hashes), err0
+}
+
+//func (t *TotalTrie) NodeIterator(start []byte) trie.NodeIterator {
+//	trieType, err := common.ValidAddress(common.BytesToAddress(start))
+//	if err != nil {
+//		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
+//		return nil
+//	}
+//	switch trieType {
+//	case accounts.General:
+//		return t.regularTrie.NodeIterator(start)
+//	case accounts.Pns:
+//		return t.pnsTrie.NodeIterator(start)
+//	case accounts.Asset:
+//		return t.digitalTrie.NodeIterator(start)
+//	case accounts.Contract:
+//		return t.contractTrie.NodeIterator(start)
+//	case accounts.Authorize:
+//		return t.authorizeTrie.NodeIterator(start)
+//	case accounts.Lose:
+//		return t.lossTrie.NodeIterator(start)
+//	default:
+//		return nil
+//	}
+//}
+
+func (t *TotalTrie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error {
+	trieType, err := common.ValidAddress(common.BytesToAddress(key))
+	if err != nil {
+		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
+		return err
+	}
+	switch trieType {
+	case accounts.General:
+		return t.regularTrie.Prove(key, fromLevel, proofDb)
+	case accounts.Pns:
+		return t.pnsTrie.Prove(key, fromLevel, proofDb)
+	case accounts.Asset:
+		return t.digitalTrie.Prove(key, fromLevel, proofDb)
+	case accounts.Contract:
+		return t.contractTrie.Prove(key, fromLevel, proofDb)
+	case accounts.Authorize:
+		return t.authorizeTrie.Prove(key, fromLevel, proofDb)
+	case accounts.Lose:
+		return t.lossTrie.Prove(key, fromLevel, proofDb)
+	default:
+		return nil
+	}
+}
+
 // StateDB structs within the ethereum protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
@@ -68,7 +292,8 @@ type StateDB struct {
 	db           Database
 	prefetcher   *triePrefetcher
 	originalRoot common.Hash // The pre-state root, before any changes were made
-	trie         Trie
+	//trie         Trie
+	trie TotalTrie
 
 	hasher crypto.KeccakState
 
@@ -128,16 +353,48 @@ type StateDB struct {
 	SnapshotCommits      time.Duration
 }
 
+func GetHash(root common.Hash, db Database) []common.Hash {
+	if root == (common.Hash{}) || root == emptyRoot {
+		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
+	}
+	var intarray []common.Hash
+	hash := rawdb.ReadRootHash(db.TrieDB().DiskDB(), root)
+	if hash == nil {
+		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
+	}
+	err := rlp.DecodeBytes(hash, &intarray)
+	if err != nil {
+		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
+	}
+	return intarray
+}
+
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
-	tr, err := db.OpenTrie(root)
+	// 根据 root 获取六棵树hash数组
+	hash := GetHash(root, db)
+	trGeneral, err := db.OpenTrie(hash[0])
+	trPns, err := db.OpenTrie(hash[1])
+	trAsset, err := db.OpenTrie(hash[2])
+	trContract, err := db.OpenTrie(hash[3])
+	trAuthorize, err := db.OpenTrie(hash[4])
+	trLose, err := db.OpenTrie(hash[5])
+	//tr, err := db.OpenTrie(root)
 	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
 	if err != nil {
 		return nil, err
 	}
 	sdb := &StateDB{
-		db:                  db,
-		trie:                tr,
+		db: db,
+		//trie:                tr,
+		trie: TotalTrie{
+			regularTrie:   trGeneral,
+			pnsTrie:       trPns,
+			digitalTrie:   trAsset,
+			contractTrie:  trContract,
+			authorizeTrie: trAuthorize,
+			lossTrie:      trLose,
+		},
 		originalRoot:        root,
 		snaps:               snaps,
 		stateObjects:        make(map[common.Address]*stateObject),
@@ -723,9 +980,36 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 // Snapshots of the copied state cannot be applied to the copy.
 func (s *StateDB) Copy() *StateDB {
 	// Copy all the basic fields, initialize the memory ones
+	var regularTrie, pnsTrie, digitalTrie, contractTrie, authorizeTrie, lossTrie Trie
+	if s.trie.regularTrie != nil {
+		regularTrie = s.db.CopyTrie(s.trie.regularTrie)
+	}
+	if s.trie.pnsTrie != nil {
+		pnsTrie = s.db.CopyTrie(s.trie.pnsTrie)
+	}
+	if s.trie.digitalTrie != nil {
+		digitalTrie = s.db.CopyTrie(s.trie.digitalTrie)
+	}
+	if s.trie.contractTrie != nil {
+		contractTrie = s.db.CopyTrie(s.trie.contractTrie)
+	}
+	if s.trie.authorizeTrie != nil {
+		authorizeTrie = s.db.CopyTrie(s.trie.authorizeTrie)
+	}
+	if s.trie.lossTrie != nil {
+		lossTrie = s.db.CopyTrie(s.trie.lossTrie)
+	}
 	state := &StateDB{
-		db:                  s.db,
-		trie:                s.db.CopyTrie(s.trie),
+		db: s.db,
+		//trie:                s.db.CopyTrie(s.trie),
+		trie: TotalTrie{
+			regularTrie:   regularTrie,
+			pnsTrie:       pnsTrie,
+			digitalTrie:   digitalTrie,
+			contractTrie:  contractTrie,
+			authorizeTrie: authorizeTrie,
+			lossTrie:      lossTrie,
+		},
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
@@ -1824,23 +2108,29 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 
 // getStateObjectTireByAccountType return stateObject's tire
 func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
-	/*	switch accountType {
-		case accounts.General:
-			return &s.regularTrie
-		case accounts.Pns:
-			return &s.pnsTrie
-		case accounts.Asset:
-			return &s.digitalTrie
-		case accounts.Contract:
-			return &s.contractTrie
-		case accounts.Authorize:
-			return &s.authorizeTrie
-		case accounts.Lose:
-			return &s.lossTrie
-		case accounts.DPoS:
-			return &s.regularTrie
-		case accounts.DPoSCandidate:
-			return &s.trie
-		}*/
+	switch accountType {
+	case accounts.General:
+		return &s.trie.regularTrie
+	case accounts.Pns:
+		return &s.trie.pnsTrie
+	case accounts.Asset:
+		return &s.trie.digitalTrie
+	case accounts.Contract:
+		return &s.trie.contractTrie
+	case accounts.Authorize:
+		return &s.trie.authorizeTrie
+	case accounts.Lose:
+		return &s.trie.lossTrie
+	case accounts.DPoS:
+		return &s.trie.regularTrie
+	case accounts.DPoSCandidate:
+		return &s.trie.regularTrie
+	default:
+		return nil
+	}
+	//return &s.trie
+}
+
+func (s *StateDB) GetStateDbTrie() *TotalTrie {
 	return &s.trie
 }

@@ -261,8 +261,8 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 		wrapper          *Wrapper
 		err              error
 	)
-	//trieArr :=[6]Trie{s.regularTrie,s.pnsTrie,s.digitalTrie,s.contractTrie,s.authorizeTrie,s.lossTrie}
-	trieArr := [1]Trie{s.trie}
+	trieArr := [6]Trie{s.trie.regularTrie, s.trie.pnsTrie, s.trie.digitalTrie, s.trie.contractTrie, s.trie.authorizeTrie, s.trie.lossTrie}
+	//trieArr := [1]Trie{s.trie}
 	for i, t := range trieArr {
 		log.Info("Trie dumping started", "root", t.Hash())
 		c.OnRoot(t.Hash())

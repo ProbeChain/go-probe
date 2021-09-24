@@ -17,9 +17,11 @@
 package rawdb
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 // ReadPreimage retrieves a single preimage of the provided hash.
@@ -93,4 +95,54 @@ func DeleteTrieNode(db ethdb.KeyValueWriter, hash common.Hash) {
 	if err := db.Delete(hash.Bytes()); err != nil {
 		log.Crit("Failed to delete trie node", "err", err)
 	}
+}
+
+func WriteRootHash(db ethdb.KeyValueWriter, hash common.Hash, code []byte) {
+	//if err := db.Put(hash.Bytes(), code); err != nil {
+	//	log.Crit("Failed to store RootHash", "err", err)
+	//}
+	if err := db.Put(StateRootKey(hash), code); err != nil {
+		log.Crit("Failed to store RootHash", "err", err)
+	}
+}
+
+func WriteAllStateRootHash1(db ethdb.Database, hashes []common.Hash, root common.Hash) {
+	blockBatch := db.NewBatch()
+	// add trie root
+	arrdata, err := rlp.EncodeToBytes(hashes)
+	if err != nil {
+		log.Crit("Failed to EncodeToBytes", "err", err)
+	}
+	key := StateRootKey(root)
+	fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
+	if err := blockBatch.Put(key, arrdata); err != nil {
+		log.Crit("Failed to store RootHash", "err", err)
+	}
+}
+
+func WriteAllStateRootHash(db ethdb.KeyValueWriter, hashes []common.Hash, root common.Hash) {
+	// add trie root
+	arrdata, err := rlp.EncodeToBytes(hashes)
+	if err != nil {
+		log.Crit("Failed to EncodeToBytes", "err", err)
+	}
+	key := StateRootKey(root)
+	fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
+	if err := db.Put(key, arrdata); err != nil {
+		log.Crit("Failed to store RootHash", "err", err)
+	}
+}
+
+func ReadRootHash(db ethdb.KeyValueReader, hash common.Hash) []byte {
+	data, _ := db.Get(StateRootKey(hash))
+	return data
+}
+func ReadRootHashForNew(db ethdb.KeyValueReader, hash common.Hash) []common.Hash {
+	var intarray []common.Hash
+	//hash := rawdb.ReadRootHash(db.TrieDB().DiskDB(), root)
+	key := StateRootKey(hash)
+	fmt.Printf("ReadRootHashForNew-key：%v \n", key)
+	data, _ := db.Get(key)
+	rlp.DecodeBytes(data, &intarray)
+	return intarray
 }
