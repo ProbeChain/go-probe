@@ -357,16 +357,11 @@ func GetHash(root common.Hash, db Database) []common.Hash {
 	if root == (common.Hash{}) || root == emptyRoot {
 		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 	}
-	var intarray []common.Hash
-	hash := rawdb.ReadRootHash(db.TrieDB().DiskDB(), root)
+	hash := rawdb.ReadRootHashForNew(db.TrieDB().DiskDB(), root)
 	if hash == nil {
 		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 	}
-	err := rlp.DecodeBytes(hash, &intarray)
-	if err != nil {
-		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	}
-	return intarray
+	return hash
 }
 
 // New creates a new state from a given trie.
@@ -2182,4 +2177,3 @@ func (s *StateDB) GetDpostList() []common.DPoSAccount {
 	return dPoSAccounts*/
 	return s.dPoSCandidateList.GetDpostList()
 }
-
