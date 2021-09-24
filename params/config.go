@@ -360,7 +360,7 @@ func (c *EthashConfig) String() string {
 type DposConfig struct {
 	Period   uint64             `json:"period"` // Number of seconds between blocks to enforce
 	Epoch    uint64             `json:"epoch"`  // Epoch length to reset dpos list
-	DposList common.DPoSAccount `json:"dpos"`
+	DposList common.DPoSAccount `json:"list"`
 }
 
 // String implements the stringer interface, returning the consensus engine details.
