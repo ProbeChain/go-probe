@@ -95,6 +95,8 @@ const (
 	TriesInMemory       = 128
 	maxChainPowAnswers  = 256
 	maxChainDposAcks    = 256
+	maxUnclePowAnswer   = 5
+	confirmDpos         = 64
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -342,10 +344,9 @@ type BlockChain struct {
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
 
-	dposAcks *DposAckPool
-
-	//Index = 0 in the array indicates the first received powanswer
-	powAnswers *PowAnswerPool
+	dposAcks     *DposAckPool
+	powAnswers   *PowAnswerPool
+	dposAccounts map[uint64][]*state.DPoSAccount
 
 	chainmu sync.RWMutex // blockchain insertion lock
 
@@ -411,6 +412,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		vmConfig:       vmConfig,
 		powAnswers:     NewPowAnswerPool(),
 		dposAcks:       NewDposAckPool(),
+		dposAccounts:   make(map[uint64][]*state.DPoSAccount),
 		p2pServer:      p2pServer,
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
@@ -2569,55 +2571,142 @@ func (bc *BlockChain) updateP2pDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
 	epoch := bc.chainConfig.Dpos.Epoch
-	if number > 0 && (number+1)%epoch == 0 {
-		state, _ := bc.State()
-		preNumber := uint64(0)
-		if number > epoch {
-			preNumber = number - epoch
-		}
-		preBlock := bc.GetBlockByNumber(preNumber)
-		preDposList := state.GetDposNodes(preBlock.Root(), preNumber, epoch)
-		curDposList := state.GetDposNodes(block.Root(), number, epoch)
 
-		// if not find in the cur dpos list, remove it
-		for _, node1 := range preDposList {
-			find := false
-			for _, node2 := range curDposList {
-				if node1.ID().String() == node2.ID().String() {
-					find = true
-					break
+	confirmBlockNum := epoch / 2
+	if epoch > confirmDpos {
+		confirmBlockNum = epoch - confirmDpos
+	}
+
+	if number > 0 {
+		// next dpos if not find in the pre dpos list, add it
+		if (number+confirmBlockNum)%epoch == 0 {
+			curDposAccounts := bc.GetDposAccounts(number)
+			nextDposAccounts := bc.GetNextDposAccounts(number)
+			for _, da1 := range nextDposAccounts {
+				find := false
+				for _, da2 := range curDposAccounts {
+					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
+						find = true
+						break
+					}
+				}
+				if !find {
+					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", string(da1.Enode))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					if err != nil {
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						continue
+					}
+					bc.p2pServer.AddDposPeer(dposEnode)
 				}
 			}
-			if !find {
-				log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", node1.String())
-				bc.p2pServer.RemoveDposPeer(node1)
-			}
 		}
 
-		// if not find in the pre dpos list, add it
-		for _, node1 := range curDposList {
-			find := false
-			for _, node2 := range preDposList {
-				if node1.ID().String() == node2.ID().String() {
-					find = true
-					break
+		// pre dpos if not find in the pre dpos list, remove it
+		if number%epoch == 0 {
+			curDposAccounts := bc.GetDposAccounts(number)
+			preDposAccounts := bc.GetDposAccounts(number - confirmBlockNum)
+			for _, da1 := range preDposAccounts {
+				find := false
+				for _, da2 := range curDposAccounts {
+					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
+						find = true
+						break
+					}
 				}
-			}
-			if !find {
-				log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", node1.String())
-				bc.p2pServer.AddDposPeer(node1)
+				if !find {
+					log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", string(da1.Enode))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					if err != nil {
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						continue
+					}
+					bc.p2pServer.RemovePeer(dposEnode)
+				}
 			}
 		}
 	}
 }
 
-// GetDposNodes get latest dpos nodes
-func (bc *BlockChain) GetDposNodes(number uint64) []*enode.Node {
+// GetDposAccounts get latest dpos nodes
+func (bc *BlockChain) GetDposAccounts(number uint64) []*state.DPoSAccount {
+	index := number / bc.chainConfig.Dpos.Epoch
+
+	accounts := bc.dposAccounts[index]
+	if accounts != nil {
+		return accounts
+	}
+
+	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
-	epoch := bc.chainConfig.Dpos.Epoch
-	state, _ := bc.StateAt(block.Root())
-	dposNodes := state.GetDposNodes(block.Root(), number, epoch)
-	return dposNodes
+	if block != nil {
+		epoch := bc.chainConfig.Dpos.Epoch
+		stateDB, _ := bc.StateAt(block.Root())
+		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
+		bc.dposAccounts[index] = accounts // cache it
+	}
+
+	return accounts
+}
+
+// GetNextDposAccounts get next dpos nodes
+func (bc *BlockChain) GetNextDposAccounts(number uint64) []*state.DPoSAccount {
+	index := (number + confirmDpos) / bc.chainConfig.Dpos.Epoch
+
+	accounts := bc.dposAccounts[index]
+	if accounts != nil {
+		return accounts
+	}
+
+	// The blocks haven't been synchronized yet but we got the answers first
+	block := bc.GetBlockByNumber(number)
+	if block != nil {
+		epoch := bc.chainConfig.Dpos.Epoch
+		stateDB, _ := bc.StateAt(block.Root())
+		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
+		bc.dposAccounts[index] = accounts // cache it
+	}
+
+	return accounts
+}
+
+// GetSealDposAccount get seal dpos account
+func (bc *BlockChain) GetSealDposAccount(number uint64) *state.DPoSAccount {
+	accounts := bc.GetDposAccounts(number)
+	if accounts != nil {
+		size := uint64(len(accounts))
+		return accounts[number%bc.chainConfig.Dpos.Epoch%size]
+	}
+	return nil
+}
+
+// GetDposAccountIndex get dpos account in list index
+func (bc *BlockChain) GetDposAccountIndex(number uint64, owner common.Address) (int, error) {
+	accounts := bc.GetDposAccounts(number)
+	for i, account := range accounts {
+		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+			return i, nil
+		}
+	}
+	return -1, errors.New("not found:" + owner.String())
+}
+
+func (bc *BlockChain) GetLatestDposAccountIndex(owner common.Address) (int, error) {
+	return bc.GetDposAccountIndex(bc.CurrentHeader().Number.Uint64(), owner)
+}
+
+func (bc *BlockChain) CheckIsDposAccount(number uint64, owner common.Address) bool {
+	accounts := bc.GetDposAccounts(number)
+	for _, account := range accounts {
+		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (bc *BlockChain) CheckIsLatestDposAccount(owner common.Address) bool {
+	return bc.CheckIsDposAccount(bc.CurrentHeader().Number.Uint64(), owner)
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
@@ -2745,6 +2834,13 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
 }
 
+// CheckPowAnswer check a pow answer is legal (no check the MixDigest nonce is right)
+func (bc *BlockChain) CheckPowAnswer(powAnswer *types.PowAnswer) bool {
+	number := powAnswer.Number.Uint64()
+	chainNumber := bc.CurrentBlock().NumberU64()
+	return number >= chainNumber-maxUnclePowAnswer && number <= chainNumber+maxUnclePowAnswer
+}
+
 // HandlePowAnswer send a pow answer to worker and save it
 func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	if bc.powAnswers.Contain(powAnswer) {
@@ -2755,9 +2851,18 @@ func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	}
 }
 
-// SavePowAnswer save a pow answer to set
-func (bc *BlockChain) SavePowAnswer(powAnswer *types.PowAnswer) {
-	bc.powAnswers.Add(powAnswer)
+// CheckDposAck check a dpos ack is legal
+func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
+	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
+	owner, err := dposAck.RecoverOwner()
+	if err == nil {
+		for _, account := range accounts {
+			if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // HandleDposAck send a dpos ack to worker and save it
@@ -2768,11 +2873,6 @@ func (bc *BlockChain) HandleDposAck(dposAck *types.DposAck) int {
 		bc.dposAcks.Add(dposAck)
 		return bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
 	}
-}
-
-// SaveDposAck save a dpos ack to dposAckPool
-func (bc *BlockChain) SaveDposAck(dposAck *types.DposAck) {
-	bc.dposAcks.Add(dposAck)
 }
 
 // GetPowAnswers get a pow answer list
@@ -2792,7 +2892,7 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 
 // GetUnclePowAnswers get uncle pow answer list
 func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
-	uncles := 5
+	uncles := maxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
 	for uncles >= 1 {
 		ans = append(ans, bc.powAnswers.List(big.NewInt(0).Sub(number, big.NewInt(int64(uncles))))...)

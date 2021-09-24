@@ -20,6 +20,8 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"io"
 	"math/big"
 	"reflect"
@@ -103,9 +105,26 @@ func (dposAck *DposAck) Id() common.Hash {
 	return common.BytesToHash(dposAck.WitnessSig)
 }
 
-type DposAckCount struct {
-	BlockNumber *big.Int `json:"blockNumber"        gencodec:"required"`
-	AckCount    uint     `json:"ackCount"           gencodec:"required"`
+// Hash returns the dpos ack Keccak256
+func (dposAck *DposAck) Hash() []byte {
+	datas := make([]byte, 0, 1+8+32+1)
+	datas = append(datas, dposAck.EpochPosition)
+	datas = append(datas, dposAck.Number.Bytes()...)
+	datas = append(datas, dposAck.BlockHash.Bytes()...)
+	datas = append(datas, uint8(dposAck.AckType))
+	return crypto.Keccak256(datas)
+}
+
+// RecoverOwner returns the dpos ack pubkey
+func (dposAck *DposAck) RecoverOwner() (common.Address, error) {
+	pubkey, err := secp256k1.RecoverPubkey(dposAck.Hash(), dposAck.WitnessSig)
+	if err == nil {
+		publicKey, err := crypto.UnmarshalPubkey(pubkey)
+		if err == nil {
+			return crypto.PubkeyToAddress(*publicKey), nil
+		}
+	}
+	return common.Address{}, err
 }
 
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go

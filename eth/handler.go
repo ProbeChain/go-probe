@@ -525,24 +525,37 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 // BroadcastPowAnswer broadcast PowAnswer to all peers
 func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
-	h.chain.HandlePowAnswer(powAnswer)
-	for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
-		if err := peer.SendNewPowAnswer(powAnswer); err != nil {
-			log.Debug("SendNewPowAnswer", "err", err)
+	if h.chain.CheckPowAnswer(powAnswer) {
+		h.chain.HandlePowAnswer(powAnswer)
+		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
+			if err := peer.SendNewPowAnswer(powAnswer); err != nil {
+				log.Debug("SendNewPowAnswer", "err", err)
+			}
 		}
+		log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
+	} else {
+		log.Debug("PowAnswer broadcast fail, because the pow answer is too old", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
 	}
-	log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
 }
 
 // BroadcastDposAck broadcast dpos ack to all peers
 func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
-	h.chain.HandleDposAck(dposAck)
-	for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
-		if err := peer.SendNewDposAck(dposAck); err != nil {
-			log.Debug("SendNewDposAck", "err", err)
-		}
+	check := h.chain.CheckDposAck(dposAck)
+	future := dposAck.Number.Uint64() > h.chain.CurrentHeader().Number.Uint64()
+	broadcast := check && future
+	if check {
+		h.chain.HandleDposAck(dposAck)
 	}
-	log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+	if broadcast {
+		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
+			if err := peer.SendNewDposAck(dposAck); err != nil {
+				log.Debug("SendNewDposAck", "err", err)
+			}
+		}
+		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+	} else {
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+	}
 }
 
 // minedBroadcastLoop sends mined blocks to connected peers.

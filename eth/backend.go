@@ -279,7 +279,16 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		}
 	}
 
-	nodes := eth.blockchain.GetDposNodes(eth.blockchain.CurrentHeader().Number.Uint64())
+	dposAccounts := eth.blockchain.GetDposAccounts(eth.blockchain.CurrentHeader().Number.Uint64())
+	nodes := make([]*enode.Node, 0, len(dposAccounts))
+	for _, account := range dposAccounts {
+		dposEnode, err := enode.Parse(enode.ValidSchemes, string(account.Enode))
+		if err != nil {
+			log.Error(fmt.Sprintf("Node URL %s: %v\n", string(account.Enode), err))
+			continue
+		}
+		nodes = append(nodes, dposEnode)
+	}
 	eth.p2pServer.Config.StaticNodes = append(eth.p2pServer.Config.StaticNodes, nodes...)
 	eth.p2pServer.Config.TrustedNodes = append(eth.p2pServer.Config.TrustedNodes, nodes...)
 

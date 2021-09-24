@@ -18,6 +18,8 @@ package types
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	crand "crypto/rand"
 	"hash"
 	"math/big"
 	"reflect"
@@ -200,6 +202,39 @@ func TestUncleHash(t *testing.T) {
 	exp := common.HexToHash("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
 	if h != exp {
 		t.Fatalf("empty uncle hash is wrong, got %x != %x", h, exp)
+	}
+}
+
+func TestDposAckVerifySignture(t *testing.T) {
+	prv, err := ecdsa.GenerateKey(crypto.S256(), crand.Reader)
+	pubkey := prv.PublicKey
+	address := crypto.PubkeyToAddress(pubkey)
+
+	dposAck := &DposAck{
+		EpochPosition: 0,
+		Number:        big.NewInt(10),
+		BlockHash:     common.BigToHash(big.NewInt(1024)),
+		WitnessSig:    nil,
+		AckType:       0,
+	}
+
+	if err == nil {
+		sig, _ := crypto.Sign(dposAck.Hash(), prv)
+		dposAck.WitnessSig = sig
+		owner, err := dposAck.RecoverOwner()
+		if bytes.Compare(address.Bytes(), owner.Bytes()) != 0 || err != nil {
+			t.Fatalf("sign dpos ack is wrong, except true got false")
+		}
+	}
+
+	prv, err = ecdsa.GenerateKey(crypto.S256(), crand.Reader)
+	if err == nil {
+		sig, _ := crypto.Sign(dposAck.Hash(), prv)
+		dposAck.WitnessSig = sig
+		owner, err := dposAck.RecoverOwner()
+		if bytes.Compare(address.Bytes(), owner.Bytes()) == 0 || err != nil {
+			t.Fatalf("sign dpos ack is wrong, except false got right")
+		}
 	}
 }
 
