@@ -1200,14 +1200,14 @@ func (s *StateDB) Vote(context vm.TxContext) {
 	s.SubBalance(context.From, context.Value)
 	fromObj := s.getStateObject(context.From)
 	if fromObj != nil {
-		lastVoteValue := common.If(fromObj.regularAccount.VoteValue == nil, new(big.Int).SetUint64(0), fromObj.regularAccount.VoteValue).(big.Int)
+		lastVoteValue := common.If(fromObj.regularAccount.VoteValue == nil, big.NewInt(0), fromObj.regularAccount.VoteValue).(*big.Int)
 		fromObj.db.journal.append(voteForRegularChange{
 			account:     &fromObj.address,
 			voteAccount: fromObj.regularAccount.VoteAccount,
-			voteValue:   &lastVoteValue,
+			voteValue:   lastVoteValue,
 		})
 		fromObj.regularAccount.VoteAccount = *context.To
-		fromObj.regularAccount.VoteValue = new(big.Int).Add(context.Value, &lastVoteValue)
+		fromObj.regularAccount.VoteValue = new(big.Int).Add(context.Value, lastVoteValue)
 	}
 
 	toObj := s.getStateObject(*context.To)
