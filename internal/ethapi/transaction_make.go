@@ -5,7 +5,6 @@ import (
 	"math/big"
 )
 
-// todo 各种交易类型的交易信息结构组装实现
 func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -68,14 +67,6 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 }
 
 func (args *TransactionArgs) transactionOfCancellation() *types.Transaction {
-	return nil
-}
-
-func (args *TransactionArgs) transactionOfRevokeCancellation() *types.Transaction {
-	return nil
-}
-
-func (args *TransactionArgs) transactionOfTransfer() *types.Transaction {
 	var data types.TxData
 	switch {
 	case args.MaxFeePerGas != nil:
@@ -84,6 +75,7 @@ func (args *TransactionArgs) transactionOfTransfer() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -97,6 +89,7 @@ func (args *TransactionArgs) transactionOfTransfer() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -109,6 +102,105 @@ func (args *TransactionArgs) transactionOfTransfer() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
+			To:       args.To,
+			BizType:  uint8(*args.BizType),
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+		}
+	}
+	return types.NewTx(data)
+}
+
+func (args *TransactionArgs) transactionOfRevokeCancellation() *types.Transaction {
+	var data types.TxData
+	switch {
+	case args.MaxFeePerGas != nil:
+		al := types.AccessList{}
+		if args.AccessList != nil {
+			al = *args.AccessList
+		}
+		data = &types.DynamicFeeTx{
+			From:       args.From,
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: al,
+		}
+	case args.AccessList != nil:
+		data = &types.AccessListTx{
+			From:       args.From,
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: *args.AccessList,
+		}
+	default:
+		data = &types.LegacyTx{
+			From:     args.From,
+			To:       args.To,
+			BizType:  uint8(*args.BizType),
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+		}
+	}
+	return types.NewTx(data)
+}
+
+func (args *TransactionArgs) transactionOfTransfer() *types.Transaction {
+	var data types.TxData
+	switch {
+	case args.MaxFeePerGas != nil:
+		al := types.AccessList{}
+		if args.AccessList != nil {
+			al = *args.AccessList
+		}
+		data = &types.DynamicFeeTx{
+			From:       args.From,
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: al,
+		}
+	case args.AccessList != nil:
+		data = &types.AccessListTx{
+			From:       args.From,
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: *args.AccessList,
+		}
+	default:
+		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
@@ -130,6 +222,7 @@ func (args *TransactionArgs) transactionOfContractCall() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -143,6 +236,7 @@ func (args *TransactionArgs) transactionOfContractCall() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -155,6 +249,7 @@ func (args *TransactionArgs) transactionOfContractCall() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
@@ -168,10 +263,6 @@ func (args *TransactionArgs) transactionOfContractCall() *types.Transaction {
 }
 
 func (args *TransactionArgs) transactionOfExchangeAsset() *types.Transaction {
-	return nil
-}
-
-func (args *TransactionArgs) transactionOfVote() *types.Transaction {
 	var data types.TxData
 	switch {
 	case args.MaxFeePerGas != nil:
@@ -180,8 +271,8 @@ func (args *TransactionArgs) transactionOfVote() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
-			To:         args.To,
 			From:       args.From,
+			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -194,8 +285,8 @@ func (args *TransactionArgs) transactionOfVote() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
-			To:         args.To,
 			From:       args.From,
+			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -207,8 +298,57 @@ func (args *TransactionArgs) transactionOfVote() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
-			To:       args.To,
 			From:     args.From,
+			To:       args.To,
+			BizType:  uint8(*args.BizType),
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+		}
+	}
+	return types.NewTx(data)
+}
+
+func (args *TransactionArgs) transactionOfVote() *types.Transaction {
+	var data types.TxData
+	switch {
+	case args.MaxFeePerGas != nil:
+		al := types.AccessList{}
+		if args.AccessList != nil {
+			al = *args.AccessList
+		}
+		data = &types.DynamicFeeTx{
+			From:       args.From,
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: al,
+		}
+	case args.AccessList != nil:
+		data = &types.AccessListTx{
+			From:       args.From,
+			To:         args.To,
+			BizType:    uint8(*args.BizType),
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: *args.AccessList,
+		}
+	default:
+		data = &types.LegacyTx{
+			From:     args.From,
+			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
 			Gas:      uint64(*args.Gas),
@@ -339,6 +479,7 @@ func (args *TransactionArgs) transactionOfSendLossReport() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -354,6 +495,7 @@ func (args *TransactionArgs) transactionOfSendLossReport() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -368,6 +510,7 @@ func (args *TransactionArgs) transactionOfSendLossReport() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			Nonce:      uint64(*args.Nonce),
@@ -381,6 +524,7 @@ func (args *TransactionArgs) transactionOfSendLossReport() *types.Transaction {
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfRevealLossReport() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -390,6 +534,7 @@ func (args *TransactionArgs) transactionOfRevealLossReport() *types.Transaction 
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -405,6 +550,7 @@ func (args *TransactionArgs) transactionOfRevealLossReport() *types.Transaction 
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -419,6 +565,7 @@ func (args *TransactionArgs) transactionOfRevealLossReport() *types.Transaction 
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
@@ -432,6 +579,7 @@ func (args *TransactionArgs) transactionOfRevealLossReport() *types.Transaction 
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfTransferLostAccount() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -441,6 +589,7 @@ func (args *TransactionArgs) transactionOfTransferLostAccount() *types.Transacti
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -454,6 +603,7 @@ func (args *TransactionArgs) transactionOfTransferLostAccount() *types.Transacti
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -466,6 +616,7 @@ func (args *TransactionArgs) transactionOfTransferLostAccount() *types.Transacti
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
@@ -477,6 +628,7 @@ func (args *TransactionArgs) transactionOfTransferLostAccount() *types.Transacti
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfTransferLostAssetAccount() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -486,6 +638,7 @@ func (args *TransactionArgs) transactionOfTransferLostAssetAccount() *types.Tran
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -501,6 +654,7 @@ func (args *TransactionArgs) transactionOfTransferLostAssetAccount() *types.Tran
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -515,6 +669,7 @@ func (args *TransactionArgs) transactionOfTransferLostAssetAccount() *types.Tran
 		}
 	default:
 		data = &types.LegacyTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			Nonce:      uint64(*args.Nonce),
@@ -528,6 +683,7 @@ func (args *TransactionArgs) transactionOfTransferLostAssetAccount() *types.Tran
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfRemoveLossReport() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -537,6 +693,7 @@ func (args *TransactionArgs) transactionOfRemoveLossReport() *types.Transaction 
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -550,6 +707,7 @@ func (args *TransactionArgs) transactionOfRemoveLossReport() *types.Transaction 
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -562,6 +720,7 @@ func (args *TransactionArgs) transactionOfRemoveLossReport() *types.Transaction 
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
@@ -573,6 +732,7 @@ func (args *TransactionArgs) transactionOfRemoveLossReport() *types.Transaction 
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfRejectLossReport() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -582,6 +742,7 @@ func (args *TransactionArgs) transactionOfRejectLossReport() *types.Transaction 
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -595,6 +756,7 @@ func (args *TransactionArgs) transactionOfRejectLossReport() *types.Transaction 
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -607,6 +769,7 @@ func (args *TransactionArgs) transactionOfRejectLossReport() *types.Transaction 
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
@@ -628,6 +791,7 @@ func (args *TransactionArgs) transactionOfRedemption() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -641,6 +805,7 @@ func (args *TransactionArgs) transactionOfRedemption() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
@@ -653,6 +818,7 @@ func (args *TransactionArgs) transactionOfRedemption() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
@@ -664,6 +830,7 @@ func (args *TransactionArgs) transactionOfRedemption() *types.Transaction {
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfModifyLossType() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -673,6 +840,7 @@ func (args *TransactionArgs) transactionOfModifyLossType() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -686,6 +854,7 @@ func (args *TransactionArgs) transactionOfModifyLossType() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			BizType:    uint8(*args.BizType),
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -698,6 +867,7 @@ func (args *TransactionArgs) transactionOfModifyLossType() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			BizType:  uint8(*args.BizType),
 			Nonce:    uint64(*args.Nonce),
 			Gas:      uint64(*args.Gas),
@@ -709,6 +879,7 @@ func (args *TransactionArgs) transactionOfModifyLossType() *types.Transaction {
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfModifyPnsOwner() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -718,6 +889,7 @@ func (args *TransactionArgs) transactionOfModifyPnsOwner() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			New:        args.New,
 			BizType:    uint8(*args.BizType),
@@ -732,6 +904,7 @@ func (args *TransactionArgs) transactionOfModifyPnsOwner() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			New:        args.New,
 			BizType:    uint8(*args.BizType),
@@ -745,6 +918,7 @@ func (args *TransactionArgs) transactionOfModifyPnsOwner() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			New:      args.New,
 			BizType:  uint8(*args.BizType),
@@ -757,6 +931,7 @@ func (args *TransactionArgs) transactionOfModifyPnsOwner() *types.Transaction {
 	}
 	return types.NewTx(data)
 }
+
 func (args *TransactionArgs) transactionOfModifyPnsContent() *types.Transaction {
 	var data types.TxData
 	switch {
@@ -766,6 +941,7 @@ func (args *TransactionArgs) transactionOfModifyPnsContent() *types.Transaction 
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
+			From:       args.From,
 			To:         args.To,
 			PnsType:    args.PnsType,
 			BizType:    uint8(*args.BizType),
@@ -780,6 +956,7 @@ func (args *TransactionArgs) transactionOfModifyPnsContent() *types.Transaction 
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
+			From:       args.From,
 			To:         args.To,
 			PnsType:    args.PnsType,
 			BizType:    uint8(*args.BizType),
@@ -793,6 +970,7 @@ func (args *TransactionArgs) transactionOfModifyPnsContent() *types.Transaction 
 		}
 	default:
 		data = &types.LegacyTx{
+			From:     args.From,
 			To:       args.To,
 			PnsType:  args.PnsType,
 			BizType:  uint8(*args.BizType),
