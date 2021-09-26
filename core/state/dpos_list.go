@@ -2,6 +2,8 @@ package state
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"math/big"
 	"sync"
 )
 
@@ -147,4 +149,37 @@ func (s *dposList) DeleteOldDPoSByAddr(addr common.Address) {
 		}
 	}
 	s.oldDPoSAccounts = append(s.oldDPoSAccounts[:i], s.oldDPoSAccounts[i+1:]...)
+}
+
+func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
+	num := big.NewInt(0)
+	for _, account := range accounts {
+		curNum := new(big.Int).SetBytes(crypto.Keccak512(append(account.Enode[:], account.Owner.Bytes()...)))
+		num = new(big.Int).Xor(curNum, num)
+	}
+	//hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
+	//hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
+	//
+	//var ret [32]byte
+	//copy(ret[:], hash[32:64])
+
+	return crypto.Keccak256Hash(num.Bytes())
+}
+
+func BuildHashForDPosCandidate(accounts []DPoSCandidateAccount) common.Hash {
+	num := big.NewInt(0)
+	for _, account := range accounts {
+		bytes1 := append(account.Enode[:], account.Owner.Bytes()...)
+		bytes2 := append(account.Weight.Bytes(), account.DelegateValue.Bytes()...)
+		bytes3 := append(bytes1, bytes2...)
+		curNum := new(big.Int).SetBytes(crypto.Keccak512(bytes3))
+		num = new(big.Int).Xor(curNum, num)
+	}
+	//hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
+	//hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
+	//
+	//var ret [32]byte
+	//copy(ret[:], hash[32:64])
+
+	return crypto.Keccak256Hash(num.Bytes())
 }

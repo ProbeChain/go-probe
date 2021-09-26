@@ -1483,20 +1483,25 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	if err != nil {
 		return NonStatTy, err
 	}
+	// 更新root映射
+	hashes := state.GetStateDbTrie().GetTallHash()
+	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
 
 	bc.writeDposNodes()
 
 	// If we're running an archive node, always flush
+	//triedb.CommitForNew(hashes, false, nil)
 	if bc.cacheConfig.TrieDirtyDisabled {
-		if err := triedb.Commit(root, false, nil); err != nil {
+		//if err := triedb.Commit(root, false, nil); err != nil {
+		if err := triedb.CommitForNew(hashes, false, nil); err != nil {
 			return NonStatTy, err
 		}
 	} else {
 		// Full but not archive node, do proper garbage collection
 		triedb.Reference(root, common.Hash{}) // metadata reference to keep trie alive
 		bc.triegc.Push(root, -int64(block.NumberU64()))
-
+		triedb.CommitForNew(hashes, false, nil)
 		if current := block.NumberU64(); current > TriesInMemory {
 			// If we exceeded our memory allowance, flush matured singleton nodes to disk
 			var (

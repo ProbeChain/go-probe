@@ -887,3 +887,19 @@ func (db *Database) SaveCachePeriodically(dir string, interval time.Duration, st
 		}
 	}
 }
+
+func (db *Database) CommitForNew(nodes []common.Hash, report bool, callback func(common.Hash)) error {
+	if nodes == nil {
+		return nil
+	}
+	var err error
+	nodes = append(nodes[:6], nodes[6+1:]...)
+	nodes = append(nodes[:6], nodes[6+1:]...)
+	for _, node := range nodes {
+		err1 := db.Commit(node, report, callback)
+		if err1 != nil {
+			err = err1
+		}
+	}
+	return err
+}
