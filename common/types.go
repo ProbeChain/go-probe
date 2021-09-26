@@ -29,6 +29,7 @@ import (
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
+	"net"
 	"reflect"
 	"strings"
 )
@@ -41,6 +42,8 @@ const (
 	AddressLength = 25
 	// AddressChecksumLen is the checkSum length of the address
 	AddressChecksumLen = 4
+	//DposEnodeLength is the cheche length of dpos node
+	DposEnodeLength = 73
 )
 
 var (
@@ -203,10 +206,12 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 // Address represents the 25 byte address of an Ethereum account.
 type Address [AddressLength]byte
 
+type DposEnode [DposEnodeLength]byte
+
 // DPoSAccount DPoS账户
 type DPoSAccount struct {
-	Enode []byte  `json:"enode,omitempty"`
-	Owner Address `json:"owner,omitempty"`
+	Enode DposEnode `json:"enode,omitempty"`
+	Owner Address   `json:"owner,omitempty"`
 }
 
 // BytesToAddress returns Address with value b.
@@ -223,6 +228,12 @@ func BytesToAddress(b []byte) Address {
 	var a Address
 	a.SetBytes(b)
 	return a
+}
+
+func BytesToDposEnode(b []byte) DposEnode {
+	var n DposEnode
+	n.SetBytes(b)
+	return n
 }
 
 //取前4个字节
@@ -254,6 +265,11 @@ func IsHexAddress(s string) bool {
 
 // Bytes gets the string representation of the underlying address.
 func (a Address) Bytes() []byte { return a[:] }
+
+// Last12Bytes gets the string representation of the underlying address.
+func (a Address) Last12BytesToHash() Hash {
+	return BytesToHash(a[len(a.Bytes())-12:])
+}
 
 // Hash converts an address to a hash by left-padding it with zeros.
 func (a Address) Hash() Hash { return BytesToHash(a[:]) }
@@ -331,6 +347,13 @@ func (a *Address) SetBytes(b []byte) {
 		b = b[len(b)-AddressLength:]
 	}
 	copy(a[AddressLength-len(b):], b)
+}
+
+func (n *DposEnode) SetBytes(b []byte) {
+	if len(b) > len(n) {
+		b = b[len(b)-DposEnodeLength:]
+	}
+	copy(n[DposEnodeLength-len(b):], b)
 }
 
 // MarshalText returns the hex representation of a.
@@ -495,6 +518,28 @@ func If(condition bool, trueVal, falseVal interface{}) interface{} {
 		return trueVal
 	}
 	return falseVal
+}
+
+// UnmarshalJSON enode
+func (enode *DposEnode) UnmarshalJSON(input []byte) error {
+	var textEnode string
+	err := json.Unmarshal(input, &textEnode)
+	if err != nil {
+		return err
+	}
+	*enode = BytesToDposEnode([]byte(textEnode))
+	return nil
+}
+
+// MarshalJSON marshals the original value
+func (enode *DposEnode) MarshalJSON() ([]byte, error) {
+	return json.Marshal(string(enode[:]))
+}
+
+func InetAtoN(ip string) *big.Int {
+	ret := big.NewInt(0)
+	ret.SetBytes(net.ParseIP(ip).To4())
+	return ret
 }
 
 func ReBuildAddress(addr []byte) []byte {

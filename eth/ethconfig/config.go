@@ -220,10 +220,6 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 		return clique.New(chainConfig.Clique, db)
 	}
 
-	if chainConfig.Dpos != nil {
-		log.Info("CreateConsensusEngine is dpos")
-	}
-
 	// Otherwise assume proof-of-work
 	switch config.PowMode {
 	case ethash.ModeFake:

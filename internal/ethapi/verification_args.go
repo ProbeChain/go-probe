@@ -159,6 +159,7 @@ func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Ba
 }
 
 // setDefaultsOfRevokeCancellation set default parameters of revoke cancellation business type
+// todo
 func (args *TransactionArgs) setDefaultsOfRevokeCancellation(ctx context.Context, b Backend) error {
 	return nil
 }
@@ -271,6 +272,7 @@ func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Ba
 	return nil
 }
 
+//todo
 func (args *TransactionArgs) setDefaultsOfExchangeAsset(ctx context.Context, b Backend) error {
 	return nil
 }
@@ -463,9 +465,6 @@ func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Contex
 }
 
 func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b Backend) error {
-	/*	if args.Loss == nil {
-		return errors.New(`loss account must be specified`)
-	}*/
 	if args.Mark == nil {
 		return errors.New(`mark must be specified`)
 	}
@@ -487,27 +486,12 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	if fromAccType != common.ACC_TYPE_OF_GENERAL {
 		return accounts.ErrWrongAccountType
 	}
-	/*	lossAccType, err := common.ValidAddress(*args.Loss)
-		if err != nil {
-			return err
-		}
-		if lossAccType != common.ACC_TYPE_OF_LOSE {
-			return accounts.ErrWrongAccountType
-		}*/
 	if args.Value == nil {
 		args.Value = new(hexutil.Big)
 	}
-	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
-	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
-	}*/
 	if !b.Exist(*args.From) {
 		return accounts.ErrUnknownAccount
 	}
-	/*	if !b.Exist(*args.Loss) {
-		return accounts.ErrUnknownAccount
-	}*/
-
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
 		// These fields are immutable during the estimation, safe to
@@ -521,7 +505,6 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 			Value:                args.Value,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			Loss:                 args.Loss,
 			Mark:                 args.Mark,
 			InfoDigest:           args.InfoDigest,
 		}
@@ -537,15 +520,6 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 }
 
 func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, b Backend) error {
-	/*	if args.Loss == nil {
-		return errors.New(`loss account must be specified`)
-	}*/
-	if args.Mark == nil {
-		return errors.New(`mark must be specified`)
-	}
-	if args.InfoDigest == nil {
-		return errors.New(`information digests mark must be specified`)
-	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -553,34 +527,39 @@ func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
+	if err := common.ValidateNil(args.Value, "value"); err != nil {
 		return err
 	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrWrongAccountType
+	if args.Value.ToInt().Sign() != 1 {
+		return errors.New("value must be greater than 0")
 	}
-	/*	lossAccType, err := common.ValidAddress(*args.Loss)
-		if err != nil {
-			return err
-		}
-		if lossAccType != common.ACC_TYPE_OF_LOSE {
-			return accounts.ErrWrongAccountType
-		}*/
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
+		return err
 	}
-	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
-	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
-	}*/
-	if !b.Exist(*args.From) {
-		return accounts.ErrUnknownAccount
+	if err := common.ValidateNil(args.From, "from account"); err != nil {
+		return err
 	}
-	/*	if !b.Exist(*args.Loss) {
-		return accounts.ErrUnknownAccount
-	}*/
+	if err := common.ValidateNil(args.To, "loss account"); err != nil {
+		return err
+	}
+	if err := common.ValidateNil(args.Old, "lost account"); err != nil {
+		return err
+	}
+	if err := common.ValidateNil(args.New, "new account "); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(args.Old, common.ACC_TYPE_OF_GENERAL, "old"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_GENERAL, "new"); err != nil {
+		return err
+	}
 
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
@@ -588,6 +567,7 @@ func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, 
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
+			To:                   args.To,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
@@ -595,9 +575,8 @@ func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, 
 			Value:                args.Value,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			Loss:                 args.Loss,
-			Mark:                 args.Mark,
-			InfoDigest:           args.InfoDigest,
+			Old:                  args.Old,
+			New:                  args.New,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
@@ -610,15 +589,6 @@ func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, 
 	return nil
 }
 func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Context, b Backend) error {
-	/*	if args.Loss == nil {
-		return errors.New(`loss account must be specified`)
-	}*/
-	if args.Mark == nil {
-		return errors.New(`mark must be specified`)
-	}
-	if args.InfoDigest == nil {
-		return errors.New(`information digests mark must be specified`)
-	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -626,34 +596,18 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Contex
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
+	if err := common.ValidateNil(args.From, "from account"); err != nil {
 		return err
 	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrWrongAccountType
+	if err := common.ValidateNil(args.To, "loss account"); err != nil {
+		return err
 	}
-	/*	lossAccType, err := common.ValidAddress(*args.Loss)
-		if err != nil {
-			return err
-		}
-		if lossAccType != common.ACC_TYPE_OF_LOSE {
-			return accounts.ErrWrongAccountType
-		}*/
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+		return err
 	}
-	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
-	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
-	}*/
-	if !b.Exist(*args.From) {
-		return accounts.ErrUnknownAccount
+	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+		return err
 	}
-	/*	if !b.Exist(*args.Loss) {
-		return accounts.ErrUnknownAccount
-	}*/
 
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
@@ -661,6 +615,7 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Contex
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
+			To:                   args.To,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
@@ -668,9 +623,6 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Contex
 			Value:                args.Value,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			Loss:                 args.Loss,
-			Mark:                 args.Mark,
-			InfoDigest:           args.InfoDigest,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
@@ -682,6 +634,8 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Contex
 	}
 	return nil
 }
+
+//todo
 func (args *TransactionArgs) setDefaultsOfTransferLostAssetAccount(ctx context.Context, b Backend) error {
 	/*	if args.Loss == nil {
 		return errors.New(`loss account must be specified`)
@@ -756,15 +710,6 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAssetAccount(ctx context.C
 	return nil
 }
 func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, b Backend) error {
-	/*	if args.Loss == nil {
-		return errors.New(`loss account must be specified`)
-	}*/
-	if args.Mark == nil {
-		return errors.New(`mark must be specified`)
-	}
-	if args.InfoDigest == nil {
-		return errors.New(`information digests mark must be specified`)
-	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -772,34 +717,18 @@ func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
+	if err := common.ValidateNil(args.From, "from account"); err != nil {
 		return err
 	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrWrongAccountType
+	if err := common.ValidateNil(args.To, "loss account"); err != nil {
+		return err
 	}
-	/*	lossAccType, err := common.ValidAddress(*args.Loss)
-		if err != nil {
-			return err
-		}
-		if lossAccType != common.ACC_TYPE_OF_LOSE {
-			return accounts.ErrWrongAccountType
-		}*/
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+		return err
 	}
-	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
-	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
-	}*/
-	if !b.Exist(*args.From) {
-		return accounts.ErrUnknownAccount
+	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+		return err
 	}
-	/*	if !b.Exist(*args.Loss) {
-		return accounts.ErrUnknownAccount
-	}*/
 
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
@@ -807,6 +736,7 @@ func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, 
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
+			To:                   args.To,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
@@ -814,9 +744,6 @@ func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, 
 			Value:                args.Value,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			Loss:                 args.Loss,
-			Mark:                 args.Mark,
-			InfoDigest:           args.InfoDigest,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
@@ -829,15 +756,6 @@ func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, 
 	return nil
 }
 func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, b Backend) error {
-	/*	if args.Loss == nil {
-		return errors.New(`loss account must be specified`)
-	}*/
-	if args.Mark == nil {
-		return errors.New(`mark must be specified`)
-	}
-	if args.InfoDigest == nil {
-		return errors.New(`information digests mark must be specified`)
-	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -845,34 +763,18 @@ func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
+	if err := common.ValidateNil(args.From, "from account"); err != nil {
 		return err
 	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrWrongAccountType
+	if err := common.ValidateNil(args.To, "loss account"); err != nil {
+		return err
 	}
-	/*	lossAccType, err := common.ValidAddress(*args.Loss)
-		if err != nil {
-			return err
-		}
-		if lossAccType != common.ACC_TYPE_OF_LOSE {
-			return accounts.ErrWrongAccountType
-		}*/
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+		return err
 	}
-	//args.Value = (*hexutil.Big)(new(big.Int).SetUint64(AmountOfPledgeForCreateAccount(uint8(*args.AccType))))
-	/*	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
-	}*/
-	if !b.Exist(*args.From) {
-		return accounts.ErrUnknownAccount
+	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+		return err
 	}
-	/*	if !b.Exist(*args.Loss) {
-		return accounts.ErrUnknownAccount
-	}*/
 
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
@@ -880,6 +782,7 @@ func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, 
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
+			To:                   args.To,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
@@ -887,9 +790,6 @@ func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, 
 			Value:                args.Value,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			Loss:                 args.Loss,
-			Mark:                 args.Mark,
-			InfoDigest:           args.InfoDigest,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
@@ -1018,16 +918,23 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
+	if err := common.ValidateNil(args.From, "from account"); err != nil {
 		return err
 	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL && fromAccType != common.ACC_TYPE_OF_AUTHORIZE {
-		return accounts.ErrUnsupportedAccountTransfer
+	if err := common.ValidateNil(args.To, "pns account"); err != nil {
+		return err
 	}
-	exist := b.Exist(*args.From)
-	if !exist {
-		return accounts.ErrUnknownAccount
+	if err := common.ValidateNil(args.New, "new owner account"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_PNS, "to"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_PNS, "new owner"); err != nil {
+		return err
 	}
 
 	// Estimate the gas usage if necessary.
@@ -1035,8 +942,8 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 		// These fields are immutable during the estimation, safe to
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
-			From: args.From,
-			//To:                   args.To,
+			From:                 args.From,
+			To:                   args.To,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
@@ -1044,6 +951,7 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 			//Value:                args.Value,
 			Data:       args.Data,
 			AccessList: args.AccessList,
+			New:        args.New,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
@@ -1063,32 +971,38 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
+	if args.Data == nil {
+		return errors.New("pns content data must be specified")
+	}
+	if err := common.ValidateNil(args.From, "from account"); err != nil {
 		return err
 	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL && fromAccType != common.ACC_TYPE_OF_AUTHORIZE {
-		return accounts.ErrUnsupportedAccountTransfer
+	if err := common.ValidateNil(args.To, "pns account"); err != nil {
+		return err
 	}
-	exist := b.Exist(*args.From)
-	if !exist {
-		return accounts.ErrUnknownAccount
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+		return err
 	}
-
+	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_PNS, "pns"); err != nil {
+		return err
+	}
+	if !common.CheckPnsType(uint8(*args.PnsType)) {
+		return errors.New("wrong pns type")
+	}
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
 		// These fields are immutable during the estimation, safe to
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
-			From: args.From,
-			//To:                   args.To,
+			From:                 args.From,
+			To:                   args.To,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
 			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			//Value:                args.Value,
-			Data:       args.Data,
-			AccessList: args.AccessList,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+			PnsType:              args.PnsType,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())

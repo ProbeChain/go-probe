@@ -79,6 +79,7 @@ type Message interface {
 	BizType() uint8
 	AccType() *hexutil.Uint8
 	LossType() *hexutil.Uint8
+	PnsType() *hexutil.Uint8
 	Owner() *common.Address
 	Beneficiary() *common.Address
 	Loss() *common.Address
@@ -307,6 +308,16 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret, err = st.TransitionDbOfContractCall()
 	case common.SendLossReport:
 		ret, err = st.TransitionDbOfSendLossReport()
+	case common.RevealLossReport:
+		ret, err = st.TransitionDbOfRevealLossReport()
+	case common.TransferLostAccount:
+		ret, err = st.TransitionDbOfTransferLostAccount()
+	case common.TransferLostAssetAccount:
+		ret, err = st.TransitionDbOfTransferLostAssetAccount()
+	case common.RemoveLossReport:
+		ret, err = st.TransitionDbOfRemoveLossReport()
+	case common.RejectLossReport:
+		ret, err = st.TransitionDbOfRejectLossReport()
 	case common.Vote:
 		ret, err = st.TransitionDbOfVote()
 	case common.ApplyToBeDPoSNode:
@@ -315,7 +326,12 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		ret, err = st.TransitionDbOfUpdatingVotesOrData()
 	case common.Redemption:
 		ret, err = st.TransitionDbOfRedemption()
-		//... todo 还有未实现的
+	case common.ModifyLossType:
+		ret, err = st.TransitionDbOfModifyLossType()
+	case common.ModifyPnsOwner:
+		ret, err = st.TransitionDbOfModifyPnsOwner()
+	case common.ModifyPnsContent:
+		ret, err = st.TransitionDbOfModifyPnsContent()
 	}
 
 	if !st.evm.ChainConfig().IsLondon(st.evm.Context.BlockNumber) {

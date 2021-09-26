@@ -77,6 +77,7 @@ type DumpAccount struct {
 	Ip          hexutil.Bytes   `json:"ip"`
 	Port        hexutil.Uint8   `json:"port"`
 	LossType    hexutil.Uint8   `json:"lossType"`
+	PnsType     hexutil.Uint8   `json:"pnsType"`
 	AccountType hexutil.Uint8   `json:"accountType"`
 }
 
@@ -154,6 +155,7 @@ func (d iterativeDump) OnAccount(addr common.Address, account DumpAccount) {
 		Ip:          account.Ip,
 		Port:        account.Port,
 		LossType:    account.LossType,
+		PnsType:     account.PnsType,
 		AccountType: account.AccountType,
 	}
 	if addr != (common.Address{}) {

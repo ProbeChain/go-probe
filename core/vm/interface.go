@@ -26,10 +26,7 @@ import (
 // StateDB is an EVM database for full state querying.
 type StateDB interface {
 	CreateAccount(common.Address)
-	GenerateAccount(TxContext)
-
 	CreateDPoSCandidateAccount(common.Address, common.Address, []byte)
-	UpdateDposAccount(common.Address, common.Address, []byte)
 
 	SubBalance(common.Address, *big.Int)
 	AddBalance(common.Address, *big.Int)
@@ -79,15 +76,39 @@ type StateDB interface {
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
 
-	SetInfoDigestForLoss(addr common.Address, infoDigest []byte)
+	Vote(context TxContext)
 
-	AddVote(addr common.Address, delegateValue *big.Int)
+	Register(context TxContext)
 
-	SetVoteRecordForRegular(addr common.Address, voteAccount common.Address, voteValue *big.Int)
+	Cancellation(context TxContext)
 
-	Redemption(addr common.Address, to common.Address, value *big.Int)
+	RevokeCancellation(context TxContext)
 
-	SetLossTypeForRegular(addr common.Address, lossType uint8)
+	Transfer(context TxContext)
+
+	ExchangeAsset(context TxContext)
+
+	Redemption(context TxContext)
+
+	ModifyLossType(context TxContext)
+
+	SendLossReport(blockNumber *big.Int, context TxContext)
+
+	RevealLossReport(blockNumber *big.Int, context TxContext)
+
+	TransferLostAccount(context TxContext)
+
+	TransferLostAssetAccount(context TxContext)
+
+	RemoveLossReport(context TxContext)
+
+	RejectLossReport(context TxContext)
+
+	ModifyPnsOwner(context TxContext)
+
+	ModifyPnsContent(context TxContext)
+
+	ApplyToBeDPoSNode(context TxContext)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM

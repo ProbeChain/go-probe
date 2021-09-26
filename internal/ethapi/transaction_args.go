@@ -59,6 +59,7 @@ type TransactionArgs struct {
 	InfoDigest *hexutil.Bytes `json:"infoDigest"`
 	AccType    *hexutil.Uint8 `json:"accType"`
 	LossType   *hexutil.Uint8 `json:"lossType"`
+	PnsType    *hexutil.Uint8 `json:"pnsType"`
 	// For non-legacy transactions
 	AccessList *types.AccessList `json:"accessList,omitempty"`
 	ChainID    *hexutil.Big      `json:"chainId,omitempty"`
@@ -281,7 +282,8 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		args.Loss, args.Asset,
 		args.Old, args.New, args.Initiator,
 		args.Receiver, args.mark(), args.infoDigest(),
-		args.value2(), args.height(), args.AccType, args.LossType)
+		args.value2(), args.height(), args.AccType,
+		args.LossType, args.PnsType)
 	return msg, nil
 }
 

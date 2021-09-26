@@ -37,9 +37,6 @@ const (
 	ModifyLossType           = byte(0x30) //修改挂失类型
 	ModifyPnsOwner           = byte(0x25) //修改PNS账号所有者
 	ModifyPnsContent         = byte(0x26) //修改PNS内容
-	//CancellationPns          = byte(0x27) //注销PNS账号
-
-	//.... ... todo 还有其它待列
 )
 
 // account type of Probe
@@ -62,14 +59,22 @@ const (
 	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT      uint64 = 2
 	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING        uint64 = 2
 	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT   uint64 = 2
+	MIN_MULTIPLE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT     uint64 = 10 //最小挂失金额倍数
+	CYCLE_HEIGHT_OF_LOSS_TYPE                            uint64 = 1  //挂失周期 挂失有效高度 = 挂失高度 * 挂失周期
+	THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT               uint64 = 1  //发起挂失不揭示内容，删除掉,高度阀值
 )
 
 const (
-	LOSS_TYPE_ZERO  = byte(0)
-	LOSS_TYPE_ONE   = byte(1)
-	LOSS_TYPE_TWO   = byte(2)
-	LOSS_TYPE_THREE = byte(3)
-	LOSS_TYPE_FOUR  = byte(4)
+	LOSS_STATE_OF_INIT    = byte(0)
+	LOSS_STATE_OF_APPLY   = byte(1)
+	LOSS_STATE_OF_NOTICE  = byte(2)
+	LOSS_STATE_OF_SUCCESS = byte(3)
+)
+
+const (
+	PNS_TYPE_OF_IP     = byte(0)
+	PNS_TYPE_OF_PORT   = byte(1)
+	PNS_TYPE_OF_DOMAIN = byte(2)
 )
 
 // Check business transaction type
@@ -93,6 +98,8 @@ func CheckBizType(bizType uint8) bool {
 	case Vote:
 		contain = true
 	case ApplyToBeDPoSNode:
+		contain = true
+	case UpdatingVotesOrData:
 		contain = true
 	case Redemption:
 		contain = true
@@ -128,15 +135,27 @@ func CheckAccType(accType byte) bool {
 
 // CheckLossType check loss report type
 func CheckLossType(accType byte) bool {
-	return LOSS_TYPE_ZERO <= accType && accType <= LOSS_TYPE_FOUR
+	return byte(0) <= accType && accType <= byte(15)
 }
 
 // CheckRegisterAccType check allow register account type
 func CheckRegisterAccType(accType byte) bool {
-	if ACC_TYPE_OF_CONTRACT == accType {
+	switch accType {
+	case ACC_TYPE_OF_GENERAL:
+		return true
+	case ACC_TYPE_OF_PNS:
+		return true
+	case ACC_TYPE_OF_ASSET:
+		return true
+	case ACC_TYPE_OF_AUTHORIZE:
+		return true
+	case ACC_TYPE_OF_DPOS:
+		return true
+	case ACC_TYPE_OF_DPOS_CANDIDATE:
+		return true
+	default:
 		return false
 	}
-	return ACC_TYPE_OF_GENERAL <= accType && accType <= ACC_TYPE_OF_DPOS_CANDIDATE
 }
 
 // CheckTransferAccType check allow transfer account type
@@ -173,4 +192,19 @@ func AmountOfPledgeForCreateAccount(accType byte) uint64 {
 	default:
 		return 0
 	}
+}
+
+//CheckPnsType check pns type
+func CheckPnsType(pnsType byte) bool {
+	/*	switch pnsType {
+		case PNS_TYPE_OF_IP:
+			return true
+		case PNS_TYPE_OF_PORT:
+			return true
+		case PNS_TYPE_OF_DOMAIN:
+			return true
+		default:
+			return false
+		}*/
+	return PNS_TYPE_OF_IP <= pnsType && pnsType <= PNS_TYPE_OF_DOMAIN
 }
