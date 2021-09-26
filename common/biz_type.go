@@ -99,6 +99,8 @@ func CheckBizType(bizType uint8) bool {
 		contain = true
 	case ApplyToBeDPoSNode:
 		contain = true
+	case UpdatingVotesOrData:
+		contain = true
 	case Redemption:
 		contain = true
 	case SendLossReport:

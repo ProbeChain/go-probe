@@ -194,7 +194,7 @@ type LossAccount struct {
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	Enode         []byte
+	Enode         common.DposEnode
 	Owner         common.Address
 	Weight        *big.Int
 	DelegateValue *big.Int

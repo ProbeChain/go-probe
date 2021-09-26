@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"math/big"
+	"net"
 	"sort"
 	"time"
 
@@ -86,7 +87,7 @@ type StateDB struct {
 	dposList         *dposList
 	markLossAccounts map[common.Hash][]common.Address
 
-	// DPoSAccount DPoS账户 64
+	/*// DPoSAccount DPoS账户 64
 	dPoSAccounts []*common.DPoSAccount
 	// DPoSCandidateAccount DPoS候选账户 64
 	dPoSCandidateAccounts []*DPoSCandidateAccount
@@ -94,10 +95,7 @@ type StateDB struct {
 	// DPoSAccount DPoS账户 64
 	oldDPoSAccounts []*common.DPoSAccount
 	// DPoSCandidateAccount DPoS候选账户 64
-	oldDPoSCandidateAccounts []*DPoSCandidateAccount
-
-	//Dops
-	dPoSCandidateList *SortedLinkedList
+	oldDPoSCandidateAccounts []*DPoSCandidateAccount*/
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -695,11 +693,16 @@ func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Ad
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")
 	enode.WriteString(remotePort)
-	stateObject.dposCandidateAccount.Enode = []byte(enode.String())
+	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = ower
-
-	//TODO 计算权重
+	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
 	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
+}
+
+func InetAtoN(ip string) *big.Int {
+	ret := big.NewInt(0)
+	ret.SetBytes(net.ParseIP(ip).To4())
+	return ret
 }
 
 func (s *StateDB) GetMarkLossAccounts(mark common.Hash) []common.Address {
@@ -1437,7 +1440,7 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")
 	enode.WriteString(remotePort)
-	stateObject.dposCandidateAccount.Enode = []byte(enode.String())
+	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = context.From
 }
 

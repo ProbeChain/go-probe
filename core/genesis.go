@@ -48,6 +48,7 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 // fork switch-over blocks through the chain configuration.
 type Genesis struct {
 	Config     *params.ChainConfig `json:"config"`
+	DposConfig *params.DposConfig  `json:"dpos"`
 	Nonce      uint64              `json:"nonce"`
 	Timestamp  uint64              `json:"timestamp"`
 	ExtraData  []byte              `json:"extraData"`
@@ -243,6 +244,18 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 	return newcfg, stored, nil
 }
 
+func paddingDposPool(genesis *Genesis) {
+	/*var aSortedLinkedList = state.NewSortedLinkedList(4, state)
+	for _, candidateDPOS := range candidateDPOSAccounts {
+		aSortedLinkedList.PutOnTop(candidateDPOS)
+	}
+	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
+	stateObject.dposCandidateAccount.Owner = ower
+	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
+	//TODO 计算权重
+	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)*/
+}
+
 func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	switch {
 	case g != nil:
@@ -308,6 +321,13 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}
+	if g.DposConfig != nil {
+		dposAccountList := statedb.GetDpostList()
+		for _, candidateDPOS := range g.DposConfig.DposList {
+			dposAccountList = append(dposAccountList, candidateDPOS)
+		}
+	}
+
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true, nil)
 

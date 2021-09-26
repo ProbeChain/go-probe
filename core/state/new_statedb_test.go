@@ -5,7 +5,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"testing"
 )
@@ -21,7 +20,7 @@ func newStateNewTest() *stateNewTest {
 	return &stateNewTest{db: db, state: sdb}
 }
 
-func TestGetData(t *testing.T) {
+/*func TestGetData(t *testing.T) {
 	s := newStateNewTest()
 	address := common.BytesToAddress([]byte{0x01})
 	s.state.SetValueForRegular(address, big.NewInt(20))
@@ -63,7 +62,7 @@ func TestTrieAndRlp(t *testing.T) {
 	fmt.Printf("GetRegular：%v \n", regular)
 	//addr, b := s.state.DecodeDataByAddr(common.HexToAddress("0x00C350afF0fDdbED23B29Cf559acb5aA68C2C4F0247f5D58Bc"), nil)
 	//fmt.Printf("addr：%v \n; b：%v \n", addr, b)
-}
+}*/
 
 func TestDeleteData(t *testing.T) {
 	s := newStateNewTest()
