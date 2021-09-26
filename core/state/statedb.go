@@ -68,16 +68,17 @@ type TotalTrie struct {
 	contractTrie      Trie // storage trie, which becomes non-nil on first access
 	authorizeTrie     Trie // storage trie, which becomes non-nil on first access
 	lossTrie          Trie // storage trie, which becomes non-nil on first access
-	dPosTrie          Trie // storage trie, which becomes non-nil on first access
-	dPosCandidateTrie Trie // storage trie, which becomes non-nil on first access
+	dPosHash          common.Hash
+	dPosCandidateHash common.Hash
 }
 
-func (t *TotalTrie) GetKey(shaKey []byte) []byte {
-	trieType, err := common.ValidAddress(common.BytesToAddress(shaKey))
+func (t *TotalTrie) GetKey(key []byte) []byte {
+	trieType, err := common.ValidAddress(common.BytesToAddress(key))
 	if err != nil {
 		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
 		return nil
 	}
+	shaKey := common.ReBuildAddress(key)
 	switch trieType {
 	case common.ACC_TYPE_OF_GENERAL:
 		return t.regularTrie.GetKey(shaKey)
@@ -102,19 +103,20 @@ func (t *TotalTrie) TryGet(key []byte) ([]byte, error) {
 		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
 		return nil, err
 	}
+	newKey := common.ReBuildAddress(key)
 	switch trieType {
 	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryGet(key)
+		return t.regularTrie.TryGet(newKey)
 	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryGet(key)
+		return t.pnsTrie.TryGet(newKey)
 	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryGet(key)
+		return t.digitalTrie.TryGet(newKey)
 	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryGet(key)
+		return t.contractTrie.TryGet(newKey)
 	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryGet(key)
+		return t.authorizeTrie.TryGet(newKey)
 	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryGet(key)
+		return t.lossTrie.TryGet(newKey)
 	default:
 		return nil, fmt.Errorf("trieType no exsist")
 	}
@@ -126,19 +128,20 @@ func (t *TotalTrie) TryUpdate(key, value []byte) error {
 		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
 		return err
 	}
+	newKey := common.ReBuildAddress(key)
 	switch trieType {
 	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryUpdate(key, value)
+		return t.regularTrie.TryUpdate(newKey, value)
 	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryUpdate(key, value)
+		return t.pnsTrie.TryUpdate(newKey, value)
 	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryUpdate(key, value)
+		return t.digitalTrie.TryUpdate(newKey, value)
 	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryUpdate(key, value)
+		return t.contractTrie.TryUpdate(newKey, value)
 	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryUpdate(key, value)
+		return t.authorizeTrie.TryUpdate(newKey, value)
 	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryUpdate(key, value)
+		return t.lossTrie.TryUpdate(newKey, value)
 	default:
 		return fmt.Errorf("trieType no exsist")
 	}
@@ -150,19 +153,20 @@ func (t *TotalTrie) TryDelete(key []byte) error {
 		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
 		return err
 	}
+	newKey := common.ReBuildAddress(key)
 	switch trieType {
 	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryDelete(key)
+		return t.regularTrie.TryDelete(newKey)
 	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryDelete(key)
+		return t.pnsTrie.TryDelete(newKey)
 	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryDelete(key)
+		return t.digitalTrie.TryDelete(newKey)
 	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryDelete(key)
+		return t.contractTrie.TryDelete(newKey)
 	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryDelete(key)
+		return t.authorizeTrie.TryDelete(newKey)
 	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryDelete(key)
+		return t.lossTrie.TryDelete(newKey)
 	default:
 		return fmt.Errorf("trieType no exsist")
 	}
@@ -179,7 +183,10 @@ func (t *TotalTrie) GetTallHash() []common.Hash {
 		t.digitalTrie.Hash(),
 		t.contractTrie.Hash(),
 		t.authorizeTrie.Hash(),
-		t.lossTrie.Hash()}
+		t.lossTrie.Hash(),
+		t.dPosHash,
+		t.dPosCandidateHash,
+	}
 	return hashes
 }
 
@@ -230,8 +237,10 @@ func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err erro
 	if err5 != nil {
 		err0 = err5
 	}
+	root6 := t.dPosHash
+	root7 := t.dPosCandidateHash
 
-	hashes := []common.Hash{root0, root1, root2, root3, root4, root5}
+	hashes := []common.Hash{root0, root1, root2, root3, root4, root5, root6, root7}
 	//hashes := []common.Hash{root0, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 
 	return BuildHash(hashes), err0
@@ -354,11 +363,11 @@ type StateDB struct {
 
 func GetHash(root common.Hash, db Database) []common.Hash {
 	if root == (common.Hash{}) || root == emptyRoot {
-		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
+		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 	}
 	hash := rawdb.ReadRootHashForNew(db.TrieDB().DiskDB(), root)
 	if hash == nil {
-		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
+		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 	}
 	return hash
 }
@@ -382,12 +391,14 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		db: db,
 		//trie:                tr,
 		trie: TotalTrie{
-			regularTrie:   trGeneral,
-			pnsTrie:       trPns,
-			digitalTrie:   trAsset,
-			contractTrie:  trContract,
-			authorizeTrie: trAuthorize,
-			lossTrie:      trLose,
+			regularTrie:       trGeneral,
+			pnsTrie:           trPns,
+			digitalTrie:       trAsset,
+			contractTrie:      trContract,
+			authorizeTrie:     trAuthorize,
+			lossTrie:          trLose,
+			dPosHash:          hash[6],
+			dPosCandidateHash: hash[7],
 		},
 		originalRoot:        root,
 		snaps:               snaps,
@@ -2152,9 +2163,9 @@ func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 	case common.ACC_TYPE_OF_LOSE:
 		return &s.trie.lossTrie
 	case common.ACC_TYPE_OF_DPOS:
-		return &s.trie.dPosTrie
+		return nil
 	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return &s.trie.dPosCandidateTrie
+		return nil
 	default:
 		return nil
 	}
@@ -2177,10 +2188,25 @@ func (s *StateDB) GetDpostList() []common.DPoSAccount {
 	return s.dposList.dPoSCandidateAccounts.GetDpostList()
 }
 
-func (s *StateDB) GetDPosListByRoot(root common.Hash) []common.DPoSAccount {
-	return []common.DPoSAccount{}
+func (s *StateDB) GetDPosHashByRoot(root common.Hash, db Database) common.Hash {
+	hashes := GetHash(root, db)
+
+	return hashes[6]
 }
 
-func (s *StateDB) IntermediateRootForDPos(dPosList []common.DPoSAccount) common.Hash {
-	return common.Hash{}
+func (s *StateDB) GetDPosCandidateHashByRoot(root common.Hash, db Database) common.Hash {
+	hashes := GetHash(root, db)
+
+	return hashes[7]
+}
+
+func (s *StateDB) IntermediateRootForDPos(dPosHash common.Hash) common.Hash {
+	//  dPosHash
+	s.trie.dPosHash = dPosHash
+	return s.trie.Hash()
+}
+
+func (s *StateDB) IntermediateRootForDPosCandidate(dPosCandidateHash common.Hash) common.Hash {
+	s.trie.dPosCandidateHash = dPosCandidateHash
+	return s.trie.Hash()
 }

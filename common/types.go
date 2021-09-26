@@ -496,3 +496,7 @@ func If(condition bool, trueVal, falseVal interface{}) interface{} {
 	}
 	return falseVal
 }
+
+func ReBuildAddress(addr []byte) []byte {
+	return addr[4:]
+}
