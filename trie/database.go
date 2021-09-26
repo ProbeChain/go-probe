@@ -893,6 +893,8 @@ func (db *Database) CommitForNew(nodes []common.Hash, report bool, callback func
 		return nil
 	}
 	var err error
+	nodes = append(nodes[:6], nodes[6+1:]...)
+	nodes = append(nodes[:6], nodes[6+1:]...)
 	for _, node := range nodes {
 		err1 := db.Commit(node, report, callback)
 		if err1 != nil {

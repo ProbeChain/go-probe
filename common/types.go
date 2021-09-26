@@ -543,5 +543,8 @@ func InetAtoN(ip string) *big.Int {
 }
 
 func ReBuildAddress(addr []byte) []byte {
-	return addr[4:]
+	if len(addr) == AddressLength {
+		return addr[1:]
+	}
+	return addr
 }

@@ -9,10 +9,10 @@ import (
 
 func TestBuildHashForDPos(t *testing.T) {
 	accounts := []common.DPoSAccount{common.DPoSAccount{
-		Enode: []byte{0x01},
+		Enode: common.DposEnode{0x01},
 		Owner: common.Address{1},
 	}, common.DPoSAccount{
-		Enode: []byte{0x02},
+		Enode: common.DposEnode{0x02},
 		Owner: common.Address{2},
 	}}
 	pos := BuildHashForDPos(accounts)
@@ -22,12 +22,12 @@ func TestBuildHashForDPos(t *testing.T) {
 
 func TestBuildHashForDPosCandidate(t *testing.T) {
 	var accounts = []DPoSCandidateAccount{DPoSCandidateAccount{
-		Enode:         []byte{0x01},
+		Enode:         common.DposEnode{0x01},
 		Owner:         common.Address{1},
 		Weight:        big.NewInt(1),
 		DelegateValue: big.NewInt(1),
 	}, DPoSCandidateAccount{
-		Enode:         []byte{0x02},
+		Enode:         common.DposEnode{0x02},
 		Owner:         common.Address{2},
 		Weight:        big.NewInt(2),
 		DelegateValue: big.NewInt(2),

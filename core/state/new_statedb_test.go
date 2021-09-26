@@ -25,17 +25,17 @@ func newStateNewTest() *stateNewTest {
 func TestGetData(t *testing.T) {
 	s := newStateNewTest()
 	address := common.BytesToAddress([]byte{0x01})
-	s.state.SetValueForRegular(address, big.NewInt(20))
+	//s.state.SetValueForRegular(address, big.NewInt(20))
 	obj1 := s.state.GetRegular(address)
-	regular := s.state.GetValueForRegular(address)
+	//regular := s.state.GetValueForRegular(address)
 	fmt.Printf(" after GetRegular：%v \n", obj1)
-	fmt.Printf(" after GetValueForRegular：%v \n", regular)
+	//fmt.Printf(" after GetValueForRegular：%v \n", regular)
 }
 
 func TestSetData(t *testing.T) {
 	s := newStateNewTest()
 	address := common.BytesToAddress([]byte{0x01})
-	s.state.SetVoteValueForRegular(address, big.NewInt(10))
+	//s.state.SetVoteValueForRegular(address, big.NewInt(10))
 	fmt.Printf(" after SetValueForRegular：%v \n", s.state.GetRegular(address))
 }
 
@@ -47,7 +47,7 @@ func TestTrieAndRlp(t *testing.T) {
 	//fmt.Printf(" before GetOrNewStateObject：%v \n", obj1.regularAccount)
 	////obj1.setValueForRegular(big.NewInt(20))
 	//obj1.regularAccount.Value = big.NewInt(20)
-	s.state.SetValueForRegular(address, big.NewInt(210))
+	//s.state.SetValueForRegular(address, big.NewInt(210))
 	//root := s.state.IntermediateRoot(false)
 	//fmt.Printf("trie.TryGe root：%v \n", root)
 	var data2 *RegularAccount
@@ -83,7 +83,8 @@ func TestDeleteData(t *testing.T) {
 func TestArray(t *testing.T) {
 	a := []int{0, 1, 2, 3, 4}
 	//删除第i个元素
-	i := 2
+	i := 3
+	a = append(a[:i], a[i+1:]...)
 	a = append(a[:i], a[i+1:]...)
 	fmt.Printf(" after 数组a：%v \n", a)
 }

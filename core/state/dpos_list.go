@@ -154,7 +154,7 @@ func (s *dposList) DeleteOldDPoSByAddr(addr common.Address) {
 func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
 	num := big.NewInt(0)
 	for _, account := range accounts {
-		curNum := new(big.Int).SetBytes(crypto.Keccak512(append(account.Enode, account.Owner.Bytes()...)))
+		curNum := new(big.Int).SetBytes(crypto.Keccak512(append(account.Enode[:], account.Owner.Bytes()...)))
 		num = new(big.Int).Xor(curNum, num)
 	}
 	//hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
@@ -169,7 +169,7 @@ func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
 func BuildHashForDPosCandidate(accounts []DPoSCandidateAccount) common.Hash {
 	num := big.NewInt(0)
 	for _, account := range accounts {
-		bytes1 := append(account.Enode, account.Owner.Bytes()...)
+		bytes1 := append(account.Enode[:], account.Owner.Bytes()...)
 		bytes2 := append(account.Weight.Bytes(), account.DelegateValue.Bytes()...)
 		bytes3 := append(bytes1, bytes2...)
 		curNum := new(big.Int).SetBytes(crypto.Keccak512(bytes3))
