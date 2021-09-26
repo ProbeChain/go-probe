@@ -27,6 +27,7 @@ import (
 	"math/big"
 	mrand "math/rand"
 	"sort"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -164,7 +165,8 @@ var defaultCacheConfig = &CacheConfig{
 // canonical chain.
 type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
-	cacheConfig *CacheConfig        // Cache configuration for pruning
+	dposConfig  *params.DposConfig
+	cacheConfig *CacheConfig // Cache configuration for pruning
 
 	db     ethdb.Database // Low level persistent database to store final content in
 	snaps  *snapshot.Tree // Snapshot tree for fast trie leaf access
@@ -1487,7 +1489,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	hashes := state.GetStateDbTrie().GetTallHash()
 	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
-
+	log.Info(" Writing dpos nodes with block")
 	bc.writeDposNodes()
 
 	// If we're running an archive node, always flush
@@ -2413,25 +2415,51 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 func (bc *BlockChain) writeDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	//epoch := bc.chainConfig.Dpos.Epoch
-	epoch := uint64(5)
+	epoch := bc.dposConfig.Epoch
+	dposNo := number + 1 - (number + 1%epoch)
 	if number == 0 || (number+1)%epoch == 0 {
 		db := bc.stateCache.TrieDB().DiskDB()
-		state, _ := bc.StateAt(block.Root())
-		dposList := state.GetDpostList()
-		data, _ := json.Marshal(dposList)
+		stateDB, _ := bc.StateAt(block.Root())
+
+		dPosList := stateDB.GetDpostList()
+		dPosHash := state.BuildHashForDPos(dPosList)
+		rootHash := stateDB.IntermediateRootForDPos(dPosHash)
+		log.Info("writeDposNodes rootHash", "rootHash", rootHash.Hex())
+		data, _ := json.Marshal(dPosList)
 		batch := bc.db.NewBatch()
 
 		var buf bytes.Buffer
 		buf.WriteString("DPOS_NODES:")
-		buf.WriteString(block.Root().Hex())
+		buf.WriteString(strconv.FormatUint(dposNo, 10))
+		buf.WriteString(":")
+		buf.WriteString(rootHash.Hex())
 
 		if err := db.Put(buf.Bytes(), data); err != nil {
 			log.Crit("Failed to store dposNodesList", "err", err)
 		}
 		batch.Write()
 	}
+}
 
+func (bc *BlockChain) GetDposNodes(rootHash common.Hash) []common.DPoSAccount {
+	block := bc.CurrentBlock()
+	number := block.NumberU64()
+	epoch := bc.dposConfig.Epoch
+	dposNo := number + 1 - (number + 1%epoch)
+	db := bc.stateCache.TrieDB().DiskDB()
+	var buf bytes.Buffer
+	buf.WriteString("DPOS_NODES:")
+	buf.WriteString(strconv.FormatUint(dposNo, 10))
+	buf.WriteString(":")
+	buf.WriteString(rootHash.Hex())
+
+	data, err := db.Get(buf.Bytes())
+	if err == nil {
+		fmt.Printf("Previous value: %#x\n", data)
+	}
+	var dposAccountList []common.DPoSAccount
+	json.Unmarshal(data, &dposAccountList)
+	return dposAccountList
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The

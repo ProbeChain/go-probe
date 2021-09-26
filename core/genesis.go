@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -244,18 +245,6 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 	return newcfg, stored, nil
 }
 
-func paddingDposPool(genesis *Genesis) {
-	/*var aSortedLinkedList = state.NewSortedLinkedList(4, state)
-	for _, candidateDPOS := range candidateDPOSAccounts {
-		aSortedLinkedList.PutOnTop(candidateDPOS)
-	}
-	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
-	stateObject.dposCandidateAccount.Owner = ower
-	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	//TODO 计算权重
-	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)*/
-}
-
 func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	switch {
 	case g != nil:
@@ -284,6 +273,29 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db), nil)
 	if err != nil {
 		panic(err)
+	}
+	if g.DposConfig != nil {
+		number := g.Number
+		epoch := g.DposConfig.Epoch
+		dposNo := number + 1 - (number + 1%epoch)
+		if number == 0 || (number+1)%epoch == 0 {
+
+			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
+			rootHash := statedb.IntermediateRootForDPos(dPosHash)
+			log.Info("ToBlock rootHash", "rootHash", rootHash.Hex())
+			data, _ := json.Marshal(g.DposConfig.DposList)
+			batch := db.NewBatch()
+			var buf bytes.Buffer
+			buf.WriteString("DPOS_NODES:")
+			buf.WriteString(strconv.FormatUint(dposNo, 10))
+			buf.WriteString(":")
+			buf.WriteString(rootHash.Hex())
+
+			if err := db.Put(buf.Bytes(), data); err != nil {
+				log.Crit("Failed to store dposNodesList", "err", err)
+			}
+			batch.Write()
+		}
 	}
 	for addr, account := range g.Alloc {
 		statedb.AddBalance(addr, account.Balance)
@@ -326,12 +338,12 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}
-	if g.DposConfig != nil {
+	/*	if g.DposConfig != nil {
 		dposAccountList := statedb.GetDpostList()
 		for _, candidateDPOS := range g.DposConfig.DposList {
 			dposAccountList = append(dposAccountList, candidateDPOS)
 		}
-	}
+	}*/
 
 	statedb.Commit(false)
 	//statedb.Database().TrieDB().Commit(hash[0], true, nil)

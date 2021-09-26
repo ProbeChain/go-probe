@@ -18,10 +18,13 @@
 package eth
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -136,7 +139,24 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		return nil, genesisErr
 	}
 	log.Info("Initialised chain configuration", "config", chainConfig)
+	//TODO rootHash
+	rootHash := "0xb409914ddf710e0189488c33aa5c8f0578b0dfb2a7ab4aeca8eb40685d213be9"
+	number := uint64(0)
+	epoch := uint64(5)
+	dposNo := number + 1 - (number + 1%epoch)
+	var buf bytes.Buffer
+	buf.WriteString("DPOS_NODES:")
+	buf.WriteString(strconv.FormatUint(dposNo, 10))
+	buf.WriteString(":")
+	buf.WriteString(rootHash)
 
+	data, _ := chainDb.Get(buf.Bytes())
+	var dposAccountList []common.DPoSAccount
+	json.Unmarshal(data, &dposAccountList)
+	chainConfig.DposConfig = new(params.DposConfig)
+	chainConfig.DposConfig.DposList = dposAccountList
+	chainConfig.DposConfig.Epoch = epoch
+	log.Info("Initialised chain configuration AND DPOSNODES")
 	if err := pruner.RecoverPruning(stack.ResolvePath(""), chainDb, stack.ResolvePath(config.TrieCleanCacheJournal)); err != nil {
 		log.Error("Failed to recover state", "error", err)
 	}

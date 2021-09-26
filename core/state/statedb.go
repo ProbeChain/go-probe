@@ -1335,6 +1335,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 		}
 		return nil
 	})
+
 	if metrics.EnabledExpensive {
 		s.AccountCommits += time.Since(start)
 	}
