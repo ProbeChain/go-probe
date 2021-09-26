@@ -516,7 +516,9 @@ func (s *stateObject) GetCommittedState(db Database, key common.Hash) common.Has
 		if metrics.EnabledExpensive {
 			meter = &s.db.StorageReads
 		}
-		if enc, err = s.getTrie(db).TryGet(key.Bytes()); err != nil {
+		newKey := common.ReBuildAddress(key.Bytes())
+		//if enc, err = s.getTrie(db).TryGet(key.Bytes()); err != nil {
+		if enc, err = s.getTrie(db).TryGet(newKey); err != nil {
 			s.setError(err)
 			return common.Hash{}
 		}
@@ -616,6 +618,7 @@ func (s *stateObject) updateTrie(db Database) Trie {
 
 	usedStorage := make([][]byte, 0, len(s.pendingStorage))
 	for key, value := range s.pendingStorage {
+		newKey := common.ReBuildAddress(key.Bytes())
 		// Skip noop changes, persist actual changes
 		if value == s.originStorage[key] {
 			continue
@@ -624,11 +627,13 @@ func (s *stateObject) updateTrie(db Database) Trie {
 
 		var v []byte
 		if (value == common.Hash{}) {
-			s.setError(tr.TryDelete(key[:]))
+			//s.setError(tr.TryDelete(key[:]))
+			s.setError(tr.TryDelete(newKey[:]))
 		} else {
 			// Encoding []byte cannot fail, ok to ignore the error.
 			v, _ = rlp.EncodeToBytes(common.TrimLeftZeroes(value[:]))
-			s.setError(tr.TryUpdate(key[:], v))
+			//s.setError(tr.TryUpdate(key[:], v))
+			s.setError(tr.TryUpdate(newKey[:], v))
 		}
 		// If state snapshotting is active, cache the data til commit
 		if s.db.snap != nil {
