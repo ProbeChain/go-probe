@@ -259,9 +259,11 @@ type Block struct {
 
 // "external" block encoding. used for eth protocol, etc.
 type extblock struct {
-	Header *Header
-	Txs    []*Transaction
-	Uncles []*Header
+	Header          *Header
+	Txs             []*Transaction
+	Uncles          []*Header
+	PowAnswerUncles []*PowAnswer
+	DposAcks        []*DposAck
 }
 
 // NewBlock creates a new block. The input data is copied,
@@ -378,7 +380,7 @@ func (b *Block) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
-	b.header, b.uncles, b.transactions = eb.Header, eb.Uncles, eb.Txs
+	b.header, b.uncles, b.transactions, b.powAnswerUncles, b.dposAcks = eb.Header, eb.Uncles, eb.Txs, eb.PowAnswerUncles, eb.DposAcks
 	b.size.Store(common.StorageSize(rlp.ListSize(size)))
 	return nil
 }
@@ -386,9 +388,11 @@ func (b *Block) DecodeRLP(s *rlp.Stream) error {
 // EncodeRLP serializes b into the Ethereum RLP block format.
 func (b *Block) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, extblock{
-		Header: b.header,
-		Txs:    b.transactions,
-		Uncles: b.uncles,
+		Header:          b.header,
+		Txs:             b.transactions,
+		Uncles:          b.uncles,
+		PowAnswerUncles: b.powAnswerUncles,
+		DposAcks:        b.dposAcks,
 	})
 }
 
@@ -525,6 +529,23 @@ func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 	return block
 }
 
+// WithBody returns a new block with the given transaction and uncle contents.
+func (b *Block) WithBodyGreatri(transactions []*Transaction, uncles []*Header, powAnswerUncles []*PowAnswer, dposAcks []*DposAck) *Block {
+	block := &Block{
+		header:          CopyHeader(b.header),
+		transactions:    make([]*Transaction, len(transactions)),
+		uncles:          make([]*Header, len(uncles)),
+		powAnswerUncles: make([]*PowAnswer, len(powAnswerUncles)),
+		dposAcks:        make([]*DposAck, len(dposAcks)),
+	}
+	copy(block.transactions, transactions)
+	copy(block.powAnswerUncles, powAnswerUncles)
+	copy(block.dposAcks, dposAcks)
+	for i := range uncles {
+		block.uncles[i] = CopyHeader(uncles[i])
+	}
+	return block
+}
 // Hash returns the keccak256 hash of b's header.
 // The hash is computed on the first call and cached thereafter.
 func (b *Block) Hash() common.Hash {
