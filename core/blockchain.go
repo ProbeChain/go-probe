@@ -2415,7 +2415,14 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 func (bc *BlockChain) writeDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	epoch := bc.dposConfig.Epoch
+	//epoch := common.If(bc.dposConfig == nil, uint64(5), bc.dposConfig.Epoch).(uint64)
+
+	var epoch uint64
+	if bc.dposConfig == nil {
+		epoch = uint64(5)
+	} else {
+		epoch = bc.dposConfig.Epoch
+	}
 	dposNo := number + 1 - (number + 1%epoch)
 	if number == 0 || (number+1)%epoch == 0 {
 		db := bc.stateCache.TrieDB().DiskDB()
