@@ -761,28 +761,15 @@ func (args *TransactionArgs) setDefaultsOfRedemption(ctx context.Context, b Back
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
-		return err
-	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrUnsupportedAccountTransfer
-	}
 	if args.To == nil {
 		return errors.New(`vote account must be specified`)
 	}
-	toAccType, err := common.ValidAddress(*args.To)
-	if err != nil {
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
 		return err
 	}
-	if toAccType != common.ACC_TYPE_OF_AUTHORIZE {
-		return accounts.ErrUnsupportedAccountTransfer
+	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_AUTHORIZE, "to"); err != nil {
+		return err
 	}
-	exist := b.Exist(*args.From)
-	if !exist {
-		return accounts.ErrUnknownAccount
-	}
-
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
 		// These fields are immutable during the estimation, safe to
