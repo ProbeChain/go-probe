@@ -421,7 +421,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		blockNumber := w.chain.CurrentHeader().Number
 		newBlockNum := big.NewInt(0)
 		if miningBlockNumber.Cmp(newBlockNum.Add(blockNumber, common.Big1)) >= 0 {
-			log.Info("can't produce the same block number","blockNumber",newBlockNum)
+			log.Info("can't produce the same block number", "blockNumber", newBlockNum)
 			return false
 		}
 
@@ -516,11 +516,11 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					//received powAnswer and received 2/3 witness node ack
 					timerDelaySeal.Stop()
 					if commit(false, commitInterruptNewHead) {
-						log.Info("received dposAck, is my turn to produce new block","addr",w.coinbase,
+						log.Info("received dposAck, is my turn to produce new block", "addr", w.coinbase,
 							"current block number", blockNumber)
 					}
-				}else{
-					log.Info("received dposAck, but not receive enough dposAck or powAnswer","addr",w.coinbase,
+				} else {
+					log.Info("received dposAck, but not receive enough dposAck or powAnswer", "addr", w.coinbase,
 						"current block number", blockNumber, "dposAckNum", dposAgreeAckNum)
 				}
 			}
@@ -533,18 +533,18 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					//received 2/3 witness node ack
 					timerDelaySeal.Stop()
 					if commit(false, commitInterruptNewHead) {
-						log.Info("received powAnswer, is my turn to produce new block","addr",w.coinbase,
+						log.Info("received powAnswer, is my turn to produce new block", "addr", w.coinbase,
 							"current block number", blockNumber)
 					}
 				} else {
 					timerDelaySeal.Reset(consensus.Time2delaySeal * time.Second)
-					log.Info("received powAnswer, but not enough dposAck, wait...","addr",w.coinbase,"waitTime",consensus.Time2delaySeal,
+					log.Info("received powAnswer, but not enough dposAck, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
 						"current block number", blockNumber)
 				}
 			} else {
 				//not the producer
 				timerSealDealine.Reset(consensus.Time2SealDeadline * time.Second)
-				log.Info("received powAnswer, not my turn to produce, setup a timer to wait new block","addr",w.coinbase,
+				log.Info("received powAnswer, not my turn to produce, setup a timer to wait new block", "addr", w.coinbase,
 					"current block number", blockNumber)
 			}
 
@@ -553,7 +553,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			if dposAgreeAckNum >= consensus.LeastDposWitness {
 				//received 1/3 witness node ack
 				if commit(false, commitInterruptNewHead) {
-					log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block","addr",w.coinbase, "dposAckNum",dposAgreeAckNum,
+					log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block", "addr", w.coinbase, "dposAckNum", dposAgreeAckNum,
 						"current block number", w.chain.CurrentHeader().Number)
 				}
 			} else {
