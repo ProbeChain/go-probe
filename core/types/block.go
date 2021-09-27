@@ -546,6 +546,7 @@ func (b *Block) WithBodyGreatri(transactions []*Transaction, uncles []*Header, p
 	}
 	return block
 }
+
 // Hash returns the keccak256 hash of b's header.
 // The hash is computed on the first call and cached thereafter.
 func (b *Block) Hash() common.Hash {
