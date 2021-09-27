@@ -644,7 +644,7 @@ func (w *worker) taskLoop() {
 			block := task.block
 			hash := block.Hash()
 
-			if w.imProducerOnSpecBlock(block.NumberU64()) {
+			if !w.imProducerOnSpecBlock(block.NumberU64()) {
 				log.Warn("this block shoudn't produce by me", "new blockNum", block.Number())
 				continue
 			}
