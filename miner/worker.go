@@ -357,7 +357,7 @@ func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 }
 
 func (w *worker) imProducer() bool {
-	blockNumber := w.chain.CurrentHeader().Number.Uint64()
+	blockNumber := w.chain.CurrentHeader().Number.Uint64() + 1
 	return w.imProducerOnSpecBlock(blockNumber)
 }
 
