@@ -247,7 +247,8 @@ func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.P
 func (h *ethHandler) handleDposAckBroadcast(peer *eth.Peer, dposAck *types.DposAck) error {
 
 	check := h.chain.CheckDposAck(dposAck)
-	future := dposAck.Number.Uint64() > h.chain.CurrentHeader().Number.Uint64()
+	//future := dposAck.Number.Uint64() > h.chain.CurrentHeader().Number.Uint64()
+	future :=  true
 	broadcast := check && future
 	// boardcast dpos ack again
 	if broadcast {

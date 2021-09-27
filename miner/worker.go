@@ -264,7 +264,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 
 	// Submit first work to initialize pending state.
 	if init {
-		worker.startCh <- struct{}{}
+		//worker.startCh <- struct{}{}
 	}
 	return worker
 }
@@ -342,8 +342,8 @@ func (w *worker) stop() {
 func (w *worker) isRunning() bool {
 	return atomic.LoadInt32(&w.running) == 1
 }
-func (w *worker) imProducer() bool {
-	blockNumber := w.chain.CurrentHeader().Number.Uint64()
+
+func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 	account := w.chain.GetSealDposAccount(blockNumber)
 	if account == nil {
 		log.Error("something wrong in get dpos account, need to check", "blockNumber", blockNumber)
@@ -354,6 +354,11 @@ func (w *worker) imProducer() bool {
 	} else {
 		return false
 	}
+}
+
+func (w *worker) imProducer() bool {
+	blockNumber := w.chain.CurrentHeader().Number.Uint64()
+	return w.imProducerOnSpecBlock(blockNumber)
 }
 
 func (w *worker) imDpostWorkNode() bool {
@@ -399,6 +404,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		minRecommit = recommit // minimal resubmit interval specified by user.
 		stopCh      chan struct{}
 	)
+	miningBlockNumber := big.NewInt(0)
 
 	//used when not received enough dposAck
 	timerDelaySeal := time.NewTimer(0)
@@ -411,7 +417,15 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 	<-timerSealDealine.C // discard the initial tick
 
 	// commit aborts in-flight transaction execution with given signal and resubmits a new one.
-	commit := func(noempty bool, s int32) {
+	commit := func(noempty bool, s int32) bool {
+		blockNumber := w.chain.CurrentHeader().Number
+		newBlockNum := big.NewInt(0)
+		if miningBlockNumber.Cmp(newBlockNum.Add(blockNumber, common.Big1)) >= 0 {
+			log.Info("can't produce the same block number","blockNumber",newBlockNum)
+			return false
+		}
+
+		miningBlockNumber = newBlockNum
 		if interrupt != nil {
 			atomic.StoreInt32(interrupt, s)
 		}
@@ -419,8 +433,9 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		select {
 		case w.newWorkCh <- &newWorkReq{interrupt: interrupt, noempty: noempty}:
 		case <-w.exitCh:
-			return
+			return false
 		}
+		return true
 	}
 	// clearPending cleans the stale pending tasks.
 	clearPending := func(number uint64) {
@@ -494,47 +509,53 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		case <-w.dposAckCh:
 			if w.imProducer() {
 				//is the producer
-				dposAgreeAckNum := w.chain.GetDposAckSize(w.chain.CurrentBlock().Number(), types.AckTypeAgree)
-				if nil != w.chain.GetLatestPowAnswer(w.chain.CurrentBlock().Number()) &&
+				blockNumber := w.chain.CurrentBlock().Number()
+				dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
+				if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
 					dposAgreeAckNum >= consensus.MostDposWitness {
 					//received powAnswer and received 2/3 witness node ack
 					timerDelaySeal.Stop()
-					commit(false, commitInterruptNewHead)
-					log.Info("received dposAck, is my turn to produce new block", "addr", w.coinbase,
-						"current block number", w.chain.CurrentHeader().Number)
-				} else {
-					log.Info("received dposAck, but not receive enough dposAck or powAnswer", "addr", w.coinbase,
-						"current block number", w.chain.CurrentHeader().Number, "dposAckNum", dposAgreeAckNum)
+					if commit(false, commitInterruptNewHead) {
+						log.Info("received dposAck, is my turn to produce new block","addr",w.coinbase,
+							"current block number", blockNumber)
+					}
+				}else{
+					log.Info("received dposAck, but not receive enough dposAck or powAnswer","addr",w.coinbase,
+						"current block number", blockNumber, "dposAckNum", dposAgreeAckNum)
 				}
 			}
 
 		case <-w.powAnswerCh:
+			blockNumber := w.chain.CurrentBlock().Number()
 			if w.imProducer() {
 				//is the producer
-				if w.chain.GetDposAckSize(w.chain.CurrentBlock().Number(), types.AckTypeAgree) >= consensus.MostDposWitness {
+				if w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree) >= consensus.MostDposWitness {
 					//received 2/3 witness node ack
-					commit(false, commitInterruptNewHead)
-					log.Info("received powAnswer, is my turn to produce new block", "addr", w.coinbase,
-						"current block number", w.chain.CurrentHeader().Number)
+					timerDelaySeal.Stop()
+					if commit(false, commitInterruptNewHead) {
+						log.Info("received powAnswer, is my turn to produce new block","addr",w.coinbase,
+							"current block number", blockNumber)
+					}
 				} else {
 					timerDelaySeal.Reset(consensus.Time2delaySeal * time.Second)
-					log.Info("received powAnswer, but not enough dposAck, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
-						"current block number", w.chain.CurrentHeader().Number)
+					log.Info("received powAnswer, but not enough dposAck, wait...","addr",w.coinbase,"waitTime",consensus.Time2delaySeal,
+						"current block number", blockNumber)
 				}
 			} else {
 				//not the producer
 				timerSealDealine.Reset(consensus.Time2SealDeadline * time.Second)
-				log.Info("received powAnswer, not my turn to produce, setup a timer to wait new block", "addr", w.coinbase,
-					"current block number", w.chain.CurrentHeader().Number)
+				log.Info("received powAnswer, not my turn to produce, setup a timer to wait new block","addr",w.coinbase,
+					"current block number", blockNumber)
 			}
 
 		case <-timerDelaySeal.C:
 			dposAgreeAckNum := w.chain.GetDposAckSize(w.chain.CurrentBlock().Number(), types.AckTypeAgree)
 			if dposAgreeAckNum >= consensus.LeastDposWitness {
 				//received 1/3 witness node ack
-				commit(false, commitInterruptNewHead)
-				log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block", "addr", w.coinbase, "dposAckNum", dposAgreeAckNum,
-					"current block number", w.chain.CurrentHeader().Number)
+				if commit(false, commitInterruptNewHead) {
+					log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block","addr",w.coinbase, "dposAckNum",dposAgreeAckNum,
+						"current block number", w.chain.CurrentHeader().Number)
+				}
 			} else {
 				//todo：Consider the reject ACK
 				//todo: warning, consider another 3 seconds timer to seal
@@ -623,9 +644,14 @@ func (w *worker) taskLoop() {
 			block := task.block
 			hash := block.Hash()
 
+			if w.imProducerOnSpecBlock(block.NumberU64()) {
+				log.Warn("this block shoudn't produce by me", "new blockNum", block.Number())
+				continue
+			}
 			// Short circuit when receiving duplicate result caused by resubmitting.
-			if w.chain.HasBlock(block.Hash(), block.NumberU64()) {
-				log.Warn("get the same hash with parent", "blockNum", block.Number())
+			if w.chain.CurrentHeader().Number.Uint64() >= block.NumberU64() {
+				log.Warn("new blockNumber is wrong with parent", "new blockNum", block.Number(),
+					"parent blockNum", w.chain.CurrentHeader().Number.Uint64())
 				continue
 			}
 
@@ -1008,6 +1034,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool) {
 	if dposAckCount < 1 {
 		log.Error("no dposAck in blockchain! something error", "parentBlockNum", parentBlockNum)
 		dposAckCount = 0
+		return
 	}
 	ackCount := types.DposAckCount{
 		parentBlockNum,
