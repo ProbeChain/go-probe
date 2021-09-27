@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -346,8 +347,12 @@ func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (
 	if k1 != 0x00 || err != nil {
 		return address, errors.New("unsupported account type for createAddress")
 	}
-	data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
-	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+	//data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
+	//return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, nonce)
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), b[:])[12:], K), nil
+
 }
 
 func CreateDPOSAddressStr(address string, dpos []byte, K byte, Height *big.Int) (add common.Address, err error) {
@@ -400,14 +405,18 @@ func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Ad
 	if k1 != 0x00 || err != nil {
 		return address, err
 	}
-	data, _ := rlp.EncodeToBytes([]interface{}{K, address, pns})
-	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+	//data, _ := rlp.EncodeToBytes([]interface{}{K, address, pns})
+	//return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), pns)[12:], K), nil
 }
 
 // CreateAddress creates an ethereum address given the bytes and the nonce
-func CreateAddress(b common.Address, nonce uint64, K byte) common.Address {
-	data, _ := rlp.EncodeToBytes([]interface{}{K, b, nonce})
-	return PubkeyBytesToAddress(Keccak256(data)[12:], K)
+func CreateAddress(address common.Address, nonce uint64, K byte) common.Address {
+	//data, _ := rlp.EncodeToBytes([]interface{}{K, b, nonce})
+	//return PubkeyBytesToAddress(Keccak256(data)[12:], K)
+	n := make([]byte, 8)
+	binary.BigEndian.PutUint64(n, nonce)
+	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), n[:])[12:], K)
 }
 
 // CreateAddress2 creates an ethereum address given the address bytes, initial
