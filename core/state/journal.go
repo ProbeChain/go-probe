@@ -208,7 +208,7 @@ type (
 		account *common.Address
 		prev    *big.Int
 	}
-	delegateValueForAuthorizeChange struct {
+	voteValueForAuthorizeChange struct {
 		account *common.Address
 		prev    *big.Int
 	}
@@ -339,11 +339,11 @@ func (i infoForAuthorizeChange) dirtied() *common.Address {
 	return i.account
 }
 
-func (d delegateValueForAuthorizeChange) revert(db *StateDB) {
+func (d voteValueForAuthorizeChange) revert(db *StateDB) {
 	db.getStateObject(*d.account).authorizeAccount.VoteValue = d.prev
 }
 
-func (d delegateValueForAuthorizeChange) dirtied() *common.Address {
+func (d voteValueForAuthorizeChange) dirtied() *common.Address {
 	return d.account
 }
 

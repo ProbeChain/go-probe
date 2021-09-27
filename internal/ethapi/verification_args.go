@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/probe"
@@ -15,7 +14,6 @@ import (
 	"math/big"
 )
 
-//wxc todo 各种业务类型的默认值设置实现
 // setDefaultsOfRegister set default parameters of register business type
 func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error {
 	currentBlockNumber := b.CurrentBlock().Number()
@@ -27,14 +25,10 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		return accounts.ErrWrongAccountType
 	}
 	if args.New != nil {
-		newAccType, err := common.ValidAddress(*args.New)
-		if err != nil {
+		if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_GENERAL, "new"); err != nil {
 			return err
 		}
 		if accType != common.ACC_TYPE_OF_GENERAL {
-			return accounts.ErrWrongAccountFormat
-		}
-		if accType != newAccType {
 			return accounts.ErrWrongAccountFormat
 		}
 	} else {
@@ -42,12 +36,8 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 			return errors.New(`regular account must be specified`)
 		}
 	}
-	fromAccType, err := common.ValidAddress(*args.From)
-	if err != nil {
+	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
 		return err
-	}
-	if fromAccType != common.ACC_TYPE_OF_GENERAL {
-		return accounts.ErrWrongAccountType
 	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
@@ -58,6 +48,7 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	}
 	if args.New == nil {
 		var newAccount common.Address
+		var err error
 		if accType == common.ACC_TYPE_OF_PNS {
 			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accType)
 		} else {
@@ -84,45 +75,6 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	} else {
 		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
 	}
-	exist := b.Exist(*args.From)
-	if !exist {
-		return accounts.ErrUnknownAccount
-	}
-	exist = b.Exist(*args.New)
-	if exist {
-		return keystore.ErrAccountAlreadyExists
-	}
-
-	//todo 挂失账号的参数校验
-	if accType == common.ACC_TYPE_OF_LOSE {
-		if args.Loss == nil {
-			return errors.New("loss account must be specified")
-		}
-		if args.Receiver == nil {
-			return errors.New("receiver account must be specified")
-		}
-		if !b.Exist(*args.Loss) {
-			return accounts.ErrUnknownAccount
-		}
-		if !b.Exist(*args.Receiver) {
-			return accounts.ErrUnknownAccount
-		}
-		lossAccType, err := common.ValidAddress(*args.Loss)
-		if err != nil {
-			return err
-		}
-		if lossAccType != common.ACC_TYPE_OF_GENERAL {
-			return accounts.ErrWrongAccountType
-		}
-		receiverAccType, err := common.ValidAddress(*args.Receiver)
-		if err != nil {
-			return err
-		}
-		if receiverAccType != common.ACC_TYPE_OF_GENERAL {
-			return accounts.ErrWrongAccountType
-		}
-	}
-
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
 		// These fields are immutable during the estimation, safe to
@@ -138,8 +90,6 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 			AccessList:           args.AccessList,
 			New:                  args.New,
 			AccType:              args.AccType,
-			Loss:                 args.Loss,
-			Receiver:             args.Receiver,
 			Height:               args.Height,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)

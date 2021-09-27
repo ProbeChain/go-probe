@@ -1493,7 +1493,10 @@ func (s *StateDB) Vote(context vm.TxContext) {
 	s.SubBalance(context.From, context.Value)
 	fromObj := s.getStateObject(context.From)
 	if fromObj != nil {
-		lastVoteValue := common.If(fromObj.regularAccount.VoteValue == nil, big.NewInt(0), fromObj.regularAccount.VoteValue).(*big.Int)
+		var lastVoteValue = new(big.Int).SetUint64(0)
+		if fromObj.regularAccount.VoteValue != nil {
+			lastVoteValue = fromObj.regularAccount.VoteValue
+		}
 		fromObj.db.journal.append(voteForRegularChange{
 			account:     &fromObj.address,
 			voteAccount: fromObj.regularAccount.VoteAccount,
@@ -1505,7 +1508,7 @@ func (s *StateDB) Vote(context vm.TxContext) {
 
 	toObj := s.getStateObject(*context.To)
 	if toObj != nil {
-		toObj.db.journal.append(delegateValueForAuthorizeChange{
+		toObj.db.journal.append(voteValueForAuthorizeChange{
 			account: &toObj.address,
 			prev:    toObj.authorizeAccount.VoteValue,
 		})

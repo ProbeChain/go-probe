@@ -26,8 +26,6 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			New:        args.New,
 			AccType:    args.AccType,
 			BizType:    uint8(*args.BizType),
-			Loss:       args.Loss,
-			Receiver:   args.Receiver,
 			Height:     (*big.Int)(args.Height),
 		}
 	case args.AccessList != nil:
@@ -43,8 +41,6 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			New:        args.New,
 			AccType:    args.AccType,
 			BizType:    uint8(*args.BizType),
-			Loss:       args.Loss,
-			Receiver:   args.Receiver,
 			Height:     (*big.Int)(args.Height),
 		}
 	default:
@@ -58,8 +54,6 @@ func (args *TransactionArgs) transactionOfRegister() *types.Transaction {
 			New:      args.New,
 			AccType:  args.AccType,
 			BizType:  uint8(*args.BizType),
-			Loss:     args.Loss,
-			Receiver: args.Receiver,
 			Height:   (*big.Int)(args.Height),
 		}
 	}

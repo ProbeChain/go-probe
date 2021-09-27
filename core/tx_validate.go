@@ -9,26 +9,28 @@ import (
 	"math/big"
 )
 
-// wxc todo 交易校验
 // validateTx validate transaction of register business type
 func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) error {
+	accType := uint8(*tx.AccType())
+	if !common.CheckRegisterAccType(accType) {
+		return accounts.ErrWrongAccountType
+	}
+	if err := common.ValidateAccType(tx.From(), common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(tx.New(), accType, "new"); err != nil {
+		return err
+	}
+	if accType == common.ACC_TYPE_OF_AUTHORIZE {
+		if tx.Height == nil || tx.Height().Cmp(pool.chain.CurrentBlock().Number()) < 1 {
+			return errors.New(`valid period block number must be specified and greater than current block number`)
+		}
+	}
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	accType := byte(*tx.AccType())
-	if !common.CheckAccType(accType) {
-		return accounts.ErrWrongAccountType
-	}
 	if pool.currentState.Exist(*tx.New()) {
 		return ErrAccountAlreadyExists
-	}
-	if accType == common.ACC_TYPE_OF_LOSE {
-		if !pool.currentState.Exist(*tx.Loss()) {
-			return ErrAccountNotExists
-		}
-		if !pool.currentState.Exist(*tx.Receiver()) {
-			return ErrAccountNotExists
-		}
 	}
 	return pool.validateGas(tx, local)
 }
