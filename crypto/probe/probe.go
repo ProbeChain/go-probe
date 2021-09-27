@@ -324,6 +324,18 @@ func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address {
 	return common.BytesToAddress(append(c, checkSumBytes...))
 }
 
+func Marshal(curve elliptic.Curve, x, y *big.Int, K byte) []byte {
+	byteLen := (curve.Params().BitSize + 7) / 8
+
+	ret := make([]byte, 1+2*byteLen)
+	//ret[0] = 4 // uncompressed point
+	ret[0] = K
+	x.FillBytes(ret[1 : 1+byteLen])
+	y.FillBytes(ret[1+byteLen : 1+2*byteLen])
+
+	return ret
+}
+
 func UnmarshalPubkey(pub []byte) (*PublicKey, error) {
 	//TODO node start need set default k
 	k := byte(0x00)

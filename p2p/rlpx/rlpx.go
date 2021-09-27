@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
 	"encoding/binary"
@@ -377,10 +376,10 @@ type Secrets struct {
 // handshakeState contains the state of the encryption handshake.
 type handshakeState struct {
 	initiator            bool
-	remote               *ecies.PublicKey  // remote-pubk
+	remote               *probe.PublicKey  // remote-pubk
 	initNonce, respNonce []byte            // nonce
-	randomPrivKey        *ecies.PrivateKey // ecdhe-random
-	remoteRandomPub      *ecies.PublicKey  // ecdhe-random-pubk
+	randomPrivKey        *probe.PrivateKey // ecdhe-random
+	remoteRandomPub      *probe.PublicKey  // ecdhe-random-pubk
 
 	rbuf readBuffer
 	wbuf writeBuffer
@@ -448,7 +447,8 @@ func (h *handshakeState) handleAuthMsg(msg *authMsgV4, prv *probe.PrivateKey) er
 	// Generate random keypair for ECDH.
 	// If a private key is already set, use it instead of generating one (for testing).
 	if h.randomPrivKey == nil {
-		h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
+		//h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
+		h.randomPrivKey, err = probe.GenerateKeyByTypeForRand(0x0, rand.Reader)
 		if err != nil {
 			return err
 		}
@@ -471,7 +471,7 @@ func (h *handshakeState) handleAuthMsg(msg *authMsgV4, prv *probe.PrivateKey) er
 // secrets is called after the handshake is completed.
 // It extracts the connection secrets from the handshake values.
 func (h *handshakeState) secrets(auth, authResp []byte) (Secrets, error) {
-	ecdheSecret, err := h.randomPrivKey.GenerateShared(h.remoteRandomPub, sskLen, sskLen)
+	ecdheSecret, err := ecies.ImportECDSA(h.randomPrivKey).GenerateShared(ecies.ImportECDSAPublic(h.remoteRandomPub), sskLen, sskLen)
 	if err != nil {
 		return Secrets{}, err
 	}
@@ -480,7 +480,7 @@ func (h *handshakeState) secrets(auth, authResp []byte) (Secrets, error) {
 	sharedSecret := crypto.Keccak256(ecdheSecret, crypto.Keccak256(h.respNonce, h.initNonce))
 	aesSecret := crypto.Keccak256(ecdheSecret, sharedSecret)
 	s := Secrets{
-		remote: h.remote.ExportECDSA(),
+		remote: h.remote,
 		AES:    aesSecret,
 		MAC:    crypto.Keccak256(ecdheSecret, aesSecret),
 	}
@@ -504,7 +504,7 @@ func (h *handshakeState) secrets(auth, authResp []byte) (Secrets, error) {
 // staticSharedSecret returns the static shared secret, the result
 // of key agreement between the local and remote static node key.
 func (h *handshakeState) staticSharedSecret(prv *probe.PrivateKey) ([]byte, error) {
-	return ecies.ImportECDSA(prv).GenerateShared(h.remote, sskLen, sskLen)
+	return ecies.ImportECDSA(prv).GenerateShared(ecies.ImportECDSAPublic(h.remote), sskLen, sskLen)
 }
 
 // runInitiator negotiates a session token on conn.
@@ -513,7 +513,7 @@ func (h *handshakeState) staticSharedSecret(prv *probe.PrivateKey) ([]byte, erro
 // prv is the local client's private key.
 func (h *handshakeState) runInitiator(conn io.ReadWriter, prv *probe.PrivateKey, remote *probe.PublicKey) (s Secrets, err error) {
 	h.initiator = true
-	h.remote = ecies.ImportECDSAPublic(remote)
+	h.remote = remote
 
 	authMsg, err := h.makeAuthMsg(prv)
 	if err != nil {
@@ -549,7 +549,8 @@ func (h *handshakeState) makeAuthMsg(prv *probe.PrivateKey) (*authMsgV4, error) 
 		return nil, err
 	}
 	// Generate random keypair to for ECDH.
-	h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256ByType(prv.K), nil)
+	//h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256ByType(prv.K), nil)
+	h.randomPrivKey, err = probe.GenerateKeyByTypeForRand(prv.K, rand.Reader)
 	if err != nil {
 		return nil, err
 	}
@@ -560,7 +561,7 @@ func (h *handshakeState) makeAuthMsg(prv *probe.PrivateKey) (*authMsgV4, error) 
 		return nil, err
 	}
 	signed := xor(token, h.initNonce)
-	signature, err := crypto.Sign(signed, h.randomPrivKey.ExportECDSA())
+	signature, err := crypto.Sign(signed, h.randomPrivKey)
 	if err != nil {
 		return nil, err
 	}
@@ -636,18 +637,20 @@ func (h *handshakeState) sealEIP8(msg interface{}) ([]byte, error) {
 	prefix := make([]byte, 2)
 	binary.BigEndian.PutUint16(prefix, uint16(len(h.wbuf.data)+eciesOverhead))
 
-	enc, err := ecies.Encrypt(rand.Reader, h.remote, h.wbuf.data, nil, prefix)
+	enc, err := ecies.Encrypt(rand.Reader, ecies.ImportECDSAPublic(h.remote), h.wbuf.data, nil, prefix)
 	return append(prefix, enc...), err
 }
 
 // importPublicKey unmarshals 512 bit public keys.
-func importPublicKey(pubKey []byte) (*ecies.PublicKey, error) {
+func importPublicKey(pubKey []byte) (*probe.PublicKey, error) {
 	var pubKey65 []byte
 	switch len(pubKey) {
 	case 64:
 		// add 'uncompressed key' flag
 		pubKey65 = append([]byte{0x04}, pubKey...)
 	case 65:
+		pubKey65 = pubKey
+	case 66:
 		pubKey65 = pubKey
 	default:
 		return nil, fmt.Errorf("invalid public key length %v (expect 64/65)", len(pubKey))
@@ -657,14 +660,14 @@ func importPublicKey(pubKey []byte) (*ecies.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ecies.ImportECDSAPublic(pub), nil
+	return pub, nil
 }
 
-func exportPubkey(pub *ecies.PublicKey) []byte {
+func exportPubkey(pub *probe.PublicKey) []byte {
 	if pub == nil {
 		panic("nil pubkey")
 	}
-	return elliptic.Marshal(pub.Curve, pub.X, pub.Y)[1:]
+	return probe.Marshal(pub.Curve, pub.X, pub.Y, pub.K)[1:]
 }
 
 func xor(one, other []byte) (xor []byte) {
