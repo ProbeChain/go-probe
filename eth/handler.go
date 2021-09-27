@@ -18,12 +18,13 @@ package eth
 
 import (
 	"errors"
-	"github.com/status-im/keycard-go/hexutils"
 	"math"
 	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/status-im/keycard-go/hexutils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -534,7 +535,7 @@ func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
 		}
 		log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
 	} else {
-		log.Debug("PowAnswer broadcast fail, because the pow answer is too old", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
+		log.Debug("PowAnswer broadcast fail, because the pow answer is too old", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner, "Chain Number", h.chain.CurrentBlock().NumberU64())
 	}
 }
 
@@ -554,7 +555,7 @@ func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
 		}
 		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "future", future, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 	}
 }
 

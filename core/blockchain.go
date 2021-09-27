@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -30,6 +28,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
@@ -2866,6 +2867,7 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 			}
 		}
 	}
+	log.Debug("CheckDposAck Fail", "owner", owner, "err", err)
 	return false
 }
 

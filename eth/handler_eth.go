@@ -19,10 +19,11 @@ package eth
 import (
 	"errors"
 	"fmt"
-	"github.com/status-im/keycard-go/hexutils"
 	"math/big"
 	"sync/atomic"
 	"time"
+
+	"github.com/status-im/keycard-go/hexutils"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -235,6 +236,8 @@ func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.P
 			}
 		}
 		h.chain.HandlePowAnswer(powAnswer)
+	} else {
+		log.Debug("CheckPowAnswer Fail", "powAnswer.Number", powAnswer.Number.Uint64(), "Chain Number", h.chain.CurrentBlock().NumberU64())
 	}
 	return nil
 }
@@ -256,7 +259,7 @@ func (h *ethHandler) handleDposAckBroadcast(peer *eth.Peer, dposAck *types.DposA
 		}
 		h.chain.HandleDposAck(dposAck)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "future", future, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 	}
 	return nil
 }
