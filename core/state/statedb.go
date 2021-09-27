@@ -1545,15 +1545,12 @@ func (s *StateDB) Register(context vm.TxContext) {
 
 }
 
-//todo
 func (s *StateDB) Cancellation(context vm.TxContext) {
-
+	fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
+	s.AddBalance(*context.New, context.Value)
+	s.DeleteStateObjectByAddr(*context.To)
 }
 
-//todo
-func (s *StateDB) RevokeCancellation(context vm.TxContext) {
-
-}
 func (s *StateDB) Transfer(context vm.TxContext) {
 	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
@@ -1621,18 +1618,19 @@ func (s *StateDB) TransferLostAccount(context vm.TxContext) {
 	}
 }
 
+//todo
 func (s *StateDB) TransferLostAssetAccount(context vm.TxContext) {
 
 }
 
 func (s *StateDB) RemoveLossReport(context vm.TxContext) {
-	//s.SubBalance(sender, context.Value)
-	//todo 删除挂失账户 押金退回 删除markLossAccounts
+	s.AddBalance(context.From, context.Value)
+	s.DeleteStateObjectByAddr(*context.To)
 }
 
 func (s *StateDB) RejectLossReport(context vm.TxContext) {
-	//s.SubBalance(sender, context.Value)
-	//todo 删除挂失账户  押金退回 删除markLossAccounts
+	s.AddBalance(context.From, context.Value)
+	s.DeleteStateObjectByAddr(*context.To)
 }
 
 func (s *StateDB) ModifyPnsOwner(context vm.TxContext) {

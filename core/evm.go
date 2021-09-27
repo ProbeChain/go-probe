@@ -150,8 +150,6 @@ func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
 		db.Register(txContext)
 	case common.Cancellation:
 		db.Cancellation(txContext)
-	case common.RevokeCancellation:
-		db.RevokeCancellation(txContext)
 	case common.Transfer:
 		db.Transfer(txContext)
 	case common.ExchangeAsset:

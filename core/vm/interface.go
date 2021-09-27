@@ -82,8 +82,6 @@ type StateDB interface {
 
 	Cancellation(context TxContext)
 
-	RevokeCancellation(context TxContext)
-
 	Transfer(context TxContext)
 
 	ExchangeAsset(context TxContext)

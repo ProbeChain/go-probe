@@ -158,8 +158,6 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		err = args.setDefaultsOfRegister(ctx, b)
 	case common.Cancellation:
 		err = args.setDefaultsOfCancellation(ctx, b)
-	case common.RevokeCancellation:
-		err = args.setDefaultsOfRevokeCancellation(ctx, b)
 	case common.Transfer:
 		err = args.setDefaultsOfTransfer(ctx, b)
 	case common.ExchangeAsset:
@@ -295,8 +293,6 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		return args.transactionOfRegister()
 	case common.Cancellation:
 		return args.transactionOfCancellation()
-	case common.RevokeCancellation:
-		return args.transactionOfRevokeCancellation()
 	case common.Transfer:
 		return args.transactionOfTransfer()
 	case common.ExchangeAsset:

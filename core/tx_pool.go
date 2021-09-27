@@ -568,8 +568,6 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		err = pool.validateTxOfRegister(tx, local)
 	case common.Cancellation:
 		err = pool.validateTxOfCancellation(tx, local)
-	case common.RevokeCancellation:
-		err = pool.validateTxOfRevokeCancellation(tx, local)
 	case common.Transfer:
 		err = pool.validateTxOfTransfer(tx, local)
 	case common.ExchangeAsset:

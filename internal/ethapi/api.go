@@ -1308,7 +1308,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.New = tx.New()
 		result.AccType = tx.AccType()
 	case common.Cancellation:
-	case common.RevokeCancellation:
+		result.New = tx.New()
 	case common.Transfer:
 		result.To = tx.To()
 	case common.ContractCall:
@@ -1317,7 +1317,8 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		infoDigest := hexutil.Bytes(tx.InfoDigest())
 		result.Mark = &mark
 		result.InfoDigest = &infoDigest
-		//todo 其它的待实现
+	case common.ModifyLossType:
+		result.LossType = tx.LossType()
 	}
 
 	switch tx.Type() {
@@ -1654,13 +1655,13 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		fields["new"] = tx.New()
 		fields["accType"] = tx.AccType()
 	case common.Cancellation:
-	case common.RevokeCancellation:
 	case common.Transfer:
 	case common.ContractCall:
 	case common.SendLossReport:
 		fields["mark"] = string(tx.Mark())
 		fields["infoDigest"] = string(tx.InfoDigest())
-		//todo 其它的待实现
+	case common.ModifyLossType:
+		fields["lossType"] = tx.LossType()
 	}
 
 	// Assign the effective gas price paid

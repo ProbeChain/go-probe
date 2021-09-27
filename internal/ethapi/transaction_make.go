@@ -80,6 +80,7 @@ func (args *TransactionArgs) transactionOfCancellation() *types.Transaction {
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: al,
+			New:        args.New,
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -93,6 +94,7 @@ func (args *TransactionArgs) transactionOfCancellation() *types.Transaction {
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: *args.AccessList,
+			New:        args.New,
 		}
 	default:
 		data = &types.LegacyTx{
@@ -104,55 +106,7 @@ func (args *TransactionArgs) transactionOfCancellation() *types.Transaction {
 			GasPrice: (*big.Int)(args.GasPrice),
 			Value:    (*big.Int)(args.Value),
 			Data:     args.data(),
-		}
-	}
-	return types.NewTx(data)
-}
-
-func (args *TransactionArgs) transactionOfRevokeCancellation() *types.Transaction {
-	var data types.TxData
-	switch {
-	case args.MaxFeePerGas != nil:
-		al := types.AccessList{}
-		if args.AccessList != nil {
-			al = *args.AccessList
-		}
-		data = &types.DynamicFeeTx{
-			From:       args.From,
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
-			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: al,
-		}
-	case args.AccessList != nil:
-		data = &types.AccessListTx{
-			From:       args.From,
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasPrice:   (*big.Int)(args.GasPrice),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: *args.AccessList,
-		}
-	default:
-		data = &types.LegacyTx{
-			From:     args.From,
-			To:       args.To,
-			BizType:  uint8(*args.BizType),
-			Nonce:    uint64(*args.Nonce),
-			Gas:      uint64(*args.Gas),
-			GasPrice: (*big.Int)(args.GasPrice),
-			Value:    (*big.Int)(args.Value),
-			Data:     args.data(),
+			New:      args.New,
 		}
 	}
 	return types.NewTx(data)

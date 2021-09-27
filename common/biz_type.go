@@ -20,7 +20,6 @@ package common
 const (
 	Register                 = byte(0x00) //注册账户
 	Cancellation             = byte(0xff) //注销账户
-	RevokeCancellation       = byte(0xfe) //撤销注销账户操作
 	Transfer                 = byte(0x01) //转账交易
 	ContractCall             = byte(0x02) //合约调用
 	ExchangeAsset            = byte(0x11) //资产兑换
@@ -32,7 +31,7 @@ const (
 	RevealLossReport         = byte(0x32) //挂失公告
 	TransferLostAccount      = byte(0x33) //转移挂失账号的资产
 	TransferLostAssetAccount = byte(0x34) //转移挂失账号的数字证券资产
-	RemoveLossReport         = byte(0x3f) //发起挂失不揭示内容删除掉
+	RemoveLossReport         = byte(0x3f) //删除掉发起挂失不揭示内容挂失申请
 	RejectLossReport         = byte(0x3e) //拒绝挂失报告
 	ModifyLossType           = byte(0x30) //修改挂失类型
 	ModifyPnsOwner           = byte(0x25) //修改PNS账号所有者
@@ -86,8 +85,6 @@ func CheckBizType(bizType uint8) bool {
 	case Register:
 		contain = true
 	case Cancellation:
-		contain = true
-	case RevokeCancellation:
 		contain = true
 	case Transfer:
 		contain = true
@@ -151,9 +148,21 @@ func CheckRegisterAccType(accType byte) bool {
 		return true
 	case ACC_TYPE_OF_AUTHORIZE:
 		return true
-	case ACC_TYPE_OF_DPOS:
+	default:
+		return false
+	}
+}
+
+// CheckCancelAccType check allow cancel account type
+func CheckCancelAccType(accType byte) bool {
+	switch accType {
+	case ACC_TYPE_OF_GENERAL:
 		return true
-	case ACC_TYPE_OF_DPOS_CANDIDATE:
+	case ACC_TYPE_OF_PNS:
+		return true
+	case ACC_TYPE_OF_LOSE:
+		return true
+	case ACC_TYPE_OF_AUTHORIZE:
 		return true
 	default:
 		return false

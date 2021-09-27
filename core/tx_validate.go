@@ -11,12 +11,12 @@ import (
 
 // validateTx validate transaction of register business type
 func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) error {
+	if err := pool.validateSender(tx, local); err != nil {
+		return err
+	}
 	accType := uint8(*tx.AccType())
 	if !common.CheckRegisterAccType(accType) {
 		return accounts.ErrWrongAccountType
-	}
-	if err := common.ValidateAccType(tx.From(), common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
 	}
 	if err := common.ValidateAccType(tx.New(), accType, "new"); err != nil {
 		return err
@@ -25,9 +25,6 @@ func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) erro
 		if tx.Height == nil || tx.Height().Cmp(pool.chain.CurrentBlock().Number()) < 1 {
 			return errors.New(`valid period block number must be specified and greater than current block number`)
 		}
-	}
-	if err := pool.validateSender(tx, local); err != nil {
-		return err
 	}
 	if pool.currentState.Exist(*tx.New()) {
 		return ErrAccountAlreadyExists
@@ -39,12 +36,62 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	return pool.validateGas(tx, local)
-}
-
-func (pool *TxPool) validateTxOfRevokeCancellation(tx *types.Transaction, local bool) error {
-	if err := pool.validateSender(tx, local); err != nil {
+	if err := common.ValidateNil(tx.To, "cancel account"); err != nil {
 		return err
+	}
+	accType, err := common.ValidAddress(*tx.To())
+	if err != nil {
+		return errors.New("unsupported account type")
+	}
+	if !common.CheckCancelAccType(accType) {
+		return accounts.ErrWrongAccountType
+	}
+	if err := common.ValidateNil(tx.New(), "beneficiary account"); err != nil {
+		return err
+	}
+	if err := common.ValidateAccType(tx.New(), common.ACC_TYPE_OF_GENERAL, "new"); err != nil {
+		return err
+	}
+	pledgeAmount := new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(accType))
+	if tx.Value().Cmp(pledgeAmount) != 0 {
+		return errors.New("wrong value")
+	}
+	if !pool.currentState.Exist(*tx.To()) {
+		return ErrAccountNotExists
+	}
+	if !pool.currentState.Exist(*tx.New()) {
+		return ErrAccountNotExists
+	}
+	if accType == common.ACC_TYPE_OF_GENERAL {
+		if pool.currentState.GetRegular(*tx.To()).VoteValue.Sign() > 0 {
+			return errors.New("some tickets were not redeemed")
+		}
+		if tx.To() != tx.From() {
+			return errors.New("wrong owner")
+		}
+	}
+	if accType == common.ACC_TYPE_OF_PNS {
+		if pool.currentState.GetPns(*tx.To()).Owner != *tx.From() {
+			return errors.New("wrong owner")
+		}
+	}
+	if accType == common.ACC_TYPE_OF_AUTHORIZE {
+		authAccount := pool.currentState.GetAuthorize(*tx.To())
+		if pool.chain.CurrentBlock().Number().Cmp(authAccount.ValidPeriod) != 1 {
+			return errors.New("voting is not over")
+		}
+		if authAccount.VoteValue.Sign() > 0 {
+			return errors.New("some tickets were not redeemed,please inform the voters first")
+		}
+	}
+	if accType == common.ACC_TYPE_OF_LOSE {
+		lossAccount := pool.currentState.GetLoss(*tx.To())
+		if lossAccount.State != common.LOSS_STATE_OF_SUCCESS {
+			return errors.New("cancellation is not allowed in the current state")
+		}
+		if lossAccount.NewAccount != *tx.From() {
+			return errors.New("wrong owner")
+		}
 	}
 	return pool.validateGas(tx, local)
 }
@@ -52,6 +99,16 @@ func (pool *TxPool) validateTxOfRevokeCancellation(tx *types.Transaction, local 
 func (pool *TxPool) validateTxOfTransfer(tx *types.Transaction, local bool) error {
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
+	}
+	toAccType, err := common.ValidAddress(*tx.To())
+	if err != nil {
+		return err
+	}
+	if !common.CheckTransferAccType(toAccType) {
+		return accounts.ErrUnsupportedAccountTransfer
+	}
+	if !pool.currentState.Exist(*tx.To()) {
+		return ErrAccountNotExists
 	}
 	return pool.validateGas(tx, local)
 }
@@ -144,6 +201,9 @@ func (pool *TxPool) validateTxOfTransferLostAccount(tx *types.Transaction, local
 	if err := common.ValidateAccType(tx.To(), common.ACC_TYPE_OF_LOSE, "to"); err != nil {
 		return err
 	}
+	if !pool.currentState.Exist(*tx.To()) {
+		return ErrAccountNotExists
+	}
 	lossAccount := pool.currentState.GetLoss(*tx.To())
 	if lossAccount == nil {
 		return errors.New("loss account no exists")
@@ -194,6 +254,10 @@ func (pool *TxPool) validateTxOfRemoveLossReport(tx *types.Transaction, local bo
 	if currentBlockNumber.Cmp(thresholdBlockNumber) < 1 {
 		return errors.New("current block number less than threshold")
 	}
+	pledgeAmount := new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_LOSE))
+	if tx.Value().Cmp(pledgeAmount) != 0 {
+		return errors.New("wrong value")
+	}
 	return pool.validateGas(tx, local)
 }
 func (pool *TxPool) validateTxOfRejectLossReport(tx *types.Transaction, local bool) error {
@@ -215,6 +279,10 @@ func (pool *TxPool) validateTxOfRejectLossReport(tx *types.Transaction, local bo
 	}
 	if lossAccount.State == common.LOSS_STATE_OF_SUCCESS {
 		return errors.New("the account has been retrieved. operation is not allowed")
+	}
+	pledgeAmount := new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_LOSE))
+	if tx.Value().Cmp(pledgeAmount) != 0 {
+		return errors.New("wrong value")
 	}
 	return pool.validateGas(tx, local)
 }
@@ -284,6 +352,12 @@ func (pool *TxPool) validateTxOfRedemption(tx *types.Transaction, local bool) er
 func (pool *TxPool) validateTxOfModifyLossType(tx *types.Transaction, local bool) error {
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
+	}
+	if err := common.ValidateNil(tx.LossType(), "loss type"); err != nil {
+		return err
+	}
+	if !common.CheckLossType(uint8(*tx.LossType())) {
+		return errors.New("wrong loss type")
 	}
 	return pool.validateGas(tx, local)
 }
