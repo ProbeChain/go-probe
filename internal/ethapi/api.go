@@ -1293,6 +1293,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	result := &RPCTransaction{
 		Type:     hexutil.Uint64(tx.Type()),
 		From:     from,
+		To:       tx.To(),
 		Gas:      hexutil.Uint64(tx.Gas()),
 		GasPrice: (*hexutil.Big)(tx.GasPrice()),
 		Hash:     tx.Hash(),
@@ -1318,7 +1319,6 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	case common.Cancellation:
 		result.New = tx.New()
 	case common.Transfer:
-		result.To = tx.To()
 	case common.ContractCall:
 	case common.SendLossReport:
 		mark := hexutil.Bytes(tx.Mark())

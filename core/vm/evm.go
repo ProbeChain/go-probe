@@ -90,42 +90,10 @@ type BlockContext struct {
 	// CanTransfer returns whether the account contains
 	// sufficient ether to transfer the value
 	CanTransfer CanTransferFunc
-	// Transfer transfers ether from one account to the other
-	//Transfer TransferFunc
-	//ExchangeAsset exchange asset
-	//ExchangeAsset ExchangeAssetFunc
 	// GetHash returns the hash corresponding to n
 	GetHash GetHashFunc
-	// Register register a new account
-	//Register RegisterFunc
-	// Cancellation cancel an account
-	//Cancellation CancellationFunc
 	//ContractTransfer transfers ether from one account to the other
 	ContractTransfer ContractTransferFunc
-	//SendLossReport send loss report
-	//SendLossReport SendLossReportFunc
-	// Vote vote ether from one account to the other
-	//Vote VoteFunc
-	//ApplyToBeDPoSNode send DPOS report
-	//ApplyToBeDPoSNode ApplyToBeDPoSNodeFunc
-	// Redemption redemption vote
-	//Redemption RedemptionFunc
-	//RevealLossReport reveal loss report
-	//RevealLossReport RevealLossReportFunc
-	//TransferLostAccount transfer lost account value
-	//TransferLostAccount TransferLostAccountFunc
-	//TransferLostAssetAccount transfer loss asset account value
-	//TransferLostAssetAccount TransferLostAssetAccountFunc
-	//RemoveLossReport remove loss report
-	//RemoveLossReport RemoveLossReportFunc
-	//RejectLossReport reject loss report
-	//RejectLossReport RejectLossReportFunc
-	//ModifyLossType modify loss type
-	//ModifyLossType ModifyLossTypeFunc
-	//ModifyPnsOwner modify pns owner
-	//ModifyPnsOwner ModifyPnsOwnerFunc
-	//ModifyPnsContent modify pns content
-	//ModifyPnsContent ModifyPnsContentFunc
 	//CallDB call database for update operation
 	CallDB CallDBFunc
 	// Block information

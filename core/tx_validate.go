@@ -123,6 +123,13 @@ func (pool *TxPool) validateTxOfContractCall(tx *types.Transaction, local bool) 
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
+	//set contract deploy fee
+	if tx.To() == nil {
+		pledgeAmount := new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_CONTRACT))
+		if tx.Value().Cmp(pledgeAmount) != 0 {
+			return errors.New("wrong value")
+		}
+	}
 	return pool.validateGas(tx, local)
 }
 
@@ -171,7 +178,7 @@ func (pool *TxPool) validateTxOfRevealLossReport(tx *types.Transaction, local bo
 	if newAccount == nil {
 		return errors.New("new account no exists")
 	}
-	minMultipleAmount := new(big.Int).Mul(tx.Value(), new(big.Int).SetUint64(common.MIN_MULTIPLE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT))
+	minMultipleAmount := new(big.Int).Mul(tx.Value(), new(big.Int).SetUint64(common.MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT))
 	if minMultipleAmount.Cmp(oldAccount.Value) == -1 {
 		return errors.New("insufficient pledge amount")
 	}
