@@ -36,6 +36,9 @@ import (
 
 var testSigData = make([]byte, 32)
 
+func TestKeyStoreToKey(t *testing.T) {
+
+}
 func TestKeyStore(t *testing.T) {
 	dir, ks := tmpKeyStore(t, true)
 	defer os.RemoveAll(dir)

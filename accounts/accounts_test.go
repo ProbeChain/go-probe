@@ -52,6 +52,7 @@ func TestGenerate(t *testing.T) {
 	//fmt.Printf("address[%d][%v]\n", len(address2), address2)
 
 	acc1Key, _ := probe.HexToECDSA(hexPriKey)
+	//probe.FromECDSAPub(&key)[1:]
 	fmt.Println("public key from prikey  \n", hexutil.Encode(probe.FromECDSAPub(&acc1Key.PublicKey)))
 	address1 := probe.PubkeyToAddress(acc1Key.PublicKey).Hex()
 	fmt.Println("address1 ", address1)
@@ -268,7 +269,7 @@ func TestStrToHex(*testing.T) {
 
 	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str)))
 
-	str2 := "{\"ip\":\"192.169.1.3\",\"port\":\"1307\"}"
+	str2 := "{\"endNode\":\"192.169.1.3\",\"ip\":\"192.169.1.3\",\"port\":\"1307\"}"
 	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str2)))
 
 	var emptyCodeHash = crypto.Keccak256(nil)

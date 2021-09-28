@@ -88,6 +88,8 @@ var (
 	// ErrInvalidCandidate is returned if vote other candidate
 	ErrInvalidCandidate = errors.New("invalid candidate")
 
+	ErrInvalidCandidateDPOS = errors.New("invalid candidateDPOS")
+
 	// ErrNoVote is returned if no vote
 	ErrNoVote = errors.New("no vote")
 )

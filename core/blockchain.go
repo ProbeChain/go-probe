@@ -269,6 +269,27 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		return nil, ErrNoGenesis
 	}
 
+	//init Genesis from db
+	block := bc.genesisBlock
+	number := block.NumberU64()
+	stateDB, _ := bc.StateAt(block.Root())
+	rootHash := stateDB.GetStateDbTrie().GetTallHashByIndex(6)
+	epoch := uint64(5)
+	dposNo := number + 1 - (number + 1%epoch)
+	var buf bytes.Buffer
+	buf.WriteString("DPOS_NODES:")
+	buf.WriteString(strconv.FormatUint(dposNo, 10))
+	buf.WriteString(":")
+	buf.WriteString(rootHash.Hex())
+
+	data, _ := db.Get(buf.Bytes())
+	var dposAccountList []common.DPoSAccount
+	json.Unmarshal(data, &dposAccountList)
+	chainConfig.DposConfig = new(params.DposConfig)
+	chainConfig.DposConfig.DposList = dposAccountList
+	chainConfig.DposConfig.Epoch = epoch
+	log.Info("Initialised chain configuration AND DPOSNODES")
+
 	var nilBlock *types.Block
 	bc.currentBlock.Store(nilBlock)
 	bc.currentFastBlock.Store(nilBlock)

@@ -297,9 +297,19 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	voteAccount := pool.currentState.GetAuthorize(*tx.To())
-	if voteAccount == nil {
+	authorizeAccount := pool.currentState.GetAuthorize(*tx.To())
+	if authorizeAccount == nil {
 		return ErrAccountNotExists
+	}
+	if authorizeAccount.ValidPeriod.Cmp(pool.chain.CurrentBlock().Number()) != 1 {
+		return ErrValidPeriodTooLow
+	}
+	regularAccount := pool.currentState.GetRegular(*tx.From())
+	if regularAccount == nil {
+		return ErrAccountNotExists
+	}
+	if regularAccount.VoteAccount != (common.Address{}) && regularAccount.VoteAccount != *tx.To() {
+		return ErrInvalidCandidateDPOS
 	}
 	return pool.validateGas(tx, local)
 }
@@ -308,7 +318,20 @@ func (pool *TxPool) validateTxOfUpdatingVotesOrData(tx *types.Transaction, local
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	//todo
+	authorizeAccount := pool.currentState.GetAuthorize(*tx.To())
+	if authorizeAccount == nil {
+		return ErrAccountNotExists
+	}
+	if authorizeAccount.ValidPeriod.Cmp(pool.chain.CurrentBlock().Number()) != 1 {
+		return ErrValidPeriodTooLow
+	}
+	regularAccount := pool.currentState.GetRegular(*tx.From())
+	if regularAccount == nil {
+		return ErrAccountNotExists
+	}
+	if regularAccount.VoteAccount != (common.Address{}) && regularAccount.VoteAccount != *tx.To() {
+		return ErrInvalidCandidateDPOS
+	}
 	return pool.validateGas(tx, local)
 }
 

@@ -178,6 +178,19 @@ func (t *TotalTrie) Hash() common.Hash {
 	return BuildHash(hashes)
 }
 
+func (t *TotalTrie) GetTallHashByIndex(index int) common.Hash {
+	hashes := []common.Hash{t.regularTrie.Hash(),
+		t.pnsTrie.Hash(),
+		t.digitalTrie.Hash(),
+		t.contractTrie.Hash(),
+		t.authorizeTrie.Hash(),
+		t.lossTrie.Hash(),
+		t.dPosHash,
+		t.dPosCandidateHash,
+	}
+	return hashes[index]
+}
+
 func (t *TotalTrie) GetTallHash() []common.Hash {
 	hashes := []common.Hash{t.regularTrie.Hash(),
 		t.pnsTrie.Hash(),
