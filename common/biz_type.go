@@ -52,15 +52,16 @@ const (
 )
 
 const (
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR       uint64 = 2
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS           uint64 = 2
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET uint64 = 2
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT      uint64 = 2
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING        uint64 = 2
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT   uint64 = 2
-	MIN_MULTIPLE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT     uint64 = 10 //最小挂失金额倍数
-	CYCLE_HEIGHT_OF_LOSS_TYPE                            uint64 = 1  //挂失周期 挂失有效高度 = 挂失高度 * 挂失周期
-	THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT               uint64 = 1  //发起挂失不揭示内容，删除掉,高度阀值
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR       uint64 = 10000000000000000    //0.01 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS           uint64 = 50000000000000000    //0.05 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET uint64 = 100000000000000000   //0.1 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT      uint64 = 100000000000000000   //0.1 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING        uint64 = 10000000000000000000 //10 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT   uint64 = 1000000000000000000  //1 PRO
+
+	MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT uint64 = 10 //最小挂失金额是原账户余额的百分比
+	CYCLE_HEIGHT_OF_LOSS_TYPE                          uint64 = 1  //1 loss cycle height: (5760/day)*30day*3month=518400 blocks
+	THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT             uint64 = 1  //发起挂失不揭示内容，删除掉,高度阀值
 )
 
 const (
@@ -81,7 +82,6 @@ const (
 func CheckBizType(bizType uint8) bool {
 	var contain bool = false
 	switch bizType {
-	//case Mint: contain = true
 	case Register:
 		contain = true
 	case Cancellation:
@@ -118,7 +118,6 @@ func CheckBizType(bizType uint8) bool {
 		contain = true
 	case ModifyPnsContent:
 		contain = true
-	//.... ... todo 还有其它待列
 	default:
 		contain = false
 	}

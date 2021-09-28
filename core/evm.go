@@ -140,7 +140,7 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
 	fmt.Printf("ContractTransfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
 	db.SubBalance(sender, amount)
-	db.AddBalance(recipient, amount)
+	//db.AddBalance(recipient, amount)
 }
 
 //CallDB call database for update operation

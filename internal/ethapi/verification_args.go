@@ -233,6 +233,10 @@ func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Ba
 	if args.To == nil && len(args.data()) == 0 {
 		return errors.New(`contract creation without any data provided`)
 	}
+	//set contract deploy fee
+	if args.To == nil {
+		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_CONTRACT)))
+	}
 
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
