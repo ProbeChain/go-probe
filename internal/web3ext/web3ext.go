@@ -587,6 +587,12 @@ web3._extend({
 			params: 3,
 			inputFormatter: [null, web3._extend.formatters.inputBlockNumberFormatter, null]
 		}),
+        new web3._extend.Method({
+			name: 'getAccountInfo',
+			call: 'eth_getAccountInfo',
+			params: 2,
+            inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
+		}),
 	],
 	properties: [
 		new web3._extend.Property({
@@ -713,7 +719,7 @@ web3._extend({
 			name: 'initializeWallet',
 			call: 'personal_initializeWallet',
 			params: 1
-		})
+		}),
 	],
 	properties: [
 		new web3._extend.Property({

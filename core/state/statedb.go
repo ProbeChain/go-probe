@@ -546,6 +546,15 @@ func (s *StateDB) GetBalance(addr common.Address) *big.Int {
 	return common.Big0
 }
 
+// GetAccountInfo retrieves the account detail info from the given address or nil if object not found
+func (s *StateDB) GetAccountInfo(addr common.Address) interface{} {
+	stateObject := s.getStateObject(addr)
+	if stateObject != nil {
+		return stateObject.AccountInfo()
+	}
+	return nil
+}
+
 func (s *StateDB) GetNonce(addr common.Address) uint64 {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {

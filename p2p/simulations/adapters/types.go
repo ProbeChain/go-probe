@@ -17,16 +17,15 @@
 package adapters
 
 import (
-	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"net"
 	"os"
 	"strconv"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/p2p"
@@ -85,7 +84,7 @@ type NodeConfig struct {
 
 	// PrivateKey is the node's private key which is used by the devp2p
 	// stack to encrypt communications
-	PrivateKey *ecdsa.PrivateKey
+	PrivateKey *probe.PrivateKey
 
 	// Enable peer events for Msgs
 	EnableMsgEvents bool
@@ -161,7 +160,7 @@ func (n *NodeConfig) MarshalJSON() ([]byte, error) {
 		LogVerbosity:    int(n.LogVerbosity),
 	}
 	if n.PrivateKey != nil {
-		confJSON.PrivateKey = hex.EncodeToString(crypto.FromECDSA(n.PrivateKey))
+		confJSON.PrivateKey = hex.EncodeToString(probe.FromECDSA(n.PrivateKey))
 	}
 	return json.Marshal(confJSON)
 }
@@ -185,7 +184,7 @@ func (n *NodeConfig) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return err
 		}
-		privKey, err := crypto.ToECDSA(key)
+		privKey, err := probe.ToECDSA(key)
 		if err != nil {
 			return err
 		}
@@ -211,7 +210,7 @@ func (n *NodeConfig) Node() *enode.Node {
 // RandomNodeConfig returns node configuration with a randomly generated ID and
 // PrivateKey
 func RandomNodeConfig() *NodeConfig {
-	prvkey, err := crypto.GenerateKey()
+	prvkey, err := probe.GenerateKey()
 	if err != nil {
 		panic("unable to generate key")
 	}

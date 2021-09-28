@@ -882,6 +882,30 @@ func (s *stateObject) Balance() *big.Int {
 	}
 }
 
+func (s *stateObject) AccountInfo() interface{} {
+	//return s.regularAccount.Value
+	switch s.accountType {
+	case common.ACC_TYPE_OF_GENERAL:
+		return s.regularAccount
+	case common.ACC_TYPE_OF_PNS:
+		return s.pnsAccount
+	case common.ACC_TYPE_OF_ASSET:
+		return s.assetAccount
+	case common.ACC_TYPE_OF_CONTRACT:
+		return s.assetAccount
+	case common.ACC_TYPE_OF_AUTHORIZE:
+		return s.authorizeAccount
+	case common.ACC_TYPE_OF_LOSE:
+		return s.lossAccount
+	case common.ACC_TYPE_OF_DPOS:
+		return s.dposCandidateAccount
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
+		return s.dposCandidateAccount
+	default:
+		return nil
+	}
+}
+
 func (s *stateObject) Nonce() uint64 {
 	//return s.regularAccount.Nonce
 	switch s.accountType {
