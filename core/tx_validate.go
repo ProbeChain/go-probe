@@ -66,7 +66,7 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 		if pool.currentState.GetRegular(*tx.To()).VoteValue.Sign() > 0 {
 			return errors.New("some tickets were not redeemed")
 		}
-		if tx.To() != tx.From() {
+		if *tx.To() != *tx.From() {
 			return errors.New("wrong owner")
 		}
 	}
