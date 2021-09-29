@@ -17,7 +17,6 @@
 package rawdb
 
 import (
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
@@ -114,7 +113,7 @@ func WriteAllStateRootHash1(db ethdb.Database, hashes []common.Hash, root common
 		log.Crit("Failed to EncodeToBytes", "err", err)
 	}
 	key := StateRootKey(root)
-	fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
+	//fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
 	if err := blockBatch.Put(key, arrdata); err != nil {
 		log.Crit("Failed to store RootHash", "err", err)
 	}
@@ -127,7 +126,7 @@ func WriteAllStateRootHash(db ethdb.KeyValueWriter, hashes []common.Hash, root c
 		log.Crit("Failed to EncodeToBytes", "err", err)
 	}
 	key := StateRootKey(root)
-	fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
+	//fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
 	if err := db.Put(key, arrdata); err != nil {
 		log.Crit("Failed to store RootHash", "err", err)
 	}
@@ -141,7 +140,7 @@ func ReadRootHashForNew(db ethdb.KeyValueReader, hash common.Hash) []common.Hash
 	var intarray []common.Hash
 	//hash := rawdb.ReadRootHash(db.TrieDB().DiskDB(), root)
 	key := StateRootKey(hash)
-	fmt.Printf("ReadRootHashForNew-key：%v \n", key)
+	//	fmt.Printf("ReadRootHashForNew-key：%v \n", key)
 	data, _ := db.Get(key)
 	rlp.DecodeBytes(data, &intarray)
 	return intarray

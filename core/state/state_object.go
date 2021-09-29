@@ -317,11 +317,12 @@ func newAssetAccount(db *StateDB, address common.Address, data AssetAccount) *st
 	if data.StorageRoot == (common.Hash{}) {
 		data.StorageRoot = emptyRoot
 	}
+	accType, _ := common.ValidAddress(address)
 	return &stateObject{
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    common.ACC_TYPE_OF_ASSET,
+		accountType:    accType,
 		assetAccount:   data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),

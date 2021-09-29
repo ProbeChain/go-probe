@@ -498,23 +498,18 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
-	contract := NewContract(caller, AccountRef(address), value, gas)
+	defaultValue := big.NewInt(0) //when contract deploy is zero
+	contract := NewContract(caller, AccountRef(address), defaultValue, gas)
 	contract.SetCodeOptionalHash(&address, codeAndHash)
-
 	if evm.Config.NoRecursion && evm.depth > 0 {
 		return nil, address, gas, nil
 	}
 
 	if evm.Config.Debug && evm.depth == 0 {
-		evm.Config.Tracer.CaptureStart(evm, caller.Address(), address, true, codeAndHash.code, gas, value)
+		evm.Config.Tracer.CaptureStart(evm, caller.Address(), address, true, codeAndHash.code, gas, defaultValue)
 	}
 	start := time.Now()
-
 	ret, err := run(evm, contract, nil, false)
-
-	if err != nil {
-		fmt.Printf("create run: %s\n", err)
-	}
 	// Check whether the max code size has been exceeded, assign err if the case.
 	if err == nil && evm.chainRules.IsEIP158 && len(ret) > params.MaxCodeSize {
 		err = ErrMaxCodeSizeExceeded
