@@ -281,8 +281,8 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		if number == 0 || (number+1)%epoch == 0 {
 
 			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
+
 			rootHash := statedb.IntermediateRootForDPos(dPosHash)
-			log.Info("ToBlock rootHash", "rootHash", rootHash.Hex())
 			data, _ := json.Marshal(g.DposConfig.DposList)
 			batch := db.NewBatch()
 			var buf bytes.Buffer
@@ -290,7 +290,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 			buf.WriteString(strconv.FormatUint(dposNo, 10))
 			buf.WriteString(":")
 			buf.WriteString(rootHash.Hex())
-
+			log.Info("ToBlock dposhash:", string(buf.Bytes()))
 			if err := db.Put(buf.Bytes(), data); err != nil {
 				log.Crit("Failed to store dposNodesList", "err", err)
 			}
