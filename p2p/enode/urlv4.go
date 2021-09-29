@@ -159,10 +159,14 @@ func parsePubkey(in string) (*probe.PublicKey, error) {
 	b, err := hex.DecodeString(in)
 	if err != nil {
 		return nil, err
-	} else if len(b) != 64 {
-		return nil, fmt.Errorf("wrong length, want %d hex chars", 128)
+	} else if len(b) != 66 {
+		return nil, fmt.Errorf("wrong length, want %d hex chars", 132)
 	}
-	b = append([]byte{0x4}, b...)
+	//b = append([]byte{0x0}, b...)
+	if b[0] == 0x0 && len(b) == 65 {
+		b[0] = 0x4
+		b = append(b, 0x0)
+	}
 	return probe.UnmarshalPubkey(b)
 }
 
@@ -176,7 +180,7 @@ func (n *Node) URLv4() string {
 	n.Load((*Secp256k1)(&key))
 	switch {
 	case scheme == "v4" || key != probe.PublicKey{}:
-		nodeid = fmt.Sprintf("%x", probe.FromECDSAPub(&key)[1:])
+		nodeid = fmt.Sprintf("%x", probe.FromECDSAPub(&key)[:])
 	default:
 		nodeid = fmt.Sprintf("%s.%x", scheme, n.id[:])
 	}

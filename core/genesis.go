@@ -167,6 +167,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 	// Just commit the new block if there is no stored genesis block.
 	// 如果没有存储的genesis块，只需提交新块。
 	stored := rawdb.ReadCanonicalHash(db, 0)
+	log.Info("stored", stored.Hex())
 	if (stored == common.Hash{}) {
 		if genesis == nil {
 			// genesis和stored都为空，使用主网，获取默认区块信息
@@ -204,6 +205,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 	// Check whether the genesis block is already written.
 	if genesis != nil {
 		hash := genesis.ToBlock(nil).Hash()
+		log.Info("hash", hash.Hex())
 		if hash != stored {
 			return genesis.Config, hash, &GenesisMismatchError{stored, hash}
 		}
@@ -279,7 +281,9 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		epoch := g.DposConfig.Epoch
 		dposNo := number + 1 - (number + 1%epoch)
 		if number == 0 || (number+1)%epoch == 0 {
-
+			for _, s := range statedb.GetStateDbTrie().GetTallHash() {
+				fmt.Println("writeDposNodes:" + s.Hex())
+			}
 			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
 
 			rootHash := statedb.IntermediateRootForDPos(dPosHash)

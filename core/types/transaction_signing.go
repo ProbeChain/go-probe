@@ -397,6 +397,7 @@ func (s EIP155Signer) Hash(tx *Transaction) common.Hash {
 		tx.GasPrice(),
 		tx.Gas(),
 		tx.To(),
+		tx.BizType(),
 		tx.Value(),
 		tx.Data(),
 		s.chainId, uint(0), uint(0),

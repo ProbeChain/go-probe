@@ -172,7 +172,9 @@ func FromECDSAPub(pub *PublicKey) []byte {
 	if pub == nil || pub.X == nil || pub.Y == nil {
 		return nil
 	}
-	return elliptic.Marshal(S256ByType(pub.K), pub.X, pub.Y)
+	byte := elliptic.Marshal(S256ByType(pub.K), pub.X, pub.Y)
+	byte = append(byte, pub.K)
+	return byte
 }
 
 func SaveECDSA(file string, key *PrivateKey) error {
@@ -339,6 +341,7 @@ func Marshal(curve elliptic.Curve, x, y *big.Int, K byte) []byte {
 func UnmarshalPubkey(pub []byte) (*PublicKey, error) {
 	//TODO node start need set default k
 	k := byte(0x00)
+
 	if len(pub) == 66 {
 		k = pub[65]
 	}
