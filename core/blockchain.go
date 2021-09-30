@@ -2451,6 +2451,7 @@ func (bc *BlockChain) writeDposNodes() {
 		stateDB, _ := bc.StateAt(block.Root())
 
 		dPosList := stateDB.GetDpostList()
+		stateDB.ChangDpostAccount(dPosList)
 		dPosHash := state.BuildHashForDPos(dPosList)
 		rootHash := stateDB.IntermediateRootForDPos(dPosHash)
 		log.Info("writeDposNodes rootHash", "rootHash", rootHash.Hex())

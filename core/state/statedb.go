@@ -1912,6 +1912,13 @@ func (s *StateDB) GetDpostList() []common.DPoSAccount {
 	return s.dposList.dPoSCandidateAccounts.GetDpostList()
 }
 
+func (s *StateDB) ChangDpostAccount(dposAccounts []common.DPoSAccount) {
+	for i, dposAccount := range dposAccounts {
+		s.dposList.oldDPoSAccounts[i] = s.dposList.dPoSAccounts[i]
+		s.dposList.dPoSAccounts[i] = dposAccount
+	}
+}
+
 func (s *StateDB) GetDPosHashByRoot(root common.Hash, db Database) common.Hash {
 	hashes := GetHash(root, db)
 
