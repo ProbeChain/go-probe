@@ -224,6 +224,7 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
 		node, err := trie.resolveHash(root[:], nil)
 		log.Warn("newBinary", "root", root.String(), "curRoot", curRoot.String(), "err", err)
+		debug.PrintStack()
 		if err == nil {
 			trie.root = node
 			return trie, err
@@ -408,18 +409,6 @@ func (t *Trie) TryGet(key []byte) ([]byte, error) {
 		if err == nil && didResolve {
 			t.root = newroot
 		}
-
-		if big.NewInt(0).SetBytes(key).Int64() == 0 {
-			log.Info("get a address 0x0000000000000000000000000000000000000000")
-			data, err := toAccount(value)
-			if err == nil {
-				log.Info("trie TryGet", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
-			} else {
-				log.Warn("trie TryGet", "err", err)
-			}
-			debug.PrintStack()
-		}
-
 		return value, err
 	}
 }
@@ -1167,10 +1156,7 @@ func (t *Trie) hashRoot() (node, node, error) {
 // binaryRoot calculates the BMPT root hash of the given trie
 func (t *Trie) binaryRoot() common.Hash {
 	if t.Binary() {
-		hash := make([]byte, 32, 32+4)
-		copy(hash, t.bt.binaryHashNodes[0].Hash[0:])
-		hash = crypto.Keccak256(concat(hash, intToBytes(t.bt.binaryHashNodes[0].Num)...))
-		return common.BytesToHash(hash)
+		return t.bt.binaryHashNodes[0].CalcHash()
 	}
 	return common.Hash{}
 }
@@ -1179,10 +1165,7 @@ func (t *Trie) binaryRoot() common.Hash {
 func (t *Trie) trieRoot() common.Hash {
 	if t.Binary() {
 		if node, ok := t.root.(binaryHashNode); ok {
-			hash := make([]byte, 32, 32+4)
-			copy(hash, node.Hash[:])
-			hash = crypto.Keccak256(concat(hash, intToBytes(node.Num)...))
-			return common.BytesToHash(hash)
+			return node.CalcHash()
 		} else {
 			return common.Hash{}
 		}

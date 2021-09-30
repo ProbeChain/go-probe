@@ -93,9 +93,12 @@ func (n *binaryLeaf) Hash() [32]byte {
 }
 
 func (n *binaryHashNode) CalcHash() common.Hash {
-	hash := make([]byte, 32, 32+4)
+	//hash := make([]byte, 32, 32+4)
+	//copy(hash, n.Hash[:])
+	//hash = crypto.Keccak256(concat(hash, intToBytes(n.Num)...))
+	//return common.BytesToHash(hash)
+	hash := make([]byte, 32, 32)
 	copy(hash, n.Hash[:])
-	hash = crypto.Keccak256(concat(hash, intToBytes(n.Num)...))
 	return common.BytesToHash(hash)
 }
 
