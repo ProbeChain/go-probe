@@ -158,8 +158,8 @@ func parsePubkey(in string) (*probe.PublicKey, error) {
 	b, err := hex.DecodeString(in)
 	if err != nil {
 		return nil, err
-	} else if len(b) != 66 {
-		return nil, fmt.Errorf("wrong length, want %d hex chars", 132)
+	} else if len(b) != 65 {
+		return nil, fmt.Errorf("wrong length, want %d hex chars", 130)
 	}
 	//b = append([]byte{0x0}, b...)
 	if b[0] == 0x0 && len(b) == 65 {
