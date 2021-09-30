@@ -404,14 +404,21 @@ func (pool *TxPool) validateTxOfModifyPnsOwner(tx *types.Transaction, local bool
 	if err := common.ValidateAccType(tx.To(), common.ACC_TYPE_OF_PNS, "to"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(tx.New(), common.ACC_TYPE_OF_PNS, "new owner"); err != nil {
+	if err := common.ValidateAccType(tx.New(), common.ACC_TYPE_OF_GENERAL, "new owner"); err != nil {
 		return err
 	}
-	if !pool.currentState.Exist(*tx.To()) {
+	pnsAccount := pool.currentState.GetPns(*tx.To())
+	if pnsAccount == nil {
 		return errors.New("pns account not exist")
 	}
+	if pnsAccount.Owner != *tx.From() {
+		return errors.New("wrong pns owner account")
+	}
+	if pnsAccount.Owner == *tx.New() {
+		return errors.New("consistent with current owner")
+	}
 	if !pool.currentState.Exist(*tx.New()) {
-		return errors.New("new pns account not exist")
+		return errors.New("new pns owner account not exist")
 	}
 	return pool.validateGas(tx, local)
 }
@@ -425,9 +432,16 @@ func (pool *TxPool) validateTxOfModifyPnsContent(tx *types.Transaction, local bo
 	if err := common.ValidateAccType(tx.To(), common.ACC_TYPE_OF_PNS, "pns"); err != nil {
 		return err
 	}
-	if !common.CheckPnsType(byte(*tx.PnsType())) {
-		return errors.New("wrong pns type")
+	pnsAccount := pool.currentState.GetPns(*tx.To())
+	if pnsAccount == nil {
+		return errors.New("pns account not exist")
 	}
+	if pnsAccount.Owner != *tx.From() {
+		return errors.New("wrong pns owner account")
+	}
+	/*	if !common.CheckPnsType(byte(*tx.PnsType())) {
+		return errors.New("wrong pns type")
+	}*/
 	if len(tx.Data()) == 0 {
 		return errors.New("pns content data must be specified")
 	}

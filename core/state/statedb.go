@@ -534,7 +534,7 @@ func (s *StateDB) Exist(addr common.Address) bool {
 // or empty according to the EIP161 specification (balance = nonce = code = 0)
 func (s *StateDB) Empty(addr common.Address) bool {
 	so := s.getStateObject(addr)
-	return so == nil || so.empty()
+	return so == nil
 }
 
 // GetBalance retrieves the balance from the given address or 0 if object not found
@@ -722,25 +722,70 @@ func (s *StateDB) SetStorage(addr common.Address, storage map[common.Hash]common
 // The account's state object is still available until the state is committed,
 // getStateObject will return a non-nil account after Suicide.
 func (s *StateDB) Suicide(addr common.Address) bool {
-	stateObject := s.getStateObject(addr)
-	if stateObject == nil {
+	obj := s.getStateObject(addr)
+	if obj == nil {
 		return false
 	}
-	s.journal.append(suicideChange{
-		account:     &addr,
-		prev:        stateObject.suicided,
-		prevbalance: new(big.Int).Set(stateObject.Balance()),
-	})
-	stateObject.markSuicided()
-	//stateObject.regularAccount.Balance = new(big.Int)
-	//stateObject.regularAccount.Value = new(big.Int)
-	switch stateObject.accountType {
+	switch obj.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
-		stateObject.SetValueForRegular(new(big.Int))
+		s.journal.append(regularSuicideChange{
+			account:     &addr,
+			suicide:     obj.suicided,
+			voteAccount: obj.regularAccount.VoteAccount,
+			voteValue:   obj.regularAccount.VoteValue,
+			lossType:    obj.regularAccount.LossType,
+			value:       obj.regularAccount.Value,
+		})
+	case common.ACC_TYPE_OF_PNS:
+		s.journal.append(pnsSuicideChange{
+			account: &addr,
+			suicide: obj.suicided,
+			pnsType: obj.pnsAccount.Type,
+			owner:   obj.pnsAccount.Owner,
+			data:    obj.pnsAccount.Data,
+		})
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		stateObject.SetValueForAsset(new(big.Int))
+		s.journal.append(assetSuicideChange{
+			account:     &addr,
+			suicide:     obj.suicided,
+			voteAccount: obj.assetAccount.VoteAccount,
+			voteValue:   obj.assetAccount.VoteValue,
+			assetType:   obj.assetAccount.Type,
+			value:       obj.assetAccount.Value,
+		})
+	case common.ACC_TYPE_OF_AUTHORIZE:
+		s.journal.append(authorizeSuicideChange{
+			account:     &addr,
+			suicide:     obj.suicided,
+			owner:       obj.authorizeAccount.Owner,
+			pledgeValue: obj.authorizeAccount.PledgeValue,
+			voteValue:   obj.authorizeAccount.VoteValue,
+			info:        obj.authorizeAccount.Info,
+			validPeriod: obj.authorizeAccount.ValidPeriod,
+			state:       obj.authorizeAccount.State,
+		})
+	case common.ACC_TYPE_OF_LOSE:
+		s.journal.append(lossSuicideChange{
+			account:     &addr,
+			suicide:     obj.suicided,
+			state:       obj.lossAccount.State,
+			lossAccount: obj.lossAccount.LossAccount,
+			newAccount:  obj.lossAccount.NewAccount,
+			height:      obj.lossAccount.Height,
+			infoDigest:  obj.lossAccount.InfoDigest,
+		})
+	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
+		s.journal.append(dPoSCandidateSuicideChange{
+			account:       &addr,
+			suicide:       obj.suicided,
+			enode:         obj.dposCandidateAccount.Enode,
+			owner:         obj.dposCandidateAccount.Owner,
+			weight:        obj.dposCandidateAccount.Weight,
+			delegateValue: obj.dposCandidateAccount.DelegateValue,
+		})
 	default:
 	}
+	obj.markSuicided()
 	return true
 }
 
@@ -1188,7 +1233,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 			// Thus, we can safely ignore it here
 			continue
 		}
-		if obj.suicided || (deleteEmptyObjects && obj.empty()) {
+		if obj.suicided {
 			obj.deleted = true
 
 			// If state snapshotting is active, also mark the destruction there.
@@ -1441,12 +1486,12 @@ func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 }
 
 // GetPns PNS账号
-func (s *StateDB) GetPns(addr common.Address) PnsAccount {
+func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
-		return stateObject.pnsAccount
+		return &stateObject.pnsAccount
 	}
-	return PnsAccount{}
+	return nil
 }
 
 // GetAsset 资产账户
@@ -1528,7 +1573,6 @@ func (s *StateDB) Register(context vm.TxContext) {
 	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	obj, _ := s.createObject(*context.New)
-	obj.isNew = true
 	switch byte(*context.AccType) {
 	case common.ACC_TYPE_OF_PNS:
 		obj.pnsAccount.Owner = context.From
@@ -1556,7 +1600,8 @@ func (s *StateDB) Register(context vm.TxContext) {
 func (s *StateDB) Cancellation(context vm.TxContext) {
 	fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
 	s.AddBalance(*context.New, context.Value)
-	s.DeleteStateObjectByAddr(*context.To)
+	//s.DeleteStateObjectByAddr(*context.To)
+	s.Suicide(*context.To)
 }
 
 func (s *StateDB) Transfer(context vm.TxContext) {
@@ -1633,12 +1678,14 @@ func (s *StateDB) TransferLostAssetAccount(context vm.TxContext) {
 
 func (s *StateDB) RemoveLossReport(context vm.TxContext) {
 	s.AddBalance(context.From, context.Value)
-	s.DeleteStateObjectByAddr(*context.To)
+	//s.DeleteStateObjectByAddr(*context.To)
+	s.Suicide(*context.To)
 }
 
 func (s *StateDB) RejectLossReport(context vm.TxContext) {
 	s.AddBalance(context.From, context.Value)
-	s.DeleteStateObjectByAddr(*context.To)
+	//s.DeleteStateObjectByAddr(*context.To)
+	s.Suicide(*context.To)
 }
 
 func (s *StateDB) ModifyPnsOwner(context vm.TxContext) {
@@ -1747,21 +1794,21 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 }
 
 // DeleteStateObjectByAddr removes the given object from the state trie.
-func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
-	state := s.stateObjects[addr]
-	if state != nil {
-		state.deleted = true
-	}
+/*func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
+state := s.stateObjects[addr]
+if state != nil {
+	state.deleted = true
+}
 
-	// Track the amount of time wasted on deleting the account from the trie
-	if metrics.EnabledExpensive {
+// Track the amount of time wasted on deleting the account from the trie
+/*	if metrics.EnabledExpensive {
 		defer func(start time.Time) { s.AccountUpdates += time.Since(start) }(time.Now())
 	}
 	// Delete the account from the trie
 	if err := s.trie.TryDelete(addr[:]); err != nil {
 		s.setError(fmt.Errorf("deleteStateObject (%x) error: %v", addr[:], err))
-	}
-}
+	}*/
+//}*/
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
 	accountType, err := common.ValidAddress(addr)

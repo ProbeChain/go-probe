@@ -104,34 +104,6 @@ type stateObject struct {
 	dirtyCode bool // true if the code was updated
 	suicided  bool
 	deleted   bool
-	isNew     bool
-}
-
-// empty returns whether the account is considered empty.
-func (s *stateObject) empty() bool {
-
-	switch s.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return s.regularAccount.VoteAccount == common.Address{} && s.regularAccount.VoteValue == nil &&
-			s.regularAccount.LossType == 0 && s.regularAccount.Nonce == 0 && s.regularAccount.Value == nil && !s.isNew
-	case common.ACC_TYPE_OF_PNS:
-		return s.pnsAccount.Type == 0 && s.pnsAccount.Owner == common.Address{} && len(s.pnsAccount.Data) == 0
-
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		return s.assetAccount.Type == 0 && len(s.assetAccount.CodeHash) == 0 && s.assetAccount.StorageRoot == emptyRoot &&
-			s.assetAccount.Value.Sign() < 1 && s.assetAccount.VoteAccount == common.Address{} && s.assetAccount.VoteValue.Sign() < 1 && s.assetAccount.Nonce == 0
-
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return s.authorizeAccount.Owner == common.Address{} && s.authorizeAccount.PledgeValue.Sign() < 1 && s.authorizeAccount.VoteValue.Sign() < 1 &&
-			len(s.authorizeAccount.Info) == 0 && s.authorizeAccount.ValidPeriod.Sign() < 1
-
-	case common.ACC_TYPE_OF_LOSE:
-		return s.lossAccount.LossAccount == common.Address{} && s.lossAccount.NewAccount == common.Address{} &&
-			s.lossAccount.Height.Sign() < 1 && len(s.lossAccount.InfoDigest) == 0
-
-	default:
-		return false
-	}
 }
 
 // Account is the Ethereum consensus representation of accounts.
@@ -700,9 +672,9 @@ func (s *stateObject) AddBalance(amount *big.Int) {
 	// EIP161: We must check emptiness for the objects such that the account
 	// clearing (0,0,0 objects) can take effect.
 	if amount.Sign() == 0 {
-		if s.empty() {
-			s.touch()
-		}
+		/*		if s.empty() {
+				s.touch()
+			}*/
 		return
 	}
 	s.SetBalance(new(big.Int).Add(s.Balance(), amount))
@@ -730,12 +702,11 @@ func (s *stateObject) SetBalance(amount *big.Int) {
 }
 
 func (s *stateObject) setBalance(amount *big.Int) {
-	//s.regularAccount.Balance = amount
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
-		s.SetValueForRegular(amount)
+		s.setValueForRegular(amount)
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		s.SetValueForAsset(amount)
+		s.setValueForAsset(amount)
 	default:
 	}
 }
@@ -927,27 +898,9 @@ func (s *stateObject) Value() *big.Int {
 	panic("Value on stateObject should never be called")
 }
 
-// SetValueForAsset set asset account value and append to journal
-func (s *stateObject) SetValueForAsset(value *big.Int) {
-	s.db.journal.append(valueForAssetChange{
-		account: &s.address,
-		prev:    s.assetAccount.Value,
-	})
-	s.assetAccount.Value = value
-}
-
 // setValueForAsset only set asset account value
 func (s *stateObject) setValueForAsset(value *big.Int) {
 	s.assetAccount.Value = value
-}
-
-// SetValueForRegular set regular account value and append to journal
-func (s *stateObject) SetValueForRegular(value *big.Int) {
-	s.db.journal.append(valueForRegularChange{
-		account: &s.address,
-		prev:    s.regularAccount.Value,
-	})
-	s.regularAccount.Value = value
 }
 
 // setValueForRegular only set regular account value

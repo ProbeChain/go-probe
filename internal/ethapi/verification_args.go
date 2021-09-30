@@ -851,7 +851,7 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_PNS, "to"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_PNS, "new owner"); err != nil {
+	if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_GENERAL, "new owner"); err != nil {
 		return err
 	}
 
@@ -903,9 +903,9 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_PNS, "pns"); err != nil {
 		return err
 	}
-	if !common.CheckPnsType(uint8(*args.PnsType)) {
-		return errors.New("wrong pns type")
-	}
+	//if !common.CheckPnsType(uint8(*args.PnsType)) {
+	//	return errors.New("wrong pns type")
+	//}
 	// Estimate the gas usage if necessary.
 	if args.Gas == nil {
 		// These fields are immutable during the estimation, safe to
