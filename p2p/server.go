@@ -977,11 +977,6 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 		return err
 	}
 	//secp256k1 public key
-	fmt.Println(phs.ID)
-	fmt.Println(probe.Keccak256(phs.ID))
-	id := c.node.ID()
-	fmt.Println(id[:])
-	fmt.Println(c.node.ID())
 	//if id := c.node.ID(); !bytes.Equal(crypto.Keccak256(phs.ID), id[:]) {
 	if id := c.node.ID(); !bytes.Equal(probe.Keccak256(phs.ID), id[:]) {
 		clog.Trace("Wrong devp2p handshake identity", "phsid", hex.EncodeToString(phs.ID))

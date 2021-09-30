@@ -281,9 +281,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		epoch := g.DposConfig.Epoch
 		dposNo := number + 1 - (number + 1%epoch)
 		if number == 0 || (number+1)%epoch == 0 {
-			for _, s := range statedb.GetStateDbTrie().GetTallHash() {
-				fmt.Println("writeDposNodes:" + s.Hex())
-			}
+
 			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
 
 			rootHash := statedb.IntermediateRootForDPos(dPosHash)
