@@ -27,10 +27,13 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/status-im/keycard-go/hexutils"
 	"math/big"
 	"os"
 	"path"
 	"reflect"
+	"runtime/debug"
 	"sort"
 	"sync"
 	"unsafe"
@@ -147,6 +150,12 @@ var btMap map[string]*BinaryTree
 
 func init() {
 	btMap = make(map[string]*BinaryTree)
+}
+
+func toAccount(value []byte) (*Account, error) {
+	data := new(Account)
+	err := rlp.DecodeBytes(value, data)
+	return data, err
 }
 
 // newFlag returns the cache flag value for a newly created node.
@@ -399,6 +408,18 @@ func (t *Trie) TryGet(key []byte) ([]byte, error) {
 		if err == nil && didResolve {
 			t.root = newroot
 		}
+
+		if big.NewInt(0).SetBytes(key).Int64() == 0 {
+			log.Info("get a address 0x0000000000000000000000000000000000000000")
+			data, err := toAccount(value)
+			if err == nil {
+				log.Info("trie TryGet", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
+			} else {
+				log.Warn("trie TryGet", "err", err)
+			}
+			debug.PrintStack()
+		}
+
 		return value, err
 	}
 }
@@ -579,14 +600,17 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
-	//debug.PrintStack()
-	//data := new(Account)
-	//if err := rlp.DecodeBytes(value, data); err == nil {
-	//	log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
-	//} else {
-	//	log.Warn("trie TryUpdate", "err", err)
-	//}
-	//log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "value", hexutils.BytesToHex(value))
+	if big.NewInt(0).SetBytes(key).Int64() == 0 {
+		log.Info("insert a address 0x0000000000000000000000000000000000000000")
+		return nil
+	}
+	data, err := toAccount(value)
+	if err == nil {
+		log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
+	} else {
+		log.Warn("trie TryUpdate", "err", err)
+	}
+	debug.PrintStack()
 	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
@@ -1193,12 +1217,13 @@ func (t *Trie) loadAllLeafs() {
 // printTrie
 func (t *Trie) print() {
 	if t.Binary() {
+		log.Info("BinaryPrint", "Root", t.Hash().String())
 		t.bt.print()
 	}
 }
 
 func (bt *BinaryTree) print() {
-	log.Info("PrintTrie", "binaryHashRoot", bt.binaryHashNodes[0].CalcHash().String())
+	log.Info("BinaryPrint", "binaryHashRoot", bt.binaryHashNodes[0].CalcHash().String())
 	for i, node := range bt.binaryHashNodes {
 		hash := make([]byte, 32, 32)
 		copy(hash, node.Hash[:])
@@ -1206,10 +1231,14 @@ func (bt *BinaryTree) print() {
 	}
 	for i, node := range bt.binaryLeafs {
 		for j, n := range node {
-			log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
+			data, err := toAccount(n.Val)
+			if err == nil {
+				log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
+			} else {
+				log.Warn("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
+			}
 		}
 	}
-	log.Info("PrintTrie end==================")
 }
 
 func (t *Trie) Print() {

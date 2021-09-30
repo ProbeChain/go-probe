@@ -20,6 +20,7 @@ package state
 import (
 	"errors"
 	"fmt"
+	"github.com/status-im/keycard-go/hexutils"
 	"math/big"
 	"sort"
 	"time"
@@ -122,6 +123,7 @@ type StateDB struct {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	tr, err := db.OpenTrie(root)
+	//tr.Print()
 	if err != nil {
 		return nil, err
 	}
@@ -393,6 +395,7 @@ func (s *StateDB) SetBalance(addr common.Address, amount *big.Int) {
 }
 
 func (s *StateDB) SetNonce(addr common.Address, nonce uint64) {
+	//log.Info("SetNonce", "addr", addr.String(), "nonce", nonce)
 	stateObject := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetNonce(nonce)
@@ -460,6 +463,7 @@ func (s *StateDB) updateStateObject(obj *stateObject) {
 	if err != nil {
 		panic(fmt.Errorf("can't encode object at %x: %v", addr[:], err))
 	}
+	//log.Info("updateStateObjectInfo", "address", obj.Address().String(), "nonce", obj.Nonce(), "balance", obj.Balance())
 	if err = s.trie.TryUpdate(addr[:], data); err != nil {
 		s.setError(fmt.Errorf("updateStateObject (%x) error: %v", addr[:], err))
 	}
@@ -541,6 +545,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 		enc, err := s.trie.TryGet(addr.Bytes())
 		//log.Info("Decode state object", "enc", hexutils.BytesToHex(enc))
 		if err != nil {
+			log.Error("trie try get err", "addr", addr, "enc", hexutils.BytesToHex(enc), "err", err)
 			s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", addr.Bytes(), err))
 			return nil
 		}
@@ -549,7 +554,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 		}
 		data = new(Account)
 		if err := rlp.DecodeBytes(enc, data); err != nil {
-			log.Error("Failed to decode state object", "addr", addr, "err", err)
+			log.Error("Failed to decode state object", "addr", addr, "enc", hexutils.BytesToHex(enc), "err", err)
 			return nil
 		}
 	}
@@ -560,6 +565,9 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 }
 
 func (s *StateDB) setStateObject(object *stateObject) {
+	//if object.Address().Bytes()[0] == 0 && object.Address().Bytes()[1] == 0 && object.Address().Bytes()[2] == 0 {
+	//	log.Info("setStateObject a address 0x0000000000000000000000000000000000000000")
+	//}
 	s.stateObjects[object.Address()] = object
 }
 
@@ -1028,4 +1036,8 @@ func (s *StateDB) AddressInAccessList(addr common.Address) bool {
 // SlotInAccessList returns true if the given (address, slot)-tuple is in the access list.
 func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addressPresent bool, slotPresent bool) {
 	return s.accessList.Contains(addr, slot)
+}
+
+func (s *StateDB) PrintTrie() {
+	s.trie.Print()
 }

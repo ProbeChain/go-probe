@@ -100,6 +100,8 @@ type Trie interface {
 	// nodes of the longest existing prefix of the key (at least the root), ending
 	// with the node that proves the absence of the key.
 	Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error
+
+	Print()
 }
 
 // NewDatabase creates a backing store for state. The returned database is safe for
@@ -127,13 +129,13 @@ type cachingDB struct {
 	codeCache     *fastcache.Cache
 }
 
-// OpenTrie opens the main account trie at a specific root hash.
 var TrieDir string
+
+// OpenTrie opens the main account trie at a specific root hash.
 func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
 	//tr, err := trie.NewSecure(root, db.db)
-	//tr, err := trie.NewBinary(root, db.db, "./data/geth/trie.bin", 5)
 	triePath := path.Join(TrieDir, "trie.bin")
-	tr, err := trie.NewBinary(root, db.db, triePath, 5)
+	tr, err := trie.NewBinary(root, db.db, triePath, 1)
 	if err != nil {
 		return nil, err
 	}
