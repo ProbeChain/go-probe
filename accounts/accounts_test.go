@@ -278,3 +278,18 @@ func TestStrToHex(*testing.T) {
 	var emptyCodeHash2 = probe.Keccak256(nil)
 	fmt.Println("address ", hexutil.Encode(emptyCodeHash2))
 }
+
+func TestPrivateKey(*testing.T) {
+	acc1Key, _ := probe.HexToECDSA("000e92781f2a5f582a7ce9726971ce896421080b6cb9fe33cfe892968e7d25fd85")
+	address1 := probe.PubkeyToAddress(acc1Key.PublicKey)
+	fmt.Println("address ", address1.String())
+}
+
+func TestEnode(*testing.T) {
+	acc1Key, _ := probe.HexToECDSA("000e92781f2a5f582a7ce9726971ce896421080b6cb9fe33cfe892968e7d25fd85")
+	address1 := probe.PubkeyToAddress(acc1Key.PublicKey)
+	fmt.Println("address ", address1.String())
+	nodeId := fmt.Sprintf("%x", probe.FromECDSAPub(&acc1Key.PublicKey)[1:])
+	fmt.Println("nodeId ", nodeId)
+	fmt.Println("*************************")
+}

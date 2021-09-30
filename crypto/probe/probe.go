@@ -172,9 +172,9 @@ func FromECDSAPub(pub *PublicKey) []byte {
 	if pub == nil || pub.X == nil || pub.Y == nil {
 		return nil
 	}
-	byte := elliptic.Marshal(S256ByType(pub.K), pub.X, pub.Y)
-	byte = append(byte, pub.K)
-	return byte
+	/*byte := elliptic.Marshal(S256ByType(pub.K), pub.X, pub.Y)
+	return byte*/
+	return elliptic.Marshal(S256ByType(pub.K), pub.X, pub.Y)
 }
 
 func SaveECDSA(file string, key *PrivateKey) error {
@@ -317,6 +317,14 @@ func Keccak256(data ...[]byte) []byte {
 	d.Read(b)
 	return b
 }
+
+func PubkeyToIDV4(key *PublicKey) []byte {
+	e := make([]byte, 64)
+	math.ReadBits(key.X, e[:len(e)/2])
+	math.ReadBits(key.Y, e[len(e)/2:])
+	return e
+}
+
 func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address {
 	b := Keccak256(pubKey[1:])[12:]
 	c := make([]byte, len(b)+1)

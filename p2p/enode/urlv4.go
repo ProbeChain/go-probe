@@ -27,7 +27,6 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/enr"
 )
 
@@ -203,5 +202,5 @@ func PubkeyToIDV4(key *probe.PublicKey) ID {
 	e := make([]byte, 64)
 	math.ReadBits(key.X, e[:len(e)/2])
 	math.ReadBits(key.Y, e[len(e)/2:])
-	return ID(crypto.Keccak256Hash(e))
+	return ID(probe.Keccak256Hash(e))
 }

@@ -17,9 +17,11 @@
 package p2p
 
 import (
-	"crypto/ecdsa"
 	"crypto/sha256"
 	"errors"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"io"
 	"math/rand"
 	"net"
@@ -27,7 +29,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/internal/testlog"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -37,11 +38,11 @@ import (
 
 type testTransport struct {
 	*rlpxTransport
-	rpub     *ecdsa.PublicKey
+	rpub     *probe.PublicKey
 	closeErr error
 }
 
-func newTestTransport(rpub *ecdsa.PublicKey, fd net.Conn, dialDest *ecdsa.PublicKey) transport {
+func newTestTransport(rpub *probe.PublicKey, fd net.Conn, dialDest *probe.PublicKey) transport {
 	wrapped := newRLPX(fd, dialDest).(*rlpxTransport)
 	wrapped.conn.InitWithSecrets(rlpx.Secrets{
 		AES:        make([]byte, 16),
@@ -52,12 +53,15 @@ func newTestTransport(rpub *ecdsa.PublicKey, fd net.Conn, dialDest *ecdsa.Public
 	return &testTransport{rpub: rpub, rlpxTransport: wrapped}
 }
 
-func (c *testTransport) doEncHandshake(prv *ecdsa.PrivateKey) (*ecdsa.PublicKey, error) {
+func (c *testTransport) doEncHandshake(prv *probe.PrivateKey) (*probe.PublicKey, error) {
 	return c.rpub, nil
 }
 
 func (c *testTransport) doProtoHandshake(our *protoHandshake) (*protoHandshake, error) {
-	pubkey := crypto.FromECDSAPub(c.rpub)[1:]
+	pubkey := probe.FromECDSAPub(c.rpub)[1:]
+	fmt.Println("________________________")
+	fmt.Println(pubkey)
+	fmt.Println("________________________")
 	return &protoHandshake{ID: pubkey, Name: "test"}, nil
 }
 
@@ -66,7 +70,7 @@ func (c *testTransport) close(err error) {
 	c.closeErr = err
 }
 
-func startTestServer(t *testing.T, remoteKey *ecdsa.PublicKey, pf func(*Peer)) *Server {
+func startTestServer(t *testing.T, remoteKey *probe.PublicKey, pf func(*Peer)) *Server {
 	config := Config{
 		Name:        "test",
 		MaxPeers:    10,
@@ -78,7 +82,7 @@ func startTestServer(t *testing.T, remoteKey *ecdsa.PublicKey, pf func(*Peer)) *
 	server := &Server{
 		Config:      config,
 		newPeerHook: pf,
-		newTransport: func(fd net.Conn, dialDest *ecdsa.PublicKey) transport {
+		newTransport: func(fd net.Conn, dialDest *probe.PublicKey) transport {
 			return newTestTransport(remoteKey, fd, dialDest)
 		},
 	}
@@ -92,6 +96,7 @@ func TestServerListen(t *testing.T) {
 	// start the test server
 	connected := make(chan *Peer)
 	remid := &newkey().PublicKey
+	fmt.Println("public key have 0x   \n", hexutil.Encode(probe.FromECDSAPub(remid)))
 	srv := startTestServer(t, remid, func(p *Peer) {
 		if p.ID() != enode.PubkeyToIDV4(remid) {
 			t.Error("peer func called with wrong node id")
@@ -308,7 +313,7 @@ func TestServerPeerLimits(t *testing.T) {
 	var tp = &setupTransport{
 		pubkey: &clientkey.PublicKey,
 		phs: protoHandshake{
-			ID: crypto.FromECDSAPub(&clientkey.PublicKey)[1:],
+			ID: probe.FromECDSAPub(&clientkey.PublicKey)[1:],
 			// Force "DiscUselessPeer" due to unmatching caps
 			// Caps: []Cap{discard.cap()},
 		},
@@ -323,7 +328,7 @@ func TestServerPeerLimits(t *testing.T) {
 			Protocols:   []Protocol{discard},
 			Logger:      testlog.Logger(t, log.LvlTrace),
 		},
-		newTransport: func(fd net.Conn, dialDest *ecdsa.PublicKey) transport { return tp },
+		newTransport: func(fd net.Conn, dialDest *probe.PublicKey) transport { return tp },
 	}
 	if err := srv.Start(); err != nil {
 		t.Fatalf("couldn't start server: %v", err)
@@ -407,13 +412,13 @@ func TestServerSetupConn(t *testing.T) {
 			wantCloseErr: errors.New("foo"),
 		},
 		{
-			tt:           &setupTransport{pubkey: srvpub, phs: protoHandshake{ID: crypto.FromECDSAPub(srvpub)[1:]}},
+			tt:           &setupTransport{pubkey: srvpub, phs: protoHandshake{ID: probe.FromECDSAPub(srvpub)[1:]}},
 			flags:        inboundConn,
 			wantCalls:    "doEncHandshake,close,",
 			wantCloseErr: DiscSelf,
 		},
 		{
-			tt:           &setupTransport{pubkey: clientpub, phs: protoHandshake{ID: crypto.FromECDSAPub(clientpub)[1:]}},
+			tt:           &setupTransport{pubkey: clientpub, phs: protoHandshake{ID: probe.FromECDSAPub(clientpub)[1:]}},
 			flags:        inboundConn,
 			wantCalls:    "doEncHandshake,doProtoHandshake,close,",
 			wantCloseErr: DiscUselessPeer,
@@ -432,7 +437,7 @@ func TestServerSetupConn(t *testing.T) {
 			}
 			srv := &Server{
 				Config:       cfg,
-				newTransport: func(fd net.Conn, dialDest *ecdsa.PublicKey) transport { return test.tt },
+				newTransport: func(fd net.Conn, dialDest *probe.PublicKey) transport { return test.tt },
 				log:          cfg.Logger,
 			}
 			if !test.dontstart {
@@ -454,7 +459,7 @@ func TestServerSetupConn(t *testing.T) {
 }
 
 type setupTransport struct {
-	pubkey            *ecdsa.PublicKey
+	pubkey            *probe.PublicKey
 	encHandshakeErr   error
 	phs               protoHandshake
 	protoHandshakeErr error
@@ -463,7 +468,7 @@ type setupTransport struct {
 	closeErr error
 }
 
-func (c *setupTransport) doEncHandshake(prv *ecdsa.PrivateKey) (*ecdsa.PublicKey, error) {
+func (c *setupTransport) doEncHandshake(prv *probe.PrivateKey) (*probe.PublicKey, error) {
 	c.calls += "doEncHandshake,"
 	return c.pubkey, c.encHandshakeErr
 }
@@ -488,8 +493,8 @@ func (c *setupTransport) ReadMsg() (Msg, error) {
 	panic("ReadMsg called on setupTransport")
 }
 
-func newkey() *ecdsa.PrivateKey {
-	key, err := crypto.GenerateKey()
+func newkey() *probe.PrivateKey {
+	key, err := probe.GenerateKey()
 	if err != nil {
 		panic("couldn't generate key: " + err.Error())
 	}
@@ -517,7 +522,7 @@ func TestServerInboundThrottle(t *testing.T) {
 			Protocols:   []Protocol{discard},
 			Logger:      testlog.Logger(t, log.LvlTrace),
 		},
-		newTransport: func(fd net.Conn, dialDest *ecdsa.PublicKey) transport {
+		newTransport: func(fd net.Conn, dialDest *probe.PublicKey) transport {
 			newTransportCalled <- struct{}{}
 			return newRLPX(fd, dialDest)
 		},

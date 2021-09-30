@@ -18,23 +18,23 @@ package p2p
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"reflect"
 	"sync"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p/simulations/pipes"
 )
 
 func TestProtocolHandshake(t *testing.T) {
 	var (
-		prv0, _ = crypto.GenerateKey()
-		pub0    = crypto.FromECDSAPub(&prv0.PublicKey)[1:]
+		prv0, _ = probe.GenerateKey()
+		pub0    = probe.FromECDSAPub(&prv0.PublicKey)
 		hs0     = &protoHandshake{Version: 3, ID: pub0, Caps: []Cap{{"a", 0}, {"b", 2}}}
 
-		prv1, _ = crypto.GenerateKey()
-		pub1    = crypto.FromECDSAPub(&prv1.PublicKey)[1:]
+		prv1, _ = probe.GenerateKey()
+		pub1    = probe.FromECDSAPub(&prv1.PublicKey)
 		hs1     = &protoHandshake{Version: 3, ID: pub1, Caps: []Cap{{"c", 1}, {"d", 3}}}
 
 		wg sync.WaitGroup
