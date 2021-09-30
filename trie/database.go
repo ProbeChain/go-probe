@@ -276,7 +276,7 @@ func expandNode(hash hashNode, n node) node {
 		}
 		return node
 
-	case valueNode, hashNode:
+	case valueNode, hashNode, binaryHashNode, binaryLeaf:
 		return n
 
 	default:
@@ -331,7 +331,10 @@ func (db *Database) DiskDB() ethdb.KeyValueStore {
 
 // Binary 是否是二叉树提交过来的数据
 func (db *Database) Binary() bool {
-	return db.trie.Binary()
+	if db.trie != nil {
+		return db.trie.Binary()
+	}
+	return false
 }
 
 // insertLeaf
@@ -689,21 +692,23 @@ func (db *Database) Dereference(root common.Hash) {
 
 // dereferenceAlters
 func (db *Database) dereferenceAlters() {
-	db.trie.sortAlter()
-	size := len(db.trie.bt.alters)
+	if db.Binary() {
+		db.trie.sortAlter()
+		size := len(db.trie.bt.alters)
 
-	// delete levedb
-	for i, alter := range db.trie.bt.alters {
-		if i < size-rollBackMaxStep {
-			if alter.commit {
-				rawdb.DelAlters(db.diskdb, alter.CurRoot)
+		// delete levedb
+		for i, alter := range db.trie.bt.alters {
+			if i < size-rollBackMaxStep {
+				if alter.commit {
+					rawdb.DelAlters(db.diskdb, alter.CurRoot)
+				}
 			}
 		}
-	}
 
-	// delete memory
-	if size > rollBackMaxStep {
-		db.trie.bt.alters = db.trie.bt.alters[size-rollBackMaxStep:]
+		// delete memory
+		if size > rollBackMaxStep {
+			db.trie.bt.alters = db.trie.bt.alters[size-rollBackMaxStep:]
+		}
 	}
 }
 
@@ -890,7 +895,9 @@ func (db *Database) Cap(limit common.StorageSize) error {
 	memcacheFlushSizeMeter.Mark(int64(storage - db.dirtiesSize))
 	memcacheFlushNodesMeter.Mark(int64(nodes - len(db.dirties)))
 
-	db.trie.Flush()
+	if db.Binary() {
+		db.trie.Flush()
+	}
 
 	log.Debug("Persisted nodes from memory database", "nodes", nodes-len(db.dirties), "size", storage-db.dirtiesSize, "time", time.Since(start),
 		"flushnodes", db.flushnodes, "flushsize", db.flushsize, "flushtime", db.flushtime, "livenodes", len(db.dirties), "livesize", db.dirtiesSize)
@@ -985,8 +992,9 @@ func (db *Database) Commit(hash common.Hash, report bool, callback func(common.H
 	// Reset the garbage collection statistics
 	db.gcnodes, db.gcsize, db.gctime = 0, 0, 0
 	db.flushnodes, db.flushsize, db.flushtime = 0, 0, 0
-	db.trie.Flush()
-
+	if db.Binary() {
+		db.trie.Flush()
+	}
 	return nil
 }
 
@@ -1025,7 +1033,7 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 
 // commitAlter commit alters
 func (db *Database) commitAlter(batch ethdb.Batch) {
-	if db.trie.Binary() {
+	if db.Binary() {
 		alters := db.trie.bt.alters
 		for i, alter := range alters {
 			if !alter.commit {

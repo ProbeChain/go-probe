@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
+	"math/big"
 	"os"
 	"path"
 	"reflect"
@@ -119,19 +120,33 @@ type BinaryTree struct {
 	binaryLeafs     []binaryLeaf     // 叶子节点
 }
 
+type Account struct {
+	Nonce    uint64
+	Balance  *big.Int
+	Root     common.Hash // merkle root of the storage trie
+	CodeHash []byte
+}
+
 // Trie is a Merkle Patricia Trie.
 // The zero value is an empty trie with no database.
 // Use New to create a trie that sits on top of a database.
 //
 // Trie is not safe for concurrent use.
 type Trie struct {
-	db   *Database
+	db   *WrapDatabase
 	root node
 	// Keep track of the number leafs which have been inserted since the last
 	// hashing operation. This number will not directly map to the number of
 	// actually unhashed nodes
 	unhashed int
 	bt       *BinaryTree
+}
+
+var rwMutes sync.RWMutex
+var btMap map[string]*BinaryTree
+
+func init() {
+	btMap = make(map[string]*BinaryTree)
 }
 
 // newFlag returns the cache flag value for a newly created node.
@@ -149,25 +164,20 @@ func New(root common.Hash, db *Database) (*Trie, error) {
 	if db == nil {
 		panic("trie.New called without a database")
 	}
-	trie := &Trie{
-		db: db,
-	}
-	db.trie = trie
+
+	trie := &Trie{}
+	wdb := NewWrapDatabase(db, trie)
+	wdb.trie = trie
+	trie.db = wdb
 	if root != (common.Hash{}) && root != emptyRoot {
 		rootnode, err := trie.resolveHash(root[:], nil)
 		if err != nil {
+			log.Warn("newTrie", "root", root.String(), "err", err)
 			return nil, err
 		}
 		trie.root = rootnode
 	}
 	return trie, nil
-}
-
-var rwMutes sync.RWMutex
-var btMap map[string]*BinaryTree
-
-func init() {
-	btMap = make(map[string]*BinaryTree)
 }
 
 // NewBinary creates a binary trie. path must be the same!!!!
@@ -180,7 +190,11 @@ func NewBinary(root common.Hash, db *Database, path string, depth int) (*Trie, e
 		bt = initBinaryTree(root, db, path, depth)
 		btMap[path] = bt
 	}
-	return newBinary(root, db, bt)
+	trie, err := newBinary(root, db, bt)
+	//if err == nil {
+	//	trie.loadAllLeafs()
+	//}
+	return trie, err
 }
 
 // newBinary creates a binary trie.
@@ -189,16 +203,18 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 		panic("trie.New called without a database")
 	}
 	trie := &Trie{
-		db: db,
 		bt: bt,
 	}
+	wdb := NewWrapDatabase(db, trie)
+	wdb.trie = trie // 后续数据库需要根据MPT或者是BMPT进行数据的读取
+	trie.db = wdb
 
-	db.trie = trie // 后续数据库需要根据MPT或者是BMPT进行数据的读取
 	curRoot := trie.binaryRoot()
 
 	// 如果不是要找回当前的root，那么尝试去恢复一下，如果能恢复成功，认为这颗BMPT存在，否则返回错误
 	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
 		node, err := trie.resolveHash(root[:], nil)
+		log.Warn("newBinary", "root", root.String(), "curRoot", curRoot.String(), "err", err)
 		if err == nil {
 			trie.root = node
 			return trie, err
@@ -206,8 +222,10 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 			return nil, err
 		}
 	} else {
+		log.Info("newBinary", "root", root.String(), "curRoot", curRoot.String())
 		trie.root = trie.bt.binaryHashNodes[0]
 	}
+
 	return trie, nil
 }
 
@@ -561,7 +579,14 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
-	//log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "value", hexutils.BytesToHex(value))
+	//debug.PrintStack()
+	//data := new(Account)
+	//if err := rlp.DecodeBytes(value, data); err == nil {
+	//	log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
+	//} else {
+	//	log.Warn("trie TryUpdate", "err", err)
+	//}
+	//log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "value", hexutils.BytesToHex(value))
 	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
@@ -1009,11 +1034,11 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			h.commitLoop(t.db)
+			h.commitLoop(t.db.Origin())
 		}()
 	}
 	var newRoot hashNode
-	newRoot, err = h.Commit(t.root, t.db)
+	newRoot, err = h.Commit(t.root, t.db.Origin())
 	t.db.insert(common.BytesToHash(newRoot), 0, nil)
 	if onleaf != nil {
 		// The leafch is created in newCommitter if there was an onleaf callback
@@ -1127,7 +1152,6 @@ func (t *Trie) binaryRoot() common.Hash {
 }
 
 // trieRoot calculates the trie root hash of the given trie
-
 func (t *Trie) trieRoot() common.Hash {
 	if t.Binary() {
 		if node, ok := t.root.(binaryHashNode); ok {
@@ -1142,21 +1166,39 @@ func (t *Trie) trieRoot() common.Hash {
 	return common.Hash{}
 }
 
+func (t *Trie) loadAllLeafs() {
+	for index := range t.bt.binaryLeafs {
+		leaf := t.bt.binaryLeafs[index]
+		if leaf != nil {
+			continue
+		}
+		binaryNodeIndex := index + int(math.BigPow(2, int64(t.bt.depth)).Int64()-1) // 对应哈希节点的索引值
+		hash := t.bt.binaryHashNodes[binaryNodeIndex].Hash
+		sliceHash := make([]byte, 32, 32)
+		copy(sliceHash, hash[:])
+		node, _ := t.resolveHash(sliceHash, nil)
+		if node != nil {
+			if data, ok := node.(binaryLeaf); ok {
+				leaf = data
+			} else {
+				leaf = make([]binaryNode, 0)
+			}
+		} else {
+			leaf = make([]binaryNode, 0) // 创建一个空切片，防止下次再次去数据库搜索
+		}
+		t.bt.binaryLeafs[index] = leaf
+	}
+}
+
 // printTrie
 func (t *Trie) print() {
-	for i, node := range t.bt.binaryHashNodes {
-		hash := make([]byte, 32, 32)
-		copy(hash, node.Hash[:])
-		log.Info("BinaryPrint hashNodes", "i", i, "hash", common.Bytes2Hex(hash), "num", node.Num)
-	}
-	for i, node := range t.bt.binaryLeafs {
-		for j, n := range node {
-			log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
-		}
+	if t.Binary() {
+		t.bt.print()
 	}
 }
 
 func (bt *BinaryTree) print() {
+	log.Info("PrintTrie", "binaryHashRoot", bt.binaryHashNodes[0].CalcHash().String())
 	for i, node := range bt.binaryHashNodes {
 		hash := make([]byte, 32, 32)
 		copy(hash, node.Hash[:])
@@ -1167,6 +1209,11 @@ func (bt *BinaryTree) print() {
 			log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
 		}
 	}
+	log.Info("PrintTrie end==================")
+}
+
+func (t *Trie) Print() {
+	t.print()
 }
 
 func (bt *BinaryTree) printCurDiffLeafs(info string) {

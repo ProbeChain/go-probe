@@ -241,6 +241,27 @@ func TestInsert(t *testing.T) {
 	}
 }
 
+func TestTrie(t *testing.T) {
+	db := NewDatabase(memorydb.New())
+	trie1, _ := New(common.Hash{}, db)
+	key := []byte("lang")
+	value := make([]byte, 0, 0)
+	trie1.Update(key, []byte("go"))
+	root := trie1.Hash()
+	trie1.Commit(nil)
+
+	trie1.Update(key, []byte("javascript"))
+
+	trie2, err := New(root, db)
+	if err != nil {
+		value, _ = trie2.TryGet(key)
+		t.Logf("value %s", value)
+	} else {
+		t.Log("err", err)
+	}
+
+}
+
 func TestDecodeAlters(t *testing.T) {
 	//[
 	//	"0x5a013a87733553966400242399dee3760877fead2cd87287747155e47a854acb",
@@ -507,7 +528,7 @@ func TestReplication(t *testing.T) {
 	}
 
 	// create a new trie on top of the database and check that lookups work.
-	trie2, err := New(exp, trie.db)
+	trie2, err := New(exp, trie.db.Origin())
 	if err != nil {
 		t.Fatalf("can't recreate trie at %x: %v", exp, err)
 	}
@@ -839,7 +860,7 @@ func TestTinyTrie(t *testing.T) {
 	if exp, root := common.HexToHash("0608c1d1dc3905fa22204c7a0e43644831c3b6d3def0f274be623a948197e64a"), trie.Hash(); exp != root {
 		t.Errorf("3: got %x, exp %x", root, exp)
 	}
-	checktr, _ := New(common.Hash{}, trie.db)
+	checktr, _ := New(common.Hash{}, trie.db.Origin())
 	it := NewIterator(trie.NodeIterator(nil))
 	for it.Next() {
 		checktr.Update(it.Key, it.Value)
