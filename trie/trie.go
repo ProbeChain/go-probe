@@ -589,17 +589,20 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
-	if big.NewInt(0).SetBytes(key).Int64() == 0 {
-		log.Info("insert a address 0x0000000000000000000000000000000000000000")
-		return nil
+	if t.Binary() {
+		if big.NewInt(0).SetBytes(key).Int64() == 0 {
+			log.Info("insert a address 0x0000000000000000000000000000000000000000")
+			return nil
+		}
+		data, err := toAccount(value)
+		if err == nil {
+			log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
+		} else {
+			log.Warn("trie TryUpdate", "err", err)
+		}
+		//debug.PrintStack()
 	}
-	data, err := toAccount(value)
-	if err == nil {
-		log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
-	} else {
-		log.Warn("trie TryUpdate", "err", err)
-	}
-	debug.PrintStack()
+
 	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)

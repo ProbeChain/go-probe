@@ -135,7 +135,7 @@ var TrieDir string
 func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
 	//tr, err := trie.NewSecure(root, db.db)
 	triePath := path.Join(TrieDir, "trie.bin")
-	tr, err := trie.NewBinary(root, db.db, triePath, 1)
+	tr, err := trie.NewBinary(root, db.db, triePath, 10)
 	if err != nil {
 		return nil, err
 	}
