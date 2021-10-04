@@ -908,7 +908,8 @@ func (bc *BlockChain) HasBlockAndState(hash common.Hash, number uint64) bool {
 	if block == nil {
 		return false
 	}
-	return bc.HasState(block.Root())
+	//return bc.HasState(block.Root())
+	return bc.HasSixState(block.Root())
 }
 
 // GetBlock retrieves a block from the database by hash and number,
@@ -2076,7 +2077,8 @@ func (bc *BlockChain) insertSideChain(block *types.Block, it *insertIterator) (i
 		numbers []uint64
 	)
 	parent := it.previous()
-	for parent != nil && !bc.HasState(parent.Root) {
+	//for parent != nil && !bc.HasState(parent.Root) {
+	for parent != nil && !bc.HasSixState(parent.Root) {
 		hashes = append(hashes, parent.Hash())
 		numbers = append(numbers, parent.Number.Uint64())
 
@@ -2605,4 +2607,10 @@ func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscript
 // block processing has started while false means it has stopped.
 func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscription {
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
+}
+
+func (bc *BlockChain) HasSixState(root common.Hash) bool {
+	_, err := state.OpenTotalTrie(root, bc.stateCache)
+
+	return err == nil
 }

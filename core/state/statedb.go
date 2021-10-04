@@ -387,13 +387,7 @@ func GetHash(root common.Hash, db Database) []common.Hash {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	// 根据 root 获取六棵树hash数组
-	hash := GetHash(root, db)
-	trGeneral, err := db.OpenTrie(hash[0])
-	trPns, err := db.OpenTrie(hash[1])
-	trAsset, err := db.OpenTrie(hash[2])
-	trContract, err := db.OpenTrie(hash[3])
-	trAuthorize, err := db.OpenTrie(hash[4])
-	trLose, err := db.OpenTrie(hash[5])
+	totalTrie, err := OpenTotalTrie(root, db)
 	//tr, err := db.OpenTrie(root)
 	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
 	if err != nil {
@@ -402,16 +396,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 	sdb := &StateDB{
 		db: db,
 		//trie:                tr,
-		trie: TotalTrie{
-			regularTrie:       trGeneral,
-			pnsTrie:           trPns,
-			digitalTrie:       trAsset,
-			contractTrie:      trContract,
-			authorizeTrie:     trAuthorize,
-			lossTrie:          trLose,
-			dPosHash:          hash[6],
-			dPosCandidateHash: hash[7],
-		},
+		trie:                totalTrie,
 		originalRoot:        root,
 		snaps:               snaps,
 		stateObjects:        make(map[common.Address]*stateObject),
@@ -432,6 +417,42 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		}
 	}
 	return sdb, nil
+}
+
+func OpenTotalTrie(root common.Hash, db Database) (TotalTrie, error) {
+	hash := GetHash(root, db)
+	trGeneral, err := db.OpenTrie(hash[0])
+	trPns, err1 := db.OpenTrie(hash[1])
+	if err1 != nil {
+		err = err1
+	}
+	trAsset, err2 := db.OpenTrie(hash[2])
+	if err2 != nil {
+		err = err2
+	}
+	trContract, err3 := db.OpenTrie(hash[3])
+	if err3 != nil {
+		err = err3
+	}
+	trAuthorize, err4 := db.OpenTrie(hash[4])
+	if err4 != nil {
+		err = err4
+	}
+	trLose, err5 := db.OpenTrie(hash[5])
+	if err5 != nil {
+		err = err5
+	}
+	totalTrie := TotalTrie{
+		regularTrie:       trGeneral,
+		pnsTrie:           trPns,
+		digitalTrie:       trAsset,
+		contractTrie:      trContract,
+		authorizeTrie:     trAuthorize,
+		lossTrie:          trLose,
+		dPosHash:          hash[6],
+		dPosCandidateHash: hash[7],
+	}
+	return totalTrie, err
 }
 
 // StartPrefetcher initializes a new trie prefetcher to pull in nodes from the
