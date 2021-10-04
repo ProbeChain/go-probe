@@ -1581,6 +1581,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	} else {
 		bc.chainSideFeed.Send(ChainSideEvent{Block: block})
 	}
+	log.Info("writeBlockWithState", "blockNumber", block.NumberU64(), "stateRoot", root.String())
+	//state.PrintTrie()
 	return status, nil
 }
 
@@ -1602,9 +1604,9 @@ func (bc *BlockChain) addFutureBlock(block *types.Block) error {
 // wrong.
 //
 // After insertion is done, all accumulated events will be fired.
-func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
+func (bc *BlockChain) InsertChain(blocks types.Blocks) (int, error) {
 	// Sanity check that we have something meaningful to import
-	if len(chain) == 0 {
+	if len(blocks) == 0 {
 		return 0, nil
 	}
 
@@ -1616,9 +1618,9 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 		block, prev *types.Block
 	)
 	// Do a sanity check that the provided chain is actually ordered and linked
-	for i := 1; i < len(chain); i++ {
-		block = chain[i]
-		prev = chain[i-1]
+	for i := 1; i < len(blocks); i++ {
+		block = blocks[i]
+		prev = blocks[i-1]
 		if block.NumberU64() != prev.NumberU64()+1 || block.ParentHash() != prev.Hash() {
 			// Chain broke ancestry, log a message (programming error) and skip insertion
 			log.Error("Non contiguous block insert", "number", block.Number(), "hash", block.Hash(),
@@ -1631,7 +1633,7 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 	// Pre-checks passed, start the full block imports
 	bc.wg.Add(1)
 	bc.chainmu.Lock()
-	n, err := bc.insertChain(chain, true)
+	n, err := bc.insertChain(blocks, true)
 	bc.chainmu.Unlock()
 	bc.wg.Done()
 
@@ -1662,13 +1664,13 @@ func (bc *BlockChain) InsertChainWithoutSealVerification(block *types.Block) (in
 // racey behaviour. If a sidechain import is in progress, and the historic state
 // is imported, but then new canon-head is added before the actual sidechain
 // completes, then the historic state could be pruned again
-func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, error) {
+func (bc *BlockChain) insertChain(blocks types.Blocks, verifySeals bool) (int, error) {
 	// If the chain is terminating, don't even bother starting up
 	if atomic.LoadInt32(&bc.procInterrupt) == 1 {
 		return 0, nil
 	}
 	// Start a parallel signature recovery (signer will fluke on fork transition, minimal perf loss)
-	senderCacher.recoverFromBlocks(types.MakeSigner(bc.chainConfig, chain[0].Number()), chain)
+	senderCacher.recoverFromBlocks(types.MakeSigner(bc.chainConfig, blocks[0].Number()), blocks)
 
 	var (
 		stats     = insertStats{startTime: mclock.Now()}
@@ -1681,10 +1683,10 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 		}
 	}()
 	// Start the parallel header verifier
-	headers := make([]*types.Header, len(chain))
-	seals := make([]bool, len(chain))
+	headers := make([]*types.Header, len(blocks))
+	seals := make([]bool, len(blocks))
 
-	for i, block := range chain {
+	for i, block := range blocks {
 		headers[i] = block.Header()
 		seals[i] = verifySeals
 	}
@@ -1692,7 +1694,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 	defer close(abort)
 
 	// Peek the error for the first block to decide the directing import logic
-	it := newInsertIterator(chain, results, bc.validator)
+	it := newInsertIterator(blocks, results, bc.validator)
 
 	block, err := it.next()
 
@@ -1939,7 +1941,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, verifySeals bool) (int, er
 		stats.usedGas += usedGas
 
 		dirty, _ := bc.stateCache.TrieDB().Size()
-		stats.report(chain, it.index, dirty)
+		stats.report(blocks, it.index, dirty)
 	}
 	// Any blocks remaining here? The only ones we care about are the future ones
 	if block != nil && errors.Is(err, consensus.ErrFutureBlock) {
