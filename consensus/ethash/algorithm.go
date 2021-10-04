@@ -18,7 +18,6 @@ package ethash
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"hash"
 	"math/big"
 	"reflect"
@@ -29,36 +28,34 @@ import (
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/bitutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/log"
 	"golang.org/x/crypto/sha3"
 )
 
 const (
-	datasetInitBytes   = 1 << 31 // Bytes in dataset at genesis 初始为2G
-	datasetGrowthBytes = 1 << 27 // Dataset growth per epoch 每次增长为128M
+	datasetInitBytes   = 1 << 30 // Bytes in dataset at genesis
+	datasetGrowthBytes = 1 << 23 // Dataset growth per epoch
 	cacheInitBytes     = 1 << 24 // Bytes in cache at genesis
 	cacheGrowthBytes   = 1 << 17 // Cache growth per epoch
-	epochLength        = 1 << 19 // Blocks per epoch
+	epochLength        = 30000   // Blocks per epoch
 	mixBytes           = 128     // Width of mix
 	hashBytes          = 64      // Hash length in bytes
 	hashWords          = 16      // Number of 32 bit ints in a hash
 	datasetParents     = 256     // Number of parents of each dataset element
 	cacheRounds        = 3       // Number of rounds in cache production
 	loopAccesses       = 64      // Number of accesses in hashimoto loop
-	keccak256Bytes     = 32		 // keccak256 length in bytes
 )
 
 // cacheSize returns the size of the ethash verification cache that belongs to a certain
 // block number.
-// cache 的大小固定为 64M
 func cacheSize(block uint64) uint64 {
-	return 67239104
-	//epoch := int(block / epochLength)
-	//if epoch < maxEpoch {
-	//	return cacheSizes[epoch]
-	//}
-	//return calcCacheSize(epoch)
+	epoch := int(block / epochLength)
+	if epoch < maxEpoch {
+		return cacheSizes[epoch]
+	}
+	return calcCacheSize(epoch)
 }
 
 // calcCacheSize calculates the cache size for epoch. The cache size grows linearly,
@@ -76,9 +73,8 @@ func calcCacheSize(epoch int) uint64 {
 // block number.
 func datasetSize(block uint64) uint64 {
 	epoch := int(block / epochLength)
-	// 原来是每次增加8M，我们每次增加128M，128 / 8 == 16
-	if epoch < maxEpoch / 16 {
-		return datasetSizes[epoch* 16]
+	if epoch < maxEpoch {
+		return datasetSizes[epoch]
 	}
 	return calcDatasetSize(epoch)
 }
@@ -123,15 +119,11 @@ func makeHasher(h hash.Hash) hasher {
 // seedHash is the seed to use for generating a verification cache and the mining
 // dataset.
 func seedHash(block uint64) []byte {
-	seed := make([]byte, keccak256Bytes)
-	for i, ch := range "probechain" {
-		seed[i] = byte(ch)
-	}
-	keccak256 := makeHasher(sha3.NewLegacyKeccak256())
+	seed := make([]byte, 32)
 	if block < epochLength {
-		keccak256(seed, seed)
 		return seed
 	}
+	keccak256 := makeHasher(sha3.NewLegacyKeccak256())
 	for i := 0; i < int(block/epochLength); i++ {
 		keccak256(seed, seed)
 	}
@@ -191,32 +183,26 @@ func generateCache(dest []uint32, epoch uint64, seed []byte) {
 
 	// Sequentially produce the initial dataset
 	keccak512(cache, seed)
-	for i := 1; i < rows; i++ {
-		keccak512(cache[i * hashBytes:], new(big.Int).Xor(new(big.Int).SetBytes(seed), big.NewInt(int64(i))).Bytes())
+	for offset := uint64(hashBytes); offset < size; offset += hashBytes {
+		keccak512(cache[offset:], cache[offset-hashBytes:offset])
 		atomic.AddUint32(&progress, 1)
 	}
+	// Use a low-round version of randmemohash
+	temp := make([]byte, hashBytes)
 
-	//for offset := uint64(hashBytes); offset < size; offset += hashBytes {
-	//	keccak512(cache[offset:], cache[offset-hashBytes:offset])
-	//	atomic.AddUint32(&progress, 1)
-	//}
-	//// Use a low-round version of randmemohash
-	//temp := make([]byte, hashBytes)
-	//
-	//for i := 0; i < cacheRounds; i++ {
-	//	for j := 0; j < rows; j++ {
-	//		var (
-	//			srcOff = ((j - 1 + rows) % rows) * hashBytes
-	//			dstOff = j * hashBytes
-	//			xorOff = (binary.LittleEndian.Uint32(cache[dstOff:]) % uint32(rows)) * hashBytes
-	//		)
-	//		bitutil.XORBytes(temp, cache[srcOff:srcOff+hashBytes], cache[xorOff:xorOff+hashBytes])
-	//		keccak512(cache[dstOff:], temp)
-	//
-	//		atomic.AddUint32(&progress, 1)
-	//	}
-	//}
+	for i := 0; i < cacheRounds; i++ {
+		for j := 0; j < rows; j++ {
+			var (
+				srcOff = ((j - 1 + rows) % rows) * hashBytes
+				dstOff = j * hashBytes
+				xorOff = (binary.LittleEndian.Uint32(cache[dstOff:]) % uint32(rows)) * hashBytes
+			)
+			bitutil.XORBytes(temp, cache[srcOff:srcOff+hashBytes], cache[xorOff:xorOff+hashBytes])
+			keccak512(cache[dstOff:], temp)
 
+			atomic.AddUint32(&progress, 1)
+		}
+	}
 	// Swap the byte order on big endian systems and return
 	if !isLittleEndian() {
 		swap(cache)
@@ -248,34 +234,6 @@ func fnvHash(mix []uint32, data []uint32) {
 // generateDatasetItem combines data from 256 pseudorandomly selected cache nodes,
 // and hashes that to compute a single dataset node.
 func generateDatasetItem(cache []uint32, index uint32, keccak512 hasher) []byte {
-	//start := time.Now()
-	//
-	//contents := make([]byte, hashBytes)
-	//keccak512(contents, big.NewInt(int64(index)).Bytes())
-	//cacheSize := len(cache)
-	//id := new(big.Int).Mod(new(big.Int).SetBytes(contents), big.NewInt(int64(cacheSize))).Bytes()
-	//
-	//for i := uint32(1); i < datasetParents; i++ {
-	//	tmp := make([]byte, 4)
-	//	mix := make([]byte, hashBytes)
-	//	indexSlice := append([]byte{0,0,0,0}, id...)
-	//	indexSlice = indexSlice[len(indexSlice)-4:]
-	//	index := binary.BigEndian.Uint32(indexSlice)
-	//	binary.BigEndian.PutUint32(tmp, cache[index] ^ i)
-	//	keccak512(mix, tmp)
-	//	id = new(big.Int).Mod(new(big.Int).SetBytes(mix), big.NewInt(int64(cacheSize))).Bytes()
-	//
-	//	tmp = []byte{3:0}
-	//	indexSlice = append([]byte{0,0,0,0}, id...)
-	//	indexSlice = indexSlice[len(indexSlice)-4:]
-	//	index = binary.BigEndian.Uint32(indexSlice)
-	//	binary.BigEndian.PutUint32(tmp, cache[index] ^ i)
-	//	keccak512(contents, tmp)
-	//}
-	//keccak512(contents, contents)
-	//log.Info("generateDatasetItem",  "elapsed", common.PrettyDuration(time.Since(start)))
-	//return contents
-
 	// Calculate the number of theoretical rows (we use one buffer nonetheless)
 	rows := uint32(len(cache) / hashWords)
 
@@ -367,9 +325,7 @@ func generateDataset(dest []uint32, epoch uint64, cache []uint32) {
 
 				if status := atomic.AddUint64(&progress, 1); status%percent == 0 {
 					logger.Info("Generating DAG in progress", "percentage", (status*100)/(size/hashBytes), "elapsed", common.PrettyDuration(time.Since(start)))
-					logger.Warn("generateDataset", "progress", progress, "percent", percent)
 				}
-
 			}
 		}(i)
 	}
@@ -423,81 +379,29 @@ func hashimoto(hash []byte, nonce uint64, size uint64, lookup func(index uint32)
 // in-memory cache) in order to produce our final value for a particular header
 // hash and nonce.
 func hashimotoLight(size uint64, cache []uint32, hash []byte, nonce uint64) ([]byte, []byte) {
-	//keccak512 := makeHasher(sha3.NewLegacyKeccak512())
-	//
-	//lookup := func(index uint32) []uint32 {
-	//	rawData := generateDatasetItem(cache, index, keccak512)
-	//
-	//	data := make([]uint32, len(rawData)/4)
-	//	for i := 0; i < len(data); i++ {
-	//		data[i] = binary.LittleEndian.Uint32(rawData[i*4:])
-	//	}
-	//	return data
-	//}
-	//return hashimoto(hash, nonce, size, lookup)
-	// @todo 后面根据实际情况更新dposAddress
 	keccak512 := makeHasher(sha3.NewLegacyKeccak512())
-	dposAddress, _ := hex.DecodeString("296e781bbb0179b032cbcc31e4b6cdab724b2773")
-	nonceBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nonceBytes, nonce)
-	seed := make([]byte, 0)
-	seed = append(seed, hash...)
-	seed = append(seed, dposAddress...)
-	seed = append(seed, nonceBytes...)
 
-	ticket := crypto.Keccak256(seed)
-	dataSize := size * 8 / 256
+	lookup := func(index uint32) []uint32 {
+		rawData := generateDatasetItem(cache, index, keccak512)
 
-	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
-
-	result := make([]byte, 32)
-	for i := 0; i < loopAccesses; i++ {
-		datasetItemSlice := generateDatasetItem(cache, uint32(id) / 2, keccak512)
-		if  uint32(id) % 2 == 0 {
-			datasetItemSlice = datasetItemSlice[0:32]
-		} else {
-			datasetItemSlice = datasetItemSlice[32:]
+		data := make([]uint32, len(rawData)/4)
+		for i := 0; i < len(data); i++ {
+			data[i] = binary.LittleEndian.Uint32(rawData[i*4:])
 		}
-		result = crypto.Keccak256(new(big.Int).Xor(new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
-		id = new(big.Int).Mod(new(big.Int).SetBytes(result), new(big.Int).SetInt64(int64(dataSize))).Int64()
+		return data
 	}
-	return result, result
+	return hashimoto(hash, nonce, size, lookup)
 }
 
 // hashimotoFull aggregates data from the full dataset (using the full in-memory
 // dataset) in order to produce our final value for a particular header hash and
 // nonce.
 func hashimotoFull(dataset []uint32, hash []byte, nonce uint64) ([]byte, []byte) {
-	//lookup := func(index uint32) []uint32 {
-	//	offset := index * hashWords
-	//	return dataset[offset : offset+hashWords]
-	//}
-	//return hashimoto(hash, nonce, uint64(len(dataset))*4, lookup)
-
-	// @todo 后面根据实际情况更新dposAddress
-	dposAddress, _ := hex.DecodeString("296e781bbb0179b032cbcc31e4b6cdab724b2773")
-	nonceBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(nonceBytes, nonce)
-	seed := make([]byte, 0)
-	seed = append(seed, hash...)
-	seed = append(seed, dposAddress...)
-	seed = append(seed, nonceBytes...)
-
-	ticket := crypto.Keccak256(seed)
-	dataSize := len(dataset) * 4 * 8 / 256
-
-	id := new(big.Int).Mod(new(big.Int).SetBytes(ticket), new(big.Int).SetInt64(int64(dataSize))).Int64()
-
-	result := make([]byte, 32)
-	for i := 0; i < loopAccesses; i++ {
-		datasetItemSlice := make([]byte, 256 / 8)
-		for i := 0; i < 8; i++ {
-			binary.LittleEndian.PutUint32(datasetItemSlice[i*4:], dataset[i+int(id)*8])
-		}
-		result = crypto.Keccak256(new(big.Int).Xor( new(big.Int).SetBytes(datasetItemSlice), new(big.Int).SetBytes(ticket)).Bytes())
-		id = new(big.Int).Mod(new(big.Int).SetBytes(result), new(big.Int).SetInt64(int64(dataSize))).Int64()
+	lookup := func(index uint32) []uint32 {
+		offset := index * hashWords
+		return dataset[offset : offset+hashWords]
 	}
-	return result, result
+	return hashimoto(hash, nonce, uint64(len(dataset))*4, lookup)
 }
 
 const maxEpoch = 2048
@@ -505,7 +409,32 @@ const maxEpoch = 2048
 // datasetSizes is a lookup table for the ethash dataset size for the first 2048
 // epochs (i.e. 61440000 blocks).
 var datasetSizes = [maxEpoch]uint64{
-	2155872128,
+	1073739904, 1082130304, 1090514816, 1098906752, 1107293056,
+	1115684224, 1124070016, 1132461952, 1140849536, 1149232768,
+	1157627776, 1166013824, 1174404736, 1182786944, 1191180416,
+	1199568512, 1207958912, 1216345216, 1224732032, 1233124736,
+	1241513344, 1249902464, 1258290304, 1266673792, 1275067264,
+	1283453312, 1291844992, 1300234112, 1308619904, 1317010048,
+	1325397376, 1333787776, 1342176128, 1350561664, 1358954368,
+	1367339392, 1375731584, 1384118144, 1392507008, 1400897408,
+	1409284736, 1417673344, 1426062464, 1434451072, 1442839168,
+	1451229056, 1459615616, 1468006016, 1476394112, 1484782976,
+	1493171584, 1501559168, 1509948032, 1518337664, 1526726528,
+	1535114624, 1543503488, 1551892096, 1560278656, 1568669056,
+	1577056384, 1585446272, 1593831296, 1602219392, 1610610304,
+	1619000192, 1627386752, 1635773824, 1644164224, 1652555648,
+	1660943488, 1669332608, 1677721216, 1686109312, 1694497664,
+	1702886272, 1711274624, 1719661184, 1728047744, 1736434816,
+	1744829056, 1753218944, 1761606272, 1769995904, 1778382464,
+	1786772864, 1795157888, 1803550592, 1811937664, 1820327552,
+	1828711552, 1837102976, 1845488768, 1853879936, 1862269312,
+	1870656896, 1879048064, 1887431552, 1895825024, 1904212096,
+	1912601216, 1920988544, 1929379456, 1937765504, 1946156672,
+	1954543232, 1962932096, 1971321728, 1979707264, 1988093056,
+	1996487552, 2004874624, 2013262208, 2021653888, 2030039936,
+	2038430848, 2046819968, 2055208576, 2063596672, 2071981952,
+	2080373632, 2088762752, 2097149056, 2105539712, 2113928576,
+	2122315136, 2130700672, 2139092608, 2147483264, 2155872128,
 	2164257664, 2172642176, 2181035392, 2189426048, 2197814912,
 	2206203008, 2214587264, 2222979712, 2231367808, 2239758208,
 	2248145024, 2256527744, 2264922752, 2273312128, 2281701248,
