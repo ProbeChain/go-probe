@@ -1581,7 +1581,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	} else {
 		bc.chainSideFeed.Send(ChainSideEvent{Block: block})
 	}
-	log.Info("writeBlockWithState", "stateRoot", root.String())
+	log.Info("writeBlockWithState", "blockNumber", block.NumberU64(), "stateRoot", root.String())
 	state.PrintTrie()
 	return status, nil
 }

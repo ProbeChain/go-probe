@@ -224,6 +224,7 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
 		node, err := trie.resolveHash(root[:], nil)
 		log.Warn("newBinary", "root", root.String(), "curRoot", curRoot.String(), "err", err)
+		debug.PrintStack()
 		if err == nil {
 			trie.root = node
 			return trie, err
@@ -310,7 +311,6 @@ func initBinaryTree(root common.Hash, db *Database, triePath string, depth int) 
 
 	binaryTree.alters = db.resolveAlters(binaryTree.binaryHashNodes[0].CalcHash())
 	binaryTree.curDiffLeafs = make([]DiffLeaf, 0, 0)
-
 	return binaryTree
 }
 
@@ -396,30 +396,34 @@ func (t *Trie) Get(key []byte) []byte {
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryGet(key []byte) ([]byte, error) {
 	if t.Binary() {
+		var value []byte
 		leaf := t.TryGetBinaryLeaf(key)
 		for _, node := range leaf {
 			if bytes.Compare(key, node.Key) == 0 {
-				return node.Val, nil
+				value = node.Val
+				t.root = t.bt.binaryHashNodes[0]
+				break
 			}
 		}
-		return nil, nil
+		if value != nil {
+			data, err := toAccount(value)
+			if err == nil {
+				log.Info("trie TryGet", "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.String(), "trieRoot", t.trieRoot().String(), "binaryRoot", t.binaryRoot().String())
+			} else {
+				log.Warn("trie TryGet", "err", err)
+			}
+			binaryRoot := t.binaryRoot()
+			trieRoot := t.trieRoot()
+			if !bytes.Equal(binaryRoot.Bytes(), trieRoot.Bytes()) {
+				debug.PrintStack()
+			}
+		}
+		return value, nil
 	} else {
 		value, newroot, didResolve, err := t.tryGet(t.root, keybytesToHex(key), 0)
 		if err == nil && didResolve {
 			t.root = newroot
 		}
-
-		if big.NewInt(0).SetBytes(key).Int64() == 0 {
-			log.Info("get a address 0x0000000000000000000000000000000000000000")
-			data, err := toAccount(value)
-			if err == nil {
-				log.Info("trie TryGet", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
-			} else {
-				log.Warn("trie TryGet", "err", err)
-			}
-			debug.PrintStack()
-		}
-
 		return value, err
 	}
 }
@@ -600,17 +604,20 @@ func (t *Trie) Update(key, value []byte) {
 //
 // If a node was not found in the database, a MissingNodeError is returned.
 func (t *Trie) TryUpdate(key, value []byte) error {
-	if big.NewInt(0).SetBytes(key).Int64() == 0 {
-		log.Info("insert a address 0x0000000000000000000000000000000000000000")
-		return nil
+	if t.Binary() {
+		if big.NewInt(0).SetBytes(key).Int64() == 0 {
+			log.Info("insert a address 0x0000000000000000000000000000000000000000")
+			return nil
+		}
+		data, err := toAccount(value)
+		if err == nil {
+			log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.String(), "trieRoot", t.trieRoot().String(), "binaryRoot", t.binaryRoot().String())
+		} else {
+			log.Warn("trie TryUpdate", "err", err)
+		}
+		//debug.PrintStack()
 	}
-	data, err := toAccount(value)
-	if err == nil {
-		log.Info("trie TryUpdate", "binary", t.Binary(), "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
-	} else {
-		log.Warn("trie TryUpdate", "err", err)
-	}
-	debug.PrintStack()
+
 	if t.Binary() {
 		_, leafIndex := t.relatedIndexs(key)
 		leaf := t.TryGetBinaryLeaf(key)
@@ -998,7 +1005,8 @@ func (t *Trie) Hash() common.Hash {
 		}
 		t.bt.alters = append(t.bt.alters, alter)
 		t.bt.curDiffLeafs = make([]DiffLeaf, 0, 0)
-
+		log.Info("trie getHash", "binaryRoot", curRoot.String(), "preRoot", preRoot.String())
+		debug.PrintStack()
 		return curRoot
 	} else {
 		// 返回的cached是将算过的哈希值保存到nodeFlag中防止下次计算哈希需要重新计算，其他的值均保持不变
@@ -1167,10 +1175,7 @@ func (t *Trie) hashRoot() (node, node, error) {
 // binaryRoot calculates the BMPT root hash of the given trie
 func (t *Trie) binaryRoot() common.Hash {
 	if t.Binary() {
-		hash := make([]byte, 32, 32+4)
-		copy(hash, t.bt.binaryHashNodes[0].Hash[0:])
-		hash = crypto.Keccak256(concat(hash, intToBytes(t.bt.binaryHashNodes[0].Num)...))
-		return common.BytesToHash(hash)
+		return t.bt.binaryHashNodes[0].CalcHash()
 	}
 	return common.Hash{}
 }
@@ -1179,10 +1184,7 @@ func (t *Trie) binaryRoot() common.Hash {
 func (t *Trie) trieRoot() common.Hash {
 	if t.Binary() {
 		if node, ok := t.root.(binaryHashNode); ok {
-			hash := make([]byte, 32, 32+4)
-			copy(hash, node.Hash[:])
-			hash = crypto.Keccak256(concat(hash, intToBytes(node.Num)...))
-			return common.BytesToHash(hash)
+			return node.CalcHash()
 		} else {
 			return common.Hash{}
 		}
@@ -1233,7 +1235,7 @@ func (bt *BinaryTree) print() {
 		for j, n := range node {
 			data, err := toAccount(n.Val)
 			if err == nil {
-				log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "nonce", data.Nonce, "balance", data.Balance.Uint64())
+				log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "nonce", data.Nonce, "balance", data.Balance.String())
 			} else {
 				log.Warn("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
 			}
