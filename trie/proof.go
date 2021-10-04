@@ -548,7 +548,11 @@ func VerifyRangeProof(rootHash common.Hash, firstKey []byte, lastKey []byte, key
 	}
 	// Rebuild the trie with the leaf stream, the shape of trie
 	// should be same with the original one.
-	tr := &Trie{root: root, db: NewDatabase(memorydb.New())}
+	tr := &Trie{root: root}
+	wdb := NewWrapDatabase(NewDatabase(memorydb.New()), tr)
+	wdb.trie = tr
+	tr.db = wdb
+
 	if empty {
 		tr.root = nil
 	}

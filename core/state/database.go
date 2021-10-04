@@ -100,6 +100,8 @@ type Trie interface {
 	// nodes of the longest existing prefix of the key (at least the root), ending
 	// with the node that proves the absence of the key.
 	Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error
+
+	Print()
 }
 
 // NewDatabase creates a backing store for state. The returned database is safe for
@@ -149,6 +151,8 @@ func (db *cachingDB) OpenStorageTrie(addrHash, root common.Hash) (Trie, error) {
 func (db *cachingDB) CopyTrie(t Trie) Trie {
 	switch t := t.(type) {
 	case *trie.SecureTrie:
+		return t.Copy()
+	case *trie.Trie:
 		return t.Copy()
 	default:
 		panic(fmt.Errorf("unknown trie type %T", t))

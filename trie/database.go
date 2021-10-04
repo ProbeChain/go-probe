@@ -58,6 +58,13 @@ var (
 	memcacheCommitSizeMeter  = metrics.NewRegisteredMeter("trie/memcache/commit/size", nil)
 )
 
+// commitLeaf
+type commitLeaf struct {
+	Commit bool        // Whether you have committed to levelDb
+	Hash   common.Hash // the key commit to levelDb
+	Index  int         // the index in the binary leaf
+}
+
 // Database is an intermediate write layer between the trie data structures and
 // the disk database. The aim is to accumulate trie writes in-memory and only
 // periodically flush a couple tries to disk, garbage collecting the remainder.
@@ -69,10 +76,11 @@ var (
 type Database struct {
 	diskdb ethdb.KeyValueStore // Persistent storage for matured trie nodes
 
-	cleans  *fastcache.Cache            // GC friendly memory cache of clean node RLPs
-	dirties map[common.Hash]*cachedNode // Data and references relationships of dirty trie nodes
-	oldest  common.Hash                 // Oldest tracked node, flush-list head
-	newest  common.Hash                 // Newest tracked node, flush-list tail
+	cleans      *fastcache.Cache            // GC friendly memory cache of clean node RLPs
+	dirties     map[common.Hash]*cachedNode // Data and references relationships of dirty trie nodes
+	commitLeafs []*commitLeaf               // 已提交的叶子节点列表
+	oldest      common.Hash                 // Oldest tracked node, flush-list head
+	newest      common.Hash                 // Newest tracked node, flush-list tail
 
 	preimages map[common.Hash][]byte // Preimages of nodes from the secure trie
 
@@ -87,6 +95,8 @@ type Database struct {
 	dirtiesSize   common.StorageSize // Storage size of the dirty node cache (exc. metadata)
 	childrenSize  common.StorageSize // Storage size of the external children tracking
 	preimagesSize common.StorageSize // Storage size of the preimages cache
+	trie          *Trie              // 我们要标记这棵树是二叉树还是MPT树
+	storages      []common.Hash
 
 	lock sync.RWMutex
 }
@@ -139,8 +149,9 @@ func (n rawShortNode) fstring(ind string) string { panic("this should never end 
 // cachedNode is all the information we know about a single cached trie node
 // in the memory database write layer.
 type cachedNode struct {
-	node node   // Cached collapsed trie node, or raw rlp data
-	size uint16 // Byte size of the useful cached data
+	node  node   // Cached collapsed trie node, or raw rlp data
+	size  uint16 // Byte size of the useful cached data
+	index int    // leaf index
 
 	parents  uint32                 // Number of live nodes referencing this one
 	children map[common.Hash]uint16 // External children referenced by this node
@@ -168,6 +179,7 @@ func (n *cachedNode) rlp() []byte {
 	if err != nil {
 		panic(err)
 	}
+	//fmt.Printf("cachedNode rlp data: %s\n", hexutils.BytesToHex(blob))
 	return blob
 }
 
@@ -204,7 +216,7 @@ func forGatherChildren(n node, onChild func(hash common.Hash)) {
 		}
 	case hashNode:
 		onChild(common.BytesToHash(n))
-	case valueNode, nil, rawNode:
+	case valueNode, nil, rawNode, binaryLeaf, binaryHashNode:
 	default:
 		panic(fmt.Sprintf("unknown node type: %T", n))
 	}
@@ -228,7 +240,7 @@ func simplifyNode(n node) node {
 		}
 		return node
 
-	case valueNode, hashNode, rawNode:
+	case valueNode, hashNode, rawNode, binaryLeaf, binaryHashNode:
 		return n
 
 	default:
@@ -264,7 +276,7 @@ func expandNode(hash hashNode, n node) node {
 		}
 		return node
 
-	case valueNode, hashNode:
+	case valueNode, hashNode, binaryHashNode, binaryLeaf:
 		return n
 
 	default:
@@ -302,6 +314,7 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 		diskdb: diskdb,
 		cleans: cleans,
 		dirties: map[common.Hash]*cachedNode{{}: {
+			index:    -1,
 			children: make(map[common.Hash]uint16),
 		}},
 	}
@@ -316,11 +329,16 @@ func (db *Database) DiskDB() ethdb.KeyValueStore {
 	return db.diskdb
 }
 
-// insert inserts a collapsed trie node into the memory database.
-// The blob size must be specified to allow proper size tracking.
-// All nodes inserted by this function will be reference tracked
-// and in theory should only used for **trie nodes** insertion.
-func (db *Database) insert(hash common.Hash, size int, node node) {
+// Binary 是否是二叉树提交过来的数据
+func (db *Database) Binary() bool {
+	if db.trie != nil {
+		return db.trie.Binary()
+	}
+	return false
+}
+
+// insertLeaf
+func (db *Database) insertLeaf(index int, hash common.Hash, size int, node node) {
 	// If the node's already cached, skip
 	if _, ok := db.dirties[hash]; ok {
 		return
@@ -332,6 +350,46 @@ func (db *Database) insert(hash common.Hash, size int, node node) {
 		node:      simplifyNode(node),
 		size:      uint16(size),
 		flushPrev: db.newest,
+		index:     index,
+	}
+	for hash, cachedNode := range db.dirties {
+		if cachedNode.index == index {
+			delete(db.dirties, hash)
+			break
+		}
+	}
+	db.dirties[hash] = entry
+	db.dirtiesSize += common.StorageSize(common.HashLength + entry.size)
+
+	db.commitLeafs = append([]*commitLeaf{{
+		Commit: false,
+		Index:  index,
+		Hash:   hash,
+	}}, db.commitLeafs...)
+}
+
+// insert inserts a collapsed trie node into the memory database.
+// The blob size must be specified to allow proper size tracking.
+// All nodes inserted by this function will be reference tracked
+// and in theory should only used for **trie nodes** insertion.
+func (db *Database) insert(hash common.Hash, size int, node node) {
+	// 智能合约为一个MPT，提交storageRoot即可
+	if node == nil {
+		db.storages = append(db.storages, hash)
+		return
+	}
+	// If the node's already cached, skip
+	if _, ok := db.dirties[hash]; ok {
+		return
+	}
+	memcacheDirtyWriteMeter.Mark(int64(size))
+
+	// Create the cached entry for this node
+	entry := &cachedNode{
+		node:      simplifyNode(node),
+		size:      uint16(size),
+		flushPrev: db.newest,
+		index:     -1,
 	}
 	entry.forChilds(func(child common.Hash) {
 		if c := db.dirties[child]; c != nil {
@@ -367,6 +425,93 @@ func (db *Database) insertPreimage(hash common.Hash, preimage []byte) {
 	db.preimagesSize += common.StorageSize(common.HashLength + len(preimage))
 }
 
+// alters retrieves a alters from leveldb
+func (db *Database) resolveAlters(hash common.Hash) []Alter {
+	alters := make([]Alter, 0, 0)
+	root := hash
+	count := 0
+	for {
+		count++
+
+		cur := rawdb.ReadAlters(db.diskdb, root)
+		if len(cur) == 0 {
+			break
+		}
+		alter := Alter{}
+
+		elems, rest, err := rlp.SplitList(cur)
+		if err != nil {
+		}
+
+		cur = elems
+		elems, rest, err = rlp.SplitString(cur)
+		copy(alter.PreRoot[0:], elems)
+
+		cur = rest
+		elems, rest, _ = rlp.SplitString(cur)
+		copy(alter.CurRoot[0:], elems)
+
+		cur = rest
+		elems, rest, err = rlp.SplitList(cur)
+
+		cur = elems
+		for {
+			var diffLeaf DiffLeaf
+			index := make([]byte, 0, 0)
+			next := make([]byte, 0, 0)
+
+			elems, rest, err = rlp.SplitList(cur)
+			next = append(next, rest...)
+			cur = next
+
+			index, rest, err = rlp.SplitString(elems)
+			diffLeaf.Index = uint32(bytesToInt(index))
+
+			elems, rest, err = rlp.SplitList(rest)
+
+			leaf := make([]binaryNode, 0, 0) // 如果叶子节点是空的，默认为空数组
+			cur := elems
+			for {
+				var node binaryNode
+				key := make([]byte, 0, 0)
+				val := make([]byte, 0, 0)
+
+				elems, rest, err = rlp.SplitList(cur)
+				next := rest
+				cur = rest
+
+				if len(elems) > 0 {
+					elems, rest, err = rlp.SplitList(elems)
+					key, rest, err = rlp.SplitString(rest)
+					val, rest, err = rlp.SplitString(rest)
+					node.Key = key
+					node.Val = val
+					leaf = append(leaf, node)
+				}
+
+				if len(next) == 0 {
+					break
+				}
+			}
+			diffLeaf.Leaf = leaf
+			alter.DiffLeafs = append(alter.DiffLeafs, diffLeaf)
+
+			if len(next) == 0 {
+				break
+			}
+		}
+		alter.commit = true
+		alters = append(alters, alter)
+		copy(root[:], alter.PreRoot[:])
+
+		// 最多支持回滚10个
+		if count >= rollBackMaxStep {
+			break
+		}
+	}
+	return alters
+}
+
 // node retrieves a cached trie node from memory, or returns nil if none can be
 // found in the memory cache.
 func (db *Database) node(hash common.Hash) node {
@@ -375,7 +520,11 @@ func (db *Database) node(hash common.Hash) node {
 		if enc := db.cleans.Get(nil, hash[:]); enc != nil {
 			memcacheCleanHitMeter.Mark(1)
 			memcacheCleanReadMeter.Mark(int64(len(enc)))
-			return mustDecodeNode(hash[:], enc)
+			if db.Binary() {
+				return mustDecodeBinaryNode(hash[:], enc)
+			} else {
+				return mustDecodeNode(hash[:], enc)
+			}
 		}
 	}
 	// Retrieve the node from the dirty cache if available
@@ -400,7 +549,11 @@ func (db *Database) node(hash common.Hash) node {
 		memcacheCleanMissMeter.Mark(1)
 		memcacheCleanWriteMeter.Mark(int64(len(enc)))
 	}
-	return mustDecodeNode(hash[:], enc)
+	if db.Binary() {
+		return mustDecodeBinaryNode(hash[:], enc)
+	} else {
+		return mustDecodeNode(hash[:], enc)
+	}
 }
 
 // Node retrieves an encoded cached trie node from memory. If it cannot be found
@@ -519,6 +672,9 @@ func (db *Database) Dereference(root common.Hash) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 
+	db.dereferenceAlters()
+	db.dereferenceLeafs()
+
 	nodes, storage, start := len(db.dirties), db.dirtiesSize, time.Now()
 	db.dereference(root, common.Hash{})
 
@@ -532,6 +688,65 @@ func (db *Database) Dereference(root common.Hash) {
 
 	log.Debug("Dereferenced trie from memory database", "nodes", nodes-len(db.dirties), "size", storage-db.dirtiesSize, "time", time.Since(start),
 		"gcnodes", db.gcnodes, "gcsize", db.gcsize, "gctime", db.gctime, "livenodes", len(db.dirties), "livesize", db.dirtiesSize)
+}
+
+// dereferenceAlters
+func (db *Database) dereferenceAlters() {
+	if db.Binary() {
+		db.trie.sortAlter()
+		size := len(db.trie.bt.alters)
+
+		// delete levedb
+		for i, alter := range db.trie.bt.alters {
+			if i < size-rollBackMaxStep {
+				if alter.commit {
+					rawdb.DelAlters(db.diskdb, alter.CurRoot)
+				}
+			}
+		}
+
+		// delete memory
+		if size > rollBackMaxStep {
+			db.trie.bt.alters = db.trie.bt.alters[size-rollBackMaxStep:]
+		}
+	}
+}
+
+// dereferenceLeafs
+func (db *Database) dereferenceLeafs() {
+	cursor := 0
+	size := len(db.commitLeafs)
+	for {
+		if cursor == size {
+			break
+		}
+
+		// Delete duplicate submissions in leveldb
+		curLeaf := db.commitLeafs[cursor]
+		if curLeaf != nil {
+			curLeafIndex := curLeaf.Index
+			for i := cursor + 1; i < size; i++ {
+				leaf := db.commitLeafs[i]
+				if leaf != nil && leaf.Index == curLeafIndex {
+					if leaf.Commit {
+						rawdb.DeleteTrieNode(db.diskdb, leaf.Hash)
+					}
+					db.commitLeafs[i] = nil
+				}
+			}
+		}
+
+		cursor++
+	}
+
+	// Delete data that has been deleted from the Level DB
+	commitLeafs := make([]*commitLeaf, 0, size)
+	for _, leaf := range db.commitLeafs {
+		if leaf != nil {
+			commitLeafs = append(commitLeafs, leaf)
+		}
+	}
+	db.commitLeafs = commitLeafs
 }
 
 // dereference is the private locked version of Dereference.
@@ -680,6 +895,10 @@ func (db *Database) Cap(limit common.StorageSize) error {
 	memcacheFlushSizeMeter.Mark(int64(storage - db.dirtiesSize))
 	memcacheFlushNodesMeter.Mark(int64(nodes - len(db.dirties)))
 
+	if db.Binary() {
+		db.trie.Flush()
+	}
+
 	log.Debug("Persisted nodes from memory database", "nodes", nodes-len(db.dirties), "size", storage-db.dirtiesSize, "time", time.Since(start),
 		"flushnodes", db.flushnodes, "flushsize", db.flushsize, "flushtime", db.flushtime, "livenodes", len(db.dirties), "livesize", db.dirtiesSize)
 
@@ -692,7 +911,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 //
 // Note, this method is a non-synchronized mutator. It is unsafe to call this
 // concurrently with other mutators.
-func (db *Database) Commit(node common.Hash, report bool, callback func(common.Hash)) error {
+func (db *Database) Commit(hash common.Hash, report bool, callback func(common.Hash)) error {
 	// Create a database batch to flush persistent data out. It is important that
 	// outside code doesn't see an inconsistent state (referenced data removed from
 	// memory cache during commit but not yet in persistent storage). This is ensured
@@ -712,12 +931,37 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	}
 	// Move the trie itself into the batch, flushing if enough data is accumulated
 	nodes, storage := len(db.dirties), db.dirtiesSize
-
 	uncacher := &cleaner{db}
-	if err := db.commit(node, batch, uncacher, callback); err != nil {
-		log.Error("Failed to commit trie from trie database", "err", err)
-		return err
+
+	// 提交BMPT部分
+	for hash, cachedNode := range db.dirties {
+		node := cachedNode.node
+		_, ok := node.(binaryHashNode)
+		if cachedNode.index >= 0 || ok {
+			for _, commitLeaf := range db.commitLeafs {
+				if hash == commitLeaf.Hash {
+					commitLeaf.Commit = true
+				}
+			}
+			if err := db.commit(hash, batch, uncacher, callback); err != nil {
+				log.Error("Failed to commit trie from trie database", "err", err)
+				return err
+			}
+		}
 	}
+
+	// 提交修改的部分
+	db.commitAlter(batch)
+
+	// 提交MPT部分
+	for _, hash := range db.storages {
+		if err := db.commit(hash, batch, uncacher, callback); err != nil {
+			log.Error("Failed to commit trie from trie database", "err", err)
+			return err
+		}
+	}
+	db.storages = make([]common.Hash, 0, 0)
+
 	// Trie mostly committed to disk, flush any batch leftovers
 	if err := batch.Write(); err != nil {
 		log.Error("Failed to write trie to disk", "err", err)
@@ -748,7 +992,9 @@ func (db *Database) Commit(node common.Hash, report bool, callback func(common.H
 	// Reset the garbage collection statistics
 	db.gcnodes, db.gcsize, db.gctime = 0, 0, 0
 	db.flushnodes, db.flushsize, db.flushtime = 0, 0, 0
-
+	if db.Binary() {
+		db.trie.Flush()
+	}
 	return nil
 }
 
@@ -785,6 +1031,21 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 	return nil
 }
 
+// commitAlter commit alters
+func (db *Database) commitAlter(batch ethdb.Batch) {
+	if db.Binary() {
+		alters := db.trie.bt.alters
+		for i, alter := range alters {
+			if !alter.commit {
+				if bytes, err := rlp.EncodeToBytes(alter); err == nil {
+					rawdb.WriteAlters(batch, common.BytesToHash(alter.CurRoot[:]), bytes)
+				}
+				alters[i].commit = true
+			}
+		}
+	}
+}
+
 // cleaner is a database batch replayer that takes a batch of write operations
 // and cleans up the trie database from anything written to disk.
 type cleaner struct {
@@ -802,6 +1063,11 @@ func (c *cleaner) Put(key []byte, rlp []byte) error {
 	// If the node does not exist, we're done on this path
 	node, ok := c.db.dirties[hash]
 	if !ok {
+		return nil
+	}
+	_, binaryHash := node.node.(binaryHashNode)
+	_, binaryLeaf := node.node.(binaryLeaf)
+	if binaryHash || binaryLeaf {
 		return nil
 	}
 	// Node still exists, remove it from the flush-list

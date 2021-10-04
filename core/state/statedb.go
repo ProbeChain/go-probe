@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/status-im/keycard-go/hexutils"
 	"math/big"
 	"net"
 	"sort"
@@ -1964,4 +1965,8 @@ func (s *StateDB) IntermediateRootForDPos(dPosHash common.Hash) common.Hash {
 func (s *StateDB) IntermediateRootForDPosCandidate(dPosCandidateHash common.Hash) common.Hash {
 	s.trie.dPosCandidateHash = dPosCandidateHash
 	return s.trie.Hash()
+}
+
+func (s *StateDB) PrintTrie() {
+	s.trie.Print()
 }
