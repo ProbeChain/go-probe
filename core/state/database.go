@@ -55,6 +55,9 @@ type Database interface {
 
 	// TrieDB retrieves the low level trie database used for data storage.
 	TrieDB() *trie.Database
+
+	// OpenTrie opens the main account trie.
+	OpenBinTrie(root common.Hash, path string, depth int) (Trie, error)
 }
 
 // Trie is a Ethereum Merkle Patricia trie.
@@ -201,4 +204,13 @@ func (db *cachingDB) ContractCodeSize(addrHash, codeHash common.Hash) (int, erro
 // TrieDB retrieves any intermediate trie-node caching layer.
 func (db *cachingDB) TrieDB() *trie.Database {
 	return db.db
+}
+
+// OpenBinTrie opens the main account trie at a specific root hash.
+func (db *cachingDB) OpenBinTrie(root common.Hash, path string, depth int) (Trie, error) {
+	tr, err := trie.NewBinary(root, db.db, path, depth)
+	if err != nil {
+		return nil, err
+	}
+	return tr, nil
 }

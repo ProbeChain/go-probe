@@ -1,0 +1,3 @@
+package globalconfig
+
+var DataDir = ""

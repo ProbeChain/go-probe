@@ -251,3 +251,7 @@ func nibblesToKey(nib []byte) []byte {
 	}
 	return key
 }
+
+func (db *odrDatabase) OpenBinTrie(root common.Hash, path string, depth int) (state.Trie, error) {
+	return nil, nil
+}

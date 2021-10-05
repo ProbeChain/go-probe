@@ -405,19 +405,6 @@ func (t *Trie) TryGet(key []byte) ([]byte, error) {
 				break
 			}
 		}
-		if value != nil {
-			data, err := toAccount(value)
-			if err == nil {
-				log.Info("trie TryGet", "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.String(), "trieRoot", t.trieRoot().String(), "binaryRoot", t.binaryRoot().String())
-			} else {
-				log.Warn("trie TryGet", "err", err)
-			}
-			binaryRoot := t.binaryRoot()
-			trieRoot := t.trieRoot()
-			if !bytes.Equal(binaryRoot.Bytes(), trieRoot.Bytes()) {
-				debug.PrintStack()
-			}
-		}
 		return value, nil
 	} else {
 		value, newroot, didResolve, err := t.tryGet(t.root, keybytesToHex(key), 0)

@@ -22,9 +22,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/globalconfig"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/status-im/keycard-go/hexutils"
 	"math/big"
 	"net"
 	"sort"
@@ -49,6 +49,16 @@ type revision struct {
 var (
 	// emptyRoot is the known root hash of an empty trie.
 	emptyRoot = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+)
+
+const (
+	TRIE_DEPTH = 10
+	TRIE_PATH0 = "/stateTrie0"
+	TRIE_PATH1 = "/stateTrie1"
+	TRIE_PATH2 = "/stateTrie2"
+	TRIE_PATH3 = "/stateTrie3"
+	TRIE_PATH4 = "/stateTrie4"
+	TRIE_PATH5 = "/stateTrie5"
 )
 
 type proofList [][]byte
@@ -423,24 +433,24 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 
 func OpenTotalTrie(root common.Hash, db Database) (TotalTrie, error) {
 	hash := GetHash(root, db)
-	trGeneral, err := db.OpenTrie(hash[0])
-	trPns, err1 := db.OpenTrie(hash[1])
+	trGeneral, err := db.OpenBinTrie(hash[0], globalconfig.DataDir+TRIE_PATH0, TRIE_DEPTH)
+	trPns, err1 := db.OpenBinTrie(hash[1], globalconfig.DataDir+TRIE_PATH1, TRIE_DEPTH)
 	if err1 != nil {
 		err = err1
 	}
-	trAsset, err2 := db.OpenTrie(hash[2])
+	trAsset, err2 := db.OpenBinTrie(hash[2], globalconfig.DataDir+TRIE_PATH2, TRIE_DEPTH)
 	if err2 != nil {
 		err = err2
 	}
-	trContract, err3 := db.OpenTrie(hash[3])
+	trContract, err3 := db.OpenBinTrie(hash[3], globalconfig.DataDir+TRIE_PATH3, TRIE_DEPTH)
 	if err3 != nil {
 		err = err3
 	}
-	trAuthorize, err4 := db.OpenTrie(hash[4])
+	trAuthorize, err4 := db.OpenBinTrie(hash[4], globalconfig.DataDir+TRIE_PATH4, TRIE_DEPTH)
 	if err4 != nil {
 		err = err4
 	}
-	trLose, err5 := db.OpenTrie(hash[5])
+	trLose, err5 := db.OpenBinTrie(hash[5], globalconfig.DataDir+TRIE_PATH5, TRIE_DEPTH)
 	if err5 != nil {
 		err = err5
 	}
@@ -1968,5 +1978,5 @@ func (s *StateDB) IntermediateRootForDPosCandidate(dPosCandidateHash common.Hash
 }
 
 func (s *StateDB) PrintTrie() {
-	s.trie.Print()
+	//s.trie.Print()
 }

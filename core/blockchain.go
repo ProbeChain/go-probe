@@ -137,6 +137,10 @@ type CacheConfig struct {
 	Preimages           bool          // Whether to store preimage of trie key to the disk
 
 	SnapshotWait bool // Wait for snapshot construction on startup. TODO(karalabe): This is a dirty hack for testing, nuke it
+
+	// DataDir is the file system folder the node should use for any data storage
+	// in memory.
+	DataDir string
 }
 
 // defaultCacheConfig are the default caching values if none are specified by the
@@ -2612,6 +2616,7 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 }
 
 func (bc *BlockChain) HasSixState(root common.Hash) bool {
+
 	_, err := state.OpenTotalTrie(root, bc.stateCache)
 
 	return err == nil
