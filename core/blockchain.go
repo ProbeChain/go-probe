@@ -18,7 +18,6 @@
 package core
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -272,7 +271,11 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	number := block.NumberU64()
 	stateDB, _ := bc.StateAt(block.Root())
 
+	for _, s := range stateDB.GetStateDbTrie().GetTallHash() {
+		log.Info("NewBlockChain roothash ", "hash", s.Hex())
+	}
 	dposHash := stateDB.GetStateDbTrie().GetTallHash()[6]
+	log.Info("NewBlockChain dPosHash", "dPosHash", dposHash.Hex())
 	epoch := uint64(common.DposEpoch)
 	dposNo := number + 1 - (number + 1%epoch)
 	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
@@ -280,11 +283,10 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	//if nil != data {
 	var dposAccountList []common.DPoSAccount
 
-	json.Unmarshal(data, &dposAccountList)
-
-	/*if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
+	//json.Unmarshal(data, &dposAccountList)
+	if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
 		log.Crit("Invalid dposList for block number in database", "err", err)
-	}*/
+	}
 
 	chainConfig.DposConfig = new(params.DposConfig)
 	chainConfig.DposConfig.DposList = dposAccountList
@@ -2455,16 +2457,20 @@ func (bc *BlockChain) writeDposNodes() {
 		db := bc.stateCache.TrieDB().DiskDB()
 		stateDB, _ := bc.StateAt(block.Root())
 
-		dPosList := stateDB.GetDpostList()
+		dPosList := stateDB.GetCurrentDpostList()
 		stateDB.ChangDpostAccount(dPosList)
 		dPosHash := state.BuildHashForDPos(dPosList)
+		log.Info("writeDposNodes dPosHash", "dPosHash", dPosHash.Hex())
+		for _, s := range stateDB.GetStateDbTrie().GetTallHash() {
+			log.Info("NewBlockChain roothash ", "hash", s.Hex())
+		}
 		rootHash := stateDB.IntermediateRootForDPos(dPosHash)
 		log.Info("writeDposNodes rootHash", "rootHash", rootHash.Hex())
-		data, _ := json.Marshal(dPosList)
-		/*data, err := rlp.EncodeToBytes(dPosList)
+		//data, _ := json.Marshal(dPosList)
+		data, err := rlp.EncodeToBytes(dPosList)
 		if err != nil {
 			log.Error("dpos Should not error: %v", err)
-		}*/
+		}
 		batch := bc.db.NewBatch()
 
 		dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
@@ -2475,20 +2481,17 @@ func (bc *BlockChain) writeDposNodes() {
 	}
 }
 
-func (bc *BlockChain) GetDposNodes(rootHash common.Hash) []common.DPoSAccount {
+func (bc *BlockChain) GetDposNodes(dposHash common.Hash) ([]common.DPoSAccount, error) {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
 	epoch := bc.dposConfig.Epoch
 	dposNo := number + 1 - (number + 1%epoch)
-	db := bc.stateCache.TrieDB().DiskDB()
-	dposNodesKey := common.GetDposNodesKey(dposNo, rootHash)
-	data, err := db.Get(dposNodesKey)
-	if err == nil {
-		fmt.Printf("Previous value: %#x\n", data)
+	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
+	data, err := bc.stateCache.TrieDB().GetDposNodes(dposNodesKey)
+	if err != nil {
+		log.Crit("Invalid dposList for block number in database", "err", err)
 	}
-	var dposAccountList []common.DPoSAccount
-	json.Unmarshal(data, &dposAccountList)
-	return dposAccountList
+	return data, err
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The

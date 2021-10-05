@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -281,19 +280,21 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		epoch := g.DposConfig.Epoch
 		dposNo := number + 1 - (number + 1%epoch)
 		if number == 0 || (number+1)%epoch == 0 {
-
+			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
+				log.Info("ToBlock roothash ", "hash", s.Hex())
+			}*/
 			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
-
+			log.Info("ToBlock dPosHash", "dPosHash", dPosHash.Hex())
 			rootHash := statedb.IntermediateRootForDPos(dPosHash)
-			data, _ := json.Marshal(g.DposConfig.DposList)
+			log.Info("ToBlock rootHash", "rootHash", rootHash.Hex())
+			//data, _ := json.Marshal(g.DposConfig.DposList)
+			data, err := rlp.EncodeToBytes(g.DposConfig.DposList)
+			if err != nil {
+				log.Error("ToBlock", "dpos Should not error: %v", err)
+			}
 			batch := db.NewBatch()
-			var buf bytes.Buffer
-			buf.WriteString("DPOS_NODES:")
-			buf.WriteString(strconv.FormatUint(dposNo, 10))
-			buf.WriteString(":")
-			buf.WriteString(rootHash.Hex())
-			log.Info("ToBlock dposhash:", string(buf.Bytes()))
-			if err := db.Put(buf.Bytes(), data); err != nil {
+			dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
+			if err := db.Put(dposNodesKey, data); err != nil {
 				log.Crit("Failed to store dposNodesList", "err", err)
 			}
 			batch.Write()

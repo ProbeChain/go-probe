@@ -633,12 +633,10 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc
 	} else {
 		epoch = s.b.ChainConfig().DposConfig.Epoch
 	}
-	if number == 0 || (number+1)%epoch == 0 {
-		return state.GetDpostList(), state.Error()
-	} else {
-		return state.GetOldDpostList(), state.Error()
-	}
-	return state.GetDpostList(), state.Error()
+	dposHash := state.GetStateDbTrie().GetTallHash()[6]
+	dposNo := number + 1 - (number + 1%epoch)
+	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
+	return state.Database().TrieDB().GetDposNodes(dposNodesKey)
 }
 
 // Result structs for GetProof

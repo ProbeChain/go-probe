@@ -1923,7 +1923,8 @@ func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 func (s *StateDB) GetStateDbTrie() *TotalTrie {
 	return &s.trie
 }
-func (s *StateDB) GetDpostList() []common.DPoSAccount {
+
+func (s *StateDB) GetCurrentDpostList() []common.DPoSAccount {
 	/*var dPoSAccounts = make([]common.DPoSAccount, s.dPoSCandidateList.Limit)
 	i := 0
 	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {

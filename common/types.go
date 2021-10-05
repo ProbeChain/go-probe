@@ -559,6 +559,6 @@ func GetDposNodesKey(dposNo uint64, dposHash Hash) []byte {
 	buf.WriteString(strconv.FormatUint(dposNo, 10))
 	buf.WriteString(":")
 	buf.WriteString(dposHash.Hex())
-	log.Info("writeDposNodes dposhash:", string(buf.Bytes()))
+	log.Info("DPOSKey", "DPOSNodesKey", string(buf.Bytes()))
 	return buf.Bytes()
 }
