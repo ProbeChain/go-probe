@@ -593,6 +593,12 @@ web3._extend({
 			params: 2,
             inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
+       new web3._extend.Method({
+			name: 'getDPOSList',
+			call: 'eth_getDPOSList',
+			params: 1,
+            inputFormatter: [null]
+		}),
 	],
 	properties: [
 		new web3._extend.Property({

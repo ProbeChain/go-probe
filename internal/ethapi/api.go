@@ -617,6 +617,30 @@ func (s *PublicBlockChainAPI) GetAccountInfo(ctx context.Context, address common
 	return state.GetAccountInfo(address), state.Error()
 }
 
+func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (interface{}, error) {
+	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+	if state == nil || err != nil {
+		return nil, err
+	}
+
+	block := s.b.CurrentBlock()
+	number := block.NumberU64()
+	//epoch := common.If(bc.dposConfig == nil, uint64(5), bc.dposConfig.Epoch).(uint64)
+
+	var epoch uint64
+	if s.b.ChainConfig().DposConfig == nil {
+		epoch = uint64(common.DposEpoch)
+	} else {
+		epoch = s.b.ChainConfig().DposConfig.Epoch
+	}
+	if number == 0 || (number+1)%epoch == 0 {
+		return state.GetDpostList(), state.Error()
+	} else {
+		return state.GetOldDpostList(), state.Error()
+	}
+	return state.GetDpostList(), state.Error()
+}
+
 // Result structs for GetProof
 type AccountResult struct {
 	Address      common.Address  `json:"address"`

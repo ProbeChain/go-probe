@@ -1933,6 +1933,10 @@ func (s *StateDB) GetDpostList() []common.DPoSAccount {
 	return s.dposList.dPoSCandidateAccounts.GetDpostList()
 }
 
+func (s *StateDB) GetOldDpostList() []common.DPoSAccount {
+	return s.dposList.oldDPoSAccounts
+}
+
 func (s *StateDB) ChangDpostAccount(dposAccounts []common.DPoSAccount) {
 	for i, dposAccount := range dposAccounts {
 		s.dposList.oldDPoSAccounts[i] = s.dposList.dPoSAccounts[i]

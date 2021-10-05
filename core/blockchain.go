@@ -18,7 +18,6 @@
 package core
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,7 +26,6 @@ import (
 	"math/big"
 	mrand "math/rand"
 	"sort"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -274,22 +272,26 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	number := block.NumberU64()
 	stateDB, _ := bc.StateAt(block.Root())
 
-	rootHash := stateDB.GetStateDbTrie().Hash()
-	epoch := uint64(5)
+	dposHash := stateDB.GetStateDbTrie().GetTallHash()[6]
+	epoch := uint64(common.DposEpoch)
 	dposNo := number + 1 - (number + 1%epoch)
-	var buf bytes.Buffer
-	buf.WriteString("DPOS_NODES:")
-	buf.WriteString(strconv.FormatUint(dposNo, 10))
-	buf.WriteString(":")
-	buf.WriteString(rootHash.Hex())
-	data, _ := db.Get(buf.Bytes())
+	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
+	data, _ := db.Get(dposNodesKey)
+	//if nil != data {
 	var dposAccountList []common.DPoSAccount
+
 	json.Unmarshal(data, &dposAccountList)
+
+	/*if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
+		log.Crit("Invalid dposList for block number in database", "err", err)
+	}*/
+
 	chainConfig.DposConfig = new(params.DposConfig)
 	chainConfig.DposConfig.DposList = dposAccountList
 	chainConfig.DposConfig.Epoch = epoch
 	log.Info("Initialised chain configuration AND DPOSNODES")
 	//bc.dposConfig.Epoch = epoch
+	//}
 
 	var nilBlock *types.Block
 	bc.currentBlock.Store(nilBlock)
@@ -2443,7 +2445,8 @@ func (bc *BlockChain) writeDposNodes() {
 
 	var epoch uint64
 	if bc.dposConfig == nil {
-		epoch = uint64(5)
+		epoch = uint64(common.DposEpoch)
+		log.Crit("Failed to writ dpos on write block", "err", bc.dposConfig)
 	} else {
 		epoch = bc.dposConfig.Epoch
 	}
@@ -2458,15 +2461,14 @@ func (bc *BlockChain) writeDposNodes() {
 		rootHash := stateDB.IntermediateRootForDPos(dPosHash)
 		log.Info("writeDposNodes rootHash", "rootHash", rootHash.Hex())
 		data, _ := json.Marshal(dPosList)
+		/*data, err := rlp.EncodeToBytes(dPosList)
+		if err != nil {
+			log.Error("dpos Should not error: %v", err)
+		}*/
 		batch := bc.db.NewBatch()
 
-		var buf bytes.Buffer
-		buf.WriteString("DPOS_NODES:")
-		buf.WriteString(strconv.FormatUint(dposNo, 10))
-		buf.WriteString(":")
-		buf.WriteString(rootHash.Hex())
-		log.Info("writeDposNodes dposhash:", string(buf.Bytes()))
-		if err := db.Put(buf.Bytes(), data); err != nil {
+		dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
+		if err := db.Put(dposNodesKey, data); err != nil {
 			log.Crit("Failed to store dposNodesList", "err", err)
 		}
 		batch.Write()
@@ -2479,13 +2481,8 @@ func (bc *BlockChain) GetDposNodes(rootHash common.Hash) []common.DPoSAccount {
 	epoch := bc.dposConfig.Epoch
 	dposNo := number + 1 - (number + 1%epoch)
 	db := bc.stateCache.TrieDB().DiskDB()
-	var buf bytes.Buffer
-	buf.WriteString("DPOS_NODES:")
-	buf.WriteString(strconv.FormatUint(dposNo, 10))
-	buf.WriteString(":")
-	buf.WriteString(rootHash.Hex())
-
-	data, err := db.Get(buf.Bytes())
+	dposNodesKey := common.GetDposNodesKey(dposNo, rootHash)
+	data, err := db.Get(dposNodesKey)
 	if err == nil {
 		fmt.Printf("Previous value: %#x\n", data)
 	}
