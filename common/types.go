@@ -45,8 +45,7 @@ const (
 	// AddressChecksumLen is the checkSum length of the address
 	AddressChecksumLen = 4
 	//DposEnodeLength is the cheche length of dpos node
-	DposEnodeLength = 162
-	DposEpoch       = 5
+	DposEnodeLength = 256
 	DposNodeLength  = 64
 )
 

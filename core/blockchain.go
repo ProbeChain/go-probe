@@ -276,7 +276,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	}
 	dposHash := stateDB.GetStateDbTrie().GetTallHash()[6]
 	log.Info("NewBlockChain dPosHash", "dPosHash", dposHash.Hex())
-	epoch := uint64(common.DposEpoch)
+	epoch := chainConfig.DposConfig.Epoch
 	dposNo := number + 1 - (number + 1%epoch)
 	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	data, _ := db.Get(dposNodesKey)
@@ -2447,7 +2447,6 @@ func (bc *BlockChain) writeDposNodes() {
 
 	var epoch uint64
 	if bc.dposConfig == nil {
-		epoch = uint64(common.DposEpoch)
 		log.Crit("Failed to writ dpos on write block", "err", bc.dposConfig)
 	} else {
 		epoch = bc.dposConfig.Epoch
