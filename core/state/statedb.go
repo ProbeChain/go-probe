@@ -381,6 +381,7 @@ func GetHash(root common.Hash, db Database) []common.Hash {
 	if hash == nil {
 		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 	}
+	fmt.Println("获取hash：", hash)
 	return hash
 }
 
@@ -1109,12 +1110,14 @@ func (s *StateDB) Copy() *StateDB {
 		db: s.db,
 		//trie:                s.db.CopyTrie(s.trie),
 		trie: TotalTrie{
-			regularTrie:   regularTrie,
-			pnsTrie:       pnsTrie,
-			digitalTrie:   digitalTrie,
-			contractTrie:  contractTrie,
-			authorizeTrie: authorizeTrie,
-			lossTrie:      lossTrie,
+			regularTrie:       regularTrie,
+			pnsTrie:           pnsTrie,
+			digitalTrie:       digitalTrie,
+			contractTrie:      contractTrie,
+			authorizeTrie:     authorizeTrie,
+			lossTrie:          lossTrie,
+			dPosHash:          s.trie.dPosHash,
+			dPosCandidateHash: s.trie.dPosCandidateHash,
 		},
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
