@@ -1845,7 +1845,7 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chainDb ethdb.Database) {
 	var err error
 	chainDb = MakeChainDatabase(ctx, stack, false) // TODO(rjl493456442) support read-only database
-	config, _, err := core.SetupGenesisBlock(chainDb, MakeGenesis(ctx), stack.DataDir())
+	config, _, err := core.SetupGenesisBlock(chainDb, MakeGenesis(ctx), stack.InstanceDir())
 	if err != nil {
 		Fatalf("%v", err)
 	}

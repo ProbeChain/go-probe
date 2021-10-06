@@ -52,13 +52,18 @@ var (
 )
 
 const (
-	TRIE_DEPTH = 10
-	TRIE_PATH0 = "/stateTrie0"
-	TRIE_PATH1 = "/stateTrie1"
-	TRIE_PATH2 = "/stateTrie2"
-	TRIE_PATH3 = "/stateTrie3"
-	TRIE_PATH4 = "/stateTrie4"
-	TRIE_PATH5 = "/stateTrie5"
+	GENERAL_TRIE_DEPTH    = 10
+	PNS_TRIE_DEPTH        = 10
+	ASSET_TRIE_DEPTH      = 10
+	CONTRACT_TRIE_DEPTH   = 10
+	AUTHORIZES_TRIE_DEPTH = 10
+	LOSE_TRIE_DEPTH       = 10
+	GENERAL_TRIE_PATH     = "/generalStateTrie"
+	PNS_TRIE_PATH         = "/pnsStateTrie"
+	ASSET_TRIE_PATH       = "/assetStateTrie"
+	CONTRACT_TRIE_PATH    = "/contractStateTrie"
+	AUTHORIZES_TRIE_PATH  = "/authorizesSateTrie"
+	LOSE_TRIE_PATH        = "/loseStateTrie"
 )
 
 type proofList [][]byte
@@ -392,7 +397,6 @@ func GetHash(root common.Hash, db Database) []common.Hash {
 	if hash == nil {
 		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
 	}
-	fmt.Println("获取hash：", hash)
 	return hash
 }
 
@@ -421,36 +425,36 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		accessList:          newAccessList(),
 		hasher:              crypto.NewKeccakState(),
 	}
-	if sdb.snaps != nil {
-		if sdb.snap = sdb.snaps.Snapshot(root); sdb.snap != nil {
-			sdb.snapDestructs = make(map[common.Hash]struct{})
-			sdb.snapAccounts = make(map[common.Hash][]byte)
-			sdb.snapStorage = make(map[common.Hash]map[common.Hash][]byte)
-		}
-	}
+	//if sdb.snaps != nil {
+	//	if sdb.snap = sdb.snaps.Snapshot(root); sdb.snap != nil {
+	//		sdb.snapDestructs = make(map[common.Hash]struct{})
+	//		sdb.snapAccounts = make(map[common.Hash][]byte)
+	//		sdb.snapStorage = make(map[common.Hash]map[common.Hash][]byte)
+	//	}
+	//}
 	return sdb, nil
 }
 
 func OpenTotalTrie(root common.Hash, db Database) (TotalTrie, error) {
 	hash := GetHash(root, db)
-	trGeneral, err := db.OpenBinTrie(hash[0], globalconfig.DataDir+TRIE_PATH0, TRIE_DEPTH)
-	trPns, err1 := db.OpenBinTrie(hash[1], globalconfig.DataDir+TRIE_PATH1, TRIE_DEPTH)
+	trGeneral, err := db.OpenBinTrie(hash[0], globalconfig.DataDir+GENERAL_TRIE_PATH, GENERAL_TRIE_DEPTH)
+	trPns, err1 := db.OpenBinTrie(hash[1], globalconfig.DataDir+PNS_TRIE_PATH, PNS_TRIE_DEPTH)
 	if err1 != nil {
 		err = err1
 	}
-	trAsset, err2 := db.OpenBinTrie(hash[2], globalconfig.DataDir+TRIE_PATH2, TRIE_DEPTH)
+	trAsset, err2 := db.OpenBinTrie(hash[2], globalconfig.DataDir+ASSET_TRIE_PATH, ASSET_TRIE_DEPTH)
 	if err2 != nil {
 		err = err2
 	}
-	trContract, err3 := db.OpenBinTrie(hash[3], globalconfig.DataDir+TRIE_PATH3, TRIE_DEPTH)
+	trContract, err3 := db.OpenBinTrie(hash[3], globalconfig.DataDir+CONTRACT_TRIE_PATH, CONTRACT_TRIE_DEPTH)
 	if err3 != nil {
 		err = err3
 	}
-	trAuthorize, err4 := db.OpenBinTrie(hash[4], globalconfig.DataDir+TRIE_PATH4, TRIE_DEPTH)
+	trAuthorize, err4 := db.OpenBinTrie(hash[4], globalconfig.DataDir+AUTHORIZES_TRIE_PATH, AUTHORIZES_TRIE_DEPTH)
 	if err4 != nil {
 		err = err4
 	}
-	trLose, err5 := db.OpenBinTrie(hash[5], globalconfig.DataDir+TRIE_PATH5, TRIE_DEPTH)
+	trLose, err5 := db.OpenBinTrie(hash[5], globalconfig.DataDir+LOSE_TRIE_PATH, LOSE_TRIE_DEPTH)
 	if err5 != nil {
 		err = err5
 	}

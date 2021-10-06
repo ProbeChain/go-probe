@@ -33,7 +33,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"runtime/debug"
 	"sort"
 	"sync"
 	"unsafe"
@@ -224,7 +223,6 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 	if !(root == curRoot || root == (common.Hash{}) || root == emptyRoot) {
 		node, err := trie.resolveHash(root[:], nil)
 		log.Warn("newBinary", "root", root.String(), "curRoot", curRoot.String(), "err", err)
-		debug.PrintStack()
 		if err == nil {
 			trie.root = node
 			return trie, err
@@ -602,7 +600,6 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 		} else {
 			log.Warn("trie TryUpdate", "err", err)
 		}
-		//debug.PrintStack()
 	}
 
 	if t.Binary() {
@@ -993,7 +990,6 @@ func (t *Trie) Hash() common.Hash {
 		t.bt.alters = append(t.bt.alters, alter)
 		t.bt.curDiffLeafs = make([]DiffLeaf, 0, 0)
 		log.Info("trie getHash", "binaryRoot", curRoot.String(), "preRoot", preRoot.String())
-		debug.PrintStack()
 		return curRoot
 	} else {
 		// 返回的cached是将算过的哈希值保存到nodeFlag中防止下次计算哈希需要重新计算，其他的值均保持不变
