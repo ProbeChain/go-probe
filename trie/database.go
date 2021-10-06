@@ -1169,3 +1169,20 @@ func (db *Database) CommitForNew(nodes []common.Hash, report bool, callback func
 	}
 	return err
 }
+
+func (db *Database) GetDposNodes(dposNodesKey []byte) ([]common.DPoSAccount, error) {
+	db.lock.RLock()
+	defer db.lock.RUnlock()
+	diskDB := db.DiskDB()
+	data, err := diskDB.Get(dposNodesKey)
+	if err != nil {
+		return nil, err
+	}
+	var dposAccountList []common.DPoSAccount
+	//json.Unmarshal(data, &dposAccountList)
+	err = rlp.DecodeBytes(data, &dposAccountList)
+	if err != nil {
+		return dposAccountList, err
+	}
+	return dposAccountList, err
+}

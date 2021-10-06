@@ -10,6 +10,7 @@ import (
 type dposList struct {
 	// DPoSAccount DPoS账户 64
 	dPoSAccounts []common.DPoSAccount
+
 	// DPoSCandidateAccount DPoS候选账户 64
 	dPoSCandidateAccounts *SortedLinkedList
 
@@ -20,9 +21,9 @@ type dposList struct {
 
 func newDposList() *dposList {
 	return &dposList{
-		dPoSAccounts:          make([]common.DPoSAccount, 64),
-		dPoSCandidateAccounts: NewSortedLinkedList(64, compareValue),
-		oldDPoSAccounts:       make([]common.DPoSAccount, 64),
+		dPoSAccounts:          make([]common.DPoSAccount, common.DposNodeLength),
+		dPoSCandidateAccounts: NewSortedLinkedList(common.DposNodeLength, compareValue),
+		oldDPoSAccounts:       make([]common.DPoSAccount, common.DposNodeLength),
 	}
 }
 

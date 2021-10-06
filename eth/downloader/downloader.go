@@ -424,6 +424,7 @@ func (d *Downloader) synchronise(id string, hash common.Hash, td *big.Int, mode 
 	atomic.StoreUint32(&d.mode, uint32(mode))
 
 	// Retrieve the origin peer and initiate the downloading process
+
 	p := d.peers.Peer(id)
 	if p == nil {
 		return errUnknownPeer

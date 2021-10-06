@@ -293,3 +293,11 @@ func TestEnode(*testing.T) {
 	fmt.Println("nodeId ", nodeId)
 	fmt.Println("*************************")
 }
+
+func TestCheckValidteTest(*testing.T) {
+	var c, err2 = common.ValidCheckAddress("0x0000000000dA0d4b7EF91fb55ad265F251142067f10376ced6")
+	if err2 != nil {
+		fmt.Printf("failed GenerateKey with %s.", err2)
+	}
+	fmt.Printf("flag[%T][%X]\n", c, c)
+}

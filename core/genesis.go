@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/globalconfig"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -169,7 +168,6 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 	// Just commit the new block if there is no stored genesis block.
 	// 如果没有存储的genesis块，只需提交新块。
 	stored := rawdb.ReadCanonicalHash(db, 0)
-	log.Info("stored", stored.Hex())
 	if (stored == common.Hash{}) {
 		if genesis == nil {
 			// genesis和stored都为空，使用主网，获取默认区块信息
@@ -206,6 +204,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 	}
 	// Check whether the genesis block is already written.
 	if genesis != nil {
+		genesis.Config.DposConfig = genesis.DposConfig
 		hash := genesis.ToBlock(nil).Hash()
 		log.Info("hash", hash.Hex())
 		if hash != stored {
@@ -283,19 +282,21 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 		epoch := g.DposConfig.Epoch
 		dposNo := number + 1 - (number + 1%epoch)
 		if number == 0 || (number+1)%epoch == 0 {
-
+			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
+				log.Info("ToBlock roothash ", "hash", s.Hex())
+			}*/
 			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
-
+			log.Info("ToBlock dPosHash", "dPosHash", dPosHash.Hex())
 			rootHash := statedb.IntermediateRootForDPos(dPosHash)
-			data, _ := json.Marshal(g.DposConfig.DposList)
+			log.Info("ToBlock rootHash", "rootHash", rootHash.Hex())
+			//data, _ := json.Marshal(g.DposConfig.DposList)
+			data, err := rlp.EncodeToBytes(g.DposConfig.DposList)
+			if err != nil {
+				log.Error("ToBlock", "dpos Should not error: %v", err)
+			}
 			batch := db.NewBatch()
-			var buf bytes.Buffer
-			buf.WriteString("DPOS_NODES:")
-			buf.WriteString(strconv.FormatUint(dposNo, 10))
-			buf.WriteString(":")
-			buf.WriteString(rootHash.Hex())
-			log.Info("ToBlock dposhash:", string(buf.Bytes()))
-			if err := db.Put(buf.Bytes(), data); err != nil {
+			dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
+			if err := db.Put(dposNodesKey, data); err != nil {
 				log.Crit("Failed to store dposNodesList", "err", err)
 			}
 			batch.Write()
@@ -366,6 +367,9 @@ func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 	config := g.Config
 	if config == nil {
 		config = params.AllEthashProtocolChanges
+	}
+	if nil != g.DposConfig {
+		config.DposConfig = g.DposConfig
 	}
 	if err := config.CheckConfigForkOrder(); err != nil {
 		return nil, err

@@ -25,12 +25,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
 	"net"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -43,7 +45,8 @@ const (
 	// AddressChecksumLen is the checkSum length of the address
 	AddressChecksumLen = 4
 	//DposEnodeLength is the cheche length of dpos node
-	DposEnodeLength = 162
+	DposEnodeLength = 256
+	DposNodeLength  = 64
 )
 
 var (
@@ -547,4 +550,14 @@ func ReBuildAddress(addr []byte) []byte {
 		return addr[1:]
 	}
 	return addr
+}
+
+func GetDposNodesKey(dposNo uint64, dposHash Hash) []byte {
+	var buf bytes.Buffer
+	buf.WriteString("DPOS_NODES:")
+	buf.WriteString(strconv.FormatUint(dposNo, 10))
+	buf.WriteString(":")
+	buf.WriteString(dposHash.Hex())
+	log.Info("DPOSKey", "DPOSNodesKey", string(buf.Bytes()))
+	return buf.Bytes()
 }

@@ -18,8 +18,6 @@
 package core
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -27,7 +25,6 @@ import (
 	"math/big"
 	mrand "math/rand"
 	"sort"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -169,8 +166,7 @@ var defaultCacheConfig = &CacheConfig{
 // canonical chain.
 type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
-	dposConfig  *params.DposConfig
-	cacheConfig *CacheConfig // Cache configuration for pruning
+	cacheConfig *CacheConfig        // Cache configuration for pruning
 
 	db     ethdb.Database // Low level persistent database to store final content in
 	snaps  *snapshot.Tree // Snapshot tree for fast trie leaf access
@@ -278,22 +274,29 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	number := block.NumberU64()
 	stateDB, _ := bc.StateAt(block.Root())
 
-	rootHash := stateDB.GetStateDbTrie().Hash()
-	epoch := uint64(5)
+	for _, s := range stateDB.GetStateDbTrie().GetTallHash() {
+		log.Info("NewBlockChain roothash ", "hash", s.Hex())
+	}
+	dposHash := stateDB.GetStateDbTrie().GetTallHash()[6]
+	log.Info("NewBlockChain dPosHash", "dPosHash", dposHash.Hex())
+	epoch := chainConfig.DposConfig.Epoch
 	dposNo := number + 1 - (number + 1%epoch)
-	var buf bytes.Buffer
-	buf.WriteString("DPOS_NODES:")
-	buf.WriteString(strconv.FormatUint(dposNo, 10))
-	buf.WriteString(":")
-	buf.WriteString(rootHash.Hex())
-	data, _ := db.Get(buf.Bytes())
+	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
+	data, _ := db.Get(dposNodesKey)
+	//if nil != data {
 	var dposAccountList []common.DPoSAccount
-	json.Unmarshal(data, &dposAccountList)
+
+	//json.Unmarshal(data, &dposAccountList)
+	if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
+		log.Crit("Invalid dposList for block number in database", "err", err)
+	}
+
 	chainConfig.DposConfig = new(params.DposConfig)
 	chainConfig.DposConfig.DposList = dposAccountList
 	chainConfig.DposConfig.Epoch = epoch
 	log.Info("Initialised chain configuration AND DPOSNODES")
 	//bc.dposConfig.Epoch = epoch
+	//}
 
 	var nilBlock *types.Block
 	bc.currentBlock.Store(nilBlock)
@@ -2448,56 +2451,51 @@ func (bc *BlockChain) writeDposNodes() {
 	//epoch := common.If(bc.dposConfig == nil, uint64(5), bc.dposConfig.Epoch).(uint64)
 
 	var epoch uint64
-	if bc.dposConfig == nil {
-		epoch = uint64(5)
+	if bc.chainConfig.DposConfig == nil {
+		log.Crit("Failed to writ dpos on write block", "err", bc.chainConfig.DposConfig)
 	} else {
-		epoch = bc.dposConfig.Epoch
+		epoch = bc.chainConfig.DposConfig.Epoch
 	}
 	dposNo := number + 1 - (number + 1%epoch)
 	if number == 0 || (number+1)%epoch == 0 {
 		db := bc.stateCache.TrieDB().DiskDB()
 		stateDB, _ := bc.StateAt(block.Root())
 
-		dPosList := stateDB.GetDpostList()
+		dPosList := stateDB.GetCurrentDpostList()
 		stateDB.ChangDpostAccount(dPosList)
 		dPosHash := state.BuildHashForDPos(dPosList)
+		log.Info("writeDposNodes dPosHash", "dPosHash", dPosHash.Hex())
+		for _, s := range stateDB.GetStateDbTrie().GetTallHash() {
+			log.Info("NewBlockChain roothash ", "hash", s.Hex())
+		}
 		rootHash := stateDB.IntermediateRootForDPos(dPosHash)
 		log.Info("writeDposNodes rootHash", "rootHash", rootHash.Hex())
-		data, _ := json.Marshal(dPosList)
+		//data, _ := json.Marshal(dPosList)
+		data, err := rlp.EncodeToBytes(dPosList)
+		if err != nil {
+			log.Error("dpos Should not error: %v", err)
+		}
 		batch := bc.db.NewBatch()
 
-		var buf bytes.Buffer
-		buf.WriteString("DPOS_NODES:")
-		buf.WriteString(strconv.FormatUint(dposNo, 10))
-		buf.WriteString(":")
-		buf.WriteString(rootHash.Hex())
-		log.Info("writeDposNodes dposhash:", string(buf.Bytes()))
-		if err := db.Put(buf.Bytes(), data); err != nil {
+		dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
+		if err := db.Put(dposNodesKey, data); err != nil {
 			log.Crit("Failed to store dposNodesList", "err", err)
 		}
 		batch.Write()
 	}
 }
 
-func (bc *BlockChain) GetDposNodes(rootHash common.Hash) []common.DPoSAccount {
+func (bc *BlockChain) GetDposNodes(dposHash common.Hash) ([]common.DPoSAccount, error) {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	epoch := bc.dposConfig.Epoch
+	epoch := bc.chainConfig.DposConfig.Epoch
 	dposNo := number + 1 - (number + 1%epoch)
-	db := bc.stateCache.TrieDB().DiskDB()
-	var buf bytes.Buffer
-	buf.WriteString("DPOS_NODES:")
-	buf.WriteString(strconv.FormatUint(dposNo, 10))
-	buf.WriteString(":")
-	buf.WriteString(rootHash.Hex())
-
-	data, err := db.Get(buf.Bytes())
-	if err == nil {
-		fmt.Printf("Previous value: %#x\n", data)
+	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
+	data, err := bc.stateCache.TrieDB().GetDposNodes(dposNodesKey)
+	if err != nil {
+		log.Crit("Invalid dposList for block number in database", "err", err)
 	}
-	var dposAccountList []common.DPoSAccount
-	json.Unmarshal(data, &dposAccountList)
-	return dposAccountList
+	return data, err
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
