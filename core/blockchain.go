@@ -162,8 +162,7 @@ var defaultCacheConfig = &CacheConfig{
 // canonical chain.
 type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
-	dposConfig  *params.DposConfig
-	cacheConfig *CacheConfig // Cache configuration for pruning
+	cacheConfig *CacheConfig        // Cache configuration for pruning
 
 	db     ethdb.Database // Low level persistent database to store final content in
 	snaps  *snapshot.Tree // Snapshot tree for fast trie leaf access
@@ -2446,10 +2445,10 @@ func (bc *BlockChain) writeDposNodes() {
 	//epoch := common.If(bc.dposConfig == nil, uint64(5), bc.dposConfig.Epoch).(uint64)
 
 	var epoch uint64
-	if bc.dposConfig == nil {
-		log.Crit("Failed to writ dpos on write block", "err", bc.dposConfig)
+	if bc.chainConfig.DposConfig == nil {
+		log.Crit("Failed to writ dpos on write block", "err", bc.chainConfig.DposConfig)
 	} else {
-		epoch = bc.dposConfig.Epoch
+		epoch = bc.chainConfig.DposConfig.Epoch
 	}
 	dposNo := number + 1 - (number + 1%epoch)
 	if number == 0 || (number+1)%epoch == 0 {
@@ -2483,7 +2482,7 @@ func (bc *BlockChain) writeDposNodes() {
 func (bc *BlockChain) GetDposNodes(dposHash common.Hash) ([]common.DPoSAccount, error) {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	epoch := bc.dposConfig.Epoch
+	epoch := bc.chainConfig.DposConfig.Epoch
 	dposNo := number + 1 - (number + 1%epoch)
 	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	data, err := bc.stateCache.TrieDB().GetDposNodes(dposNodesKey)

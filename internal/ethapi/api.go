@@ -629,7 +629,7 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc
 
 	var epoch uint64
 	if s.b.ChainConfig().DposConfig == nil {
-		epoch = uint64(common.DposEpoch)
+		log.Crit("Failed to writ dpos on write block", "err", s.b.ChainConfig().DposConfig)
 	} else {
 		epoch = s.b.ChainConfig().DposConfig.Epoch
 	}
