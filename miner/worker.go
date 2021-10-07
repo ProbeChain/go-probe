@@ -806,7 +806,6 @@ func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 		w.current.state.StopPrefetcher()
 	}
 	w.current = env
-	log.Debug("w.current.state", "w.current.state", *w.current.state)
 	return nil
 }
 
