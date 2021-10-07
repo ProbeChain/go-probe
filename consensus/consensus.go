@@ -30,12 +30,14 @@ import (
 const (
 	// DposWitnessNumber is the total number of dpos witness nodes.
 	//@todo just for oneNode test
-	DposWitnessNumber = 1
+	DposWitnessNumber = 2
 	//DposWitnessNumber = 64
 	// number of witness to product stabilizing block
 	MostDposWitness = DposWitnessNumber*2/3 + 1
 	// the least number of witness to product block
 	LeastDposWitness = DposWitnessNumber*1/3 + 1
+	// seconds to delay seal since base block not received
+	Time2waitBlock = 1
 	// seconds to delay seal since not enough dposAck
 	Time2delaySeal = 3
 	// deadline of seal after received a pow answer

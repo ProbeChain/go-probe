@@ -208,7 +208,8 @@ func New(config *params.GreatriConfig, db ethdb.Database) *Greatri {
 // Author implements consensus.Engine, returning the Ethereum address recovered
 // from the signature in the header's extra-data section.
 func (c *Greatri) Author(header *types.Header) (common.Address, error) {
-	return ecrecover(header, c.signatures)
+	//return ecrecover(header, c.signatures)
+	return header.DposSigAddr, nil
 }
 
 // VerifyHeader checks whether a header conforms to the consensus rules.
@@ -242,6 +243,8 @@ func (c *Greatri) VerifyHeaders(chain consensus.ChainHeaderReader, headers []*ty
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
 func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header *types.Header, parents []*types.Header) error {
+	return nil
+
 	if header.Number == nil {
 		return errUnknownBlock
 	}
@@ -510,7 +513,7 @@ func (c *Greatri) Prepare(chain consensus.ChainHeaderReader, header *types.Heade
 func (c *Greatri) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
-	header.UncleHash = types.CalcUncleHash(nil)
+	//header.UncleHash = types.CalcUncleHash(nil)
 }
 
 // FinalizeAndAssemble implements consensus.Engine, ensuring no uncles are set,

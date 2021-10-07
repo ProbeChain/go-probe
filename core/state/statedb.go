@@ -347,10 +347,12 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
 	log.Info("GetDposAccounts", "hash", hash, "number", number)
 	nodelist := []string{
-		"enode://07086fc9fcbaf3a1739d2e9a07a049905e3245abf4987e1be91fdfbc3a6d1b6e9f0ba4418c663c6fc91edb10c6737dfa429cb587a07806934099e4672ea037a1@127.0.0.1:8545",
+		"enode://94c3f0eaa5b48e19d6e0b7d194df0bce836ef60073cdfe51022bc28ea7f860ff7b0bef1adca6fc900f43575593172aa602c56aef22fd5004210b4525dfe9dbab@127.0.0.1:30000",
+		"enode://f145c933e0aee8daf4b652f19ea859b81bf8116252297cc31fc4c1fafcb21adecb635ef0ed1d2852fbe9ff0b92c2160467d33fed2004a1d62210651b208c7ff3@127.0.0.1:30001",
 	}
 	ownerList := []string{
-		"45a6a925c9203e1d19e49aad489a5347dc655d11",
+		"4bc6b01ce0104c654afdb3f8c484135005d7d8f7",
+		"dec2b13544b0d853678a2ef8933d6318313dae17",
 	}
 
 	mockDposAccounts := make([]*DPoSAccount, 0, len(nodelist))

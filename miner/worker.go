@@ -124,8 +124,9 @@ const (
 
 // newWorkReq represents a request for new sealing work submitting with relative interrupt notifier.
 type newWorkReq struct {
-	interrupt *int32
-	noempty   bool
+	interrupt          *int32
+	noempty            bool
+	currentBlockNumber *big.Int
 }
 
 // intervalAdjust represents a resubmitting interval adjustment.
@@ -178,9 +179,10 @@ type worker struct {
 	remoteUncles map[common.Hash]*types.Block // A set of side blocks as the possible uncle blocks.
 	unconfirmed  *unconfirmedBlocks           // A set of locally mined blocks pending canonicalness confirmations.
 
-	mu       sync.RWMutex // The lock used to protect the coinbase and extra fields
-	coinbase common.Address
-	extra    []byte
+	mu        sync.RWMutex // The lock used to protect the coinbase and extra fields
+	muProduce sync.RWMutex
+	coinbase  common.Address
+	extra     []byte
 
 	pendingMu    sync.RWMutex
 	pendingTasks map[common.Hash]*task
@@ -356,8 +358,7 @@ func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 	}
 }
 
-func (w *worker) imProducer() bool {
-	blockNumber := w.chain.CurrentHeader().Number.Uint64() + 1
+func (w *worker) imProducer(blockNumber uint64) bool {
 	return w.imProducerOnSpecBlock(blockNumber)
 }
 
@@ -404,7 +405,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		minRecommit = recommit // minimal resubmit interval specified by user.
 		stopCh      chan struct{}
 	)
-	miningBlockNumber := big.NewInt(0)
+	sealedBlockNumber := uint64(0)
 
 	//used when not received enough dposAck
 	timerDelaySeal := time.NewTimer(0)
@@ -416,22 +417,25 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 	defer timerSealDealine.Stop()
 	<-timerSealDealine.C // discard the initial tick
 
+	timerSealWaitBlock := time.NewTimer(0)
+	defer timerSealWaitBlock.Stop()
+	<-timerSealWaitBlock.C // discard the initial tick
 	// commit aborts in-flight transaction execution with given signal and resubmits a new one.
-	commit := func(noempty bool, s int32) bool {
-		blockNumber := w.chain.CurrentHeader().Number
-		newBlockNum := big.NewInt(0)
-		if miningBlockNumber.Cmp(newBlockNum.Add(blockNumber, common.Big1)) >= 0 {
-			log.Info("can't produce the same block number", "blockNumber", newBlockNum)
+	commit := func(noempty bool, s int32, currentBlockNumber *big.Int) bool {
+		newBlockNumber := currentBlockNumber.Uint64() + 1
+		if sealedBlockNumber >= newBlockNumber {
+			log.Info("can't produce the same block number", "blockNumber", newBlockNumber)
 			return false
 		}
 
-		miningBlockNumber = newBlockNum
+		sealedBlockNumber = newBlockNumber
+		log.Debug("sealedBlockNumber changed", "sealedBlockNumber", sealedBlockNumber)
 		if interrupt != nil {
 			atomic.StoreInt32(interrupt, s)
 		}
 		interrupt = new(int32)
 		select {
-		case w.newWorkCh <- &newWorkReq{interrupt: interrupt, noempty: noempty}:
+		case w.newWorkCh <- &newWorkReq{interrupt: interrupt, noempty: noempty, currentBlockNumber: currentBlockNumber}:
 		case <-w.exitCh:
 			return false
 		}
@@ -463,16 +467,34 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			time.Sleep(2 * time.Second)
 			w.chainHeadCh <- core.ChainHeadEvent{}
 
-		case <-w.chainHeadCh:
+		case block := <-w.chainHeadCh:
+			var blockNumber *big.Int
+			if nil == block.Block {
+				blockNumber = w.chain.CurrentBlock().Number()
+			} else {
+				blockNumber = block.Block.Number()
+			}
+			if w.imProducer(blockNumber.Uint64() + 1) {
+				dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
+				if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
+					dposAgreeAckNum >= consensus.MostDposWitness {
+					//received powAnswer and received 2/3 witness node ack
+					if commit(false, commitInterruptNewHead, blockNumber) {
+						log.Info("received new base block, is my turn to produce new block", "addr", w.coinbase,
+							"current block number", blockNumber)
+					}
+				}
+			}
+
 			if w.imDpostWorkNode() {
 				position, err := w.chain.GetLatestDposAccountIndex(w.coinbase)
 				if err != nil {
-					log.Error("something wrong in get dpos account postion", "blockNumber", w.chain.CurrentHeader().Number)
+					log.Error("something wrong in get dpos account postion", "blockNumber", w.chain.CurrentBlock().Number())
 					continue
 				}
 				ack := &types.DposAck{
 					EpochPosition: uint8(position),
-					Number:        w.eth.BlockChain().CurrentHeader().Number,
+					Number:        w.eth.BlockChain().CurrentBlock().Number(),
 					BlockHash:     w.eth.BlockChain().CurrentBlock().Hash(),
 					AckType:       types.AckTypeAgree,
 				}
@@ -489,7 +511,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				ack.WitnessSig = append(ack.WitnessSig, ackSig...)
 
 				log.Info("received new block, send dposAck to all", "addr", w.coinbase,
-					"current block number", w.chain.CurrentHeader().Number)
+					"current block number", w.chain.CurrentBlock().Number())
 				w.mux.Post(core.DposAckEvent{DposAck: ack})
 			}
 
@@ -506,16 +528,23 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					log.Warn("pow Miner failed", "err", err)
 				}
 			}
-		case <-w.dposAckCh:
-			if w.imProducer() {
+
+		case ack := <-w.dposAckCh:
+			blockNumber := w.chain.CurrentBlock().Number()
+			newBlockNumber := blockNumber.Uint64() + 1
+			ackNumber := ack.DposAck.Number.Uint64()
+			if newBlockNumber != ackNumber+1 {
+				continue
+			}
+
+			if w.imProducer(newBlockNumber) {
 				//is the producer
-				blockNumber := w.chain.CurrentBlock().Number()
 				dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
 				if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
 					dposAgreeAckNum >= consensus.MostDposWitness {
 					//received powAnswer and received 2/3 witness node ack
 					timerDelaySeal.Stop()
-					if commit(false, commitInterruptNewHead) {
+					if commit(false, commitInterruptNewHead, blockNumber) {
 						log.Info("received dposAck, is my turn to produce new block", "addr", w.coinbase,
 							"current block number", blockNumber)
 					}
@@ -525,14 +554,20 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				}
 			}
 
-		case <-w.powAnswerCh:
+		case answer := <-w.powAnswerCh:
 			blockNumber := w.chain.CurrentBlock().Number()
-			if w.imProducer() {
+			newBlockNumber := blockNumber.Uint64() + 1
+			answerNumber := answer.PowAnswer.Number.Uint64()
+			if newBlockNumber != answerNumber+1 {
+				continue
+			}
+
+			if w.imProducer(newBlockNumber) {
 				//is the producer
 				if w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree) >= consensus.MostDposWitness {
 					//received 2/3 witness node ack
 					timerDelaySeal.Stop()
-					if commit(false, commitInterruptNewHead) {
+					if commit(false, commitInterruptNewHead, blockNumber) {
 						log.Info("received powAnswer, is my turn to produce new block", "addr", w.coinbase,
 							"current block number", blockNumber)
 					}
@@ -549,24 +584,25 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			}
 
 		case <-timerDelaySeal.C:
-			dposAgreeAckNum := w.chain.GetDposAckSize(w.chain.CurrentBlock().Number(), types.AckTypeAgree)
+			blockNumber := w.chain.CurrentBlock().Number()
+			dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
 			if dposAgreeAckNum >= consensus.LeastDposWitness {
 				//received 1/3 witness node ack
-				if commit(false, commitInterruptNewHead) {
+				if commit(false, commitInterruptNewHead, blockNumber) {
 					log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block", "addr", w.coinbase, "dposAckNum", dposAgreeAckNum,
-						"current block number", w.chain.CurrentHeader().Number)
+						"current block number", blockNumber)
 				}
 			} else {
 				//todo：Consider the reject ACK
 				//todo: warning, consider another 3 seconds timer to seal
 				log.Info("timerDelaySeal is expired, we DON'T have LeastDposWitness to produce new block", "addr", w.coinbase, "dposAckNum", dposAgreeAckNum,
-					"current block number", w.chain.CurrentHeader().Number)
+					"current block number", blockNumber)
 			}
 
 		case <-timerSealDealine.C:
 			//TODO：send reject msg to all dpos node
 			log.Info("timerSealDealine expired, send reject ack to all dpos node", "addr", w.coinbase,
-				"current block number", w.chain.CurrentHeader().Number)
+				"current block number", w.chain.CurrentBlock().Number())
 
 		case interval := <-w.resubmitIntervalCh:
 			// Adjust resubmit interval explicitly by user.
@@ -613,7 +649,7 @@ func (w *worker) mainLoop() {
 	for {
 		select {
 		case req := <-w.newWorkCh:
-			w.dposCommitNewWork(req.interrupt, req.noempty)
+			w.dposCommitNewWork(req.interrupt, req.noempty, req.currentBlockNumber)
 		case <-w.txsCh:
 			continue
 		case <-w.exitCh:
@@ -649,9 +685,9 @@ func (w *worker) taskLoop() {
 				continue
 			}
 			// Short circuit when receiving duplicate result caused by resubmitting.
-			if w.chain.CurrentHeader().Number.Uint64() >= block.NumberU64() {
+			if w.chain.CurrentBlock().Number().Uint64() >= block.NumberU64() {
 				log.Warn("new blockNumber is wrong with parent", "new blockNum", block.Number(),
-					"parent blockNum", w.chain.CurrentHeader().Number.Uint64())
+					"parent blockNum", w.chain.CurrentBlock().Number().Uint64())
 				continue
 			}
 
@@ -753,14 +789,14 @@ func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 		uncles:    mapset.NewSet(),
 		header:    header,
 	}
-	//// when 08 is processed ancestors contain 07 (quick block)
-	//for _, ancestor := range w.chain.GetBlocksFromHash(parent.Hash(), 7) {
-	//	for _, uncle := range ancestor.Uncles() {
-	//		env.family.Add(uncle.Hash())
-	//	}
-	//	env.family.Add(ancestor.Hash())
-	//	//env.ancestors.Add(ancestor.Hash())
-	//}
+	// when 08 is processed ancestors contain 07 (quick block)
+	for _, ancestor := range w.chain.GetBlocksFromHash(parent.Hash(), 7) {
+		for _, uncle := range ancestor.Uncles() {
+			env.family.Add(uncle.Hash())
+		}
+		env.family.Add(ancestor.Hash())
+		env.ancestors.Add(ancestor.Hash())
+	}
 	// Keep track of transactions which return errors so they can be removed
 	env.tcount = 0
 
@@ -770,6 +806,7 @@ func (w *worker) makeCurrent(parent *types.Block, header *types.Header) error {
 		w.current.state.StopPrefetcher()
 	}
 	w.current = env
+	log.Debug("w.current.state", "w.current.state", *w.current.state)
 	return nil
 }
 
@@ -963,21 +1000,23 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) {
 }
 
-func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool) {
+func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNum *big.Int) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
+	w.muProduce.Lock()
+	defer w.muProduce.Unlock()
 
 	if w.coinbase == (common.Address{}) {
 		log.Error("Refusing to mine without etherbase")
 		return
 	}
 
-	parent := w.chain.CurrentBlock()
+	parent := w.chain.GetBlockByNumber(parentBlockNum.Uint64())
 	timestamp := time.Now().Unix()
 	if parent.Time() >= uint64(timestamp) {
 		timestamp = int64(parent.Time() + 1)
 	}
-	parentBlockNum := parent.Number()
+	//parentBlockNum := parent.Number()
 	var currentBlockNum big.Int
 
 	header := &types.Header{
@@ -1033,7 +1072,6 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool) {
 	dposAckCount := w.eth.BlockChain().GetDposAckSize(parentBlockNum, types.AckTypeAll)
 	if dposAckCount < 1 {
 		log.Error("no dposAck in blockchain! something error", "parentBlockNum", parentBlockNum)
-		dposAckCount = 0
 		return
 	}
 	ackCount := types.DposAckCount{
@@ -1049,17 +1087,18 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool) {
 	//	//w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, types.DposAckCount{blockNumber, w.eth.BlockChain().DposAckCount[blockNumber]})
 	//}
 
-	w.current.header.PowAnswers = append(w.current.header.PowAnswers, w.eth.BlockChain().GetLatestPowAnswer(parentBlockNum))
-	if len(w.current.header.PowAnswers) <= 0 {
+	answers := w.eth.BlockChain().GetLatestPowAnswer(parentBlockNum)
+	if answers == nil {
 		log.Error("Refusing to mine without PowAnswers, something error, need to check")
 		return
 	}
+	w.current.header.PowAnswers = append(w.current.header.PowAnswers, answers)
 	w.current.header.DposSigAddr = w.coinbase
 
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(w.current.receipts)
 	s := w.current.state.Copy()
-	w.current.header.Root = s.IntermediateRoot(true)
+	w.current.header.Root = s.IntermediateRoot(w.chain.Config().IsEIP158(header.Number))
 
 	block := types.DposNewBlock(w.current.header, w.current.txs, w.current.powAnswerUncles, w.current.dposAcks, receipts, trie.NewStackTrie(nil))
 
