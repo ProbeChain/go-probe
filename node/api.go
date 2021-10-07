@@ -125,6 +125,37 @@ func (api *privateAdminAPI) RemoveTrustedPeer(url string) (bool, error) {
 	return true, nil
 }
 
+// AddDposPeer allows a remote node to always connect, even if slots are full
+func (api *privateAdminAPI) AddDposPeer(url string) (bool, error) {
+	// Make sure the server is running, fail otherwise
+	server := api.node.Server()
+	if server == nil {
+		return false, ErrNodeStopped
+	}
+	node, err := enode.Parse(enode.ValidSchemes, url)
+	if err != nil {
+		return false, fmt.Errorf("invalid enode: %v", err)
+	}
+	server.AddDposPeer(node)
+	return true, nil
+}
+
+// RemoveDposPeer removes a remote dpos node from the trusted peer set, but it
+// does not disconnect it automatically.
+func (api *privateAdminAPI) RemoveDposPeer(url string) (bool, error) {
+	// Make sure the server is running, fail otherwise
+	server := api.node.Server()
+	if server == nil {
+		return false, ErrNodeStopped
+	}
+	node, err := enode.Parse(enode.ValidSchemes, url)
+	if err != nil {
+		return false, fmt.Errorf("invalid enode: %v", err)
+	}
+	server.RemoveDposPeer(node)
+	return true, nil
+}
+
 // PeerEvents creates an RPC subscription which receives peer events from the
 // node's p2p.Server
 func (api *privateAdminAPI) PeerEvents(ctx context.Context) (*rpc.Subscription, error) {

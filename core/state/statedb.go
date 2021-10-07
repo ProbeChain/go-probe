@@ -339,16 +339,6 @@ type StateDB struct {
 	dposList         *dposList
 	markLossAccounts map[common.Hash][]common.Address
 
-	/*// DPoSAccount DPoS账户 64
-	dPoSAccounts []*common.DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 64
-	dPoSCandidateAccounts []*DPoSCandidateAccount
-
-	// DPoSAccount DPoS账户 64
-	oldDPoSAccounts []*common.DPoSAccount
-	// DPoSCandidateAccount DPoS候选账户 64
-	oldDPoSCandidateAccounts []*DPoSCandidateAccount*/
-
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -669,6 +659,56 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 		return stateObject.GetCommittedState(s.db, hash)
 	}
 	return common.Hash{}
+}
+
+// GetDposAccounts retrieves a dpos list @todo number, epoch just for test, rember remove it
+func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
+	log.Info("GetDposAccounts", "hash", hash, "number", number)
+	nodelist := []string{
+		"enode://94c3f0eaa5b48e19d6e0b7d194df0bce836ef60073cdfe51022bc28ea7f860ff7b0bef1adca6fc900f43575593172aa602c56aef22fd5004210b4525dfe9dbab@127.0.0.1:30000",
+		"enode://f145c933e0aee8daf4b652f19ea859b81bf8116252297cc31fc4c1fafcb21adecb635ef0ed1d2852fbe9ff0b92c2160467d33fed2004a1d62210651b208c7ff3@127.0.0.1:30001",
+	}
+	ownerList := []string{
+		"4bc6b01ce0104c654afdb3f8c484135005d7d8f7",
+		"dec2b13544b0d853678a2ef8933d6318313dae17",
+	}
+
+	mockDposAccounts := make([]*DPoSAccount, 0, len(nodelist))
+	for i, url := range nodelist {
+		dposAccount := &DPoSAccount{
+			DPoSData: DPoSData{},
+			Info:     []byte("http://eth.lucq.fun/#/"),
+			SignNum:  0,
+		}
+		dposAccount.DPoSData.Enode = []byte(url)
+		dposAccount.DPoSData.Owner = common.HexToAddress(ownerList[i])
+		mockDposAccounts = append(mockDposAccounts, dposAccount)
+	}
+
+	var dposAccounts []*DPoSAccount
+	size := uint64(len(mockDposAccounts))
+	count := 1
+	startIndex := uint64(0)
+	if number > 0 {
+		startIndex = number/epoch + 1
+	}
+
+	for {
+		if count > len(nodelist) {
+			break
+		}
+		dposAccount := mockDposAccounts[startIndex%size]
+		dposAccounts = append(dposAccounts, dposAccount)
+		startIndex++
+		count++
+	}
+	return dposAccounts
+}
+
+// GetNextDposAccounts retrieves a dpos list @todo number, epoch just for test, rember remove it
+func (s *StateDB) GetNextDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
+	log.Info("GetNextDposAccounts", "hash", hash, "number", number)
+	return s.GetDposAccounts(hash, number+epoch, epoch)
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.

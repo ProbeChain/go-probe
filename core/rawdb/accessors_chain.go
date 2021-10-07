@@ -646,7 +646,7 @@ func ReadBlock(db ethdb.Reader, hash common.Hash, number uint64) *types.Block {
 	if body == nil {
 		return nil
 	}
-	return types.NewBlockWithHeader(header).WithBody(body.Transactions, body.Uncles)
+	return types.NewBlockWithHeader(header).WithBodyGreatri(body.Transactions, body.Uncles, body.PowAnswerUncles, body.DposAcks)
 }
 
 // WriteBlock serializes a block into the database, header and body separately.

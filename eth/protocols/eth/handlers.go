@@ -295,10 +295,11 @@ func handleNewBlock(backend Backend, msg Decoder, peer *Peer) error {
 	if err := ann.sanityCheck(); err != nil {
 		return err
 	}
-	if hash := types.CalcUncleHash(ann.Block.Uncles()); hash != ann.Block.UncleHash() {
-		log.Warn("Propagated block has invalid uncles", "have", hash, "exp", ann.Block.UncleHash())
-		return nil // TODO(karalabe): return error eventually, but wait a few releases
-	}
+	//todo use powAnswerUncles to make hash
+	//if hash := types.CalcUncleHash(ann.Block.Uncles()); hash != ann.Block.UncleHash() {
+	//	log.Warn("Propagated block has invalid uncles", "have", hash, "exp", ann.Block.UncleHash())
+	//	return nil // TODO(karalabe): return error eventually, but wait a few releases
+	//}
 	if hash := types.DeriveSha(ann.Block.Transactions(), trie.NewStackTrie(nil)); hash != ann.Block.TxHash() {
 		log.Warn("Propagated block has invalid body", "have", hash, "exp", ann.Block.TxHash())
 		return nil // TODO(karalabe): return error eventually, but wait a few releases
@@ -308,6 +309,32 @@ func handleNewBlock(backend Backend, msg Decoder, peer *Peer) error {
 
 	// Mark the peer as owning the block
 	peer.markBlock(ann.Block.Hash())
+
+	return backend.Handle(peer, ann)
+}
+
+func handlePowAnswerMsg(backend Backend, msg Decoder, peer *Peer) error {
+	// Retrieve and decode the pow answer
+	ann := new(NewPowAnswerPacket)
+	if err := msg.Decode(ann); err != nil {
+		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
+	}
+
+	// Mark the peer as owning the pow answer
+	peer.markPowAnswer(ann.PowAnswer.Id())
+
+	return backend.Handle(peer, ann)
+}
+
+func handleDposAckMsg(backend Backend, msg Decoder, peer *Peer) error {
+	// Retrieve and decode the pow answer
+	ann := new(NewDposAckPacket)
+	if err := msg.Decode(ann); err != nil {
+		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
+	}
+
+	// Mark the peer as owning the pow answer
+	peer.markPowAnswer(ann.DposAck.Id())
 
 	return backend.Handle(peer, ann)
 }

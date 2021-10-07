@@ -18,6 +18,7 @@ package eth
 
 import (
 	"errors"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"sync"
 
@@ -205,6 +206,36 @@ func (ps *peerSet) peersWithoutTransaction(hash common.Hash) []*ethPeer {
 	list := make([]*ethPeer, 0, len(ps.peers))
 	for _, p := range ps.peers {
 		if !p.KnownTransaction(hash) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+
+// peersWithoutPowAnswers retrieves a list of peers that do not have a given
+// pow answer in their set of known hashes.
+func (ps *peerSet) peersWithoutPowAnswers(powAnswer *types.PowAnswer) []*ethPeer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*ethPeer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.KnownPowAnswer(powAnswer.Id()) {
+			list = append(list, p)
+		}
+	}
+	return list
+}
+
+// peersWithoutDposAcks retrieves a list of peers that do not have a given
+// dpos ack in their set of known hashes.
+func (ps *peerSet) peersWithoutDposAcks(dposAck *types.DposAck) []*ethPeer {
+	ps.lock.RLock()
+	defer ps.lock.RUnlock()
+
+	list := make([]*ethPeer, 0, len(ps.peers))
+	for _, p := range ps.peers {
+		if !p.KnownDposAck(dposAck.Id()) {
 			list = append(list, p)
 		}
 	}

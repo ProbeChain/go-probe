@@ -23,6 +23,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/status-im/keycard-go/hexutils"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -90,6 +92,12 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 	case *eth.NewBlockPacket:
 		return h.handleBlockBroadcast(peer, packet.Block, packet.TD)
 
+	case *eth.NewPowAnswerPacket:
+		return h.handlePowAnswerBroadcast(peer, packet.PowAnswer)
+
+	case *eth.NewDposAckPacket:
+		return h.handleDposAckBroadcast(peer, packet.DposAck)
+
 	case *eth.NewPooledTransactionHashesPacket:
 		return h.txFetcher.Notify(peer.ID(), *packet)
 
@@ -98,7 +106,6 @@ func (h *ethHandler) Handle(peer *eth.Peer, packet eth.Packet) error {
 
 	case *eth.PooledTransactionsPacket:
 		return h.txFetcher.Enqueue(peer.ID(), *packet, true)
-
 	default:
 		return fmt.Errorf("unexpected eth packet type: %T", packet)
 	}
@@ -213,6 +220,47 @@ func (h *ethHandler) handleBlockBroadcast(peer *eth.Peer, block *types.Block, td
 	if _, td := peer.Head(); trueTD.Cmp(td) > 0 {
 		peer.SetHead(trueHead, trueTD)
 		h.chainSync.handlePeerEvent(peer)
+	}
+	return nil
+}
+
+// handlePowAnswerBroadcast is invoked from a peer's message handler when it transmits a
+// pow answer broadcast for the local node to process.
+func (h *ethHandler) handlePowAnswerBroadcast(peer *eth.Peer, powAnswer *types.PowAnswer) error {
+	// boardcast pow answer again
+	if h.chain.CheckPowAnswer(powAnswer) {
+		peer.KnownPowAnswer(powAnswer.Id())
+		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
+			if err := peer.SendNewPowAnswer(powAnswer); err != nil {
+				log.Debug("SendNewPowAnswer", "err", err)
+			}
+		}
+		h.chain.HandlePowAnswer(powAnswer)
+	} else {
+		log.Debug("CheckPowAnswer Fail", "powAnswer.Number", powAnswer.Number.Uint64(), "Chain Number", h.chain.CurrentBlock().NumberU64())
+	}
+	return nil
+}
+
+// handleDposAckBroadcast is invoked from a peer's message handler when it transmits a
+// dpos ack for the local node to process.
+func (h *ethHandler) handleDposAckBroadcast(peer *eth.Peer, dposAck *types.DposAck) error {
+
+	check := h.chain.CheckDposAck(dposAck)
+	//future := dposAck.Number.Uint64() > h.chain.CurrentHeader().Number.Uint64()
+	future := true
+	broadcast := check && future
+	// boardcast dpos ack again
+	if broadcast {
+		peer.KnownDposAck(dposAck.Id())
+		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
+			if err := peer.SendNewDposAck(dposAck); err != nil {
+				log.Debug("SendNewDposAck", "err", err)
+			}
+		}
+		h.chain.HandleDposAck(dposAck)
+	} else {
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "future", future, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 	}
 	return nil
 }

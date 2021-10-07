@@ -18,6 +18,7 @@
 package core
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -28,6 +29,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
@@ -94,6 +98,7 @@ const (
 	maxChainPowAnswers  = 256
 	maxChainDposAcks    = 256
 	maxUnclePowAnswer   = 5
+	confirmDpos         = 64
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -150,6 +155,158 @@ var defaultCacheConfig = &CacheConfig{
 	SnapshotWait:   true,
 }
 
+type Uint64Slice []uint64
+
+func (x Uint64Slice) Len() int           { return len(x) }
+func (x Uint64Slice) Less(i, j int) bool { return x[i] < (x[j]) }
+func (x Uint64Slice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
+
+// PowAnswerPool contains all pow answer
+type PowAnswerPool struct {
+	lock         sync.RWMutex
+	powAnswerMap map[uint64][]*types.PowAnswer
+}
+
+// NewPowAnswerPool return a two-dimension pow answer
+func NewPowAnswerPool() *PowAnswerPool {
+	pool := &PowAnswerPool{
+		powAnswerMap: make(map[uint64][]*types.PowAnswer),
+	}
+	return pool
+}
+
+func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
+	powAnswers := pool.powAnswerMap[powAnswer.Number.Uint64()]
+	for _, answer := range powAnswers {
+		if powAnswer.Miner == answer.Miner {
+			return true
+		}
+	}
+	return false
+}
+
+func (pool *PowAnswerPool) Contain(powAnswer *types.PowAnswer) bool {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	return pool.contain(powAnswer)
+}
+
+func (pool *PowAnswerPool) List(number *big.Int) []*types.PowAnswer {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	powAnswers := pool.powAnswerMap[number.Uint64()]
+	return powAnswers
+}
+
+func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	if pool.contain(powAnswer) {
+		return
+	}
+	number := powAnswer.Number
+	powAnswers := pool.powAnswerMap[number.Uint64()]
+	powAnswers = append(powAnswers, powAnswer)
+
+	// Check whether a deletion operation is required
+	size := len(pool.powAnswerMap)
+	if size >= 2*maxChainPowAnswers {
+		// first sort the number
+		numbers := make([]uint64, 0, size)
+		for number := range pool.powAnswerMap {
+			numbers = append(numbers, number)
+		}
+		sort.Sort(Uint64Slice(numbers))
+
+		// remove the old pow answer
+		for index, number := range numbers {
+			if index <= maxChainPowAnswers {
+				delete(pool.powAnswerMap, number)
+			}
+		}
+	}
+
+	pool.powAnswerMap[number.Uint64()] = powAnswers
+}
+
+// DposAckPool contains all dpos ack
+type DposAckPool struct {
+	lock       sync.RWMutex
+	dposAckMap map[uint64][]*types.DposAck
+}
+
+// NewDposAckPool return a two-dimension pow answer
+func NewDposAckPool() *DposAckPool {
+	pool := &DposAckPool{
+		dposAckMap: make(map[uint64][]*types.DposAck),
+	}
+	return pool
+}
+
+func (pool *DposAckPool) contain(dposAck *types.DposAck) bool {
+	dposAcks := pool.dposAckMap[dposAck.Number.Uint64()]
+	for _, ack := range dposAcks {
+		if bytes.Compare(ack.WitnessSig, dposAck.WitnessSig) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (pool *DposAckPool) Contain(dposAck *types.DposAck) bool {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	return pool.contain(dposAck)
+}
+
+func (pool *DposAckPool) List(number *big.Int, ackType types.DposAckType) []*types.DposAck {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	dposAcks := pool.dposAckMap[number.Uint64()]
+	if ackType == types.AckTypeAll {
+		return dposAcks
+	} else {
+		ans := make([]*types.DposAck, 0, len(dposAcks))
+		for _, ack := range dposAcks {
+			if ack.AckType == ackType {
+				ans = append(ans, ack)
+			}
+		}
+		return ans
+	}
+}
+
+func (pool *DposAckPool) Add(dposAck *types.DposAck) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	if pool.contain(dposAck) {
+		return
+	}
+	number := dposAck.Number
+	dposAcks := pool.dposAckMap[number.Uint64()]
+	dposAcks = append(dposAcks, dposAck)
+
+	// Check whether a deletion operation is required
+	size := len(pool.dposAckMap)
+	if size >= 2*maxChainDposAcks {
+		// first sort the number
+		numbers := make([]uint64, 0, size)
+		for number := range pool.dposAckMap {
+			numbers = append(numbers, number)
+		}
+		sort.Sort(Uint64Slice(numbers))
+
+		// remove the old ack
+		for index, number := range numbers {
+			if index <= maxChainDposAcks {
+				delete(pool.dposAckMap, number)
+			}
+		}
+	}
+
+	pool.dposAckMap[number.Uint64()] = dposAcks
+}
+
 // BlockChain represents the canonical chain given a database with a genesis
 // block. The Blockchain manages chain imports, reverts, chain reorganisations.
 //
@@ -168,10 +325,11 @@ type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
 	cacheConfig *CacheConfig        // Cache configuration for pruning
 
-	db     ethdb.Database // Low level persistent database to store final content in
-	snaps  *snapshot.Tree // Snapshot tree for fast trie leaf access
-	triegc *prque.Prque   // Priority queue mapping block numbers to tries to gc
-	gcproc time.Duration  // Accumulates canonical block processing for trie dumping
+	db        ethdb.Database // Low level persistent database to store final content in
+	snaps     *snapshot.Tree // Snapshot tree for fast trie leaf access
+	triegc    *prque.Prque   // Priority queue mapping block numbers to tries to gc
+	gcproc    time.Duration  // Accumulates canonical block processing for trie dumping
+	p2pServer *p2p.Server
 
 	// txLookupLimit is the maximum number of blocks from head whose tx indices
 	// are reserved:
@@ -185,10 +343,16 @@ type BlockChain struct {
 	chainFeed     event.Feed
 	chainSideFeed event.Feed
 	chainHeadFeed event.Feed
+	powAnswerFeed event.Feed
+	dposAckFeed   event.Feed
 	logsFeed      event.Feed
 	blockProcFeed event.Feed
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
+
+	dposAcks     *DposAckPool
+	powAnswers   *PowAnswerPool
+	dposAccounts map[uint64][]*state.DPoSAccount
 
 	dposNodes map[uint64][]*enode.Node
 
@@ -223,7 +387,7 @@ type BlockChain struct {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Ethereum Validator and
 // Processor.
-func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64) (*BlockChain, error) {
+func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -254,6 +418,10 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		futureBlocks:   futureBlocks,
 		engine:         engine,
 		vmConfig:       vmConfig,
+		powAnswers:     NewPowAnswerPool(),
+		dposAcks:       NewDposAckPool(),
+		dposAccounts:   make(map[uint64][]*state.DPoSAccount),
+		p2pServer:      p2pServer,
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc, engine)
@@ -1522,6 +1690,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	log.Info(" Writing dpos nodes with block")
 	bc.writeDposNodes()
 
+	bc.updateP2pDposNodes()
+
 	// If we're running an archive node, always flush
 	//triedb.CommitForNew(hashes, false, nil)
 	if bc.cacheConfig.TrieDirtyDisabled {
@@ -2498,6 +2668,148 @@ func (bc *BlockChain) GetDposNodes(dposHash common.Hash) ([]common.DPoSAccount, 
 	return data, err
 }
 
+func (bc *BlockChain) updateP2pDposNodes() {
+	block := bc.CurrentBlock()
+	number := block.NumberU64()
+	epoch := bc.chainConfig.Dpos.Epoch
+
+	confirmBlockNum := epoch / 2
+	if epoch > confirmDpos {
+		confirmBlockNum = epoch - confirmDpos
+	}
+
+	if number > 0 {
+		// next dpos if not find in the pre dpos list, add it
+		if (number+confirmBlockNum)%epoch == 0 {
+			curDposAccounts := bc.GetDposAccounts(number)
+			nextDposAccounts := bc.GetNextDposAccounts(number)
+			for _, da1 := range nextDposAccounts {
+				find := false
+				for _, da2 := range curDposAccounts {
+					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
+						find = true
+						break
+					}
+				}
+				if !find {
+					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", string(da1.Enode))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					if err != nil {
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						continue
+					}
+					bc.p2pServer.AddDposPeer(dposEnode)
+				}
+			}
+		}
+
+		// pre dpos if not find in the pre dpos list, remove it
+		if number%epoch == 0 {
+			curDposAccounts := bc.GetDposAccounts(number)
+			preDposAccounts := bc.GetDposAccounts(number - confirmBlockNum)
+			for _, da1 := range preDposAccounts {
+				find := false
+				for _, da2 := range curDposAccounts {
+					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
+						find = true
+						break
+					}
+				}
+				if !find {
+					log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", string(da1.Enode))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					if err != nil {
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						continue
+					}
+					bc.p2pServer.RemovePeer(dposEnode)
+				}
+			}
+		}
+	}
+}
+
+// GetDposAccounts get latest dpos nodes
+func (bc *BlockChain) GetDposAccounts(number uint64) []*state.DPoSAccount {
+	index := number / bc.chainConfig.Dpos.Epoch
+
+	accounts := bc.dposAccounts[index]
+	if accounts != nil {
+		return accounts
+	}
+
+	// The blocks haven't been synchronized yet but we got the answers first
+	block := bc.GetBlockByNumber(number)
+	if block != nil {
+		epoch := bc.chainConfig.Dpos.Epoch
+		stateDB, _ := bc.StateAt(block.Root())
+		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
+		bc.dposAccounts[index] = accounts // cache it
+	}
+
+	return accounts
+}
+
+// GetNextDposAccounts get next dpos nodes
+func (bc *BlockChain) GetNextDposAccounts(number uint64) []*state.DPoSAccount {
+	index := (number + confirmDpos) / bc.chainConfig.Dpos.Epoch
+
+	accounts := bc.dposAccounts[index]
+	if accounts != nil {
+		return accounts
+	}
+
+	// The blocks haven't been synchronized yet but we got the answers first
+	block := bc.GetBlockByNumber(number)
+	if block != nil {
+		epoch := bc.chainConfig.Dpos.Epoch
+		stateDB, _ := bc.StateAt(block.Root())
+		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
+		bc.dposAccounts[index] = accounts // cache it
+	}
+
+	return accounts
+}
+
+// GetSealDposAccount get seal dpos account
+func (bc *BlockChain) GetSealDposAccount(number uint64) *state.DPoSAccount {
+	accounts := bc.GetDposAccounts(number)
+	if accounts != nil {
+		size := uint64(len(accounts))
+		return accounts[number%bc.chainConfig.Dpos.Epoch%size]
+	}
+	return nil
+}
+
+// GetDposAccountIndex get dpos account in list index
+func (bc *BlockChain) GetDposAccountIndex(number uint64, owner common.Address) (int, error) {
+	accounts := bc.GetDposAccounts(number)
+	for i, account := range accounts {
+		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+			return i, nil
+		}
+	}
+	return -1, errors.New("not found:" + owner.String())
+}
+
+func (bc *BlockChain) GetLatestDposAccountIndex(owner common.Address) (int, error) {
+	return bc.GetDposAccountIndex(bc.CurrentHeader().Number.Uint64(), owner)
+}
+
+func (bc *BlockChain) CheckIsDposAccount(number uint64, owner common.Address) bool {
+	accounts := bc.GetDposAccounts(number)
+	for _, account := range accounts {
+		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (bc *BlockChain) CheckIsLatestDposAccount(owner common.Address) bool {
+	return bc.CheckIsDposAccount(bc.CurrentHeader().Number.Uint64(), owner)
+}
+
 // CurrentHeader retrieves the current head header of the canonical chain. The
 // header is retrieved from the HeaderChain's internal cache.
 func (bc *BlockChain) CurrentHeader() *types.Header {
@@ -2602,6 +2914,16 @@ func (bc *BlockChain) SubscribeChainSideEvent(ch chan<- ChainSideEvent) event.Su
 	return bc.scope.Track(bc.chainSideFeed.Subscribe(ch))
 }
 
+// SubscribePowAnswerEvent registers a subscription of PowAnswerEvent.
+func (bc *BlockChain) SubscribePowAnswerEvent(ch chan<- PowAnswerEvent) event.Subscription {
+	return bc.scope.Track(bc.powAnswerFeed.Subscribe(ch))
+}
+
+// SubscribeDposAckEvent registers a subscription of DposAckEvent.
+func (bc *BlockChain) SubscribeDposAckEvent(ch chan<- DposAckEvent) event.Subscription {
+	return bc.scope.Track(bc.dposAckFeed.Subscribe(ch))
+}
+
 // SubscribeLogsEvent registers a subscription of []*types.Log.
 func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscription {
 	return bc.scope.Track(bc.logsFeed.Subscribe(ch))
@@ -2618,4 +2940,87 @@ func (bc *BlockChain) HasSixState(root common.Hash) bool {
 	_, err := state.OpenTotalTrie(root, bc.stateCache)
 
 	return err == nil
+}
+
+// CheckPowAnswer check a pow answer is legal (no check the MixDigest nonce is right)
+func (bc *BlockChain) CheckPowAnswer(powAnswer *types.PowAnswer) bool {
+	number := powAnswer.Number.Uint64()
+	chainNumber := bc.CurrentBlock().NumberU64()
+	if chainNumber > maxUnclePowAnswer {
+		return number >= chainNumber-maxUnclePowAnswer && number <= chainNumber+maxUnclePowAnswer
+	} else {
+		return number >= 0 && number <= chainNumber+maxUnclePowAnswer
+	}
+}
+
+// HandlePowAnswer send a pow answer to worker and save it
+func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
+	if bc.powAnswers.Contain(powAnswer) {
+		return 0
+	} else {
+		bc.powAnswers.Add(powAnswer)
+		return bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
+	}
+}
+
+// CheckDposAck check a dpos ack is legal
+func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
+	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
+	owner, err := dposAck.RecoverOwner()
+	if err == nil {
+		for _, account := range accounts {
+			if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+				return true
+			}
+		}
+	}
+	log.Debug("CheckDposAck Fail", "owner", owner, "err", err)
+	return false
+}
+
+// HandleDposAck send a dpos ack to worker and save it
+func (bc *BlockChain) HandleDposAck(dposAck *types.DposAck) int {
+	if bc.dposAcks.Contain(dposAck) {
+		return 0
+	} else {
+		bc.dposAcks.Add(dposAck)
+		return bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+	}
+}
+
+// GetPowAnswers get a pow answer list
+func (bc *BlockChain) GetPowAnswers(number *big.Int) []*types.PowAnswer {
+	return bc.powAnswers.List(number)
+}
+
+// GetLatestPowAnswer get a pow answer receive latest
+func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
+	ans := bc.powAnswers.List(number)
+	if len(ans) > 0 {
+		return ans[0]
+	} else {
+		return nil
+	}
+}
+
+// GetUnclePowAnswers get uncle pow answer list
+func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
+	uncles := maxUnclePowAnswer
+	ans := make([]*types.PowAnswer, 0, uncles*2)
+	for uncles >= 1 {
+		ans = append(ans, bc.powAnswers.List(big.NewInt(0).Sub(number, big.NewInt(int64(uncles))))...)
+		uncles -= 1
+	}
+	// @todo 叔块答案应该排除已上链的答案
+	return ans
+}
+
+// GetDposAck get a dpos ack list
+func (bc *BlockChain) GetDposAck(number *big.Int, ackType types.DposAckType) []*types.DposAck {
+	return bc.dposAcks.List(number, ackType)
+}
+
+// GetDposAckSize get a dpos ack list size
+func (bc *BlockChain) GetDposAckSize(number *big.Int, ackType types.DposAckType) int {
+	return len(bc.dposAcks.List(number, ackType))
 }

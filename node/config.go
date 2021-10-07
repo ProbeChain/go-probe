@@ -43,6 +43,7 @@ const (
 	datadirDefaultKeyStore = "keystore"           // Path within the datadir to the keystore
 	datadirStaticNodes     = "static-nodes.json"  // Path within the datadir to the static node list
 	datadirTrustedNodes    = "trusted-nodes.json" // Path within the datadir to the trusted node list
+	datadirDposNodes       = "dpos-nodes.json"    // Path within the datadir to the dpos node list
 	datadirNodeDatabase    = "nodes"              // Path within the datadir to store the node infos
 )
 
@@ -189,6 +190,7 @@ type Config struct {
 
 	staticNodesWarning     bool
 	trustedNodesWarning    bool
+	dposNodesWarning       bool
 	oldGethResourceWarning bool
 
 	// AllowUnprotectedTxs allows non EIP-155 protected transactions to be send over RPC.
@@ -312,6 +314,7 @@ var isOldGethResource = map[string]bool{
 	"nodekey":            true,
 	"static-nodes.json":  false, // no warning for these because they have their
 	"trusted-nodes.json": false, // own separate warning.
+	"dpos-nodes.json":    false, // own separate warning.
 }
 
 // ResolvePath resolves path in the instance directory.
@@ -392,6 +395,11 @@ func (c *Config) StaticNodes() []*enode.Node {
 // TrustedNodes returns a list of node enode URLs configured as trusted nodes.
 func (c *Config) TrustedNodes() []*enode.Node {
 	return c.parsePersistentNodes(&c.trustedNodesWarning, c.ResolvePath(datadirTrustedNodes))
+}
+
+// DposNodes returns a list of node enode URLs configured as dpos nodes.
+func (c *Config) DposNodes() []*enode.Node {
+	return c.parsePersistentNodes(&c.dposNodesWarning, c.ResolvePath(datadirDposNodes))
 }
 
 // parsePersistentNodes parses a list of discovery node URLs loaded from a .json

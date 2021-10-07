@@ -24,6 +24,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/status-im/keycard-go/hexutils"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/forkid"
@@ -113,6 +115,8 @@ type handler struct {
 	txsCh         chan core.NewTxsEvent
 	txsSub        event.Subscription
 	minedBlockSub *event.TypeMuxSubscription
+	powAnswerSub  *event.TypeMuxSubscription
+	dposAckSub    *event.TypeMuxSubscription
 
 	whitelist map[uint64]common.Hash
 
@@ -407,6 +411,16 @@ func (h *handler) Start(maxPeers int) {
 	h.minedBlockSub = h.eventMux.Subscribe(core.NewMinedBlockEvent{})
 	go h.minedBroadcastLoop()
 
+	// broadcast powAnswer
+	h.wg.Add(1)
+	h.powAnswerSub = h.eventMux.Subscribe(core.PowAnswerEvent{})
+	go h.powAnswerBroadcastLoop()
+
+	// broadcast dposAck
+	h.wg.Add(1)
+	h.dposAckSub = h.eventMux.Subscribe(core.DposAckEvent{})
+	go h.dposAckBroadcastLoop()
+
 	// start sync handlers
 	h.wg.Add(2)
 	go h.chainSync.loop()
@@ -416,6 +430,8 @@ func (h *handler) Start(maxPeers int) {
 func (h *handler) Stop() {
 	h.txsSub.Unsubscribe()        // quits txBroadcastLoop
 	h.minedBlockSub.Unsubscribe() // quits blockBroadcastLoop
+	h.powAnswerSub.Unsubscribe()  // quits powAnswerBroadcastLoop
+	h.dposAckSub.Unsubscribe()    // quits dposAckBroadcastLoop
 
 	// Quit chainSync and txsync64.
 	// After this is done, no new peers will be accepted.
@@ -508,6 +524,42 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 		"tx packs", directPeers, "broadcast txs", directCount)
 }
 
+// BroadcastPowAnswer broadcast PowAnswer to all peers
+func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
+	if h.chain.CheckPowAnswer(powAnswer) {
+		h.chain.HandlePowAnswer(powAnswer)
+		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
+			if err := peer.SendNewPowAnswer(powAnswer); err != nil {
+				log.Debug("SendNewPowAnswer", "err", err)
+			}
+		}
+		log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
+	} else {
+		log.Debug("PowAnswer broadcast fail, because the pow answer is too old", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner, "Chain Number", h.chain.CurrentBlock().NumberU64())
+	}
+}
+
+// BroadcastDposAck broadcast dpos ack to all peers
+func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
+	check := h.chain.CheckDposAck(dposAck)
+	//future := dposAck.Number.Uint64() >= h.chain.CurrentHeader().Number.Uint64()
+	future := true
+	broadcast := check && future
+	if check {
+		h.chain.HandleDposAck(dposAck)
+	}
+	if broadcast {
+		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
+			if err := peer.SendNewDposAck(dposAck); err != nil {
+				log.Debug("SendNewDposAck", "err", err)
+			}
+		}
+		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+	} else {
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "future", future, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+	}
+}
+
 // minedBroadcastLoop sends mined blocks to connected peers.
 func (h *handler) minedBroadcastLoop() {
 	defer h.wg.Done()
@@ -529,6 +581,28 @@ func (h *handler) txBroadcastLoop() {
 			h.BroadcastTransactions(event.Txs)
 		case <-h.txsSub.Err():
 			return
+		}
+	}
+}
+
+// powAnswerBroadcastLoop sends pow answer to connected peers.
+func (h *handler) powAnswerBroadcastLoop() {
+	defer h.wg.Done()
+
+	for obj := range h.powAnswerSub.Chan() {
+		if ev, ok := obj.Data.(core.PowAnswerEvent); ok {
+			h.BroadcastPowAnswer(ev.PowAnswer)
+		}
+	}
+}
+
+// dposAckBroadcastLoop sends dpos ack to connected peers.
+func (h *handler) dposAckBroadcastLoop() {
+	defer h.wg.Done()
+
+	for obj := range h.dposAckSub.Chan() {
+		if ev, ok := obj.Data.(core.DposAckEvent); ok {
+			h.BroadcastDposAck(ev.DposAck)
 		}
 	}
 }

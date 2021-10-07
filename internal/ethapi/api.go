@@ -583,6 +583,28 @@ func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 	return &PublicBlockChainAPI{b}
 }
 
+type DPoSRpcData struct {
+	Enode   string
+	Owner   common.Address
+	Info    string
+	SignNum uint64
+}
+
+// DposAccounts the chain dpos nodes
+func (api *PublicBlockChainAPI) DposAccounts(number rpc.BlockNumber) []*DPoSRpcData {
+	dposAccounts := api.b.DposAccounts(number)
+	data := make([]*DPoSRpcData, 0, len(dposAccounts))
+	for _, account := range dposAccounts {
+		data = append(data, &DPoSRpcData{
+			Enode:   string(account.Enode),
+			Owner:   account.Owner,
+			Info:    string(account.Info),
+			SignNum: account.SignNum,
+		})
+	}
+	return data
+}
+
 // ChainId is the EIP-155 replay-protection chain id for the current ethereum chain config.
 func (api *PublicBlockChainAPI) ChainId() (*hexutil.Big, error) {
 	// if current block is at or past the EIP-155 replay-protection fork block, return chainID from config
@@ -1173,6 +1195,11 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 // RPCMarshalHeader converts the given header to the RPC output .
 func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 	result := map[string]interface{}{
+		"dposSigAddr":      head.DposSigAddr,
+		"dposSig":          hexutil.Bytes(head.DposSig),
+		"dposAckCountList": head.DposAckCountList,
+		"dposAckHash":      head.DposAcksHash,
+		"powAnswers":       head.PowAnswers,
 		"number":           (*hexutil.Big)(head.Number),
 		"hash":             head.Hash(),
 		"parentHash":       head.ParentHash,
@@ -1231,7 +1258,8 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool) (map[string]i
 		uncleHashes[i] = uncle.Hash()
 	}
 	fields["uncles"] = uncleHashes
-
+	fields["powAnswerUncles"] = block.PowAnswerUncles()
+	fields["dposAcks"] = block.DposAcks()
 	return fields, nil
 }
 

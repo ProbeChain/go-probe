@@ -50,7 +50,7 @@ const (
 
 	// Connectivity defaults.
 	defaultMaxPendingPeers = 50
-	defaultDialRatio       = 3
+	defaultDialRatio       = 1
 
 	// This time limits inbound connection attempts per source IP.
 	inboundThrottleTime = 30 * time.Second
@@ -319,7 +319,9 @@ func (srv *Server) PeerCount() int {
 // the server will connect to the node. If the connection fails for any reason, the server
 // will attempt to reconnect the peer.
 func (srv *Server) AddPeer(node *enode.Node) {
-	srv.dialsched.addStatic(node)
+	if node.ID().String() != srv.Self().ID().String() {
+		srv.dialsched.addStatic(node)
+	}
 }
 
 // RemovePeer removes a node from the static node set. It also disconnects from the given
@@ -367,6 +369,26 @@ func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
 	case srv.removetrusted <- node:
 	case <-srv.quit:
 	}
+}
+
+// AddDposPeer adds the given node to the static node set. When there is room in the peer set,
+// the server will connect to the node. If the connection fails for any reason, the server
+// will attempt to reconnect the peer.
+func (srv *Server) AddDposPeer(node *enode.Node) {
+	if node.ID().String() != srv.Self().ID().String() {
+		srv.AddPeer(node)
+		srv.AddTrustedPeer(node)
+	}
+}
+
+// RemoveDposPeer removes a node from the static node set. It also disconnects from the given
+// node if it is currently connected as a peer.
+//
+// This method blocks until all protocols have exited and the peer is removed. Do not use
+// RemovePeer in protocol implementations, call Disconnect on the Peer instead.
+func (srv *Server) RemoveDposPeer(node *enode.Node) {
+	srv.RemovePeer(node)
+	srv.RemoveTrustedPeer(node)
 }
 
 // SubscribeEvents subscribes the given channel to peer events
@@ -803,7 +825,8 @@ func (srv *Server) postHandshakeChecks(peers map[enode.ID]*Peer, inboundCount in
 	switch {
 	case !c.is(trustedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
-	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
+	//case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
+	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.MaxPeers/2:
 		return DiscTooManyPeers
 	case peers[c.node.ID()] != nil:
 		return DiscAlreadyConnected

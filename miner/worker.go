@@ -18,7 +18,10 @@ package miner
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	ethhash2 "github.com/ethereum/go-ethereum/consensus/ethash"
+	greatri2 "github.com/ethereum/go-ethereum/consensus/greatri"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -27,7 +30,6 @@ import (
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -38,6 +40,7 @@ import (
 )
 
 const (
+
 	// resultQueueSize is the size of channel listening to sealing result.
 	resultQueueSize = 10
 
@@ -51,8 +54,17 @@ const (
 	// chainSideChanSize is the size of channel listening to ChainSideEvent.
 	chainSideChanSize = 10
 
+	// powAnswerChanSize is the size of channel listening to PowAnswerEvent.
+	powAnswerChanSize = 10
+
+	// dposAckChanSize is the size of channel listening to DposAckEvent.
+	dposAckChanSize = consensus.DposWitnessNumber * 10
+
 	// resubmitAdjustChanSize is the size of resubmitting interval adjustment channel.
 	resubmitAdjustChanSize = 10
+
+	// powAnswerChanSize is the size of resubmitting interval adjustment channel.
+	powMinerResultChanSize = 10
 
 	// miningLogAtDepth is the number of confirmations before logging successful mining.
 	miningLogAtDepth = 7
@@ -88,8 +100,11 @@ type environment struct {
 	tcount    int            // tx count in cycle
 	gasPool   *core.GasPool  // available gas used to pack transactions
 
-	header   *types.Header
-	txs      []*types.Transaction
+	header          *types.Header
+	txs             []*types.Transaction
+	powAnswerUncles []*types.PowAnswer
+	dposAcks        []*types.DposAck
+
 	receipts []*types.Receipt
 }
 
@@ -109,9 +124,9 @@ const (
 
 // newWorkReq represents a request for new sealing work submitting with relative interrupt notifier.
 type newWorkReq struct {
-	interrupt *int32
-	noempty   bool
-	timestamp int64
+	interrupt          *int32
+	noempty            bool
+	currentBlockNumber *big.Int
 }
 
 // intervalAdjust represents a resubmitting interval adjustment.
@@ -126,6 +141,7 @@ type worker struct {
 	config      *Config
 	chainConfig *params.ChainConfig
 	engine      consensus.Engine
+	powEngine   consensus.Engine
 	eth         Backend
 	chain       *core.BlockChain
 
@@ -141,23 +157,32 @@ type worker struct {
 	chainSideCh  chan core.ChainSideEvent
 	chainSideSub event.Subscription
 
+	powAnswerCh  chan core.PowAnswerEvent
+	powAnswerSub event.Subscription
+
+	dposAckCh  chan core.DposAckEvent
+	dposAckSub event.Subscription
+
 	// Channels
 	newWorkCh          chan *newWorkReq
 	taskCh             chan *task
-	resultCh           chan *types.Block
 	startCh            chan struct{}
 	exitCh             chan struct{}
 	resubmitIntervalCh chan time.Duration
 	resubmitAdjustCh   chan *intervalAdjust
+
+	//pow miner
+	powMinerResultCh chan *types.PowAnswer
 
 	current      *environment                 // An environment for current running cycle.
 	localUncles  map[common.Hash]*types.Block // A set of side blocks generated locally as the possible uncle blocks.
 	remoteUncles map[common.Hash]*types.Block // A set of side blocks as the possible uncle blocks.
 	unconfirmed  *unconfirmedBlocks           // A set of locally mined blocks pending canonicalness confirmations.
 
-	mu       sync.RWMutex // The lock used to protect the coinbase and extra fields
-	coinbase common.Address
-	extra    []byte
+	mu        sync.RWMutex // The lock used to protect the coinbase and extra fields
+	muProduce sync.RWMutex
+	coinbase  common.Address
+	extra     []byte
 
 	pendingMu    sync.RWMutex
 	pendingTasks map[common.Hash]*task
@@ -169,7 +194,7 @@ type worker struct {
 
 	// atomic status counters
 	running int32 // The indicator whether the consensus engine is running or not.
-	newTxs  int32 // New arrival transaction count since last sealing work submitting.
+	//newTxs  int32 // New arrival transaction count since last sealing work submitting.
 
 	// noempty is the flag used to control whether the feature of pre-seal empty
 	// block is enabled. The default value is false(pre-seal is enabled by default).
@@ -188,11 +213,14 @@ type worker struct {
 	resubmitHook func(time.Duration, time.Duration) // Method to call upon updating resubmitting interval.
 }
 
-func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, eth Backend, mux *event.TypeMux, isLocalBlock func(*types.Block) bool, init bool) *worker {
+func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, powEngine consensus.Engine, eth Backend, mux *event.TypeMux,
+	isLocalBlock func(*types.Block) bool, init bool) *worker {
 	worker := &worker{
 		config:             config,
 		chainConfig:        chainConfig,
+		coinbase:           config.Etherbase,
 		engine:             engine,
+		powEngine:          powEngine,
 		eth:                eth,
 		mux:                mux,
 		chain:              eth.BlockChain(),
@@ -204,19 +232,24 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		txsCh:              make(chan core.NewTxsEvent, txChanSize),
 		chainHeadCh:        make(chan core.ChainHeadEvent, chainHeadChanSize),
 		chainSideCh:        make(chan core.ChainSideEvent, chainSideChanSize),
+		powAnswerCh:        make(chan core.PowAnswerEvent, powAnswerChanSize),
+		dposAckCh:          make(chan core.DposAckEvent, dposAckChanSize),
 		newWorkCh:          make(chan *newWorkReq),
 		taskCh:             make(chan *task),
-		resultCh:           make(chan *types.Block, resultQueueSize),
 		exitCh:             make(chan struct{}),
 		startCh:            make(chan struct{}, 1),
 		resubmitIntervalCh: make(chan time.Duration),
 		resubmitAdjustCh:   make(chan *intervalAdjust, resubmitAdjustChanSize),
+		powMinerResultCh:   make(chan *types.PowAnswer, powMinerResultChanSize),
 	}
 	// Subscribe NewTxsEvent for tx pool
 	worker.txsSub = eth.TxPool().SubscribeNewTxsEvent(worker.txsCh)
 	// Subscribe events for blockchain
 	worker.chainHeadSub = eth.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
 	worker.chainSideSub = eth.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
+
+	worker.powAnswerSub = eth.BlockChain().SubscribePowAnswerEvent(worker.powAnswerCh)
+	worker.dposAckSub = eth.BlockChain().SubscribeDposAckEvent(worker.dposAckCh)
 
 	// Sanitize recommit interval if the user-specified one is too short.
 	recommit := worker.config.Recommit
@@ -227,12 +260,13 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 
 	go worker.mainLoop()
 	go worker.newWorkLoop(recommit)
-	go worker.resultLoop()
 	go worker.taskLoop()
+	go worker.powMinerNewWorkLoop()
+	go worker.powMinerResultLoop()
 
 	// Submit first work to initialize pending state.
 	if init {
-		worker.startCh <- struct{}{}
+		//worker.startCh <- struct{}{}
 	}
 	return worker
 }
@@ -268,13 +302,15 @@ func (w *worker) enablePreseal() {
 
 // pending returns the pending state and corresponding block.
 func (w *worker) pending() (*types.Block, *state.StateDB) {
-	// return a snapshot to avoid contention on currentMu mutex
-	w.snapshotMu.RLock()
-	defer w.snapshotMu.RUnlock()
-	if w.snapshotState == nil {
-		return nil, nil
-	}
-	return w.snapshotBlock, w.snapshotState.Copy()
+	s, _ := w.chain.StateAt(w.chain.CurrentBlock().Root())
+	return w.chain.CurrentBlock(), s
+	//// return a snapshot to avoid contention on currentMu mutex
+	//w.snapshotMu.RLock()
+	//defer w.snapshotMu.RUnlock()
+	//if w.snapshotState == nil {
+	//	return nil, nil
+	//}
+	//return w.snapshotBlock, w.snapshotState.Copy()
 }
 
 // pendingBlock returns pending block.
@@ -307,6 +343,27 @@ func (w *worker) stop() {
 // isRunning returns an indicator whether worker is running or not.
 func (w *worker) isRunning() bool {
 	return atomic.LoadInt32(&w.running) == 1
+}
+
+func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
+	account := w.chain.GetSealDposAccount(blockNumber)
+	if account == nil {
+		log.Error("something wrong in get dpos account, need to check", "blockNumber", blockNumber)
+		return false
+	}
+	if account.Owner == w.coinbase {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (w *worker) imProducer(blockNumber uint64) bool {
+	return w.imProducerOnSpecBlock(blockNumber)
+}
+
+func (w *worker) imDpostWorkNode() bool {
+	return w.chain.CheckIsLatestDposAccount(w.coinbase)
 }
 
 // close terminates all background threads maintained by the worker.
@@ -346,26 +403,43 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 	var (
 		interrupt   *int32
 		minRecommit = recommit // minimal resubmit interval specified by user.
-		timestamp   int64      // timestamp for each round of mining.
+		stopCh      chan struct{}
 	)
+	sealedBlockNumber := uint64(0)
 
-	timer := time.NewTimer(0)
-	defer timer.Stop()
-	<-timer.C // discard the initial tick
+	//used when not received enough dposAck
+	timerDelaySeal := time.NewTimer(0)
+	defer timerDelaySeal.Stop()
+	<-timerDelaySeal.C // discard the initial tick
 
+	//deadline of seal after received a pow answer
+	timerSealDealine := time.NewTimer(0)
+	defer timerSealDealine.Stop()
+	<-timerSealDealine.C // discard the initial tick
+
+	timerSealWaitBlock := time.NewTimer(0)
+	defer timerSealWaitBlock.Stop()
+	<-timerSealWaitBlock.C // discard the initial tick
 	// commit aborts in-flight transaction execution with given signal and resubmits a new one.
-	commit := func(noempty bool, s int32) {
+	commit := func(noempty bool, s int32, currentBlockNumber *big.Int) bool {
+		newBlockNumber := currentBlockNumber.Uint64() + 1
+		if sealedBlockNumber >= newBlockNumber {
+			log.Info("can't produce the same block number", "blockNumber", newBlockNumber)
+			return false
+		}
+
+		sealedBlockNumber = newBlockNumber
+		log.Debug("sealedBlockNumber changed", "sealedBlockNumber", sealedBlockNumber)
 		if interrupt != nil {
 			atomic.StoreInt32(interrupt, s)
 		}
 		interrupt = new(int32)
 		select {
-		case w.newWorkCh <- &newWorkReq{interrupt: interrupt, noempty: noempty, timestamp: timestamp}:
+		case w.newWorkCh <- &newWorkReq{interrupt: interrupt, noempty: noempty, currentBlockNumber: currentBlockNumber}:
 		case <-w.exitCh:
-			return
+			return false
 		}
-		timer.Reset(recommit)
-		atomic.StoreInt32(&w.newTxs, 0)
+		return true
 	}
 	// clearPending cleans the stale pending tasks.
 	clearPending := func(number uint64) {
@@ -377,30 +451,158 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		}
 		w.pendingMu.Unlock()
 	}
+	// interrupt aborts the in-flight sealing task.
+	interruptSeal := func() {
+		if stopCh != nil {
+			close(stopCh)
+			stopCh = nil
+		}
+	}
 
 	for {
 		select {
 		case <-w.startCh:
 			clearPending(w.chain.CurrentBlock().NumberU64())
-			timestamp = time.Now().Unix()
-			commit(false, commitInterruptNewHead)
+			//commit(false, commitInterruptNewHead)
+			time.Sleep(2 * time.Second)
+			w.chainHeadCh <- core.ChainHeadEvent{}
 
-		case head := <-w.chainHeadCh:
-			clearPending(head.Block.NumberU64())
-			timestamp = time.Now().Unix()
-			commit(false, commitInterruptNewHead)
+		case block := <-w.chainHeadCh:
+			var blockNumber *big.Int
+			if nil == block.Block {
+				blockNumber = w.chain.CurrentBlock().Number()
+			} else {
+				blockNumber = block.Block.Number()
+			}
+			if w.imProducer(blockNumber.Uint64() + 1) {
+				dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
+				if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
+					dposAgreeAckNum >= consensus.MostDposWitness {
+					//received powAnswer and received 2/3 witness node ack
+					if commit(false, commitInterruptNewHead, blockNumber) {
+						log.Info("received new base block, is my turn to produce new block", "addr", w.coinbase,
+							"current block number", blockNumber)
+					}
+				}
+			}
 
-		case <-timer.C:
-			// If mining is running resubmit a new work cycle periodically to pull in
-			// higher priced transactions. Disable this overhead for pending blocks.
-			if w.isRunning() && (w.chainConfig.Clique == nil || w.chainConfig.Clique.Period > 0) {
-				// Short circuit if no new transaction arrives.
-				if atomic.LoadInt32(&w.newTxs) == 0 {
-					timer.Reset(recommit)
+			if w.imDpostWorkNode() {
+				position, err := w.chain.GetLatestDposAccountIndex(w.coinbase)
+				if err != nil {
+					log.Error("something wrong in get dpos account postion", "blockNumber", w.chain.CurrentBlock().Number())
 					continue
 				}
-				commit(true, commitInterruptResubmit)
+				ack := &types.DposAck{
+					EpochPosition: uint8(position),
+					Number:        w.eth.BlockChain().CurrentBlock().Number(),
+					BlockHash:     w.eth.BlockChain().CurrentBlock().Hash(),
+					AckType:       types.AckTypeAgree,
+				}
+				greatri, ok := w.engine.(*greatri2.Greatri)
+				if !ok {
+					log.Error("something wrong in produce dposAck", "blockNumber", ack.Number)
+					continue
+				}
+				ackSig, err := greatri.DposAckSig(ack)
+				if err != nil {
+					log.Error("something wrong in DposAckSig", "blockNumber", ack.Number)
+					continue
+				}
+				ack.WitnessSig = append(ack.WitnessSig, ackSig...)
+
+				log.Info("received new block, send dposAck to all", "addr", w.coinbase,
+					"current block number", w.chain.CurrentBlock().Number())
+				w.mux.Post(core.DposAckEvent{DposAck: ack})
 			}
+
+			if w.chainConfig.Ethash != nil {
+				interruptSeal()
+				stopCh = make(chan struct{})
+				ethash, ok := w.powEngine.(*ethhash2.Ethash)
+				if !ok {
+					log.Error("something wrong in produce dposAck", "blockNumber", w.chain.CurrentBlock().Number())
+					continue
+				}
+
+				if err := ethash.PowSeal(w.chain, w.chain.CurrentBlock(), w.powMinerResultCh, stopCh, w.coinbase); err != nil {
+					log.Warn("pow Miner failed", "err", err)
+				}
+			}
+
+		case ack := <-w.dposAckCh:
+			blockNumber := w.chain.CurrentBlock().Number()
+			newBlockNumber := blockNumber.Uint64() + 1
+			ackNumber := ack.DposAck.Number.Uint64()
+			if newBlockNumber != ackNumber+1 {
+				continue
+			}
+
+			if w.imProducer(newBlockNumber) {
+				//is the producer
+				dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
+				if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
+					dposAgreeAckNum >= consensus.MostDposWitness {
+					//received powAnswer and received 2/3 witness node ack
+					timerDelaySeal.Stop()
+					if commit(false, commitInterruptNewHead, blockNumber) {
+						log.Info("received dposAck, is my turn to produce new block", "addr", w.coinbase,
+							"current block number", blockNumber)
+					}
+				} else {
+					log.Info("received dposAck, but not receive enough dposAck or powAnswer", "addr", w.coinbase,
+						"current block number", blockNumber, "dposAckNum", dposAgreeAckNum)
+				}
+			}
+
+		case answer := <-w.powAnswerCh:
+			blockNumber := w.chain.CurrentBlock().Number()
+			newBlockNumber := blockNumber.Uint64() + 1
+			answerNumber := answer.PowAnswer.Number.Uint64()
+			if newBlockNumber != answerNumber+1 {
+				continue
+			}
+
+			if w.imProducer(newBlockNumber) {
+				//is the producer
+				if w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree) >= consensus.MostDposWitness {
+					//received 2/3 witness node ack
+					timerDelaySeal.Stop()
+					if commit(false, commitInterruptNewHead, blockNumber) {
+						log.Info("received powAnswer, is my turn to produce new block", "addr", w.coinbase,
+							"current block number", blockNumber)
+					}
+				} else {
+					timerDelaySeal.Reset(consensus.Time2delaySeal * time.Second)
+					log.Info("received powAnswer, but not enough dposAck, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
+						"current block number", blockNumber)
+				}
+			} else {
+				//not the producer
+				timerSealDealine.Reset(consensus.Time2SealDeadline * time.Second)
+				log.Info("received powAnswer, not my turn to produce, setup a timer to wait new block", "addr", w.coinbase,
+					"current block number", blockNumber)
+			}
+
+		case <-timerDelaySeal.C:
+			blockNumber := w.chain.CurrentBlock().Number()
+			dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
+			if dposAgreeAckNum >= consensus.LeastDposWitness {
+				//received 1/3 witness node ack
+				if commit(false, commitInterruptNewHead, blockNumber) {
+					log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block", "addr", w.coinbase, "dposAckNum", dposAgreeAckNum,
+						"current block number", blockNumber)
+				}
+			} else {
+				//todo：Consider the reject ACK
+				//todo: warning, consider another 3 seconds timer to seal
+				log.Info("timerDelaySeal is expired, we DON'T have LeastDposWitness to produce new block", "addr", w.coinbase, "dposAckNum", dposAgreeAckNum,
+					"current block number", blockNumber)
+			}
+
+		case <-timerSealDealine.C:
+			//TODO：send reject msg to all dpos node
+			log.Info("timerSealDealine expired, send reject ack to all dpos node", "addr", w.coinbase,
+				"current block number", w.chain.CurrentBlock().Number())
 
 		case interval := <-w.resubmitIntervalCh:
 			// Adjust resubmit interval explicitly by user.
@@ -447,86 +649,9 @@ func (w *worker) mainLoop() {
 	for {
 		select {
 		case req := <-w.newWorkCh:
-			w.commitNewWork(req.interrupt, req.noempty, req.timestamp)
-
-		case ev := <-w.chainSideCh:
-			// Short circuit for duplicate side blocks
-			if _, exist := w.localUncles[ev.Block.Hash()]; exist {
-				continue
-			}
-			if _, exist := w.remoteUncles[ev.Block.Hash()]; exist {
-				continue
-			}
-			// Add side block to possible uncle block set depending on the author.
-			if w.isLocalBlock != nil && w.isLocalBlock(ev.Block) {
-				w.localUncles[ev.Block.Hash()] = ev.Block
-			} else {
-				w.remoteUncles[ev.Block.Hash()] = ev.Block
-			}
-			// If our mining block contains less than 2 uncle blocks,
-			// add the new uncle block if valid and regenerate a mining block.
-			if w.isRunning() && w.current != nil && w.current.uncles.Cardinality() < 2 {
-				start := time.Now()
-				if err := w.commitUncle(w.current, ev.Block.Header()); err == nil {
-					var uncles []*types.Header
-					w.current.uncles.Each(func(item interface{}) bool {
-						hash, ok := item.(common.Hash)
-						if !ok {
-							return false
-						}
-						uncle, exist := w.localUncles[hash]
-						if !exist {
-							uncle, exist = w.remoteUncles[hash]
-						}
-						if !exist {
-							return false
-						}
-						uncles = append(uncles, uncle.Header())
-						return false
-					})
-					w.commit(uncles, nil, true, start)
-				}
-			}
-
-		case ev := <-w.txsCh:
-			// Apply transactions to the pending state if we're not mining.
-			//
-			// Note all transactions received may not be continuous with transactions
-			// already included in the current mining block. These transactions will
-			// be automatically eliminated.
-			if !w.isRunning() && w.current != nil {
-				// If block is already full, abort
-				if gp := w.current.gasPool; gp != nil && gp.Gas() < params.TxGas {
-					continue
-				}
-				w.mu.RLock()
-				coinbase := w.coinbase
-				w.mu.RUnlock()
-
-				txs := make(map[common.Address]types.Transactions)
-				for _, tx := range ev.Txs {
-					acc, _ := types.Sender(w.current.signer, tx)
-					txs[acc] = append(txs[acc], tx)
-				}
-				txset := types.NewTransactionsByPriceAndNonce(w.current.signer, txs, w.current.header.BaseFee)
-				tcount := w.current.tcount
-				w.commitTransactions(txset, coinbase, nil)
-				// Only update the snapshot if any new transactons were added
-				// to the pending block
-				if tcount != w.current.tcount {
-					w.updateSnapshot()
-				}
-			} else {
-				// Special case, if the consensus engine is 0 period clique(dev mode),
-				// submit mining work here since all empty submission will be rejected
-				// by clique. Of course the advance sealing(empty submission) is disabled.
-				if w.chainConfig.Clique != nil && w.chainConfig.Clique.Period == 0 {
-					w.commitNewWork(nil, true, time.Now().Unix())
-				}
-			}
-			atomic.AddInt32(&w.newTxs, int32(len(ev.Txs)))
-
-		// System stopped
+			w.dposCommitNewWork(req.interrupt, req.noempty, req.currentBlockNumber)
+		case <-w.txsCh:
+			continue
 		case <-w.exitCh:
 			return
 		case <-w.txsSub.Err():
@@ -535,6 +660,10 @@ func (w *worker) mainLoop() {
 			return
 		case <-w.chainSideSub.Err():
 			return
+		case <-w.powAnswerSub.Err():
+			return
+		case <-w.dposAckSub.Err():
+			return
 		}
 	}
 }
@@ -542,75 +671,42 @@ func (w *worker) mainLoop() {
 // taskLoop is a standalone goroutine to fetch sealing task from the generator and
 // push them to consensus engine.
 func (w *worker) taskLoop() {
-	var (
-		stopCh chan struct{}
-		prev   common.Hash
-	)
-
-	// interrupt aborts the in-flight sealing task.
-	interrupt := func() {
-		if stopCh != nil {
-			close(stopCh)
-			stopCh = nil
-		}
-	}
 	for {
 		select {
 		case task := <-w.taskCh:
-			if w.newTaskHook != nil {
-				w.newTaskHook(task)
-			}
-			// Reject duplicate sealing work due to resubmitting.
-			sealHash := w.engine.SealHash(task.block.Header())
-			if sealHash == prev {
-				continue
-			}
-			// Interrupt previous sealing operation
-			interrupt()
-			stopCh, prev = make(chan struct{}), sealHash
-
-			if w.skipSealHook != nil && w.skipSealHook(task) {
-				continue
-			}
-			w.pendingMu.Lock()
-			w.pendingTasks[sealHash] = task
-			w.pendingMu.Unlock()
-
-			if err := w.engine.Seal(w.chain, task.block, w.resultCh, stopCh); err != nil {
+			if err := w.engine.Seal(w.chain, task.block, nil, nil); err != nil {
 				log.Warn("Block sealing failed", "err", err)
 			}
-		case <-w.exitCh:
-			interrupt()
-			return
-		}
-	}
-}
+			block := task.block
+			hash := block.Hash()
 
-// resultLoop is a standalone goroutine to handle sealing result submitting
-// and flush relative data to the database.
-func (w *worker) resultLoop() {
-	for {
-		select {
-		case block := <-w.resultCh:
-			// Short circuit when receiving empty result.
-			if block == nil {
+			if !w.imProducerOnSpecBlock(block.NumberU64()) {
+				log.Warn("this block shoudn't produce by me", "new blockNum", block.Number())
 				continue
 			}
 			// Short circuit when receiving duplicate result caused by resubmitting.
-			if w.chain.HasBlock(block.Hash(), block.NumberU64()) {
+			if w.chain.CurrentBlock().Number().Uint64() >= block.NumberU64() {
+				log.Warn("new blockNumber is wrong with parent", "new blockNum", block.Number(),
+					"parent blockNum", w.chain.CurrentBlock().Number().Uint64())
 				continue
 			}
-			var (
-				sealhash = w.engine.SealHash(block.Header())
-				hash     = block.Hash()
-			)
-			w.pendingMu.RLock()
-			task, exist := w.pendingTasks[sealhash]
-			w.pendingMu.RUnlock()
-			if !exist {
-				log.Error("Block found but no relative pending task", "number", block.Number(), "sealhash", sealhash, "hash", hash)
-				continue
+
+			bs, err1 := json.Marshal(block.Header())
+			if err1 != nil {
+				log.Info("json encode failed")
 			}
+			var out bytes.Buffer
+			json.Indent(&out, bs, "", "\t")
+			log.Info("new block header in step 3:", out.String(), nil)
+
+			bs2, err2 := json.Marshal(block.Body())
+			if err2 != nil {
+				log.Info("json encode failed")
+			}
+			var out2 bytes.Buffer
+			json.Indent(&out2, bs2, "", "\t")
+			log.Info("new block body in step 3:", out2.String(), nil)
+
 			// Different block could share same sealhash, deep copy here to prevent write-write conflict.
 			var (
 				receipts = make([]*types.Receipt, len(task.receipts))
@@ -631,20 +727,43 @@ func (w *worker) resultLoop() {
 				}
 				logs = append(logs, receipt.Logs...)
 			}
+
 			// Commit block and state to database.
 			_, err := w.chain.WriteBlockWithState(block, receipts, logs, task.state, true)
 			if err != nil {
 				log.Error("Failed writing block to chain", "err", err)
 				continue
 			}
-			log.Info("Successfully sealed new block", "number", block.Number(), "sealhash", sealhash, "hash", hash,
-				"elapsed", common.PrettyDuration(time.Since(task.createdAt)))
+			log.Info("Successfully sealed new block", "number", block.Number(), "hash", hash)
 
 			// Broadcast the block and announce chain insertion event
 			w.mux.Post(core.NewMinedBlockEvent{Block: block})
 
 			// Insert the block into the set of pending ones to resultLoop for confirmations
 			w.unconfirmed.Insert(block.NumberU64(), block.Hash())
+
+		case <-w.exitCh:
+			return
+		}
+	}
+}
+
+func (w *worker) powMinerNewWorkLoop() {
+	for {
+		select {
+		//case <-w.chainHeadCh:
+		case <-w.exitCh:
+			return
+		}
+	}
+}
+
+func (w *worker) powMinerResultLoop() {
+	for {
+		select {
+		case powMinerResult := <-w.powMinerResultCh:
+			log.Info("new powMinerResult", ":", powMinerResult)
+			w.mux.Post(core.PowAnswerEvent{PowAnswer: powMinerResult})
 
 		case <-w.exitCh:
 			return
@@ -878,111 +997,51 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 
 // commitNewWork generates several new sealing tasks based on the parent block.
 func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) {
+}
+
+func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNum *big.Int) {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
+	w.muProduce.Lock()
+	defer w.muProduce.Unlock()
 
-	tstart := time.Now()
-	parent := w.chain.CurrentBlock()
+	if w.coinbase == (common.Address{}) {
+		log.Error("Refusing to mine without etherbase")
+		return
+	}
 
+	parent := w.chain.GetBlockByNumber(parentBlockNum.Uint64())
+	timestamp := time.Now().Unix()
 	if parent.Time() >= uint64(timestamp) {
 		timestamp = int64(parent.Time() + 1)
 	}
-	num := parent.Number()
+	//parentBlockNum := parent.Number()
+	var currentBlockNum big.Int
+
 	header := &types.Header{
 		ParentHash: parent.Hash(),
-		Number:     num.Add(num, common.Big1),
+		Number:     currentBlockNum.Add(parentBlockNum, common.Big1),
 		GasLimit:   core.CalcGasLimit(parent.GasUsed(), parent.GasLimit(), w.config.GasFloor, w.config.GasCeil),
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
 	}
-	// Set baseFee and GasLimit if we are on an EIP-1559 chain
-	if w.chainConfig.IsLondon(header.Number) {
-		header.BaseFee = misc.CalcBaseFee(w.chainConfig, parent.Header())
-		parentGasLimit := parent.GasLimit()
-		if !w.chainConfig.IsLondon(parent.Number()) {
-			// Bump by 2x
-			parentGasLimit = parent.GasLimit() * params.ElasticityMultiplier
-		}
-		header.GasLimit = core.CalcGasLimit1559(parentGasLimit, w.config.GasCeil)
-	}
-	// Only set the coinbase if our consensus engine is running (avoid spurious block rewards)
-	if w.isRunning() {
-		if w.coinbase == (common.Address{}) {
-			log.Error("Refusing to mine without etherbase")
-			return
-		}
-		header.Coinbase = w.coinbase
-	}
-	if err := w.engine.Prepare(w.chain, header); err != nil {
-		log.Error("Failed to prepare header for mining", "err", err)
-		return
-	}
-	// If we are care about TheDAO hard-fork check whether to override the extra-data or not
-	if daoBlock := w.chainConfig.DAOForkBlock; daoBlock != nil {
-		// Check whether the block is among the fork extra-override range
-		limit := new(big.Int).Add(daoBlock, params.DAOForkExtraRange)
-		if header.Number.Cmp(daoBlock) >= 0 && header.Number.Cmp(limit) < 0 {
-			// Depending whether we support or oppose the fork, override differently
-			if w.chainConfig.DAOForkSupport {
-				header.Extra = common.CopyBytes(params.DAOForkBlockExtra)
-			} else if bytes.Equal(header.Extra, params.DAOForkBlockExtra) {
-				header.Extra = []byte{} // If miner opposes, don't let it use the reserved extra-data
-			}
-		}
-	}
+	header.Nonce = types.BlockNonce{}
+	header.MixDigest = common.Hash{}
+	header.Difficulty = big.NewInt(1)
+	header.Coinbase = common.Address{}
+	header.DposSigAddr = common.Address{}
+
 	// Could potentially happen if starting to mine in an odd state.
 	err := w.makeCurrent(parent, header)
 	if err != nil {
 		log.Error("Failed to create mining context", "err", err)
 		return
 	}
-	// Create the current work task and check any fork transitions needed
-	env := w.current
-	if w.chainConfig.DAOForkSupport && w.chainConfig.DAOForkBlock != nil && w.chainConfig.DAOForkBlock.Cmp(header.Number) == 0 {
-		misc.ApplyDAOHardFork(env.state)
-	}
-	// Accumulate the uncles for the current block
-	uncles := make([]*types.Header, 0, 2)
-	commitUncles := func(blocks map[common.Hash]*types.Block) {
-		// Clean up stale uncle blocks first
-		for hash, uncle := range blocks {
-			if uncle.NumberU64()+staleThreshold <= header.Number.Uint64() {
-				delete(blocks, hash)
-			}
-		}
-		for hash, uncle := range blocks {
-			if len(uncles) == 2 {
-				break
-			}
-			if err := w.commitUncle(env, uncle.Header()); err != nil {
-				log.Trace("Possible uncle rejected", "hash", hash, "reason", err)
-			} else {
-				log.Debug("Committing new uncle to block", "hash", hash)
-				uncles = append(uncles, uncle.Header())
-			}
-		}
-	}
-	// Prefer to locally generated uncle
-	commitUncles(w.localUncles)
-	commitUncles(w.remoteUncles)
-
-	// Create an empty block based on temporary copied state for
-	// sealing in advance without waiting block execution finished.
-	if !noempty && atomic.LoadUint32(&w.noempty) == 0 {
-		w.commit(uncles, nil, false, tstart)
-	}
 
 	// Fill the block with all available pending transactions.
 	pending, err := w.eth.TxPool().Pending(true)
 	if err != nil {
 		log.Error("Failed to fetch pending transactions", "err", err)
-		return
-	}
-	// Short circuit if there is no available pending transactions.
-	// But if we disable empty precommit already, ignore it. Since
-	// empty block is necessary to keep the liveness of the network.
-	if len(pending) == 0 && atomic.LoadUint32(&w.noempty) == 0 {
-		w.updateSnapshot()
 		return
 	}
 	// Split the pending transactions into locals and remotes
@@ -1005,39 +1064,52 @@ func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) 
 			return
 		}
 	}
-	w.commit(uncles, w.fullTaskHook, true, tstart)
-}
 
-// commit runs any post-transaction state modifications, assembles the final block
-// and commits new work if consensus engine is running.
-func (w *worker) commit(uncles []*types.Header, interval func(), update bool, start time.Time) error {
+	w.current.powAnswerUncles = w.eth.BlockChain().GetUnclePowAnswers(parentBlockNum)
+	w.current.dposAcks = w.eth.BlockChain().GetDposAck(parentBlockNum, types.AckTypeAll)
+
+	dposAckCount := w.eth.BlockChain().GetDposAckSize(parentBlockNum, types.AckTypeAll)
+	if dposAckCount < 1 {
+		log.Error("no dposAck in blockchain! something error", "parentBlockNum", parentBlockNum)
+		return
+	}
+	ackCount := types.DposAckCount{
+		parentBlockNum,
+		uint(dposAckCount),
+	}
+	w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, &ackCount)
+	//for i := 0; i <= w.eth.BlockChain().JumpBlockNumber; i++ {
+	//	blockNumber := big.NewInt(int64(0))
+	//	blockNumber.Sub(w.eth.BlockChain().CurrentBlock().Number(), big.NewInt(int64(i)))
+	//	//todo：Lock access required
+	//	//w.current.dposAcks = append(w.current.dposAcks, w.eth.BlockChain().DposAckMap[blockNumber]...)
+	//	//w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, types.DposAckCount{blockNumber, w.eth.BlockChain().DposAckCount[blockNumber]})
+	//}
+
+	answers := w.eth.BlockChain().GetLatestPowAnswer(parentBlockNum)
+	if answers == nil {
+		log.Error("Refusing to mine without PowAnswers, something error, need to check")
+		return
+	}
+	w.current.header.PowAnswers = append(w.current.header.PowAnswers, answers)
+	w.current.header.DposSigAddr = w.coinbase
+
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(w.current.receipts)
 	s := w.current.state.Copy()
-	block, err := w.engine.FinalizeAndAssemble(w.chain, w.current.header, s, w.current.txs, uncles, receipts)
-	if err != nil {
-		return err
-	}
-	if w.isRunning() {
-		if interval != nil {
-			interval()
-		}
-		select {
-		case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now()}:
-			w.unconfirmed.Shift(block.NumberU64() - 1)
-			log.Info("Commit new mining work", "number", block.Number(), "sealhash", w.engine.SealHash(block.Header()),
-				"uncles", len(uncles), "txs", w.current.tcount,
-				"gas", block.GasUsed(), "fees", totalFees(block, receipts),
-				"elapsed", common.PrettyDuration(time.Since(start)))
+	w.current.header.Root = s.IntermediateRoot(w.chain.Config().IsEIP158(header.Number))
 
-		case <-w.exitCh:
-			log.Info("Worker has exited")
-		}
+	block := types.DposNewBlock(w.current.header, w.current.txs, w.current.powAnswerUncles, w.current.dposAcks, receipts, trie.NewStackTrie(nil))
+
+	select {
+	case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now()}:
+		log.Info("Commit new dpos sign", "number", block.Number(), "sealhash", w.engine.SealHash(block.Header()),
+			"txs", w.current.tcount,
+			"gas", block.GasUsed(), "fees", totalFees(block, receipts))
+
+	case <-w.exitCh:
+		log.Info("Worker has exited")
 	}
-	if update {
-		w.updateSnapshot()
-	}
-	return nil
 }
 
 // copyReceipts makes a deep copy of the given receipts.

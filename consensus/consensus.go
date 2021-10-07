@@ -27,6 +27,25 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
+const (
+	// DposWitnessNumber is the total number of dpos witness nodes.
+	//@todo just for oneNode test
+	DposWitnessNumber = 2
+	//DposWitnessNumber = 64
+	// number of witness to product stabilizing block
+	MostDposWitness = DposWitnessNumber*2/3 + 1
+	// the least number of witness to product block
+	LeastDposWitness = DposWitnessNumber*1/3 + 1
+	// seconds to delay seal since base block not received
+	Time2waitBlock = 1
+	// seconds to delay seal since not enough dposAck
+	Time2delaySeal = 3
+	// deadline of seal after received a pow answer
+	Time2SealDeadline = 7
+	//Maximum uncle block height accepted
+	MaxDistantOfUncleBlock = 5
+)
+
 // ChainHeaderReader defines a small collection of methods needed to access the local
 // blockchain during header verification.
 type ChainHeaderReader interface {
@@ -95,7 +114,7 @@ type Engine interface {
 	// Note: The block header and state database might be updated to reflect any
 	// consensus rules that happen at finalization (e.g. block rewards).
 	FinalizeAndAssemble(chain ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
-		uncles []*types.Header, receipts []*types.Receipt) (*types.Block, error)
+		uncles []*types.PowAnswer, receipts []*types.Receipt) (*types.Block, error)
 
 	// Seal generates a new sealing request for the given input block and pushes
 	// the result into the given channel.

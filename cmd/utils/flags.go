@@ -246,6 +246,11 @@ var (
 		Name:  "override.london",
 		Usage: "Manually specify London fork-block, overriding the bundled setting",
 	}
+	ConsensusFlag = cli.StringFlag{
+		Name:  "consensus",
+		Usage: "Choose the miner type is pow or dpos",
+		Value: ethconfig.Defaults.Consensus,
+	}
 	// Light server and client settings
 	LightServeFlag = cli.IntFlag{
 		Name:  "light.serve",
@@ -1501,6 +1506,10 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	setWhitelist(ctx, cfg)
 	setLes(ctx, cfg)
 
+	if ctx.GlobalIsSet(ConsensusFlag.Name) {
+		cfg.Consensus = ctx.GlobalString(ConsensusFlag.Name)
+	}
+
 	// Cap the cache allowance and tune the garbage collector
 	mem, err := gopsutil.VirtualMemory()
 	if err == nil {
@@ -1896,7 +1905,7 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 
 	// TODO(rjl493456442) disable snapshot generation/wiping if the chain is read only.
 	// Disable transaction indexing/unindexing by default.
-	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg, nil, nil)
+	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg, nil, nil, nil)
 	if err != nil {
 		Fatalf("Can't create BlockChain: %v", err)
 	}

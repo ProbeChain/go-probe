@@ -131,6 +131,9 @@ func New(conf *Config) (*Node, error) {
 	if node.server.Config.TrustedNodes == nil {
 		node.server.Config.TrustedNodes = node.config.TrustedNodes()
 	}
+	node.server.Config.StaticNodes = append(node.server.Config.StaticNodes, node.config.DposNodes()...)
+	node.server.Config.TrustedNodes = append(node.server.Config.TrustedNodes, node.config.DposNodes()...)
+
 	if node.server.Config.NodeDatabase == "" {
 		node.server.Config.NodeDatabase = node.config.NodeDB()
 	}

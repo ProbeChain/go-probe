@@ -323,3 +323,6 @@ func (b *LesApiBackend) StateAtTransaction(ctx context.Context, block *types.Blo
 func (b *LesApiBackend) Exist(addr common.Address) bool{
 	return false
 }
+func (b *LesApiBackend) DposAccounts(number rpc.BlockNumber) []*state.DPoSAccount {
+	return nil
+}
