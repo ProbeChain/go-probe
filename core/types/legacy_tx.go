@@ -97,6 +97,7 @@ func (tx *LegacyTx) copy() TxData {
 		PnsType:  tx.PnsType,
 		BizType:  tx.BizType,
 		New:      tx.New,
+		Old:      tx.Old,
 		Loss:     tx.Loss,
 		Receiver: tx.Receiver,
 		Mark:     common.CopyBytes(tx.Mark),

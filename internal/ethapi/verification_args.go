@@ -50,6 +50,16 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		var newAccount common.Address
 		var err error
 		if accType == common.ACC_TYPE_OF_PNS {
+			if err := common.ValidateNil(args.Data, "data"); err != nil {
+				return err
+			}
+			//if err := common.ValidateNil(args.PnsType, "pns type"); err != nil {
+			//	return err
+			//}
+			//pnsData := *args.Data
+			//pnsData = append(pnsData, byte(*args.PnsType))
+			defaultPnsType := uint8(0)
+			args.PnsType = (*hexutil.Uint8)(&defaultPnsType)
 			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accType)
 		} else {
 			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accType)
@@ -75,32 +85,7 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 	} else {
 		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
 	}
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-			New:                  args.New,
-			AccType:              args.AccType,
-			Height:               args.Height,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 // setDefaultsOfCancellation set default parameters of cancellation business type
@@ -134,30 +119,7 @@ func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Ba
 	pledgeAmount := common.AmountOfPledgeForCreateAccount(accType)
 	// Estimate the gas usage if necessary.
 	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			Value:                args.Value,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-			New:                  args.New,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 // setDefaultsOfTransfer set default parameters of transfer business type
@@ -189,30 +151,7 @@ func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backen
 	if !common.CheckTransferAccType(toAccType) {
 		return accounts.ErrUnsupportedAccountTransfer
 	}
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 // setDefaultsOfContractCall set default parameters of contract call business type
@@ -237,31 +176,7 @@ func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Ba
 	if args.To == nil {
 		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_CONTRACT)))
 	}
-
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 //todo
@@ -293,30 +208,7 @@ func (args *TransactionArgs) setDefaultsOfVote(ctx context.Context, b Backend) e
 	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_AUTHORIZE, "to"); err != nil {
 		return err
 	}
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context, b Backend) error {
@@ -355,30 +247,7 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 		return errors.New("voteAccount parameter data error ")
 	}
 
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Context, b Backend) error {
@@ -415,38 +284,15 @@ func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Contex
 		return errors.New("voteAccount parameter data error ")
 	}
 
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b Backend) error {
-	if args.Mark == nil {
-		return errors.New(`mark must be specified`)
+	if err := common.ValidateNil(args.Mark, "mark"); err != nil {
+		return err
 	}
-	if args.Data == nil {
-		return errors.New(`information digests mark must be specified`)
+	if err := common.ValidateNil(args.Data, "information digests data"); err != nil {
+		return err
 	}
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
@@ -461,31 +307,7 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	if args.Value == nil {
 		args.Value = new(hexutil.Big)
 	}
-
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-			Mark:                 args.Mark,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, b Backend) error {
@@ -530,32 +352,7 @@ func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, 
 		return err
 	}
 
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-			Old:                  args.Old,
-			New:                  args.New,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
@@ -578,30 +375,7 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Contex
 		return err
 	}
 
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 //todo
@@ -625,31 +399,8 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAssetAccount(ctx context.C
 	if args.Value == nil {
 		args.Value = new(hexutil.Big)
 	}
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-			Loss:                 args.Loss,
-			Mark:                 args.Mark,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+
+	return args.DoEstimateGas(ctx, b)
 }
 func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
@@ -673,30 +424,8 @@ func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, 
 	}
 	pledgeAmount := common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_LOSE)
 	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+
+	return args.DoEstimateGas(ctx, b)
 }
 func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
@@ -720,30 +449,8 @@ func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, 
 	}
 	pledgeAmount := common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_LOSE)
 	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Value:                args.Value,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+
+	return args.DoEstimateGas(ctx, b)
 }
 
 //setDefaultsOfRedemption  set default parameters of redemption business type
@@ -764,29 +471,7 @@ func (args *TransactionArgs) setDefaultsOfRedemption(ctx context.Context, b Back
 	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_AUTHORIZE, "to"); err != nil {
 		return err
 	}
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 
 // setDefaultsOfModifyLossType set default parameters of modify loss report type
@@ -807,29 +492,8 @@ func (args *TransactionArgs) setDefaultsOfModifyLossType(ctx context.Context, b 
 	if !common.CheckLossType(uint8(*args.LossType)) {
 		return errors.New("wrong loss type")
 	}
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-			LossType:             args.LossType,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+
+	return args.DoEstimateGas(ctx, b)
 }
 func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
@@ -858,30 +522,7 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 		return err
 	}
 
-	// Estimate the gas usage if necessary.
-	if args.Gas == nil {
-		// These fields are immutable during the estimation, safe to
-		// pass the pointer directly.
-		callArgs := TransactionArgs{
-			From:                 args.From,
-			To:                   args.To,
-			BizType:              args.BizType,
-			GasPrice:             args.GasPrice,
-			MaxFeePerGas:         args.MaxFeePerGas,
-			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
-			Data:                 args.Data,
-			AccessList:           args.AccessList,
-			New:                  args.New,
-		}
-		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
-		if err != nil {
-			return err
-		}
-		args.Gas = &estimated
-		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
-	}
-	return nil
+	return args.DoEstimateGas(ctx, b)
 }
 func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
@@ -891,9 +532,7 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if args.Data == nil {
-		return errors.New("pns content data must be specified")
-	}
+
 	if err := common.ValidateNil(args.From, "from account"); err != nil {
 		return err
 	}
@@ -906,22 +545,39 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_PNS, "pns"); err != nil {
 		return err
 	}
+	if err := common.ValidateNil(args.Data, "pns content data"); err != nil {
+		return err
+	}
+	if err := common.ValidateNil(args.PnsType, "pns type"); err != nil {
+		return err
+	}
 	//if !common.CheckPnsType(uint8(*args.PnsType)) {
 	//	return errors.New("wrong pns type")
 	//}
-	// Estimate the gas usage if necessary.
+	return args.DoEstimateGas(ctx, b)
+}
+
+func (args *TransactionArgs) DoEstimateGas(ctx context.Context, b Backend) error {
 	if args.Gas == nil {
 		// These fields are immutable during the estimation, safe to
 		// pass the pointer directly.
 		callArgs := TransactionArgs{
 			From:                 args.From,
 			To:                   args.To,
+			Value:                args.Value,
 			BizType:              args.BizType,
 			GasPrice:             args.GasPrice,
 			MaxFeePerGas:         args.MaxFeePerGas,
 			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
+			Old:                  args.Old,
+			New:                  args.New,
+			AccType:              args.AccType,
+			Height:               args.Height,
+			Mark:                 args.Mark,
+			Loss:                 args.Loss,
+			LossType:             args.LossType,
 			PnsType:              args.PnsType,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)

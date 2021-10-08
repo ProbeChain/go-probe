@@ -411,6 +411,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		stateObjectsDirty:   make(map[common.Address]struct{}),
 		logs:                make(map[common.Hash][]*types.Log),
 		preimages:           make(map[common.Hash][]byte),
+		markLossAccounts:    make(map[common.Hash][]common.Address),
 		dposList:            newDposList(),
 		journal:             newJournal(),
 		accessList:          newAccessList(),
@@ -1064,9 +1065,10 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 }
 
 func (s *StateDB) setMarkLossAccount(address common.Address) {
-	var arr = s.markLossAccounts[address.Last12BytesToHash()]
+	var last12BytesToHash = address.Last12BytesToHash()
+	var arr = s.markLossAccounts[last12BytesToHash]
 	if len(arr) == 0 {
-		s.markLossAccounts[address.Last12BytesToHash()] = []common.Address{address}
+		s.markLossAccounts[last12BytesToHash] = []common.Address{address}
 	} else {
 		var exists bool
 		for _, addr := range arr {
@@ -1213,6 +1215,7 @@ func (s *StateDB) Copy() *StateDB {
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
+		markLossAccounts:    make(map[common.Hash][]common.Address, len(s.markLossAccounts)),
 		refund:              s.refund,
 		logs:                make(map[common.Hash][]*types.Log, len(s.logs)),
 		logSize:             s.logSize,
@@ -1692,7 +1695,7 @@ func (s *StateDB) Register(context vm.TxContext) {
 	case common.ACC_TYPE_OF_PNS:
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
-		obj.pnsAccount.Type = byte(0)
+		obj.pnsAccount.Type = byte(*context.PnsType)
 	case common.ACC_TYPE_OF_ASSET:
 	//case common.ACC_TYPE_OF_CONTRACT:
 	case common.ACC_TYPE_OF_AUTHORIZE:
