@@ -1,13 +1,15 @@
 {
-    "config": {
-        "chainId": 2016,
-        "homesteadBlock": 0,
-        "eip150Block": 0,
-        "eip155Block": 0,
-        "eip158Block": 0,
-        "byzantiumBlock": 0,
-        "constantinopleBlock": 0,
-        "petersburgBlock": 0,
+	"config": {
+		"chainId": 12345,
+		"homesteadBlock": 0,
+		"eip150Block": 0,
+		"eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"eip155Block": 0,
+		"eip158Block": 0,
+		"byzantiumBlock": 0,
+		"constantinopleBlock": 0,
+		"petersburgBlock": 0,
+		"istanbulBlock": 0,
         "dpos": {
             "period": 0,
             "epoch": 30000
@@ -19,15 +21,31 @@
         "ethash":{
             
         }
-    },
-    "nonce": "0x42",
-    "timestamp": "0x0",
-    "extraData": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
-    "gasLimit": "99999999999999",
-    "difficulty": "0x1",
-    "alloc": {
-        "0x45A6A925C9203e1D19e49AaD489a5347dc655D11": {
-            "balance": "100000000000000000000000000000000"
-        }
-    }
+	},
+	"dpos": {
+		"period": 3,
+		"epoch": 5,
+		"list": [{
+			"enode": "enode://04aaa41aa9f9da218d67eaeab0d17e9eca15259d53976b6b1026d65bbe90a77b9c078abdb79e814252fd6e60996eabf82233452a537f4275e7bcbb5908b6e26521@127.0.0.1:30301",
+			"owner": "0x0051b2e765dec2e012bbd473568063b231d5dcb5836002cc5c"
+		}]
+	},
+	"nonce": "0x0",
+	"timestamp": "0x5ddf8f3e",
+	"extraData": "0x00000000000000000000000000000000000000000000000000000000000000000051b2e765dec2e012bbd473568063b231d5dcb5836002cc5c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+	"gasLimit": "0x47b760",
+	"difficulty": "0x1",
+	"mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+	"coinbase": "0x00000000000000000000000000000000000000000000000000",
+	"alloc": {
+		"0x0051b2e765dec2e012bbd473568063b231d5dcb5836002cc5c": {
+			"balance": "900000000000000000000000000"
+		},
+		"0x00dd4eee37cd1a0dbec6cf3c1caebcb833d52bc23806d66861": {
+			"balance": "900000000000000000000000000"
+		}
+	},
+	"number": "0x0",
+	"gasUsed": "0x0",
+	"parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
 }
