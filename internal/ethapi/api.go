@@ -627,12 +627,12 @@ func (s *PublicBlockChainAPI) GetBalance(ctx context.Context, address common.Add
 	return (*hexutil.Big)(state.GetBalance(address)), state.Error()
 }
 
-func (s *PublicBlockChainAPI) GetAccountInfo(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (interface{}, error) {
-	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
-	if state == nil || err != nil {
+func (s *PublicBlockChainAPI) GetAccountInfo(ctx context.Context, address common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*state.RPCAccountInfo, error) {
+	stateDB, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+	if stateDB == nil || err != nil {
 		return nil, err
 	}
-	return state.GetAccountInfo(address), state.Error()
+	return stateDB.GetAccountInfo(address), stateDB.Error()
 }
 
 func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (interface{}, error) {
@@ -1304,21 +1304,19 @@ type RPCTransaction struct {
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
 
-	Owner       *common.Address `json:"owner,omitempty"`
-	Beneficiary *common.Address `json:"beneficiary,omitempty"`
-	Vote        *common.Address `json:"vote,omitempty"`
-	Loss        *common.Address `json:"loss,omitempty"`
-	Asset       *common.Address `json:"asset,omitempty"`
-	Old         *common.Address `json:"old,omitempty"`
-	New         *common.Address `json:"new,omitempty"`
-	Initiator   *common.Address `json:"initiator,omitempty"`
-	Receiver    *common.Address `json:"receiver,omitempty"`
-	Value2      *hexutil.Big    `json:"value2,omitempty"`
-	Height      *hexutil.Uint64 `json:"height,omitempty"`
-	Mark        *hexutil.Bytes  `json:"mark,omitempty"`
-	InfoDigest  *hexutil.Bytes  `json:"infoDigest,omitempty"`
-	AccType     *hexutil.Uint8  `json:"accType,omitempty"`
-	LossType    *hexutil.Uint8  `json:"lossType,omitempty"`
+	Owner     *common.Address `json:"owner,omitempty"`
+	Vote      *common.Address `json:"vote,omitempty"`
+	Loss      *common.Address `json:"loss,omitempty"`
+	Asset     *common.Address `json:"asset,omitempty"`
+	Old       *common.Address `json:"old,omitempty"`
+	New       *common.Address `json:"new,omitempty"`
+	Initiator *common.Address `json:"initiator,omitempty"`
+	Receiver  *common.Address `json:"receiver,omitempty"`
+	Value2    *hexutil.Big    `json:"value2,omitempty"`
+	Height    *hexutil.Uint64 `json:"height,omitempty"`
+	Mark      *hexutil.Bytes  `json:"mark,omitempty"`
+	AccType   *hexutil.Uint8  `json:"accType,omitempty"`
+	LossType  *hexutil.Uint8  `json:"lossType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1368,9 +1366,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	case common.ContractCall:
 	case common.SendLossReport:
 		mark := hexutil.Bytes(tx.Mark())
-		infoDigest := hexutil.Bytes(tx.InfoDigest())
 		result.Mark = &mark
-		result.InfoDigest = &infoDigest
 	case common.ModifyLossType:
 		result.LossType = tx.LossType()
 	}
@@ -1518,12 +1514,10 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
 			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
 			args.data(), accessList, false,
-			args.Owner, args.Beneficiary,
-			args.Loss, args.Asset,
+			args.Owner, args.Loss, args.Asset,
 			args.Old, args.New, args.Initiator,
-			args.Receiver, args.mark(), args.infoDigest(),
-			args.value2(), args.height(), args.AccType,
-			args.LossType, args.PnsType)
+			args.Receiver, args.mark(), args.value2(),
+			args.height(), args.AccType, args.LossType, args.PnsType)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1701,6 +1695,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"logs":              receipt.Logs,
 		"logsBloom":         receipt.Bloom,
 		"type":              hexutil.Uint(tx.Type()),
+		"data":              string(tx.Data()),
 	}
 
 	//不同业务类型展示不同字段
@@ -1713,7 +1708,6 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	case common.ContractCall:
 	case common.SendLossReport:
 		fields["mark"] = string(tx.Mark())
-		fields["infoDigest"] = string(tx.InfoDigest())
 	case common.ModifyLossType:
 		fields["lossType"] = tx.LossType()
 	}

@@ -800,18 +800,16 @@ func (m callMsg) AccType() *hexutil.Uint8  { return m.CallMsg.AccType }
 func (m callMsg) LossType() *hexutil.Uint8 { return m.CallMsg.LossType }
 func (m callMsg) PnsType() *hexutil.Uint8  { return m.CallMsg.PnsType }
 
-func (m callMsg) Owner() *common.Address       { return m.CallMsg.Owner }
-func (m callMsg) Beneficiary() *common.Address { return m.CallMsg.Beneficiary }
-func (m callMsg) Vote() *common.Address        { return m.CallMsg.Vote }
-func (m callMsg) Loss() *common.Address        { return m.CallMsg.Loss }
-func (m callMsg) Asset() *common.Address       { return m.CallMsg.Asset }
-func (m callMsg) Old() *common.Address         { return m.CallMsg.Old }
-func (m callMsg) Initiator() *common.Address   { return m.CallMsg.Initiator }
-func (m callMsg) Receiver() *common.Address    { return m.CallMsg.Receiver }
-func (m callMsg) Value2() *big.Int             { return m.CallMsg.Value2 }
-func (m callMsg) Height() *big.Int             { return m.CallMsg.Height }
-func (m callMsg) Mark() []byte                 { return m.CallMsg.Mark }
-func (m callMsg) InfoDigest() []byte           { return m.CallMsg.InfoDigest }
+func (m callMsg) Owner() *common.Address     { return m.CallMsg.Owner }
+func (m callMsg) Vote() *common.Address      { return m.CallMsg.Vote }
+func (m callMsg) Loss() *common.Address      { return m.CallMsg.Loss }
+func (m callMsg) Asset() *common.Address     { return m.CallMsg.Asset }
+func (m callMsg) Old() *common.Address       { return m.CallMsg.Old }
+func (m callMsg) Initiator() *common.Address { return m.CallMsg.Initiator }
+func (m callMsg) Receiver() *common.Address  { return m.CallMsg.Receiver }
+func (m callMsg) Value2() *big.Int           { return m.CallMsg.Value2 }
+func (m callMsg) Height() *big.Int           { return m.CallMsg.Height }
+func (m callMsg) Mark() []byte               { return m.CallMsg.Mark }
 
 // filterBackend implements filters.Backend to support filtering for logs without
 // taking bloom-bits acceleration structures into account.

@@ -445,7 +445,7 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	if args.Mark == nil {
 		return errors.New(`mark must be specified`)
 	}
-	if args.InfoDigest == nil {
+	if args.Data == nil {
 		return errors.New(`information digests mark must be specified`)
 	}
 	if args.Nonce == nil {
@@ -476,7 +476,6 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
 			Mark:                 args.Mark,
-			InfoDigest:           args.InfoDigest,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
@@ -610,7 +609,7 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAssetAccount(ctx context.C
 	if args.Mark == nil {
 		return errors.New(`mark must be specified`)
 	}
-	if args.InfoDigest == nil {
+	if args.Data == nil {
 		return errors.New(`information digests mark must be specified`)
 	}
 	if args.Nonce == nil {
@@ -641,7 +640,6 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAssetAccount(ctx context.C
 			AccessList:           args.AccessList,
 			Loss:                 args.Loss,
 			Mark:                 args.Mark,
-			InfoDigest:           args.InfoDigest,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())

@@ -131,18 +131,16 @@ type CallMsg struct {
 	LossType *hexutil.Uint8
 	PnsType  *hexutil.Uint8
 
-	Owner       *common.Address
-	Beneficiary *common.Address
-	Vote        *common.Address
-	Loss        *common.Address
-	Asset       *common.Address
-	Old         *common.Address
-	Initiator   *common.Address
-	Receiver    *common.Address
-	Value2      *big.Int
-	Height      *big.Int
-	Mark        []byte
-	InfoDigest  []byte
+	Owner     *common.Address
+	Vote      *common.Address
+	Loss      *common.Address
+	Asset     *common.Address
+	Old       *common.Address
+	Initiator *common.Address
+	Receiver  *common.Address
+	Value2    *big.Int
+	Height    *big.Int
+	Mark      []byte
 }
 
 // A ContractCaller provides contract calls, essentially transactions that are executed by

@@ -329,7 +329,6 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 			Data:       args.data(),
 			AccessList: al,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -344,20 +343,18 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 			Data:       args.data(),
 			AccessList: *args.AccessList,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	default:
 		data = &types.LegacyTx{
-			From:       args.From,
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasPrice:   (*big.Int)(args.GasPrice),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
+			From:     args.From,
+			To:       args.To,
+			BizType:  uint8(*args.BizType),
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+			Mark:     args.mark(),
 		}
 	}
 	return types.NewTx(data)
@@ -384,7 +381,6 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 			Data:       args.data(),
 			AccessList: al,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -399,20 +395,18 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 			Data:       args.data(),
 			AccessList: *args.AccessList,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	default:
 		data = &types.LegacyTx{
-			From:       args.From,
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasPrice:   (*big.Int)(args.GasPrice),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
+			From:     args.From,
+			To:       args.To,
+			BizType:  uint8(*args.BizType),
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+			Mark:     args.mark(),
 		}
 	}
 	return types.NewTx(data)
@@ -439,7 +433,6 @@ func (args *TransactionArgs) transactionOfSendLossReport() *types.Transaction {
 			Data:       args.data(),
 			AccessList: al,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -454,20 +447,18 @@ func (args *TransactionArgs) transactionOfSendLossReport() *types.Transaction {
 			Data:       args.data(),
 			AccessList: *args.AccessList,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	default:
 		data = &types.LegacyTx{
-			From:       args.From,
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasPrice:   (*big.Int)(args.GasPrice),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
+			From:     args.From,
+			To:       args.To,
+			BizType:  uint8(*args.BizType),
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+			Mark:     args.mark(),
 		}
 	}
 	return types.NewTx(data)
@@ -598,7 +589,6 @@ func (args *TransactionArgs) transactionOfTransferLostAssetAccount() *types.Tran
 			Data:       args.data(),
 			AccessList: al,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -613,20 +603,18 @@ func (args *TransactionArgs) transactionOfTransferLostAssetAccount() *types.Tran
 			Data:       args.data(),
 			AccessList: *args.AccessList,
 			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
 		}
 	default:
 		data = &types.LegacyTx{
-			From:       args.From,
-			To:         args.To,
-			BizType:    uint8(*args.BizType),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasPrice:   (*big.Int)(args.GasPrice),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			Mark:       args.mark(),
-			InfoDigest: args.infoDigest(),
+			From:     args.From,
+			To:       args.To,
+			BizType:  uint8(*args.BizType),
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+			Mark:     args.mark(),
 		}
 	}
 	return types.NewTx(data)

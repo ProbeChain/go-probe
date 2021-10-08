@@ -612,7 +612,7 @@ func (s *StateDB) GetBalance(addr common.Address) *big.Int {
 }
 
 // GetAccountInfo retrieves the account detail info from the given address or nil if object not found
-func (s *StateDB) GetAccountInfo(addr common.Address) interface{} {
+func (s *StateDB) GetAccountInfo(addr common.Address) *RPCAccountInfo {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
 		return stateObject.AccountInfo()
@@ -1730,7 +1730,7 @@ func (s *StateDB) ExchangeAsset(context vm.TxContext) {
 
 }
 func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
-	fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.InfoDigest)
+	fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
 	s.SubBalance(context.From, context.Value)
 	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Mark))
 	if len(addrs) > 0 {
@@ -1743,7 +1743,7 @@ func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 					state:      stateObject.lossAccount.State,
 					height:     stateObject.lossAccount.Height,
 				})
-				stateObject.lossAccount.InfoDigest = context.InfoDigest
+				stateObject.lossAccount.InfoDigest = context.Data
 				stateObject.lossAccount.State = common.LOSS_STATE_OF_APPLY
 				stateObject.lossAccount.Height = blockNumber
 			}

@@ -81,7 +81,6 @@ type Message interface {
 	LossType() *hexutil.Uint8
 	PnsType() *hexutil.Uint8
 	Owner() *common.Address
-	Beneficiary() *common.Address
 	Loss() *common.Address
 	Asset() *common.Address
 	Old() *common.Address
@@ -91,7 +90,6 @@ type Message interface {
 	Value2() *big.Int
 	Height() *big.Int
 	Mark() []byte
-	InfoDigest() []byte
 }
 
 // ExecutionResult includes all output after executing given evm

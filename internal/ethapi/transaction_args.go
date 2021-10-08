@@ -32,17 +32,16 @@ import (
 // TransactionArgs represents the arguments to construct a new transaction
 // or a message call.
 type TransactionArgs struct {
-	From        *common.Address `json:"from"`
-	To          *common.Address `json:"to"`
-	Owner       *common.Address `json:"owner"`
-	Beneficiary *common.Address `json:"beneficiary"`
-	Loss        *common.Address `json:"loss"`
-	Asset       *common.Address `json:"asset"`
-	Old         *common.Address `json:"old"`
-	New         *common.Address `json:"new"`
-	Initiator   *common.Address `json:"initiator"`
-	Receiver    *common.Address `json:"receiver"`
-	BizType     *hexutil.Uint8  `json:"bizType"`
+	From      *common.Address `json:"from"`
+	To        *common.Address `json:"to"`
+	Owner     *common.Address `json:"owner"`
+	Loss      *common.Address `json:"loss"`
+	Asset     *common.Address `json:"asset"`
+	Old       *common.Address `json:"old"`
+	New       *common.Address `json:"new"`
+	Initiator *common.Address `json:"initiator"`
+	Receiver  *common.Address `json:"receiver"`
+	BizType   *hexutil.Uint8  `json:"bizType"`
 
 	Gas                  *hexutil.Uint64 `json:"gas"`
 	GasPrice             *hexutil.Big    `json:"gasPrice"`
@@ -53,14 +52,12 @@ type TransactionArgs struct {
 	Nonce                *hexutil.Uint64 `json:"nonce"`
 	Height               *hexutil.Big    `json:"height"`
 
-	Data       *hexutil.Bytes `json:"data"`
-	Input      *hexutil.Bytes `json:"input"`
-	Mark       *hexutil.Bytes `json:"mark"`
-	InfoDigest *hexutil.Bytes `json:"infoDigest"`
-	AccType    *hexutil.Uint8 `json:"accType"`
-	LossType   *hexutil.Uint8 `json:"lossType"`
-	PnsType    *hexutil.Uint8 `json:"pnsType"`
-	// For non-legacy transactions
+	Data       *hexutil.Bytes    `json:"data"`
+	Input      *hexutil.Bytes    `json:"input"`
+	Mark       *hexutil.Bytes    `json:"mark"`
+	AccType    *hexutil.Uint8    `json:"accType"`
+	LossType   *hexutil.Uint8    `json:"lossType"`
+	PnsType    *hexutil.Uint8    `json:"pnsType"`
 	AccessList *types.AccessList `json:"accessList,omitempty"`
 	ChainID    *hexutil.Big      `json:"chainId,omitempty"`
 }
@@ -87,13 +84,6 @@ func (args *TransactionArgs) data() []byte {
 func (args *TransactionArgs) mark() []byte {
 	if args.Mark != nil {
 		return *args.Mark
-	}
-	return nil
-}
-
-func (args *TransactionArgs) infoDigest() []byte {
-	if args.InfoDigest != nil {
-		return *args.InfoDigest
 	}
 	return nil
 }
@@ -276,12 +266,10 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		0, value, gas,
 		gasPrice, gasFeeCap, gasTipCap,
 		data, accessList, false,
-		args.Owner, args.Beneficiary,
-		args.Loss, args.Asset,
+		args.Owner, args.Loss, args.Asset,
 		args.Old, args.New, args.Initiator,
-		args.Receiver, args.mark(), args.infoDigest(),
-		args.value2(), args.height(), args.AccType,
-		args.LossType, args.PnsType)
+		args.Receiver, args.mark(), args.value2(),
+		args.height(), args.AccType, args.LossType, args.PnsType)
 	return msg, nil
 }
 

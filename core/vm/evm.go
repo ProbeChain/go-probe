@@ -112,27 +112,25 @@ type TxContext struct {
 	Origin   common.Address // Provides information for ORIGIN
 	GasPrice *big.Int       // Provides information for GASPRICE
 
-	From        common.Address
-	To          *common.Address
-	Owner       *common.Address
-	Beneficiary *common.Address
-	Loss        *common.Address
-	Asset       *common.Address
-	Old         *common.Address
-	New         *common.Address
-	Initiator   *common.Address
-	Receiver    *common.Address
+	From      common.Address
+	To        *common.Address
+	Owner     *common.Address
+	Loss      *common.Address
+	Asset     *common.Address
+	Old       *common.Address
+	New       *common.Address
+	Initiator *common.Address
+	Receiver  *common.Address
 
-	BizType    uint8
-	Value      *big.Int
-	Value2     *big.Int
-	Height     *big.Int
-	Data       []byte
-	Mark       []byte
-	InfoDigest []byte
-	AccType    *hexutil.Uint8
-	LossType   *hexutil.Uint8
-	PnsType    *hexutil.Uint8
+	BizType  uint8
+	Value    *big.Int
+	Value2   *big.Int
+	Height   *big.Int
+	Data     []byte
+	Mark     []byte
+	AccType  *hexutil.Uint8
+	LossType *hexutil.Uint8
+	PnsType  *hexutil.Uint8
 }
 
 // EVM is the Ethereum Virtual Machine base object and provides

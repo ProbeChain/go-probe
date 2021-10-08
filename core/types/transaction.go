@@ -90,7 +90,6 @@ type TxData interface {
 
 	from() *common.Address
 	owner() *common.Address
-	beneficiary() *common.Address
 	loss() *common.Address
 	asset() *common.Address
 	old() *common.Address
@@ -100,7 +99,6 @@ type TxData interface {
 	value2() *big.Int
 	height() *big.Int
 	mark() []byte
-	infoDigest() []byte
 	accType() *hexutil.Uint8
 	lossType() *hexutil.Uint8
 	pnsType() *hexutil.Uint8
@@ -459,18 +457,16 @@ func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 	}
 }
 
-func (tx *Transaction) Owner() *common.Address       { return tx.inner.owner() }
-func (tx *Transaction) Beneficiary() *common.Address { return tx.inner.beneficiary() }
-func (tx *Transaction) Loss() *common.Address        { return tx.inner.loss() }
-func (tx *Transaction) Asset() *common.Address       { return tx.inner.asset() }
-func (tx *Transaction) Old() *common.Address         { return tx.inner.old() }
-func (tx *Transaction) New() *common.Address         { return tx.inner.new() }
-func (tx *Transaction) Initiator() *common.Address   { return tx.inner.initiator() }
-func (tx *Transaction) Receiver() *common.Address    { return tx.inner.receiver() }
-func (tx *Transaction) Value2() *big.Int             { return tx.inner.value2() }
-func (tx *Transaction) Height() *big.Int             { return tx.inner.height() }
-func (tx *Transaction) Mark() []byte                 { return tx.inner.mark() }
-func (tx *Transaction) InfoDigest() []byte           { return tx.inner.infoDigest() }
+func (tx *Transaction) Owner() *common.Address     { return tx.inner.owner() }
+func (tx *Transaction) Loss() *common.Address      { return tx.inner.loss() }
+func (tx *Transaction) Asset() *common.Address     { return tx.inner.asset() }
+func (tx *Transaction) Old() *common.Address       { return tx.inner.old() }
+func (tx *Transaction) New() *common.Address       { return tx.inner.new() }
+func (tx *Transaction) Initiator() *common.Address { return tx.inner.initiator() }
+func (tx *Transaction) Receiver() *common.Address  { return tx.inner.receiver() }
+func (tx *Transaction) Value2() *big.Int           { return tx.inner.value2() }
+func (tx *Transaction) Height() *big.Int           { return tx.inner.height() }
+func (tx *Transaction) Mark() []byte               { return tx.inner.mark() }
 
 // TxDifference returns a New set which is the difference between a and b.
 func TxDifference(a, b Transactions) Transactions {
@@ -619,10 +615,10 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 	nonce uint64, amount *big.Int, gasLimit uint64,
 	gasPrice, gasFeeCap, gasTipCap *big.Int,
 	data []byte, accessList AccessList, checkNonce bool,
-	owner *common.Address, beneficiary *common.Address,
+	owner *common.Address,
 	loss *common.Address, asset *common.Address,
 	old *common.Address, new *common.Address, initiator *common.Address,
-	receiver *common.Address, mark []byte, infoDigest []byte,
+	receiver *common.Address, mark []byte,
 	amount2 *big.Int, height *big.Int, accType *hexutil.Uint8,
 	lossType *hexutil.Uint8, pnsType *hexutil.Uint8) Message {
 	return Message{
@@ -639,21 +635,19 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 		accessList: accessList,
 		checkNonce: checkNonce,
 
-		owner:       owner,
-		beneficiary: beneficiary,
-		loss:        loss,
-		asset:       asset,
-		old:         old,
-		new:         new,
-		initiator:   initiator,
-		receiver:    receiver,
-		mark:        mark,
-		infoDigest:  infoDigest,
-		amount2:     amount2,
-		height:      height,
-		accType:     accType,
-		lossType:    lossType,
-		pnsType:     pnsType,
+		owner:     owner,
+		loss:      loss,
+		asset:     asset,
+		old:       old,
+		new:       new,
+		initiator: initiator,
+		receiver:  receiver,
+		mark:      mark,
+		amount2:   amount2,
+		height:    height,
+		accType:   accType,
+		lossType:  lossType,
+		pnsType:   pnsType,
 	}
 }
 
@@ -683,7 +677,6 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		height:     tx.Height(),
 		amount2:    tx.Value2(),
 		mark:       tx.Mark(),
-		infoDigest: tx.InfoDigest(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {

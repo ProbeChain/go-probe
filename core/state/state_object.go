@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"io"
 	"math/big"
 	"time"
@@ -180,6 +181,28 @@ type Wrapper struct {
 	lossAccount          LossAccount
 	dPoSAccount          common.DPoSAccount
 	dPoSCandidateAccount DPoSCandidateAccount
+}
+
+type RPCAccountInfo struct {
+	Owner         *common.Address   `json:"owner,omitempty"`
+	LossAccount   *common.Address   `json:"lossAccount,omitempty"`
+	NewAccount    *common.Address   `json:"newAccount,omitempty"`
+	VoteAccount   *common.Address   `json:"voteAccount,omitempty"`
+	Enode         *common.DposEnode `json:"enode,omitempty"`
+	VoteValue     *big.Int          `json:"voteValue,omitempty"`
+	PledgeValue   *big.Int          `json:"pledgeValue,omitempty"`
+	Value         *big.Int          `json:"value,omitempty"`
+	ValidPeriod   *big.Int          `json:"validPeriod,omitempty"`
+	Height        *big.Int          `json:"height,omitempty"`
+	Weight        *big.Int          `json:"weight,omitempty"`
+	DelegateValue *big.Int          `json:"delegateValue,omitempty"`
+	LossType      *hexutil.Uint8    `json:"lossType,omitempty"`
+	Nonce         *hexutil.Uint64   `json:"nonce,omitempty"`
+	Type          *hexutil.Uint8    `json:"type,omitempty"`
+	State         *hexutil.Uint8    `json:"state,omitempty"`
+	Data          *hexutil.Bytes    `json:"data,omitempty"`
+	CodeHash      *hexutil.Bytes    `json:"codeHash,omitempty"`
+	Info          *hexutil.Bytes    `json:"info,omitempty"`
 }
 
 // DecodeRLP decode bytes to account
@@ -855,28 +878,50 @@ func (s *stateObject) Balance() *big.Int {
 	}
 }
 
-func (s *stateObject) AccountInfo() interface{} {
-	//return s.regularAccount.Value
+func (s *stateObject) AccountInfo() *RPCAccountInfo {
+	accountInfo := new(RPCAccountInfo)
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
-		return s.regularAccount
+		accountInfo.VoteAccount = &s.regularAccount.VoteAccount
+		accountInfo.VoteValue = s.regularAccount.VoteValue
+		accountInfo.LossType = (*hexutil.Uint8)(&s.regularAccount.LossType)
+		accountInfo.Nonce = (*hexutil.Uint64)(&s.regularAccount.Nonce)
+		accountInfo.Value = s.regularAccount.Value
 	case common.ACC_TYPE_OF_PNS:
-		return s.pnsAccount
-	case common.ACC_TYPE_OF_ASSET:
-		return s.assetAccount
-	case common.ACC_TYPE_OF_CONTRACT:
-		return s.assetAccount
+		accountInfo.Type = (*hexutil.Uint8)(&s.pnsAccount.Type)
+		accountInfo.Owner = &s.pnsAccount.Owner
+		data := hexutil.Bytes(s.pnsAccount.Data)
+		accountInfo.Data = &data
+	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+		accountInfo.Type = (*hexutil.Uint8)(&s.assetAccount.Type)
+		codeHash := hexutil.Bytes(s.assetAccount.CodeHash)
+		accountInfo.CodeHash = &codeHash
+		accountInfo.Value = s.assetAccount.Value
+		accountInfo.VoteAccount = &s.assetAccount.VoteAccount
+		accountInfo.VoteValue = s.assetAccount.VoteValue
+		accountInfo.Nonce = (*hexutil.Uint64)(&s.assetAccount.Nonce)
 	case common.ACC_TYPE_OF_AUTHORIZE:
-		return s.authorizeAccount
+		accountInfo.Owner = &s.authorizeAccount.Owner
+		accountInfo.PledgeValue = s.authorizeAccount.PledgeValue
+		accountInfo.VoteValue = s.authorizeAccount.VoteValue
+		info := hexutil.Bytes(s.authorizeAccount.Info)
+		accountInfo.Info = &info
+		accountInfo.ValidPeriod = s.authorizeAccount.ValidPeriod
+		accountInfo.State = (*hexutil.Uint8)(&s.authorizeAccount.State)
 	case common.ACC_TYPE_OF_LOSE:
-		return s.lossAccount
-	case common.ACC_TYPE_OF_DPOS:
-		return s.dposCandidateAccount
+		accountInfo.State = (*hexutil.Uint8)(&s.lossAccount.State)
+		accountInfo.LossAccount = &s.lossAccount.LossAccount
+		accountInfo.NewAccount = &s.lossAccount.NewAccount
+		accountInfo.Height = s.lossAccount.Height
+		infoDigest := hexutil.Bytes(s.lossAccount.InfoDigest)
+		accountInfo.Data = &infoDigest
 	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return s.dposCandidateAccount
-	default:
-		return nil
+		accountInfo.Enode = &s.dposCandidateAccount.Enode
+		accountInfo.Owner = &s.dposCandidateAccount.Owner
+		accountInfo.Weight = s.dposCandidateAccount.Weight
+		accountInfo.DelegateValue = s.dposCandidateAccount.DelegateValue
 	}
+	return accountInfo
 }
 
 func (s *stateObject) Nonce() uint64 {
