@@ -320,9 +320,9 @@ func (b *LesApiBackend) StateAtTransaction(ctx context.Context, block *types.Blo
 	return b.eth.stateAtTransaction(ctx, block, txIndex, reexec)
 }
 
-func (b *LesApiBackend) Exist(addr common.Address) bool{
+func (b *LesApiBackend) Exist(addr common.Address) bool {
 	return false
 }
-func (b *LesApiBackend) DposAccounts(number rpc.BlockNumber) []*state.DPoSAccount {
+func (b *LesApiBackend) DposAccounts(number rpc.BlockNumber) []*common.DPoSAccount {
 	return nil
 }

@@ -74,7 +74,7 @@ func (b *EthAPIBackend) HeaderByNumber(ctx context.Context, number rpc.BlockNumb
 	return b.eth.blockchain.GetHeaderByNumber(uint64(number)), nil
 }
 
-func (b *EthAPIBackend) DposAccounts(number rpc.BlockNumber) []*state.DPoSAccount {
+func (b *EthAPIBackend) DposAccounts(number rpc.BlockNumber) []*common.DPoSAccount {
 	return b.eth.blockchain.GetDposAccounts(uint64(number))
 }
 
@@ -355,6 +355,6 @@ func (b *EthAPIBackend) StateAtTransaction(ctx context.Context, block *types.Blo
 	return b.eth.stateAtTransaction(block, txIndex, reexec)
 }
 
-func (b *EthAPIBackend) Exist(addr common.Address) bool{
+func (b *EthAPIBackend) Exist(addr common.Address) bool {
 	return b.TxPool().Exist(addr)
 }

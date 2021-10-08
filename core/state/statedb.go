@@ -393,7 +393,8 @@ func GetHash(root common.Hash, db Database) []common.Hash {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	// 根据 root 获取六棵树hash数组
-	totalTrie, err := OpenTotalTrie(root, db)
+	//totalTrie, err := OpenTotalTrieForBMpt(root, db)
+	totalTrie, err := OpenTotalTrieForMpt(root, db)
 	//tr, err := db.OpenTrie(root)
 	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
 	if err != nil {
@@ -425,7 +426,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 	return sdb, nil
 }
 
-func OpenTotalTrie(root common.Hash, db Database) (TotalTrie, error) {
+func OpenTotalTrieForBMpt(root common.Hash, db Database) (TotalTrie, error) {
 	hash := GetHash(root, db)
 	trGeneral, err := db.OpenBinTrie(hash[0], globalconfig.DataDir+GENERAL_TRIE_PATH, GENERAL_TRIE_DEPTH)
 	trPns, err1 := db.OpenBinTrie(hash[1], globalconfig.DataDir+PNS_TRIE_PATH, PNS_TRIE_DEPTH)
@@ -445,6 +446,43 @@ func OpenTotalTrie(root common.Hash, db Database) (TotalTrie, error) {
 		err = err4
 	}
 	trLose, err5 := db.OpenBinTrie(hash[5], globalconfig.DataDir+LOSE_TRIE_PATH, LOSE_TRIE_DEPTH)
+	if err5 != nil {
+		err = err5
+	}
+	totalTrie := TotalTrie{
+		regularTrie:       trGeneral,
+		pnsTrie:           trPns,
+		digitalTrie:       trAsset,
+		contractTrie:      trContract,
+		authorizeTrie:     trAuthorize,
+		lossTrie:          trLose,
+		dPosHash:          hash[6],
+		dPosCandidateHash: hash[7],
+	}
+	return totalTrie, err
+}
+
+//OpenTotalTrie use mpt
+func OpenTotalTrieForMpt(root common.Hash, db Database) (TotalTrie, error) {
+	hash := GetHash(root, db)
+	trGeneral, err := db.OpenTrie(hash[0])
+	trPns, err1 := db.OpenTrie(hash[1])
+	if err1 != nil {
+		err = err1
+	}
+	trAsset, err2 := db.OpenTrie(hash[2])
+	if err2 != nil {
+		err = err2
+	}
+	trContract, err3 := db.OpenTrie(hash[3])
+	if err3 != nil {
+		err = err3
+	}
+	trAuthorize, err4 := db.OpenTrie(hash[4])
+	if err4 != nil {
+		err = err4
+	}
+	trLose, err5 := db.OpenTrie(hash[5])
 	if err5 != nil {
 		err = err5
 	}
@@ -661,54 +699,24 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 	return common.Hash{}
 }
 
-// GetDposAccounts retrieves a dpos list @todo number, epoch just for test, rember remove it
-func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
-	log.Info("GetDposAccounts", "hash", hash, "number", number)
-	nodelist := []string{
-		"enode://94c3f0eaa5b48e19d6e0b7d194df0bce836ef60073cdfe51022bc28ea7f860ff7b0bef1adca6fc900f43575593172aa602c56aef22fd5004210b4525dfe9dbab@127.0.0.1:30000",
-		"enode://f145c933e0aee8daf4b652f19ea859b81bf8116252297cc31fc4c1fafcb21adecb635ef0ed1d2852fbe9ff0b92c2160467d33fed2004a1d62210651b208c7ff3@127.0.0.1:30001",
+// GetDposAccounts retrieves a dpos list
+func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
+	dposNo := number + 1 - (number + 1%epoch)
+	dposNodesKey := common.GetDposNodesKey(dposNo, hash)
+	nodes, _ := s.Database().TrieDB().GetDposNodes(dposNodesKey)
+	length := len(nodes)
+	data := make([]*common.DPoSAccount, 0, length)
+	for _, node := range nodes {
+		data = append(data, &node)
 	}
-	ownerList := []string{
-		"4bc6b01ce0104c654afdb3f8c484135005d7d8f7",
-		"dec2b13544b0d853678a2ef8933d6318313dae17",
-	}
-
-	mockDposAccounts := make([]*DPoSAccount, 0, len(nodelist))
-	for i, url := range nodelist {
-		dposAccount := &DPoSAccount{
-			DPoSData: DPoSData{},
-			Info:     []byte("http://eth.lucq.fun/#/"),
-			SignNum:  0,
-		}
-		dposAccount.DPoSData.Enode = []byte(url)
-		dposAccount.DPoSData.Owner = common.HexToAddress(ownerList[i])
-		mockDposAccounts = append(mockDposAccounts, dposAccount)
-	}
-
-	var dposAccounts []*DPoSAccount
-	size := uint64(len(mockDposAccounts))
-	count := 1
-	startIndex := uint64(0)
-	if number > 0 {
-		startIndex = number/epoch + 1
-	}
-
-	for {
-		if count > len(nodelist) {
-			break
-		}
-		dposAccount := mockDposAccounts[startIndex%size]
-		dposAccounts = append(dposAccounts, dposAccount)
-		startIndex++
-		count++
-	}
-	return dposAccounts
+	return data
 }
 
-// GetNextDposAccounts retrieves a dpos list @todo number, epoch just for test, rember remove it
-func (s *StateDB) GetNextDposAccounts(hash common.Hash, number uint64, epoch uint64) []*DPoSAccount {
-	log.Info("GetNextDposAccounts", "hash", hash, "number", number)
-	return s.GetDposAccounts(hash, number+epoch, epoch)
+// GetNextDposAccounts retrieves a dpos list todo 待优化  最新的无法判断
+func (s *StateDB) GetNextDposAccounts(hash common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
+	log.Info("GetNextDposAccounts", "hash", hash, "number", number, "epoch", epoch)
+
+	return s.GetDposAccounts(hash, number, epoch)
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.

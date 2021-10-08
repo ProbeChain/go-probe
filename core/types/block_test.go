@@ -18,9 +18,9 @@ package types
 
 import (
 	"bytes"
-	"github.com/ethereum/go-ethereum/crypto/probe"
 	"crypto/ecdsa"
 	crand "crypto/rand"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"hash"
 	"math/big"
 	"reflect"

@@ -283,9 +283,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	dposAccounts := eth.blockchain.GetDposAccounts(eth.blockchain.CurrentHeader().Number.Uint64())
 	nodes := make([]*enode.Node, 0, len(dposAccounts))
 	for _, account := range dposAccounts {
-		dposEnode, err := enode.Parse(enode.ValidSchemes, string(account.Enode))
+		dposEnode, err := enode.Parse(enode.ValidSchemes, string(account.Enode[:]))
 		if err != nil {
-			log.Error(fmt.Sprintf("Node URL %s: %v\n", string(account.Enode), err))
+			log.Error(fmt.Sprintf("Node URL %s: %v\n", string(account.Enode[:]), err))
 			continue
 		}
 		nodes = append(nodes, dposEnode)

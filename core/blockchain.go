@@ -31,7 +31,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/mclock"
@@ -352,7 +351,7 @@ type BlockChain struct {
 
 	dposAcks     *DposAckPool
 	powAnswers   *PowAnswerPool
-	dposAccounts map[uint64][]*state.DPoSAccount
+	dposAccounts map[uint64][]*common.DPoSAccount
 
 	dposNodes map[uint64][]*enode.Node
 
@@ -420,7 +419,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		vmConfig:       vmConfig,
 		powAnswers:     NewPowAnswerPool(),
 		dposAcks:       NewDposAckPool(),
-		dposAccounts:   make(map[uint64][]*state.DPoSAccount),
+		dposAccounts:   make(map[uint64][]*common.DPoSAccount),
 		p2pServer:      p2pServer,
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
@@ -2671,7 +2670,7 @@ func (bc *BlockChain) GetDposNodes(dposHash common.Hash) ([]common.DPoSAccount, 
 func (bc *BlockChain) updateP2pDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	epoch := bc.chainConfig.Dpos.Epoch
+	epoch := bc.chainConfig.DposConfig.Epoch
 
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
@@ -2692,10 +2691,10 @@ func (bc *BlockChain) updateP2pDposNodes() {
 					}
 				}
 				if !find {
-					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", string(da1.Enode))
-					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", string(da1.Enode[:]))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
 					if err != nil {
-						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
 						continue
 					}
 					bc.p2pServer.AddDposPeer(dposEnode)
@@ -2716,10 +2715,10 @@ func (bc *BlockChain) updateP2pDposNodes() {
 					}
 				}
 				if !find {
-					log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", string(da1.Enode))
-					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode))
+					log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", string(da1.Enode[:]))
+					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
 					if err != nil {
-						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode), err))
+						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
 						continue
 					}
 					bc.p2pServer.RemovePeer(dposEnode)
@@ -2730,8 +2729,8 @@ func (bc *BlockChain) updateP2pDposNodes() {
 }
 
 // GetDposAccounts get latest dpos nodes
-func (bc *BlockChain) GetDposAccounts(number uint64) []*state.DPoSAccount {
-	index := number / bc.chainConfig.Dpos.Epoch
+func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
+	index := number / bc.chainConfig.DposConfig.Epoch
 
 	accounts := bc.dposAccounts[index]
 	if accounts != nil {
@@ -2741,7 +2740,7 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*state.DPoSAccount {
 	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
 	if block != nil {
-		epoch := bc.chainConfig.Dpos.Epoch
+		epoch := bc.chainConfig.DposConfig.Epoch
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
@@ -2751,8 +2750,8 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*state.DPoSAccount {
 }
 
 // GetNextDposAccounts get next dpos nodes
-func (bc *BlockChain) GetNextDposAccounts(number uint64) []*state.DPoSAccount {
-	index := (number + confirmDpos) / bc.chainConfig.Dpos.Epoch
+func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
+	index := (number + confirmDpos) / bc.chainConfig.DposConfig.Epoch
 
 	accounts := bc.dposAccounts[index]
 	if accounts != nil {
@@ -2762,7 +2761,7 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*state.DPoSAccount {
 	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
 	if block != nil {
-		epoch := bc.chainConfig.Dpos.Epoch
+		epoch := bc.chainConfig.DposConfig.Epoch
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
@@ -2772,11 +2771,11 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*state.DPoSAccount {
 }
 
 // GetSealDposAccount get seal dpos account
-func (bc *BlockChain) GetSealDposAccount(number uint64) *state.DPoSAccount {
+func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
 	accounts := bc.GetDposAccounts(number)
 	if accounts != nil {
 		size := uint64(len(accounts))
-		return accounts[number%bc.chainConfig.Dpos.Epoch%size]
+		return accounts[number%bc.chainConfig.DposConfig.Epoch%size]
 	}
 	return nil
 }
@@ -2936,8 +2935,8 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 }
 
 func (bc *BlockChain) HasSixState(root common.Hash) bool {
-
-	_, err := state.OpenTotalTrie(root, bc.stateCache)
+	//_, err := state.OpenTotalTrieForBMpt(root, bc.stateCache)
+	_, err := state.OpenTotalTrieForMpt(root, bc.stateCache)
 
 	return err == nil
 }
