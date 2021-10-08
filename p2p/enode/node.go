@@ -22,8 +22,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/ethereum/go-ethereum/log"
 	"math/bits"
 	"net"
+	"regexp"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/p2p/enr"
@@ -60,8 +62,19 @@ func MustParse(rawurl string) *Node {
 	return n
 }
 
+func compressStr(str string) string {
+	if str == "" {
+		return ""
+	}
+	//匹配一个或多个空白符的正则表达式
+	reg := regexp.MustCompile("\\s+")
+	return reg.ReplaceAllString(str, "")
+}
+
 // Parse decodes and verifies a base64-encoded node record.
 func Parse(validSchemes enr.IdentityScheme, input string) (*Node, error) {
+	input = compressStr(input)
+	log.Info("dposnodeinfo:", input)
 	if strings.HasPrefix(input, "enode://") {
 		return ParseV4(input)
 	}

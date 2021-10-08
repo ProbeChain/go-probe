@@ -700,9 +700,10 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 }
 
 // GetDposAccounts retrieves a dpos list
-func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
+func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
+	dposHash := GetHash(root, s.Database())[6]
 	dposNo := number + 1 - (number + 1%epoch)
-	dposNodesKey := common.GetDposNodesKey(dposNo, hash)
+	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	nodes, _ := s.Database().TrieDB().GetDposNodes(dposNodesKey)
 	length := len(nodes)
 	data := make([]*common.DPoSAccount, 0, length)
@@ -713,10 +714,10 @@ func (s *StateDB) GetDposAccounts(hash common.Hash, number uint64, epoch uint64)
 }
 
 // GetNextDposAccounts retrieves a dpos list todo 待优化  最新的无法判断
-func (s *StateDB) GetNextDposAccounts(hash common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
-	log.Info("GetNextDposAccounts", "hash", hash, "number", number, "epoch", epoch)
+func (s *StateDB) GetNextDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
+	log.Info("GetNextDposAccounts", "root", root, "number", number, "epoch", epoch)
 
-	return s.GetDposAccounts(hash, number, epoch)
+	return s.GetDposAccounts(root, number, epoch)
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.

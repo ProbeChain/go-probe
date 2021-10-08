@@ -280,7 +280,7 @@ func TestStrToHex(*testing.T) {
 }
 
 func TestPrivateKey(*testing.T) {
-	acc1Key, _ := probe.HexToECDSA("000e92781f2a5f582a7ce9726971ce896421080b6cb9fe33cfe892968e7d25fd85")
+	acc1Key, _ := probe.HexToECDSA("00fd485f3ba81a7ec51a3ad90e541ddc18a761581b844cedd781659543b6a62435")
 	address1 := probe.PubkeyToAddress(acc1Key.PublicKey)
 	fmt.Println("address ", address1.String())
 }

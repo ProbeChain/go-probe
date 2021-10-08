@@ -559,6 +559,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			newBlockNumber := blockNumber.Uint64() + 1
 			answerNumber := answer.PowAnswer.Number.Uint64()
 			if newBlockNumber != answerNumber+1 {
+				log.Debug("blockNumber have been mined", "blockNumber", newBlockNumber)
 				continue
 			}
 

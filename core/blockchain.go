@@ -353,8 +353,6 @@ type BlockChain struct {
 	powAnswers   *PowAnswerPool
 	dposAccounts map[uint64][]*common.DPoSAccount
 
-	dposNodes map[uint64][]*enode.Node
-
 	chainmu sync.RWMutex // blockchain insertion lock
 
 	currentBlock     atomic.Value // Current head of the block chain

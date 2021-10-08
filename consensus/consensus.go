@@ -30,7 +30,7 @@ import (
 const (
 	// DposWitnessNumber is the total number of dpos witness nodes.
 	//@todo just for oneNode test
-	DposWitnessNumber = 2
+	DposWitnessNumber = 1
 	//DposWitnessNumber = 64
 	// number of witness to product stabilizing block
 	MostDposWitness = DposWitnessNumber*2/3 + 1
