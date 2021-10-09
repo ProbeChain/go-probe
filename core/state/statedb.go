@@ -1104,6 +1104,31 @@ func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Ad
 	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
 }
 
+func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
+	stateObject := s.getStateObject(addr)
+	if nil != stateObject {
+		return
+	}
+	var dposMap map[string]interface{}
+	err := json.Unmarshal(jsonData, &dposMap)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	remoteIp := dposMap["ip"].(string)
+	remotePort := dposMap["port"].(string)
+	var enode bytes.Buffer
+	enode.WriteString("enode://")
+	enode.WriteString(ower.String()[2:])
+	enode.WriteString("@")
+	enode.WriteString(remoteIp)
+	enode.WriteString(":")
+	enode.WriteString(remotePort)
+	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
+	stateObject.dposCandidateAccount.Owner = ower
+	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
+	s.dposList.dPoSCandidateAccounts.Update(stateObject.dposCandidateAccount)
+}
+
 func InetAtoN(ip string) *big.Int {
 	ret := big.NewInt(0)
 	ret.SetBytes(net.ParseIP(ip).To4())

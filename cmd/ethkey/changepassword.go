@@ -32,11 +32,10 @@ var newPassphraseFlag = cli.StringFlag{
 }
 
 var commandChangePassphrase = cli.Command{
-	Name:      "changepassword",
-	Usage:     "change the password on a keyfile",
-	ArgsUsage: "<keyfile>",
-	Description: `
-Change the password of a keyfile.`,
+	Name:        "changepassword",
+	Usage:       "change the password on a keyfile",
+	ArgsUsage:   "<keyfile>",
+	Description: `Change the password of a keyfile.`,
 	Flags: []cli.Flag{
 		passphraseFlag,
 		newPassphraseFlag,
