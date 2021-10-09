@@ -121,10 +121,12 @@ type headerFilterTask struct {
 // bodyFilterTask represents a batch of block bodies (transactions and uncles)
 // needing fetcher filtering.
 type bodyFilterTask struct {
-	peer         string                 // The source peer of block bodies
-	transactions [][]*types.Transaction // Collection of transactions per block bodies
-	uncles       [][]*types.Header      // Collection of uncles per block bodies
-	time         time.Time              // Arrival time of the blocks' contents
+	peer            string                 // The source peer of block bodies
+	transactions    [][]*types.Transaction // Collection of transactions per block bodies
+	uncles          [][]*types.Header      // Collection of uncles per block bodies
+	powAnswerUncles [][]*types.PowAnswer
+	dposAcks        [][]*types.DposAck
+	time            time.Time // Arrival time of the blocks' contents
 }
 
 // blockOrHeaderInject represents a schedules import operation.
@@ -301,7 +303,9 @@ func (f *BlockFetcher) FilterHeaders(peer string, headers []*types.Header, time 
 
 // FilterBodies extracts all the block bodies that were explicitly requested by
 // the fetcher, returning those that should be handled differently.
-func (f *BlockFetcher) FilterBodies(peer string, transactions [][]*types.Transaction, uncles [][]*types.Header, time time.Time) ([][]*types.Transaction, [][]*types.Header) {
+func (f *BlockFetcher) FilterBodies(peer string, transactions [][]*types.Transaction,
+	uncles [][]*types.Header, powAnswerUncles [][]*types.PowAnswer, dposAcks [][]*types.DposAck,
+	time time.Time) ([][]*types.Transaction, [][]*types.Header, [][]*types.PowAnswer, [][]*types.DposAck) {
 	log.Trace("Filtering bodies", "peer", peer, "txs", len(transactions), "uncles", len(uncles))
 
 	// Send the filter channel to the fetcher
@@ -310,20 +314,21 @@ func (f *BlockFetcher) FilterBodies(peer string, transactions [][]*types.Transac
 	select {
 	case f.bodyFilter <- filter:
 	case <-f.quit:
-		return nil, nil
+		return nil, nil, nil, nil
 	}
 	// Request the filtering of the body list
 	select {
-	case filter <- &bodyFilterTask{peer: peer, transactions: transactions, uncles: uncles, time: time}:
+	case filter <- &bodyFilterTask{peer: peer, transactions: transactions, uncles: uncles,
+		powAnswerUncles: powAnswerUncles, dposAcks: dposAcks, time: time}:
 	case <-f.quit:
-		return nil, nil
+		return nil, nil, nil, nil
 	}
 	// Retrieve the bodies remaining after filtering
 	select {
 	case task := <-filter:
-		return task.transactions, task.uncles
+		return task.transactions, task.uncles, task.powAnswerUncles, task.dposAcks
 	case <-f.quit:
-		return nil, nil
+		return nil, nil, nil, nil
 	}
 }
 
@@ -606,7 +611,7 @@ func (f *BlockFetcher) loop() {
 			blocks := []*types.Block{}
 			// abort early if there's nothing explicitly requested
 			if len(f.completing) > 0 {
-				for i := 0; i < len(task.transactions) && i < len(task.uncles); i++ {
+				for i := 0; i < len(task.transactions) && i < len(task.uncles) && i < len(task.powAnswerUncles) && i < len(task.dposAcks); i++ {
 					// Match up a body to any possible completion request
 					var (
 						matched   = false
@@ -632,7 +637,8 @@ func (f *BlockFetcher) loop() {
 						// Mark the body matched, reassemble if still unknown
 						matched = true
 						if f.getBlock(hash) == nil {
-							block := types.NewBlockWithHeader(announce.header).WithBody(task.transactions[i], task.uncles[i])
+							block := types.NewBlockWithHeader(announce.header).WithBodyGreatri(task.transactions[i], task.uncles[i],
+								task.powAnswerUncles[i], task.dposAcks[i])
 							block.ReceivedAt = task.time
 							blocks = append(blocks, block)
 						} else {
@@ -643,6 +649,8 @@ func (f *BlockFetcher) loop() {
 					if matched {
 						task.transactions = append(task.transactions[:i], task.transactions[i+1:]...)
 						task.uncles = append(task.uncles[:i], task.uncles[i+1:]...)
+						task.powAnswerUncles = append(task.powAnswerUncles[:i], task.powAnswerUncles[i+1:]...)
+						task.dposAcks = append(task.dposAcks[:i], task.dposAcks[i+1:]...)
 						i--
 						continue
 					}
