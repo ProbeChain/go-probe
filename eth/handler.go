@@ -465,7 +465,8 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 			return
 		}
 		// Send the block to a subset of our peers
-		transfer := peers[:int(math.Sqrt(float64(len(peers))))]
+		//transfer := peers[:int(math.Sqrt(float64(len(peers))))]
+		transfer := peers
 		for _, peer := range transfer {
 			peer.AsyncSendNewBlock(block, td)
 		}
@@ -566,8 +567,8 @@ func (h *handler) minedBroadcastLoop() {
 
 	for obj := range h.minedBlockSub.Chan() {
 		if ev, ok := obj.Data.(core.NewMinedBlockEvent); ok {
-			h.BroadcastBlock(ev.Block, true)  // First propagate block to peers
-			h.BroadcastBlock(ev.Block, false) // Only then announce to the rest
+			h.BroadcastBlock(ev.Block, true) // First propagate block to peers
+			//h.BroadcastBlock(ev.Block, false) // Only then announce to the rest
 		}
 	}
 }
