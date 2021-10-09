@@ -17,6 +17,7 @@ type SortedLinkedList struct {
 func NewSortedLinkedList(limit int, compare func(old, new interface{}) bool) *SortedLinkedList {
 	return &SortedLinkedList{list.New(), limit, compare, new(sync.RWMutex)}
 }
+
 func (this SortedLinkedList) findInsertPlaceElement(value interface{}) *list.Element {
 	for element := this.Front(); element != nil; element = element.Next() {
 		tempValue := element.Value
@@ -61,6 +62,23 @@ func (this SortedLinkedList) remove(value interface{}) {
 		next = e.Next()
 		if strings.EqualFold(e.Value.(DPoSCandidateAccount).Owner.Hex(), value.(DPoSCandidateAccount).Owner.Hex()) {
 			this.Remove(e)
+		}
+	}
+}
+
+func (this SortedLinkedList) Update(value interface{}) {
+	defer this.lock.Unlock()
+	this.lock.Lock()
+	if this.List.Len() == 0 {
+		return
+	}
+	var next *list.Element
+	for e := this.List.Front(); e != nil; e = next {
+		next = e.Next()
+		if strings.EqualFold(e.Value.(DPoSCandidateAccount).Owner.Hex(), value.(DPoSCandidateAccount).Owner.Hex()) {
+			//this.Remove(e)
+			//this.PutOnTop(value)
+			e.Value = value
 		}
 	}
 }
