@@ -65,6 +65,23 @@ func (this SortedLinkedList) remove(value interface{}) {
 	}
 }
 
+func (this SortedLinkedList) Update(value interface{}) {
+	defer this.lock.Unlock()
+	this.lock.Lock()
+	if this.List.Len() == 0 {
+		return
+	}
+	var next *list.Element
+	for e := this.List.Front(); e != nil; e = next {
+		next = e.Next()
+		if strings.EqualFold(e.Value.(DPoSCandidateAccount).Owner.Hex(), value.(DPoSCandidateAccount).Owner.Hex()) {
+			//this.Remove(e)
+			//this.PutOnTop(value)
+			e.Value = value
+		}
+	}
+}
+
 func (this SortedLinkedList) GetDpostList() []common.DPoSAccount {
 	defer this.lock.Unlock()
 	this.lock.Lock()
