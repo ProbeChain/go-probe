@@ -2742,6 +2742,8 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
+	} else {
+		log.Debug("DPoSAccount", "blockNumber is nil", number)
 	}
 
 	return accounts
