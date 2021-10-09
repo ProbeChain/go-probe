@@ -710,6 +710,7 @@ func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64)
 	for _, node := range nodes {
 		data = append(data, &node)
 	}
+	log.Debug("GetDposAccounts","DPoSAccount", nodes, "data", data)
 	return data
 }
 
