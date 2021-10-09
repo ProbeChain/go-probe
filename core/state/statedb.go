@@ -863,15 +863,6 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 			height:      obj.lossAccount.Height,
 			infoDigest:  obj.lossAccount.InfoDigest,
 		})
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		s.journal.append(dPoSCandidateSuicideChange{
-			account:       &addr,
-			suicide:       obj.suicided,
-			enode:         obj.dposCandidateAccount.Enode,
-			owner:         obj.dposCandidateAccount.Owner,
-			weight:        obj.dposCandidateAccount.Weight,
-			delegateValue: obj.dposCandidateAccount.DelegateValue,
-		})
 	default:
 	}
 	obj.markSuicided()
@@ -1684,10 +1675,7 @@ func (s *StateDB) Register(context vm.TxContext) {
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
 		s.setMarkLossAccount(*context.New)
-	case common.ACC_TYPE_OF_DPOS:
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	}
-
 }
 
 func (s *StateDB) Cancellation(context vm.TxContext) {
@@ -1940,10 +1928,6 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newLossAccount(s, addr, *data), false
-	case common.ACC_TYPE_OF_DPOS:
-		return nil, true
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return nil, true
 	default:
 		return nil, true
 	}
@@ -1964,10 +1948,6 @@ func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 		return &s.trie.authorizeTrie
 	case common.ACC_TYPE_OF_LOSE:
 		return &s.trie.lossTrie
-	case common.ACC_TYPE_OF_DPOS:
-		return nil
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return nil
 	default:
 		return nil
 	}

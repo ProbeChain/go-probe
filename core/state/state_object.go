@@ -232,14 +232,6 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		var data LossAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossAccount = data
-	case common.ACC_TYPE_OF_DPOS:
-		var data common.DPoSAccount
-		err = rlp.DecodeBytes(encodedBytes, &data)
-		wrapper.dPoSAccount = data
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		var data DPoSCandidateAccount
-		err = rlp.DecodeBytes(encodedBytes, &data)
-		wrapper.dPoSCandidateAccount = data
 	default:
 		err = accounts.ErrUnknownAccount
 	}
@@ -385,10 +377,6 @@ func (s *stateObject) EncodeRLP(w io.Writer) error {
 		return rlp.Encode(w, s.authorizeAccount)
 	case common.ACC_TYPE_OF_LOSE:
 		return rlp.Encode(w, s.lossAccount)
-	case common.ACC_TYPE_OF_DPOS:
-		return accounts.ErrUnknownAccount
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return accounts.ErrUnknownAccount
 	default:
 		return accounts.ErrUnknownAccount
 	}
@@ -915,11 +903,6 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		accountInfo.Height = s.lossAccount.Height
 		infoDigest := hexutil.Bytes(s.lossAccount.InfoDigest)
 		accountInfo.Data = &infoDigest
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		accountInfo.Enode = &s.dposCandidateAccount.Enode
-		accountInfo.Owner = &s.dposCandidateAccount.Owner
-		accountInfo.Weight = s.dposCandidateAccount.Weight
-		accountInfo.DelegateValue = s.dposCandidateAccount.DelegateValue
 	}
 	return accountInfo
 }

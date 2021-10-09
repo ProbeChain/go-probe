@@ -9,8 +9,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
 	"hash"
 	"io"
 	"io/ioutil"
@@ -377,48 +375,6 @@ func CreateAddressForAccountType(address common.Address, nonce uint64, K byte) (
 	binary.BigEndian.PutUint64(b, nonce)
 	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), b[:])[12:], K), nil
 
-}
-
-func CreateDPOSAddressStr(address string, dpos []byte, K byte, Height *big.Int) (add common.Address, err error) {
-
-	k1, err := common.ValidCheckAddress(address)
-	if k1 != 0x00 || K != common.ACC_TYPE_OF_DPOS || err != nil {
-		log.Crit("Failed to Create DPOSAddress from address", "err", err)
-		return common.HexToAddress(address), err
-	}
-
-	data, _ := rlp.EncodeToBytes([]interface{}{K, common.HexToAddress(address), dpos, *Height})
-	data = Keccak512(data)
-	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
-}
-
-func CreateDPOSAddress(address common.Address, dpos []byte, K byte, Height *big.Int) (add common.Address, err error) {
-	if len(dpos) <= 0 {
-		return address, errors.New("Creat DPOSAddress error,DPOS parameter is invalid")
-	}
-	k1, err := common.ValidAddress(address)
-	if k1 != 0x00 || K != common.ACC_TYPE_OF_DPOS || err != nil {
-		log.Crit("Failed to Create PNSAddress from address", "err", err)
-		return address, err
-	}
-	data, _ := rlp.EncodeToBytes([]interface{}{K, address, dpos, *Height})
-	data = Keccak512(data)
-	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
-}
-
-func CreatePNSAddressStr(address string, pns []byte, K byte) (add common.Address, err error) {
-
-	k1, err := common.ValidCheckAddress(address)
-	if k1 != 0x00 || err != nil {
-		log.Crit("Failed to Create PNSAddress from address", "err", err)
-		return common.HexToAddress(address), err
-	}
-	if len(pns) <= 0 {
-		return common.HexToAddress(address), errors.New("Creat PNSAddress error,PNS parameter is invalid")
-	}
-
-	data, _ := rlp.EncodeToBytes([]interface{}{K, common.HexToAddress(address), pns})
-	return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 }
 
 func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Address, err error) {
