@@ -330,7 +330,8 @@ func PubkeyBytesToAddress(pubKey []byte, fromAcType byte) common.Address {
 	c := make([]byte, len(b)+1)
 	c[0] = fromAcType
 	copy(c[1:], b)
-	checkSumBytes := common.CheckSum(c)
+	//JS 与 go 交互
+	checkSumBytes := common.CheckSum([]byte(hex.EncodeToString(c)))
 	return common.BytesToAddress(append(c, checkSumBytes...))
 }
 
