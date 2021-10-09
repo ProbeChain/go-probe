@@ -506,7 +506,7 @@ func ValidAddress(addr Address) (c byte, err error) {
 	}
 	if len(b) == AddressLength {
 		sum := b[len(b)-AddressChecksumLen:]
-		checkSumBytes := CheckSum(b[0 : len(b)-AddressChecksumLen])
+		checkSumBytes := CheckSum([]byte(hex.EncodeToString(b[0 : len(b)-AddressChecksumLen])))
 		flag := cmp.Equal(sum, checkSumBytes)
 		if flag {
 			byte := b[0]
