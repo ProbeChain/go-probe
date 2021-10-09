@@ -311,6 +311,11 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 	if regularAccount.VoteAccount != (common.Address{}) && regularAccount.VoteAccount != *tx.To() {
 		return ErrInvalidCandidateDPOS
 	}
+	limitMaxValue := big.NewInt(1)
+	limitMaxValue.Mul(authorizeAccount.PledgeValue, big.NewInt(10))
+	if limitMaxValue.Cmp(authorizeAccount.VoteValue) < 0 {
+		return ErrValidCandidateDPOSValue
+	}
 	return pool.validateGas(tx, local)
 }
 
