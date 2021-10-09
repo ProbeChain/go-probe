@@ -2772,7 +2772,13 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 
 // GetSealDposAccount get seal dpos account
 func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
-	accounts := bc.GetDposAccounts(number)
+	var num uint64
+	if number == 0 {
+		num = 0
+	}else{
+		num = number - 1
+	}
+	accounts := bc.GetDposAccounts(num)
 	if accounts != nil {
 		size := uint64(len(accounts))
 		return accounts[number%bc.chainConfig.DposConfig.Epoch%size]
