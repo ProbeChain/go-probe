@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"math/big"
 	"sync"
@@ -532,7 +531,7 @@ func (c *Greatri) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header 
 func (c *Greatri) Authorize(signer common.Address, signFn SignerFn) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	log.Debug("add sig addr", "", signer, "signFn", signFn)
+
 	c.signer = signer
 	c.signFn = signFn
 }
