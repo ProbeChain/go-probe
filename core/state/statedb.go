@@ -58,12 +58,12 @@ const (
 	CONTRACT_TRIE_DEPTH   = 10
 	AUTHORIZES_TRIE_DEPTH = 10
 	LOSE_TRIE_DEPTH       = 10
-	GENERAL_TRIE_PATH     = "/generalStateTrie"
-	PNS_TRIE_PATH         = "/pnsStateTrie"
-	ASSET_TRIE_PATH       = "/assetStateTrie"
-	CONTRACT_TRIE_PATH    = "/contractStateTrie"
-	AUTHORIZES_TRIE_PATH  = "/authorizesSateTrie"
-	LOSE_TRIE_PATH        = "/loseStateTrie"
+	GENERAL_TRIE_PATH     = "/trie/generalStateTrie"
+	PNS_TRIE_PATH         = "/trie/pnsStateTrie"
+	ASSET_TRIE_PATH       = "/trie/assetStateTrie"
+	CONTRACT_TRIE_PATH    = "/trie/contractStateTrie"
+	AUTHORIZES_TRIE_PATH  = "/trie/authorizesSateTrie"
+	LOSE_TRIE_PATH        = "/trie/loseStateTrie"
 )
 
 type proofList [][]byte
@@ -393,8 +393,8 @@ func GetHash(root common.Hash, db Database) []common.Hash {
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
 	// 根据 root 获取六棵树hash数组
-	//totalTrie, err := OpenTotalTrieForBMpt(root, db)
-	totalTrie, err := OpenTotalTrieForMpt(root, db)
+	totalTrie, err := OpenTotalTrieForBMpt(root, db)
+	//totalTrie, err := OpenTotalTrieForMpt(root, db)
 	//tr, err := db.OpenTrie(root)
 	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
 	if err != nil {

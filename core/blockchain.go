@@ -1878,6 +1878,9 @@ func (bc *BlockChain) InsertChainWithoutSealVerification(block *types.Block) (in
 // is imported, but then new canon-head is added before the actual sidechain
 // completes, then the historic state could be pruned again
 func (bc *BlockChain) insertChain(blocks types.Blocks, verifySeals bool) (int, error) {
+	for _, block := range blocks {
+		log.Info("insertChain", "blockNumber", block.NumberU64(), "blockRoot", block.Root().Hex())
+	}
 	// If the chain is terminating, don't even bother starting up
 	if atomic.LoadInt32(&bc.procInterrupt) == 1 {
 		return 0, nil
@@ -2941,8 +2944,8 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 }
 
 func (bc *BlockChain) HasSixState(root common.Hash) bool {
-	//_, err := state.OpenTotalTrieForBMpt(root, bc.stateCache)
-	_, err := state.OpenTotalTrieForMpt(root, bc.stateCache)
+	_, err := state.OpenTotalTrieForBMpt(root, bc.stateCache)
+	//_, err := state.OpenTotalTrieForMpt(root, bc.stateCache)
 
 	return err == nil
 }

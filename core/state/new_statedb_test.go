@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
+	"strings"
 	"testing"
 )
 
@@ -30,6 +31,11 @@ func TestGetData(t *testing.T) {
 	//regular := s.state.GetValueForRegular(address)
 	fmt.Printf(" after GetRegular：%v \n", obj1)
 	//fmt.Printf(" after GetValueForRegular：%v \n", regular)
+
+	s1 := "                                                                                                      enode://04aaa41aa9f9da218d67eaeab0d17e9eca15259d53976b6b1026d65bbe90a77b9c078abdb79e814252fd6e60996eabf82233452a537f4275e7bcbb5908b6e26521@127.0.0.1:30301"
+	fmt.Println("长度：", len(s1)) // " Hello@世界!"
+	ts := strings.TrimLeft(s1, " ")
+	fmt.Printf("%q\n", ts) // " Hello@世界!"
 }
 
 func TestSetData(t *testing.T) {
@@ -76,7 +82,6 @@ func TestDeleteData(t *testing.T) {
 	obj1.setValueForRegular(big.NewInt(20))
 	fmt.Printf(" before DeleteStateObjectByAddr：%v \n", s.state.GetRegular(address))
 	s.state.updateStateObject(obj1)
-	s.state.DeleteStateObjectByAddr(address)
 	fmt.Printf(" after DeleteStateObjectByAddr：%v \n", s.state.GetRegular(address))
 }
 
