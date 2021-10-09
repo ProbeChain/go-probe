@@ -21,11 +21,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/ethereum/go-ethereum/p2p/enode"
+	"net"
 	"testing"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestTextHash(t *testing.T) {
@@ -300,4 +301,18 @@ func TestCheckValidteTest(*testing.T) {
 		fmt.Printf("failed GenerateKey with %s.", err2)
 	}
 	fmt.Printf("flag[%T][%X]\n", c, c)
+}
+func TestPrintDposNode(*testing.T) {
+	privateKey, _ := probe.GenerateKey()
+	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(privateKey)))
+	address := probe.PubkeyToAddress(privateKey.PublicKey)
+	fmt.Println("address ", address.String())
+	addr := &net.UDPAddr{
+		IP:   net.IP{127, 0, 0, 1},
+		Port: 30001,
+		Zone: "",
+	}
+	nodeKey, _ := probe.GenerateKey()
+	n := enode.NewV4(&nodeKey.PublicKey, addr.IP, 0, addr.Port)
+	fmt.Println("address-nodeKey:", n.URLv4())
 }
