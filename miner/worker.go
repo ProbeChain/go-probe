@@ -348,12 +348,14 @@ func (w *worker) isRunning() bool {
 func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 	account := w.chain.GetSealDposAccount(blockNumber)
 	if account == nil {
-		log.Error("something wrong in get dpos account, need to check", "blockNumber", blockNumber)
+		log.Error("something wrong in get dpos account, neeQd to check", "blockNumber", blockNumber)
 		return false
 	}
 	if account.Owner == w.coinbase {
+		log.Debug("I'm producer on current block", "blockNumber", blockNumber, "my addr", w.coinbase)
 		return true
 	} else {
+		log.Debug("I'm not producer on current block", "blockNumber", blockNumber, "my addr", w.coinbase)
 		return false
 	}
 }
