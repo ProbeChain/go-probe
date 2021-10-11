@@ -22,7 +22,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto/probe"
 	"github.com/ethereum/go-ethereum/log"
 	"math/bits"
@@ -64,7 +63,8 @@ func MustParse(rawurl string) *Node {
 }
 
 func compressStr(str string) string {
-	dposEnodeTemp := common.BytesToDposEnode([]byte(str))
+	//dposEnodeTemp := common.BytesToDposEnode([]byte(str))
+	dposEnodeTemp := []byte(str)
 	dposEnode := bytes.Trim(dposEnodeTemp[:], "\x00")
 	return string(dposEnode[:])
 }
@@ -72,7 +72,7 @@ func compressStr(str string) string {
 // Parse decodes and verifies a base64-encoded node record.
 func Parse(validSchemes enr.IdentityScheme, input string) (*Node, error) {
 	input = compressStr(input)
-	log.Info("dposnodeinfo:", input)
+	log.Info("dposnodeinfo", "node-parse:", input)
 	if strings.HasPrefix(input, "enode://") {
 		return ParseV4(input)
 	}

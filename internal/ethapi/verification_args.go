@@ -346,7 +346,12 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 	if err != nil {
 		return errors.New("The format of the address data parameter is incorrect,data begin with 0x")
 	}
-	if nil == dposMap["ip"] || nil == dposMap["port"] {
+	if nil == dposMap["enode"] || nil == dposMap["ip"] || nil == dposMap["port"] {
+		return errors.New("voteAccount parameter data error ")
+	}
+	remoteEnode := dposMap["enode"].(string)
+	log.Info("verification_args", "setDefaultsOfApplyToBeDPoSNode remoteEnode lengt error ", len(remoteEnode))
+	if len(remoteEnode) != 65 {
 		return errors.New("voteAccount parameter data error ")
 	}
 

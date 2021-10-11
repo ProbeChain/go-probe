@@ -707,10 +707,10 @@ func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64)
 	nodes, _ := s.Database().TrieDB().GetDposNodes(dposNodesKey)
 	length := len(nodes)
 	data := make([]*common.DPoSAccount, 0, length)
-	for _, node := range nodes {
-		data = append(data, &node)
+	for index, _ := range nodes {
+		data = append(data, &nodes[index])
 	}
-	log.Debug("GetDposAccounts","DPoSAccount", nodes, "data", data)
+	log.Debug("GetDposAccounts", "DPoSAccount", nodes, "data", data)
 	return data
 }
 
@@ -1894,11 +1894,12 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", context.To.Bytes(), err))
 		return
 	}
+	remoteEnode := dposMap["enode"].(string)
 	remoteIp := dposMap["ip"].(string)
 	remotePort := dposMap["port"].(string)
 	var enode bytes.Buffer
 	enode.WriteString("enode://")
-	enode.WriteString(context.From.String()[2:])
+	enode.WriteString(remoteEnode)
 	enode.WriteString("@")
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")

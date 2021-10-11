@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto/probe"
 	"net"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -91,7 +92,7 @@ func keyToURL(ctx *cli.Context) error {
 		tcp  = ctx.Int(tcpPortFlag.Name)
 		udp  = ctx.Int(udpPortFlag.Name)
 	)
-	key, err := crypto.LoadECDSA(file)
+	key, err := probe.LoadECDSA(file)
 	if err != nil {
 		return err
 	}

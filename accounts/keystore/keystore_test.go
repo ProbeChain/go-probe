@@ -517,7 +517,6 @@ func TestNewAccountsExport(t *testing.T) {
 		Port: port,
 		Zone: "",
 	}
-	nodeKey, _ := probe.GenerateKey()
-	n := enode.NewV4(&nodeKey.PublicKey, addr.IP, 0, addr.Port)
+	n := enode.NewV4(&accKey.PrivateKey.PublicKey, addr.IP, 0, addr.Port)
 	fmt.Println("address-nodeKey:", n.URLv4())
 }

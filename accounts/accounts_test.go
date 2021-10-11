@@ -302,20 +302,26 @@ func TestCheckValidteTest(*testing.T) {
 	}
 	fmt.Printf("flag[%T][%X]\n", c, c)
 }
+
+type ResolveUDPAddrTest struct {
+	network       string
+	litAddrOrName string
+	addr          *net.UDPAddr
+	err           error
+}
+
 func TestPrintDposNode(*testing.T) {
-	for i := 0; i < 2; i++ {
-		privateKey, _ := probe.GenerateKey()
-		fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(privateKey)))
-		address := probe.PubkeyToAddress(privateKey.PublicKey)
-		fmt.Println("address ", address.String())
-		port := 30301 + i
-		addr := &net.UDPAddr{
-			IP:   net.IP{127, 0, 0, 1},
-			Port: port,
-			Zone: "",
-		}
-		nodeKey, _ := probe.GenerateKey()
-		n := enode.NewV4(&nodeKey.PublicKey, addr.IP, 0, addr.Port)
-		fmt.Println("address-nodeKey:", n.URLv4())
-	}
+	//privateKey, _ := probe.GenerateKey()
+	privateKey, _ := probe.HexToECDSA("00bfed0787f3a2c033177bf18a89717a64b3a38eda85b20ce2c65b02b5ea75079a")
+	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(privateKey)))
+	address := probe.PubkeyToAddress(privateKey.PublicKey)
+	fmt.Println("address ", address.String())
+	netPort := 30302
+	tt := ResolveUDPAddrTest{"udp4", "[::]:30302", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: netPort}, nil}
+	addr, _ := net.ResolveUDPAddr(tt.network, tt.litAddrOrName)
+
+	fmt.Println("public key have 0x   \n", hexutil.Encode(probe.FromECDSAPub(&privateKey.PublicKey)))
+	n := enode.NewV4(&privateKey.PublicKey, addr.IP, netPort, addr.Port)
+	fmt.Println("address-nodeKey:", n.URLv4())
+
 }
