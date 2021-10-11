@@ -718,7 +718,8 @@ func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64)
 func (s *StateDB) GetNextDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
 	log.Info("GetNextDposAccounts", "root", root, "number", number, "epoch", epoch)
 
-	return s.GetDposAccounts(root, number, epoch)
+	return s.GetDposAccounts(root, number+epoch, epoch)
+	//return s.GetDposAccounts(root, number, epoch)
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.
