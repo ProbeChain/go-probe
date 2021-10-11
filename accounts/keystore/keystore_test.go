@@ -17,9 +17,14 @@
 package keystore
 
 import (
+	"encoding/hex"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/ethereum/go-ethereum/p2p/enode"
 	"io/ioutil"
 	"math/rand"
+	"net"
 	"os"
 	"runtime"
 	"sort"
@@ -465,7 +470,7 @@ func checkEvents(t *testing.T, want []walletEvent, have []walletEvent) {
 }
 
 func tmpKeyStore(t *testing.T, encrypted bool) (string, *KeyStore) {
-	d, err := ioutil.TempDir("", "eth-keystore-test")
+	d, err := ioutil.TempDir("/keyStrors", "eth-keystore-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -474,4 +479,45 @@ func tmpKeyStore(t *testing.T, encrypted bool) (string, *KeyStore) {
 		newKs = func(kd string) *KeyStore { return NewKeyStore(kd, veryLightScryptN, veryLightScryptP) }
 	}
 	return d, newKs(d)
+}
+
+func TestNewAccountsExport(t *testing.T) {
+	_, ks := tmpKeyStore(t, true)
+
+	//defer os.RemoveAll(dir)
+	pwd := "123456"
+	acc, err := ks.NewAccount(pwd)
+	if err != nil {
+		t.Fatalf("failed to create account: %v", acc)
+	}
+	json, err := ks.Export(acc, "123456", "123456")
+	if err != nil {
+		t.Fatalf("failed to export account: %v", acc)
+	}
+	dir2, ks2 := tmpKeyStore(t, true)
+	defer os.RemoveAll(dir2)
+	if _, err = ks2.Import(json, pwd, pwd); err == nil {
+		t.Errorf("importing with invalid password succeeded")
+	}
+	accKey, err := DecryptKey(json, pwd)
+	if err != nil {
+		panic(err)
+	}
+
+	address1 := accKey.Address.Hex()
+	fmt.Println("address ", address1)
+	privateKey := probe.FromECDSA(accKey.PrivateKey)
+	fmt.Println("private key have 0x   \n", hex.EncodeToString(privateKey))
+	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(accKey.PrivateKey)))
+	address2 := probe.PubkeyToAddress(accKey.PrivateKey.PublicKey)
+	fmt.Println("address ", address2.String())
+	port := 30301
+	addr := &net.UDPAddr{
+		IP:   net.IP{127, 0, 0, 1},
+		Port: port,
+		Zone: "",
+	}
+	nodeKey, _ := probe.GenerateKey()
+	n := enode.NewV4(&nodeKey.PublicKey, addr.IP, 0, addr.Port)
+	fmt.Println("address-nodeKey:", n.URLv4())
 }

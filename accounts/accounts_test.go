@@ -303,16 +303,19 @@ func TestCheckValidteTest(*testing.T) {
 	fmt.Printf("flag[%T][%X]\n", c, c)
 }
 func TestPrintDposNode(*testing.T) {
-	privateKey, _ := probe.GenerateKey()
-	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(privateKey)))
-	address := probe.PubkeyToAddress(privateKey.PublicKey)
-	fmt.Println("address ", address.String())
-	addr := &net.UDPAddr{
-		IP:   net.IP{127, 0, 0, 1},
-		Port: 30001,
-		Zone: "",
+	for i := 0; i < 2; i++ {
+		privateKey, _ := probe.GenerateKey()
+		fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(privateKey)))
+		address := probe.PubkeyToAddress(privateKey.PublicKey)
+		fmt.Println("address ", address.String())
+		port := 30301 + i
+		addr := &net.UDPAddr{
+			IP:   net.IP{127, 0, 0, 1},
+			Port: port,
+			Zone: "",
+		}
+		nodeKey, _ := probe.GenerateKey()
+		n := enode.NewV4(&nodeKey.PublicKey, addr.IP, 0, addr.Port)
+		fmt.Println("address-nodeKey:", n.URLv4())
 	}
-	nodeKey, _ := probe.GenerateKey()
-	n := enode.NewV4(&nodeKey.PublicKey, addr.IP, 0, addr.Port)
-	fmt.Println("address-nodeKey:", n.URLv4())
 }
