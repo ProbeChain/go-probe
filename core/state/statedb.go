@@ -1083,31 +1083,6 @@ func (s *StateDB) setMarkLossAccount(address common.Address) {
 	}
 }
 
-func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Address, jsonData []byte) {
-	stateObject := s.getStateObject(addr)
-	if nil != stateObject {
-		return
-	}
-	var dposMap map[string]interface{}
-	err := json.Unmarshal(jsonData, &dposMap)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	remoteIp := dposMap["ip"].(string)
-	remotePort := dposMap["port"].(string)
-	var enode bytes.Buffer
-	enode.WriteString("enode://")
-	enode.WriteString(ower.String()[2:])
-	enode.WriteString("@")
-	enode.WriteString(remoteIp)
-	enode.WriteString(":")
-	enode.WriteString(remotePort)
-	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
-	stateObject.dposCandidateAccount.Owner = ower
-	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
-}
-
 func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
 	stateObject := s.getStateObject(addr)
 	if nil != stateObject {
@@ -1912,23 +1887,6 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	stateObject.dposCandidateAccount.Owner = context.From
 	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
 }
-
-// DeleteStateObjectByAddr removes the given object from the state trie.
-/*func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
-state := s.stateObjects[addr]
-if state != nil {
-	state.deleted = true
-}
-
-// Track the amount of time wasted on deleting the account from the trie
-/*	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.AccountUpdates += time.Since(start) }(time.Now())
-	}
-	// Delete the account from the trie
-	if err := s.trie.TryDelete(addr[:]); err != nil {
-		s.setError(fmt.Errorf("deleteStateObject (%x) error: %v", addr[:], err))
-	}*/
-//}*/
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
 	accountType, err := common.ValidAddress(addr)

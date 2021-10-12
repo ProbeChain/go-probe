@@ -222,13 +222,12 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 	if args.Value == nil {
 		args.Value = new(hexutil.Big)
 	}
-	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
+		return err
 	}
-	if args.To == nil {
-		return errors.New("voteAccount Address is missing")
+	if err := common.ValidateNil(args.To, "vote account"); err != nil {
+		return err
 	}
-
 	var dposMap map[string]interface{}
 	voteData, err := hexutil.Decode(args.Data.String())
 	if err != nil {
@@ -259,18 +258,14 @@ func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Contex
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
 	if args.Value == nil {
-		return errors.New(" ”Value“ parameter value is missing")
+		args.Value = new(hexutil.Big)
 	}
-	if args.Data != nil && args.Input != nil && !bytes.Equal(*args.Data, *args.Input) {
-		return errors.New(`both "data" and "input" are set and not equal. Please use "input" to pass transaction call data`)
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
+		return err
 	}
-	if *args.BizType != 0x23 {
-		return errors.New("Illegal business request")
+	if err := common.ValidateNil(args.To, "vote account"); err != nil {
+		return err
 	}
-	if args.To == nil {
-		return errors.New("voteAccount Address is missing")
-	}
-
 	var dposMap map[string]interface{}
 	voteData, err := hexutil.Decode(args.Data.String())
 	if err != nil {

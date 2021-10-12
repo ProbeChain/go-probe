@@ -98,10 +98,9 @@ func (this SortedLinkedList) GetDpostList() []common.DPoSAccount {
 }
 
 func compareValue(old, new interface{}) bool {
-	if new.(DPoSCandidateAccount).DelegateValue.Cmp(old.(DPoSCandidateAccount).DelegateValue) == 0 {
+	cmpRet := new.(DPoSCandidateAccount).DelegateValue.Cmp(old.(DPoSCandidateAccount).DelegateValue)
+	if cmpRet == 0 {
 		return new.(DPoSCandidateAccount).Weight.Cmp(old.(DPoSCandidateAccount).Weight) > 0
-	} else {
-		return new.(DPoSCandidateAccount).DelegateValue.Cmp(old.(DPoSCandidateAccount).DelegateValue) > 0
 	}
-	return false
+	return cmpRet > 0
 }
