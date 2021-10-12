@@ -2784,7 +2784,7 @@ func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
 	accounts := bc.GetDposAccounts(num)
 	if accounts != nil {
 		size := uint64(len(accounts))
-		return accounts[number%bc.chainConfig.DposConfig.Epoch%size]
+		return accounts[num%bc.chainConfig.DposConfig.Epoch%size]
 	}
 	return nil
 }
