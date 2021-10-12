@@ -134,10 +134,10 @@ func CheckRegisterAccType(accType byte) bool {
 		return true
 	case ACC_TYPE_OF_PNS:
 		return true
-	case ACC_TYPE_OF_ASSET:
-		return true
-	case ACC_TYPE_OF_LOSE:
-		return true
+		/*	case ACC_TYPE_OF_ASSET:
+				return true
+			case ACC_TYPE_OF_LOSE:
+				return true*/
 	case ACC_TYPE_OF_AUTHORIZE:
 		return true
 	default:

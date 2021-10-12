@@ -992,10 +992,6 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 }
 
 func (s *StateDB) setStateObject(object *stateObject) {
-	/*if obj := s.stateObjects[object.Address()]; obj == nil {
-		fmt.Printf("添加账号信息setStateObject，addr:%s,balance:%s,nonce:%d,code:%s,codeHashEmpty:%t\n",
-			object.address.String(),object.Balance().String(),object.Nonce(),object.code.String(), bytes.Equal(object.CodeHash(), emptyCodeHash))
-	}*/
 	s.stateObjects[object.Address()] = object
 }
 
@@ -1626,7 +1622,7 @@ func (s *StateDB) ModifyLossType(context vm.TxContext) {
 	}
 }
 func (s *StateDB) Vote(context vm.TxContext) {
-	fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
+	//fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	fromObj := s.getStateObject(context.From)
 	if fromObj != nil {
@@ -1654,7 +1650,7 @@ func (s *StateDB) Vote(context vm.TxContext) {
 }
 
 func (s *StateDB) Register(context vm.TxContext) {
-	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
+	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	obj, _ := s.createObject(*context.New)
 	switch byte(*context.AccType) {
@@ -1679,14 +1675,13 @@ func (s *StateDB) Register(context vm.TxContext) {
 }
 
 func (s *StateDB) Cancellation(context vm.TxContext) {
-	fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
+	//fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
 	s.AddBalance(*context.New, context.Value)
-	//s.DeleteStateObjectByAddr(*context.To)
 	s.Suicide(*context.To)
 }
 
 func (s *StateDB) Transfer(context vm.TxContext) {
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
+	//fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	s.AddBalance(*context.To, context.Value)
 }
@@ -1696,7 +1691,7 @@ func (s *StateDB) ExchangeAsset(context vm.TxContext) {
 
 }
 func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
-	fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
+	//fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
 	s.SubBalance(context.From, context.Value)
 	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Mark))
 	if len(addrs) > 0 {
@@ -1759,13 +1754,11 @@ func (s *StateDB) TransferLostAssetAccount(context vm.TxContext) {
 
 func (s *StateDB) RemoveLossReport(context vm.TxContext) {
 	s.AddBalance(context.From, context.Value)
-	//s.DeleteStateObjectByAddr(*context.To)
 	s.Suicide(*context.To)
 }
 
 func (s *StateDB) RejectLossReport(context vm.TxContext) {
 	s.AddBalance(context.From, context.Value)
-	//s.DeleteStateObjectByAddr(*context.To)
 	s.Suicide(*context.To)
 }
 
