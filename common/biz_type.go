@@ -50,12 +50,12 @@ const (
 )
 
 const (
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR       uint64 = 2 //10000000000000000    //0.01 PRO
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS           uint64 = 2 //50000000000000000    //0.05 PRO
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET uint64 = 2 //100000000000000000   //0.1 PRO
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT      uint64 = 2 //100000000000000000   //0.1 PRO
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING        uint64 = 2 //10000000000000000000 //10 PRO
-	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT   uint64 = 2 //1000000000000000000  //1 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR       uint64 = 10000000000000000    //0.01 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS           uint64 = 50000000000000000    //0.05 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_DIGITAL_ASSET uint64 = 100000000000000000   //0.1 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT      uint64 = 100000000000000000   //0.1 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING        uint64 = 10000000000000000000 //10 PRO
+	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT   uint64 = 1000000000000000000  //1 PRO
 
 	MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT uint64 = 10 //最小挂失金额是原账户余额的百分比
 	CYCLE_HEIGHT_OF_LOSS_TYPE                          uint64 = 1  //1 loss cycle height: (5760/day)*30day*3month=518400 blocks
@@ -89,27 +89,27 @@ func CheckBizType(bizType uint8) bool {
 	case ContractCall:
 		contain = true
 	case ExchangeAsset:
-		contain = true
+		contain = false //The current version does not support
 	case Vote:
 		contain = true
 	case ApplyToBeDPoSNode:
 		contain = true
 	case UpdatingVotesOrData:
-		contain = true
+		contain = false //The current version does not support
 	case Redemption:
 		contain = true
 	case SendLossReport:
-		contain = true
+		contain = false //The current version does not support
 	case RevealLossReport:
-		contain = true
+		contain = false //The current version does not support
 	case TransferLostAccount:
-		contain = true
+		contain = false //The current version does not support
 	case TransferLostAssetAccount:
-		contain = true
+		contain = false //The current version does not support
 	case RemoveLossReport:
-		contain = true
+		contain = false //The current version does not support
 	case RejectLossReport:
-		contain = true
+		contain = false //The current version does not support
 	case ModifyLossType:
 		contain = true
 	case ModifyPnsOwner:
