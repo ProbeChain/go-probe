@@ -379,9 +379,8 @@ func (c *CliqueConfig) String() string {
 
 // GreatriConfig is the consensus engine configs for proof-of-authority based sealing.
 type GreatriConfig struct {
-	DposNodeNumber uint   `json:"period"` // Number of DPOS node
-	Period         uint64 `json:"period"` // Number of seconds between blocks to enforce
-	Epoch          uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
+	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
+	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
 }
 
 // String implements the stringer interface, returning the consensus engine details.
@@ -693,4 +692,9 @@ func (c *ChainConfig) Rules(num *big.Int) Rules {
 		IsLondon:         c.IsLondon(num),
 		IsCatalyst:       c.IsCatalyst(num),
 	}
+}
+
+// DposConfigEpoch dpos config epoch
+func (c *ChainConfig) DposConfigEpoch() uint64 {
+	return c.DposConfig.Epoch
 }
