@@ -1091,11 +1091,12 @@ func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Ad
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	remoteEnode := dposMap["enode"].(string)
 	remoteIp := dposMap["ip"].(string)
 	remotePort := dposMap["port"].(string)
 	var enode bytes.Buffer
 	enode.WriteString("enode://")
-	enode.WriteString(ower.String()[2:])
+	enode.WriteString(remoteEnode)
 	enode.WriteString("@")
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")
@@ -1116,11 +1117,12 @@ func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, js
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+	remoteEnode := dposMap["enode"].(string)
 	remoteIp := dposMap["ip"].(string)
 	remotePort := dposMap["port"].(string)
 	var enode bytes.Buffer
 	enode.WriteString("enode://")
-	enode.WriteString(ower.String()[2:])
+	enode.WriteString(remoteEnode)
 	enode.WriteString("@")
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")
@@ -1907,6 +1909,7 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	enode.WriteString(remotePort)
 	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = context.From
+	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
 	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
 }
 
