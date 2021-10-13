@@ -524,10 +524,10 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	// by the error checking condition below.
 	if err == nil {
 		createDataGas := uint64(len(ret)) * params.CreateDataGas
-		fmt.Printf("create gas: %d, dataGas:%d\n", contract.Gas, createDataGas)
 		if contract.UseGas(createDataGas) {
 			evm.StateDB.SetCode(address, ret)
 		} else {
+			fmt.Printf("create gas: %d, dataGas:%d\n", contract.Gas, createDataGas)
 			err = ErrCodeStoreOutOfGas
 		}
 	}

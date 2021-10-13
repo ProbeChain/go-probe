@@ -230,7 +230,7 @@ func newBinary(root common.Hash, db *Database, bt *BinaryTree) (*Trie, error) {
 			return nil, err
 		}
 	} else {
-		log.Info("newBinary", "root", root.String(), "curRoot", curRoot.String())
+		//log.Info("newBinary", "root", root.String(), "curRoot", curRoot.String())
 		trie.root = trie.bt.binaryHashNodes[0]
 	}
 

@@ -79,6 +79,7 @@ func (tx *DynamicFeeTx) copy() TxData {
 		LossType:   tx.LossType,
 		PnsType:    tx.PnsType,
 		New:        tx.New,
+		Old:        tx.Old,
 		Loss:       tx.Loss,
 		Receiver:   tx.Receiver,
 		Mark:       common.CopyBytes(tx.Mark),

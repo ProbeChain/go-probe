@@ -87,6 +87,9 @@ const (
 
 	// staleThreshold is the maximum depth of the acceptable stale block.
 	staleThreshold = 7
+
+	// min diffcult
+	minDifficulty = 5000000
 )
 
 // environment is the worker's current environment and holds all of the current state information.
@@ -1030,7 +1033,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 	}
 	header.Nonce = types.BlockNonce{}
 	header.MixDigest = common.Hash{}
-	header.Difficulty = big.NewInt(1)
+	header.Difficulty = calcDifficulty(uint64(timestamp), parent.Header())
 	header.Coinbase = common.Address{}
 	header.DposSigAddr = common.Address{}
 
@@ -1141,4 +1144,37 @@ func totalFees(block *types.Block, receipts []*types.Receipt) *big.Float {
 		feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
 	}
 	return new(big.Float).Quo(new(big.Float).SetInt(feesWei), new(big.Float).SetInt(big.NewInt(params.Ether)))
+}
+
+// calcDifficulty
+func calcDifficulty(time uint64, parent *types.Header) *big.Int {
+	bigTime := new(big.Int).SetUint64(time)
+	bigParentTime := new(big.Int).SetUint64(parent.Time)
+
+	// holds intermediate values to make the algo easier to read & audit
+	x := new(big.Int)
+	y := new(big.Int)
+
+	// (2 if len(parent_uncles) else 1) - (block_timestamp - parent_timestamp) // 10
+	x.Sub(bigTime, bigParentTime)
+	x.Div(x, big.NewInt(10))
+	if parent.UncleHash == types.EmptyUncleHash {
+		x.Sub(big.NewInt(1), x)
+	} else {
+		x.Sub(big.NewInt(2), x)
+	}
+	// max((2 if len(parent_uncles) else 1) - (block_timestamp - parent_timestamp) // 10, -10)
+	if x.Cmp(big.NewInt(-10)) < 0 {
+		x.Set(big.NewInt(-10))
+	}
+	// parent_diff + (parent_diff / 1024 * max((2 if len(parent.uncles) else 1) - ((timestamp - parent.timestamp) ÷ 10), -10))
+	y.Div(parent.Difficulty, big.NewInt(1024))
+	x.Mul(y, x)
+	x.Add(parent.Difficulty, x)
+
+	// minimum difficulty can ever be (before exponential factor)
+	if x.Cmp(big.NewInt(minDifficulty)) < 0 {
+		x.Set(big.NewInt(minDifficulty))
+	}
+	return x
 }

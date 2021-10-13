@@ -498,9 +498,8 @@ func (pool *TxPool) validateGas(tx *types.Transaction, local bool) error {
 	// cost == V + GP * GL
 	balacne := pool.currentState.GetBalance(*tx.From())
 	cost := tx.Cost()
-	fmt.Printf("from:%s, 余额：%s,cost: %d\n", tx.From().String(), balacne.String(), cost.Int64())
 	if balacne.Cmp(cost) < 0 {
-		fmt.Println("余额不足，无法支付GAS")
+		fmt.Printf("余额不足，无法支付GAS. from:%s, 余额：%s,cost: %d\n", tx.From().String(), balacne.String(), cost.Int64())
 		return ErrInsufficientFunds
 	}
 	// Ensure the transaction has more gas than the basic tx fee.

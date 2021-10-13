@@ -328,7 +328,6 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: al,
-			Mark:       args.mark(),
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -342,7 +341,6 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: *args.AccessList,
-			Mark:       args.mark(),
 		}
 	default:
 		data = &types.LegacyTx{
@@ -354,7 +352,6 @@ func (args *TransactionArgs) transactionOfApplyToBeDPoSNode() *types.Transaction
 			GasPrice: (*big.Int)(args.GasPrice),
 			Value:    (*big.Int)(args.Value),
 			Data:     args.data(),
-			Mark:     args.mark(),
 		}
 	}
 	return types.NewTx(data)
@@ -380,7 +377,6 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: al,
-			Mark:       args.mark(),
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -394,7 +390,6 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 			Value:      (*big.Int)(args.Value),
 			Data:       args.data(),
 			AccessList: *args.AccessList,
-			Mark:       args.mark(),
 		}
 	default:
 		data = &types.LegacyTx{
@@ -406,7 +401,6 @@ func (args *TransactionArgs) transactionOfUpdatingVotesOrData() *types.Transacti
 			GasPrice: (*big.Int)(args.GasPrice),
 			Value:    (*big.Int)(args.Value),
 			Data:     args.data(),
-			Mark:     args.mark(),
 		}
 	}
 	return types.NewTx(data)

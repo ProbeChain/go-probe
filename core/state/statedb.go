@@ -714,7 +714,7 @@ func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64)
 	return data
 }
 
-// GetNextDposAccounts retrieves a dpos list todo 待优化  最新的无法判断
+// GetNextDposAccounts retrieves a dpos list todo
 func (s *StateDB) GetNextDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
 	log.Info("GetNextDposAccounts", "root", root, "number", number, "epoch", epoch)
 
@@ -861,15 +861,6 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 			newAccount:  obj.lossAccount.NewAccount,
 			height:      obj.lossAccount.Height,
 			infoDigest:  obj.lossAccount.InfoDigest,
-		})
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		s.journal.append(dPoSCandidateSuicideChange{
-			account:       &addr,
-			suicide:       obj.suicided,
-			enode:         obj.dposCandidateAccount.Enode,
-			owner:         obj.dposCandidateAccount.Owner,
-			weight:        obj.dposCandidateAccount.Weight,
-			delegateValue: obj.dposCandidateAccount.DelegateValue,
 		})
 	default:
 	}
@@ -1064,9 +1055,10 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 }
 
 func (s *StateDB) setMarkLossAccount(address common.Address) {
-	var arr = s.markLossAccounts[address.Last12BytesToHash()]
+	var last12BytesToHash = address.Last12BytesToHash()
+	var arr = s.markLossAccounts[last12BytesToHash]
 	if len(arr) == 0 {
-		s.markLossAccounts[address.Last12BytesToHash()] = []common.Address{address}
+		s.markLossAccounts[last12BytesToHash] = []common.Address{address}
 	} else {
 		var exists bool
 		for _, addr := range arr {
@@ -1079,32 +1071,6 @@ func (s *StateDB) setMarkLossAccount(address common.Address) {
 			s.markLossAccounts[address.Last12BytesToHash()] = append(arr, address)
 		}
 	}
-}
-
-func (s *StateDB) CreateDPoSCandidateAccount(ower common.Address, addr common.Address, jsonData []byte) {
-	stateObject := s.getStateObject(addr)
-	if nil != stateObject {
-		return
-	}
-	var dposMap map[string]interface{}
-	err := json.Unmarshal(jsonData, &dposMap)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	remoteEnode := dposMap["enode"].(string)
-	remoteIp := dposMap["ip"].(string)
-	remotePort := dposMap["port"].(string)
-	var enode bytes.Buffer
-	enode.WriteString("enode://")
-	enode.WriteString(remoteEnode)
-	enode.WriteString("@")
-	enode.WriteString(remoteIp)
-	enode.WriteString(":")
-	enode.WriteString(remotePort)
-	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
-	stateObject.dposCandidateAccount.Owner = ower
-	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
 }
 
 func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
@@ -1215,6 +1181,7 @@ func (s *StateDB) Copy() *StateDB {
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
+		markLossAccounts:    make(map[common.Hash][]common.Address, len(s.markLossAccounts)),
 		refund:              s.refund,
 		logs:                make(map[common.Hash][]*types.Log, len(s.logs)),
 		logSize:             s.logSize,
@@ -1659,7 +1626,7 @@ func (s *StateDB) ModifyLossType(context vm.TxContext) {
 	}
 }
 func (s *StateDB) Vote(context vm.TxContext) {
-	fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
+	//fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	fromObj := s.getStateObject(context.From)
 	if fromObj != nil {
@@ -1687,14 +1654,14 @@ func (s *StateDB) Vote(context vm.TxContext) {
 }
 
 func (s *StateDB) Register(context vm.TxContext) {
-	fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
+	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	obj, _ := s.createObject(*context.New)
 	switch byte(*context.AccType) {
 	case common.ACC_TYPE_OF_PNS:
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
-		obj.pnsAccount.Type = byte(0)
+		obj.pnsAccount.Type = byte(*context.PnsType)
 	case common.ACC_TYPE_OF_ASSET:
 	//case common.ACC_TYPE_OF_CONTRACT:
 	case common.ACC_TYPE_OF_AUTHORIZE:
@@ -1708,21 +1675,17 @@ func (s *StateDB) Register(context vm.TxContext) {
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
 		s.setMarkLossAccount(*context.New)
-	case common.ACC_TYPE_OF_DPOS:
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	}
-
 }
 
 func (s *StateDB) Cancellation(context vm.TxContext) {
-	fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
+	//fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
 	s.AddBalance(*context.New, context.Value)
-	//s.DeleteStateObjectByAddr(*context.To)
 	s.Suicide(*context.To)
 }
 
 func (s *StateDB) Transfer(context vm.TxContext) {
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
+	//fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	s.AddBalance(*context.To, context.Value)
 }
@@ -1732,7 +1695,7 @@ func (s *StateDB) ExchangeAsset(context vm.TxContext) {
 
 }
 func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
-	fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
+	//fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
 	s.SubBalance(context.From, context.Value)
 	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Mark))
 	if len(addrs) > 0 {
@@ -1795,13 +1758,11 @@ func (s *StateDB) TransferLostAssetAccount(context vm.TxContext) {
 
 func (s *StateDB) RemoveLossReport(context vm.TxContext) {
 	s.AddBalance(context.From, context.Value)
-	//s.DeleteStateObjectByAddr(*context.To)
 	s.Suicide(*context.To)
 }
 
 func (s *StateDB) RejectLossReport(context vm.TxContext) {
 	s.AddBalance(context.From, context.Value)
-	//s.DeleteStateObjectByAddr(*context.To)
 	s.Suicide(*context.To)
 }
 
@@ -1913,23 +1874,6 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
 }
 
-// DeleteStateObjectByAddr removes the given object from the state trie.
-/*func (s *StateDB) DeleteStateObjectByAddr(addr common.Address) {
-state := s.stateObjects[addr]
-if state != nil {
-	state.deleted = true
-}
-
-// Track the amount of time wasted on deleting the account from the trie
-/*	if metrics.EnabledExpensive {
-		defer func(start time.Time) { s.AccountUpdates += time.Since(start) }(time.Now())
-	}
-	// Delete the account from the trie
-	if err := s.trie.TryDelete(addr[:]); err != nil {
-		s.setError(fmt.Errorf("deleteStateObject (%x) error: %v", addr[:], err))
-	}*/
-//}*/
-
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
 	accountType, err := common.ValidAddress(addr)
 	if err != nil {
@@ -1982,10 +1926,6 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newLossAccount(s, addr, *data), false
-	case common.ACC_TYPE_OF_DPOS:
-		return nil, true
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return nil, true
 	default:
 		return nil, true
 	}
@@ -2006,10 +1946,6 @@ func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 		return &s.trie.authorizeTrie
 	case common.ACC_TYPE_OF_LOSE:
 		return &s.trie.lossTrie
-	case common.ACC_TYPE_OF_DPOS:
-		return nil
-	case common.ACC_TYPE_OF_DPOS_CANDIDATE:
-		return nil
 	default:
 		return nil
 	}

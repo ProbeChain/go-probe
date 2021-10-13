@@ -29,10 +29,6 @@ func ValidateAccType(address *Address, targetAccType byte, msg string) error {
 			suffix = " account must be authorize type"
 		case ACC_TYPE_OF_LOSE:
 			suffix = " account must be lose type"
-		case ACC_TYPE_OF_DPOS:
-			suffix = " account must be DPos type"
-		case ACC_TYPE_OF_DPOS_CANDIDATE:
-			suffix = " account must be DPos candidate type"
 		}
 		return errors.New(msg + suffix)
 	}
