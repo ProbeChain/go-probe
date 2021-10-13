@@ -57,9 +57,6 @@ const (
 	// powAnswerChanSize is the size of channel listening to PowAnswerEvent.
 	powAnswerChanSize = 10
 
-	// dposAckChanSize is the size of channel listening to DposAckEvent.
-	dposAckChanSize = consensus.DposWitnessNumber * 10
-
 	// resubmitAdjustChanSize is the size of resubmitting interval adjustment channel.
 	resubmitAdjustChanSize = 10
 
@@ -87,6 +84,20 @@ const (
 
 	// staleThreshold is the maximum depth of the acceptable stale block.
 	staleThreshold = 7
+)
+
+var (
+	// DposWitnessNumber is the total number of dpos witness nodes.
+	//@todo just for oneNode test
+	DposWitnessNumber uint = 5
+	//DposWitnessNumber = 64
+	// number of witness to product stabilizing block
+	MostDposWitness uint = DposWitnessNumber*2/3 + 1
+	// the least number of witness to product block
+	LeastDposWitness uint = DposWitnessNumber*1/3 + 1
+
+	// dposAckChanSize is the size of channel listening to DposAckEvent.
+	dposAckChanSize uint = DposWitnessNumber * 10
 )
 
 // environment is the worker's current environment and holds all of the current state information.
@@ -215,6 +226,13 @@ type worker struct {
 
 func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, powEngine consensus.Engine, eth Backend, mux *event.TypeMux,
 	isLocalBlock func(*types.Block) bool, init bool) *worker {
+	if 0 < chainConfig.Greatri.DposNodeNumber {
+		DposWitnessNumber = chainConfig.Greatri.DposNodeNumber
+		MostDposWitness = DposWitnessNumber*2/3 + 1
+		LeastDposWitness = DposWitnessNumber*1/3 + 1
+		dposAckChanSize = DposWitnessNumber * 10
+	}
+
 	worker := &worker{
 		config:             config,
 		chainConfig:        chainConfig,
@@ -477,7 +495,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			if w.imProducer(blockNumber.Uint64() + 1) {
 				dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
 				if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
-					dposAgreeAckNum >= consensus.MostDposWitness {
+					dposAgreeAckNum >= int(MostDposWitness) {
 					//received powAnswer and received 2/3 witness node ack
 					if commit(false, commitInterruptNewHead, blockNumber) {
 						log.Info("received new base block, is my turn to produce new block", "addr", w.coinbase,
@@ -541,7 +559,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				//is the producer
 				dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
 				if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
-					dposAgreeAckNum >= consensus.MostDposWitness {
+					dposAgreeAckNum >= int(MostDposWitness) {
 					//received powAnswer and received 2/3 witness node ack
 					timerDelaySeal.Stop()
 					if commit(false, commitInterruptNewHead, blockNumber) {
@@ -564,7 +582,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 
 			if w.imProducer(newBlockNumber) {
 				//is the producer
-				if w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree) >= consensus.MostDposWitness {
+				if w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree) >= int(MostDposWitness) {
 					//received 2/3 witness node ack
 					timerDelaySeal.Stop()
 					if commit(false, commitInterruptNewHead, blockNumber) {
@@ -586,7 +604,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		case <-timerDelaySeal.C:
 			blockNumber := w.chain.CurrentBlock().Number()
 			dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
-			if dposAgreeAckNum >= consensus.LeastDposWitness {
+			if dposAgreeAckNum >= int(LeastDposWitness) {
 				//received 1/3 witness node ack
 				if commit(false, commitInterruptNewHead, blockNumber) {
 					log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block", "addr", w.coinbase, "dposAckNum", dposAgreeAckNum,

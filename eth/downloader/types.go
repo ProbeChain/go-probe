@@ -18,6 +18,7 @@ package downloader
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -53,12 +54,13 @@ type bodyPack struct {
 
 func (p *bodyPack) PeerId() string { return p.peerID }
 func (p *bodyPack) Items() int {
-	if len(p.transactions) <= len(p.uncles) {
-		return len(p.transactions)
-	}
-	return len(p.uncles)
+	allLens := []int{len(p.transactions), len(p.uncles), len(p.powAnswerUncles), len(p.dposAcks)}
+	sort.Ints(allLens)
+	return allLens[len(allLens)-1]
 }
-func (p *bodyPack) Stats() string { return fmt.Sprintf("%d:%d", len(p.transactions), len(p.uncles)) }
+func (p *bodyPack) Stats() string {
+	return fmt.Sprintf("%d:%d:%d:%d", len(p.transactions), len(p.uncles), len(p.powAnswerUncles), len(p.dposAcks))
+}
 
 // receiptPack is a batch of receipts returned by a peer.
 type receiptPack struct {
