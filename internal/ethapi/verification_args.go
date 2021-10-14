@@ -233,6 +233,7 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 	if err != nil {
 		return errors.New("The format of the address data parameter is incorrect,data begin with 0x, eg: 0x7b226970223a223139322e3136382e302e31222c22706f7274223a2231333037227d")
 	}
+
 	err = json.Unmarshal(voteData, &dposMap)
 	if err != nil {
 		return errors.New("The format of the address data parameter is incorrect,data begin with 0x")
@@ -241,9 +242,9 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 		return errors.New("voteAccount parameter data error ")
 	}
 	remoteEnode := dposMap["enode"].(string)
-	log.Info("verification_args", "setDefaultsOfApplyToBeDPoSNode remoteEnode lengt error ", len(remoteEnode))
-	if len(remoteEnode) != 65 {
-		return errors.New("voteAccount parameter data error ")
+	log.Info("verification_args", "setDefaultsOfApplyToBeDPoSNode remoteEnode length error ", len(remoteEnode))
+	if len(remoteEnode) != 130 {
+		return errors.New("the length of voteAccount's enode length error")
 	}
 
 	return args.DoEstimateGas(ctx, b)
