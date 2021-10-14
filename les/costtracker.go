@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package les
 
@@ -23,12 +23,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/les/flowcontrol"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/les/flowcontrol"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
 )
 
 const makeCostStats = false // make request cost statistics during operation
@@ -115,7 +115,7 @@ const (
 // changes in the cost factor can be applied immediately without always notifying
 // the clients about the changed cost tables.
 type costTracker struct {
-	db     ethdb.Database
+	db     probedb.Database
 	stopCh chan chan struct{}
 
 	inSizeFactor  float64
@@ -137,7 +137,7 @@ type costTracker struct {
 
 // newCostTracker creates a cost tracker and loads the cost factor statistics from the database.
 // It also returns the minimum capacity that can be assigned to any peer.
-func newCostTracker(db ethdb.Database, config *ethconfig.Config) (*costTracker, uint64) {
+func newCostTracker(db probedb.Database, config *probeconfig.Config) (*costTracker, uint64) {
 	utilTarget := float64(config.LightServ) * flowcontrol.FixedPointMultiplier / 100
 	ct := &costTracker{
 		db:         db,

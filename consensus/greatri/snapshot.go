@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package greatri
 
@@ -22,11 +22,11 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -36,13 +36,13 @@ type Vote struct {
 	Signer    common.Address `json:"signer"`    // Authorized signer that cast this vote
 	Block     uint64         `json:"block"`     // Block number the vote was cast in (expire old votes)
 	Address   common.Address `json:"address"`   // Account being voted on to change its authorization
-	Authorize bool           `json:"authorize"` // Whether to authorize or deauthorize the voted account
+	Authorize bool           `json:"authorize"` // Whprobeer to authorize or deauthorize the voted account
 }
 
 // Tally is a simple vote tally to keep the current score of votes. Votes that
 // go against the proposal aren't counted since it's equivalent to not voting.
 type Tally struct {
-	Authorize bool `json:"authorize"` // Whether the vote is about authorizing or kicking someone
+	Authorize bool `json:"authorize"` // Whprobeer the vote is about authorizing or kicking someone
 	Votes     int  `json:"votes"`     // Number of votes until now wanting to pass the proposal
 }
 
@@ -86,7 +86,7 @@ func newSnapshot(config *params.GreatriConfig, sigcache *lru.ARCCache, number ui
 }
 
 // loadSnapshot loads an existing snapshot from the database.
-func loadSnapshot(config *params.GreatriConfig, sigcache *lru.ARCCache, db ethdb.Database, hash common.Hash) (*Snapshot, error) {
+func loadSnapshot(config *params.GreatriConfig, sigcache *lru.ARCCache, db probedb.Database, hash common.Hash) (*Snapshot, error) {
 	blob, err := db.Get(append([]byte("greatri-"), hash[:]...))
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func loadSnapshot(config *params.GreatriConfig, sigcache *lru.ARCCache, db ethdb
 }
 
 // store inserts the snapshot into the database.
-func (s *Snapshot) store(db ethdb.Database) error {
+func (s *Snapshot) store(db probedb.Database) error {
 	blob, err := json.Marshal(s)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (s *Snapshot) copy() *Snapshot {
 	return cpy
 }
 
-// validVote returns whether it makes sense to cast the specified vote in the
+// validVote returns whprobeer it makes sense to cast the specified vote in the
 // given snapshot context (e.g. don't try to add an already authorized signer).
 func (s *Snapshot) validVote(address common.Address, authorize bool) bool {
 	_, signer := s.Signers[address]

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -24,15 +24,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/prque"
+	"github.com/probeum/go-probeum/consensus/misc"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/params"
 )
 
 const (
@@ -48,7 +48,7 @@ const (
 	// txMaxSize is the maximum size a single transaction can have. This field has
 	// non-trivial consequences: larger transactions are significantly harder and
 	// more expensive to propagate; larger transactions also take more resources
-	// to validate whether they fit into the pool or not.
+	// to validate whprobeer they fit into the pool or not.
 	txMaxSize = 4 * txSlotSize // 128KB
 )
 
@@ -151,7 +151,7 @@ type blockChain interface {
 // TxPoolConfig are the configuration parameters of the transaction pool.
 type TxPoolConfig struct {
 	Locals    []common.Address // Addresses that should be treated by default as local
-	NoLocals  bool             // Whether local transaction handling should be disabled
+	NoLocals  bool             // Whprobeer local transaction handling should be disabled
 	Journal   string           // Journal of local transactions to survive node restarts
 	Rejournal time.Duration    // Time interval to regenerate the local transaction journal
 
@@ -239,9 +239,9 @@ type TxPool struct {
 	signer      types.Signer
 	mu          sync.RWMutex
 
-	istanbul bool // Fork indicator whether we are in the istanbul stage.
-	eip2718  bool // Fork indicator whether we are using EIP-2718 type transactions.
-	eip1559  bool // Fork indicator whether we are using EIP-1559 type transactions.
+	istanbul bool // Fork indicator whprobeer we are in the istanbul stage.
+	eip2718  bool // Fork indicator whprobeer we are using EIP-2718 type transactions.
+	eip1559  bool // Fork indicator whprobeer we are using EIP-1559 type transactions.
 
 	currentState  *state.StateDB // Current state in the blockchain head
 	pendingNonces *txNoncer      // Pending state tracking virtual nonces
@@ -557,7 +557,7 @@ func (pool *TxPool) local() map[common.Address]types.Transactions {
 	return txs
 }
 
-// validateTx checks whether a transaction is valid according to the consensus
+// validateTx checks whprobeer a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	bizType := tx.BizType()
@@ -760,7 +760,7 @@ func (pool *TxPool) journalTx(from common.Address, tx *types.Transaction) {
 }
 
 // promoteTx adds a transaction to the pending (processable) list of transactions
-// and returns whether it was inserted or an older was better.
+// and returns whprobeer it was inserted or an older was better.
 //
 // Note, this method assumes the pool lock is held!
 func (pool *TxPool) promoteTx(addr common.Address, hash common.Hash, tx *types.Transaction) bool {
@@ -935,7 +935,7 @@ func (pool *TxPool) Get(hash common.Hash) *types.Transaction {
 	return pool.all.Get(hash)
 }
 
-// Has returns an indicator whether txpool has a transaction cached with the
+// Has returns an indicator whprobeer txpool has a transaction cached with the
 // given hash.
 func (pool *TxPool) Has(hash common.Hash) bool {
 	return pool.all.Get(hash) != nil
@@ -1626,7 +1626,7 @@ func newTxLookup() *txLookup {
 }
 
 // Range calls f on each key and value present in the map. The callback passed
-// should return the indicator whether the iteration needs to be continued.
+// should return the indicator whprobeer the iteration needs to be continued.
 // Callers need to specify which set (or both) to be iterated.
 func (t *txLookup) Range(f func(hash common.Hash, tx *types.Transaction, local bool) bool, local bool, remote bool) {
 	t.lock.RLock()

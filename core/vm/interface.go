@@ -1,26 +1,26 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/types"
 )
 
 // StateDB is an EVM database for full state querying.
@@ -50,10 +50,10 @@ type StateDB interface {
 	Suicide(common.Address) bool
 	HasSuicided(common.Address) bool
 
-	// Exist reports whether the given account exists in state.
+	// Exist reports whprobeer the given account exists in state.
 	// Notably this should also return true for suicided accounts.
 	Exist(common.Address) bool
-	// Empty returns whether the given account is empty. Empty
+	// Empty returns whprobeer the given account is empty. Empty
 	// is defined according to EIP161 (balance = nonce = code = 0).
 	Empty(common.Address) bool
 

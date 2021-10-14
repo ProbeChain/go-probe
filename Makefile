@@ -2,20 +2,20 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: geth android ios geth-cross evm all test clean
-.PHONY: geth-linux geth-linux-386 geth-linux-amd64 geth-linux-mips64 geth-linux-mips64le
-.PHONY: geth-linux-arm geth-linux-arm-5 geth-linux-arm-6 geth-linux-arm-7 geth-linux-arm64
-.PHONY: geth-darwin geth-darwin-386 geth-darwin-amd64
-.PHONY: geth-windows geth-windows-386 geth-windows-amd64
+.PHONY: gprobe android ios gprobe-cross evm all test clean
+.PHONY: gprobe-linux gprobe-linux-386 gprobe-linux-amd64 gprobe-linux-mips64 gprobe-linux-mips64le
+.PHONY: gprobe-linux-arm gprobe-linux-arm-5 gprobe-linux-arm-6 gprobe-linux-arm-7 gprobe-linux-arm64
+.PHONY: gprobe-darwin gprobe-darwin-386 gprobe-darwin-amd64
+.PHONY: gprobe-windows gprobe-windows-386 gprobe-windows-amd64
 
 GOBIN = ./build/bin
 GO ?= latest
 GORUN = env GO111MODULE=on go run
 
-geth:
-	$(GORUN) build/ci.go install ./cmd/geth
+gprobe:
+	$(GORUN) build/ci.go install ./cmd/gprobe
 	@echo "Done building."
-	@echo "Run \"$(GOBIN)/geth\" to launch geth."
+	@echo "Run \"$(GOBIN)/gprobe\" to launch gprobe."
 
 all:
 	$(GORUN) build/ci.go install
@@ -23,14 +23,14 @@ all:
 android:
 	$(GORUN) build/ci.go aar --local
 	@echo "Done building."
-	@echo "Import \"$(GOBIN)/geth.aar\" to use the library."
-	@echo "Import \"$(GOBIN)/geth-sources.jar\" to add javadocs"
+	@echo "Import \"$(GOBIN)/gprobe.aar\" to use the library."
+	@echo "Import \"$(GOBIN)/gprobe-sources.jar\" to add javadocs"
 	@echo "For more info see https://stackoverflow.com/questions/20994336/android-studio-how-to-attach-javadoc"
 
 ios:
 	$(GORUN) build/ci.go xcode --local
 	@echo "Done building."
-	@echo "Import \"$(GOBIN)/Geth.framework\" to use the library."
+	@echo "Import \"$(GOBIN)/Gprobe.framework\" to use the library."
 
 test: all
 	$(GORUN) build/ci.go test
@@ -56,92 +56,92 @@ devtools:
 
 # Cross Compilation Targets (xgo)
 
-geth-cross: geth-linux geth-darwin geth-windows geth-android geth-ios
+gprobe-cross: gprobe-linux gprobe-darwin gprobe-windows gprobe-android gprobe-ios
 	@echo "Full cross compilation done:"
-	@ls -ld $(GOBIN)/geth-*
+	@ls -ld $(GOBIN)/gprobe-*
 
-geth-linux: geth-linux-386 geth-linux-amd64 geth-linux-arm geth-linux-mips64 geth-linux-mips64le
+gprobe-linux: gprobe-linux-386 gprobe-linux-amd64 gprobe-linux-arm gprobe-linux-mips64 gprobe-linux-mips64le
 	@echo "Linux cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-*
+	@ls -ld $(GOBIN)/gprobe-linux-*
 
-geth-linux-386:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/386 -v ./cmd/geth
+gprobe-linux-386:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/386 -v ./cmd/gprobe
 	@echo "Linux 386 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep 386
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep 386
 
-geth-linux-amd64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/amd64 -v ./cmd/geth
+gprobe-linux-amd64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/amd64 -v ./cmd/gprobe
 	@echo "Linux amd64 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep amd64
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep amd64
 
-geth-linux-arm: geth-linux-arm-5 geth-linux-arm-6 geth-linux-arm-7 geth-linux-arm64
+gprobe-linux-arm: gprobe-linux-arm-5 gprobe-linux-arm-6 gprobe-linux-arm-7 gprobe-linux-arm64
 	@echo "Linux ARM cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep arm
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep arm
 
-geth-linux-arm-5:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-5 -v ./cmd/geth
+gprobe-linux-arm-5:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-5 -v ./cmd/gprobe
 	@echo "Linux ARMv5 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep arm-5
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep arm-5
 
-geth-linux-arm-6:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-6 -v ./cmd/geth
+gprobe-linux-arm-6:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-6 -v ./cmd/gprobe
 	@echo "Linux ARMv6 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep arm-6
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep arm-6
 
-geth-linux-arm-7:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-7 -v ./cmd/geth
+gprobe-linux-arm-7:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm-7 -v ./cmd/gprobe
 	@echo "Linux ARMv7 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep arm-7
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep arm-7
 
-geth-linux-arm64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm64 -v ./cmd/geth
+gprobe-linux-arm64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/arm64 -v ./cmd/gprobe
 	@echo "Linux ARM64 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep arm64
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep arm64
 
-geth-linux-mips:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips --ldflags '-extldflags "-static"' -v ./cmd/geth
+gprobe-linux-mips:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips --ldflags '-extldflags "-static"' -v ./cmd/gprobe
 	@echo "Linux MIPS cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep mips
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep mips
 
-geth-linux-mipsle:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mipsle --ldflags '-extldflags "-static"' -v ./cmd/geth
+gprobe-linux-mipsle:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mipsle --ldflags '-extldflags "-static"' -v ./cmd/gprobe
 	@echo "Linux MIPSle cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep mipsle
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep mipsle
 
-geth-linux-mips64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64 --ldflags '-extldflags "-static"' -v ./cmd/geth
+gprobe-linux-mips64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64 --ldflags '-extldflags "-static"' -v ./cmd/gprobe
 	@echo "Linux MIPS64 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep mips64
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep mips64
 
-geth-linux-mips64le:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64le --ldflags '-extldflags "-static"' -v ./cmd/geth
+gprobe-linux-mips64le:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=linux/mips64le --ldflags '-extldflags "-static"' -v ./cmd/gprobe
 	@echo "Linux MIPS64le cross compilation done:"
-	@ls -ld $(GOBIN)/geth-linux-* | grep mips64le
+	@ls -ld $(GOBIN)/gprobe-linux-* | grep mips64le
 
-geth-darwin: geth-darwin-386 geth-darwin-amd64
+gprobe-darwin: gprobe-darwin-386 gprobe-darwin-amd64
 	@echo "Darwin cross compilation done:"
-	@ls -ld $(GOBIN)/geth-darwin-*
+	@ls -ld $(GOBIN)/gprobe-darwin-*
 
-geth-darwin-386:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/386 -v ./cmd/geth
+gprobe-darwin-386:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/386 -v ./cmd/gprobe
 	@echo "Darwin 386 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-darwin-* | grep 386
+	@ls -ld $(GOBIN)/gprobe-darwin-* | grep 386
 
-geth-darwin-amd64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/amd64 -v ./cmd/geth
+gprobe-darwin-amd64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=darwin/amd64 -v ./cmd/gprobe
 	@echo "Darwin amd64 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-darwin-* | grep amd64
+	@ls -ld $(GOBIN)/gprobe-darwin-* | grep amd64
 
-geth-windows: geth-windows-386 geth-windows-amd64
+gprobe-windows: gprobe-windows-386 gprobe-windows-amd64
 	@echo "Windows cross compilation done:"
-	@ls -ld $(GOBIN)/geth-windows-*
+	@ls -ld $(GOBIN)/gprobe-windows-*
 
-geth-windows-386:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/386 -v ./cmd/geth
+gprobe-windows-386:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/386 -v ./cmd/gprobe
 	@echo "Windows 386 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-windows-* | grep 386
+	@ls -ld $(GOBIN)/gprobe-windows-* | grep 386
 
-geth-windows-amd64:
-	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/amd64 -v ./cmd/geth
+gprobe-windows-amd64:
+	$(GORUN) build/ci.go xgo -- --go=$(GO) --targets=windows/amd64 -v ./cmd/gprobe
 	@echo "Windows amd64 cross compilation done:"
-	@ls -ld $(GOBIN)/geth-windows-* | grep amd64
+	@ls -ld $(GOBIN)/gprobe-windows-* | grep amd64

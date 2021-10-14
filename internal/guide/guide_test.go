@@ -1,22 +1,22 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains the code snippets from the developer's guide embedded into
 // Go tests. This ensures that any code published in out guides will not break
-// accidentally via some code update. If some API changes nonetheless that needs
+// accidentally via some code update. If some API changes nonprobeeless that needs
 // modifying this file, please port any modification over into the developer's
 // guide wiki pages too!
 
@@ -30,9 +30,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/probeum/go-probeum/accounts/keystore"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/types"
 )
 
 // Tests that the account management snippets work correctly.

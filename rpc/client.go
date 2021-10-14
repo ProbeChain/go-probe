@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package rpc
 
@@ -28,7 +28,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/probeum/go-probeum/log"
 )
 
 var (
@@ -42,7 +42,7 @@ var (
 const (
 	// Timeouts
 	defaultDialTimeout = 10 * time.Second // used if context has no deadline
-	subscribeTimeout   = 5 * time.Second  // overall timeout eth_subscribe, rpc_modules calls
+	subscribeTimeout   = 5 * time.Second  // overall timeout probe_subscribe, rpc_modules calls
 )
 
 const (
@@ -129,7 +129,7 @@ type requestOp struct {
 	ids  []json.RawMessage
 	err  error
 	resp chan *jsonrpcMessage // receives up to len(ids) responses
-	sub  *ClientSubscription  // only set for EthSubscribe requests
+	sub  *ClientSubscription  // only set for ProbeSubscribe requests
 }
 
 func (op *requestOp) wait(ctx context.Context, c *Client) (*jsonrpcMessage, error) {
@@ -408,9 +408,9 @@ func (c *Client) Notify(ctx context.Context, method string, args ...interface{})
 	return c.send(ctx, op, msg)
 }
 
-// EthSubscribe registers a subscripion under the "eth" namespace.
-func (c *Client) EthSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
-	return c.Subscribe(ctx, "eth", channel, args...)
+// ProbeSubscribe registers a subscripion under the "probe" namespace.
+func (c *Client) ProbeSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
+	return c.Subscribe(ctx, "probe", channel, args...)
 }
 
 // ShhSubscribe registers a subscripion under the "shh" namespace.

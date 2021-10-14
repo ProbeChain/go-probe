@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package light
 
@@ -23,15 +23,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 )
 
 const (
@@ -59,7 +59,7 @@ type TxPool struct {
 	mu           sync.RWMutex
 	chain        *LightChain
 	odr          OdrBackend
-	chainDb      ethdb.Database
+	chainDb      probedb.Database
 	relay        TxRelayBackend
 	head         common.Hash
 	nonce        map[common.Address]uint64            // "pending" nonce
@@ -67,8 +67,8 @@ type TxPool struct {
 	mined        map[common.Hash][]*types.Transaction // mined transactions by block hash
 	clearIdx     uint64                               // earliest block nr that can contain mined tx info
 
-	istanbul bool // Fork indicator whether we are in the istanbul stage.
-	eip2718  bool // Fork indicator whether we are in the eip2718 stage.
+	istanbul bool // Fork indicator whprobeer we are in the istanbul stage.
+	eip2718  bool // Fork indicator whprobeer we are in the eip2718 stage.
 }
 
 // TxRelayBackend provides an interface to the mechanism that forwards transacions
@@ -342,7 +342,7 @@ func (pool *TxPool) Stats() (pending int) {
 	return
 }
 
-// validateTx checks whether a transaction is valid according to the consensus rules.
+// validateTx checks whprobeer a transaction is valid according to the consensus rules.
 func (pool *TxPool) validateTx(ctx context.Context, tx *types.Transaction) error {
 	// Validate sender
 	var (

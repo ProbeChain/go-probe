@@ -1,18 +1,18 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2020 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Tests that abnormal program termination (i.e.crash) and restart doesn't leave
 // the database in some strange state with gaps in the chain, nor with block data
@@ -27,12 +27,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/params"
 )
 
 // Tests a recovery for a short canonical chain where a recent block was already
@@ -1771,7 +1771,7 @@ func testRepair(t *testing.T, tt *rewindTest, snapshots bool) {
 	// Initialize a fresh chain
 	var (
 		genesis = (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
-		engine  = ethash.NewFullFaker()
+		engine  = probeash.NewFullFaker()
 		config  = &CacheConfig{
 			TrieCleanLimit: 256,
 			TrieDirtyLimit: 256,
@@ -1783,7 +1783,7 @@ func testRepair(t *testing.T, tt *rewindTest, snapshots bool) {
 		config.SnapshotLimit = 256
 		config.SnapshotWait = true
 	}
-	chain, err := NewBlockChain(db, config, params.AllEthashProtocolChanges, engine, vm.Config{}, nil, nil)
+	chain, err := NewBlockChain(db, config, params.AllProbeashProtocolChanges, engine, vm.Config{}, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to create chain: %v", err)
 	}
@@ -1836,7 +1836,7 @@ func testRepair(t *testing.T, tt *rewindTest, snapshots bool) {
 	}
 	defer db.Close()
 
-	chain, err = NewBlockChain(db, nil, params.AllEthashProtocolChanges, engine, vm.Config{}, nil, nil)
+	chain, err = NewBlockChain(db, nil, params.AllProbeashProtocolChanges, engine, vm.Config{}, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}

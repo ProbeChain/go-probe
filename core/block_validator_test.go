@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -21,11 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/params"
 )
 
 // Tests that simple header verification works, for both good and bad blocks.
@@ -35,14 +35,14 @@ func TestHeaderVerification(t *testing.T) {
 		testdb    = rawdb.NewMemoryDatabase()
 		gspec     = &Genesis{Config: params.TestChainConfig}
 		genesis   = gspec.MustCommit(testdb)
-		blocks, _ = GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), testdb, 8, nil)
+		blocks, _ = GenerateChain(params.TestChainConfig, genesis, probeash.NewFaker(), testdb, 8, nil)
 	)
 	headers := make([]*types.Header, len(blocks))
 	for i, block := range blocks {
 		headers[i] = block.Header()
 	}
 	// Run the header checker for blocks one-by-one, checking for both valid and invalid nonces
-	chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
+	chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, probeash.NewFaker(), vm.Config{}, nil, nil)
 	defer chain.Stop()
 
 	for i := 0; i < len(blocks); i++ {
@@ -50,10 +50,10 @@ func TestHeaderVerification(t *testing.T) {
 			var results <-chan error
 
 			if valid {
-				engine := ethash.NewFaker()
+				engine := probeash.NewFaker()
 				_, results = engine.VerifyHeaders(chain, []*types.Header{headers[i]}, []bool{true})
 			} else {
-				engine := ethash.NewFakeFailer(headers[i].Number.Uint64())
+				engine := probeash.NewFakeFailer(headers[i].Number.Uint64())
 				_, results = engine.VerifyHeaders(chain, []*types.Header{headers[i]}, []bool{true})
 			}
 			// Wait for the verification result
@@ -87,7 +87,7 @@ func testHeaderConcurrentVerification(t *testing.T, threads int) {
 		testdb    = rawdb.NewMemoryDatabase()
 		gspec     = &Genesis{Config: params.TestChainConfig}
 		genesis   = gspec.MustCommit(testdb)
-		blocks, _ = GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), testdb, 8, nil)
+		blocks, _ = GenerateChain(params.TestChainConfig, genesis, probeash.NewFaker(), testdb, 8, nil)
 	)
 	headers := make([]*types.Header, len(blocks))
 	seals := make([]bool, len(blocks))
@@ -106,11 +106,11 @@ func testHeaderConcurrentVerification(t *testing.T, threads int) {
 		var results <-chan error
 
 		if valid {
-			chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, ethash.NewFaker(), vm.Config{}, nil, nil)
+			chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, probeash.NewFaker(), vm.Config{}, nil, nil)
 			_, results = chain.engine.VerifyHeaders(chain, headers, seals)
 			chain.Stop()
 		} else {
-			chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, ethash.NewFakeFailer(uint64(len(headers)-1)), vm.Config{}, nil, nil)
+			chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, probeash.NewFakeFailer(uint64(len(headers)-1)), vm.Config{}, nil, nil)
 			_, results = chain.engine.VerifyHeaders(chain, headers, seals)
 			chain.Stop()
 		}
@@ -159,7 +159,7 @@ func testHeaderConcurrentAbortion(t *testing.T, threads int) {
 		testdb    = rawdb.NewMemoryDatabase()
 		gspec     = &Genesis{Config: params.TestChainConfig}
 		genesis   = gspec.MustCommit(testdb)
-		blocks, _ = GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), testdb, 1024, nil)
+		blocks, _ = GenerateChain(params.TestChainConfig, genesis, probeash.NewFaker(), testdb, 1024, nil)
 	)
 	headers := make([]*types.Header, len(blocks))
 	seals := make([]bool, len(blocks))
@@ -173,7 +173,7 @@ func testHeaderConcurrentAbortion(t *testing.T, threads int) {
 	defer runtime.GOMAXPROCS(old)
 
 	// Start the verifications and immediately abort
-	chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, ethash.NewFakeDelayer(time.Millisecond), vm.Config{}, nil, nil)
+	chain, _ := NewBlockChain(testdb, nil, params.TestChainConfig, probeash.NewFakeDelayer(time.Millisecond), vm.Config{}, nil, nil)
 	defer chain.Stop()
 
 	abort, results := chain.engine.VerifyHeaders(chain, headers, seals)

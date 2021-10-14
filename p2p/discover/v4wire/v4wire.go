@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package v4wire implements the Discovery v4 Wire Protocol.
 package v4wire
@@ -22,16 +22,16 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"math/big"
 	"net"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common/math"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 // RPC packet types
@@ -184,7 +184,7 @@ func (req *ENRRequest) Kind() byte   { return ENRRequestPacket }
 func (req *ENRResponse) Name() string { return "ENRRESPONSE/v4" }
 func (req *ENRResponse) Kind() byte   { return ENRResponsePacket }
 
-// Expired checks whether the given UNIX time stamp is in the past.
+// Expired checks whprobeer the given UNIX time stamp is in the past.
 func Expired(ts uint64) bool {
 	return time.Unix(int64(ts), 0).Before(time.Now())
 }

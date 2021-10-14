@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package simulations
 
@@ -27,11 +27,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/simulations/adapters"
 )
 
 var DialBanTimeout = 200 * time.Millisecond
@@ -46,7 +46,7 @@ type NetworkConfig struct {
 // simulated nodes and the connections which exist between them.
 //
 // The Network has a single NodeAdapter which is responsible for actually
-// starting nodes and connecting them together.
+// starting nodes and connecting them togprobeer.
 //
 // The Network emits events when nodes are started and stopped, when they are
 // connected and disconnected, and also when messages are sent between nodes.
@@ -302,7 +302,7 @@ func (net *Network) Stop(id enode.ID) error {
 	return nil
 }
 
-// Connect connects two nodes together by calling the "admin_addPeer" RPC
+// Connect connects two nodes togprobeer by calling the "admin_addPeer" RPC
 // method on the "one" node so that it connects to the "other" node
 func (net *Network) Connect(oneID, otherID enode.ID) error {
 	net.lock.Lock()
@@ -568,7 +568,7 @@ func (net *Network) getDownNodeIDs() (ids []enode.ID) {
 	return ids
 }
 
-// GetRandomNode returns a random node on the network, regardless of whether it is running or not
+// GetRandomNode returns a random node on the network, regardless of whprobeer it is running or not
 func (net *Network) GetRandomNode(excludeIDs ...enode.ID) *Node {
 	net.lock.RLock()
 	defer net.lock.RUnlock()
@@ -654,7 +654,7 @@ func (net *Network) getConn(oneID, otherID enode.ID) *Conn {
 // the order of nodes does not matter, i.e., Conn(i,j) == Conn(j, i)
 // it checks if the connection is already up, and if the nodes are running
 // NOTE:
-// it also checks whether there has been recent attempt to connect the peers
+// it also checks whprobeer there has been recent attempt to connect the peers
 // this is cheating as the simulation is used as an oracle and know about
 // remote peers attempt to connect to a node which will then not initiate the connection
 func (net *Network) InitConn(oneID, otherID enode.ID) (*Conn, error) {
@@ -728,7 +728,7 @@ type Node struct {
 	// Config if the config used to created the node
 	Config *adapters.NodeConfig `json:"config"`
 
-	// up tracks whether or not the node is running
+	// up tracks whprobeer or not the node is running
 	up   bool
 	upMu *sync.RWMutex
 }
@@ -742,7 +742,7 @@ func (n *Node) copy() *Node {
 	return newNode(n.Node, &configCpy, n.Up())
 }
 
-// Up returns whether the node is currently up (online)
+// Up returns whprobeer the node is currently up (online)
 func (n *Node) Up() bool {
 	n.upMu.RLock()
 	defer n.upMu.RUnlock()
@@ -795,7 +795,7 @@ func (n *Node) MarshalJSON() ([]byte, error) {
 // status. IMPORTANT: The implementation is incomplete; we lose p2p.NodeInfo.
 func (n *Node) UnmarshalJSON(raw []byte) error {
 	// TODO: How should we turn back NodeInfo into n.Node?
-	// Ticket: https://github.com/ethersphere/go-ethereum/issues/1177
+	// Ticket: https://github.com/probeersphere/go-probeum/issues/1177
 	var node struct {
 		Config *adapters.NodeConfig `json:"config,omitempty"`
 		Up     bool                 `json:"up"`
@@ -815,7 +815,7 @@ type Conn struct {
 	// Other is the node which the connection was made to
 	Other enode.ID `json:"other"`
 
-	// Up tracks whether or not the connection is active
+	// Up tracks whprobeer or not the connection is active
 	Up bool `json:"up"`
 	// Registers when the connection was grabbed to dial
 	initiated time.Time
@@ -824,7 +824,7 @@ type Conn struct {
 	other *Node
 }
 
-// nodesUp returns whether both nodes are currently up
+// nodesUp returns whprobeer both nodes are currently up
 func (c *Conn) nodesUp() error {
 	if !c.one.Up() {
 		return fmt.Errorf("one %v is not up", c.One)

@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package console
 
@@ -26,15 +26,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/internal/jsre"
-	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/console/prompt"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/probe"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/internal/jsre"
+	"github.com/probeum/go-probeum/miner"
+	"github.com/probeum/go-probeum/node"
 )
 
 const (
@@ -78,7 +78,7 @@ func (p *hookedPrompter) SetWordCompleter(completer prompt.WordCompleter) {}
 type tester struct {
 	workspace string
 	stack     *node.Node
-	ethereum  *eth.Ethereum
+	probeum  *probe.Probeum
 	console   *Console
 	input     *hookedPrompter
 	output    *bytes.Buffer
@@ -86,33 +86,33 @@ type tester struct {
 
 // newTester creates a test environment based on which the console can operate.
 // Please ensure you call Close() on the returned tester to avoid leaks.
-func newTester(t *testing.T, confOverride func(*ethconfig.Config)) *tester {
+func newTester(t *testing.T, confOverride func(*probeconfig.Config)) *tester {
 	// Create a temporary storage for the node keys and initialize it
 	workspace, err := ioutil.TempDir("", "console-tester-")
 	if err != nil {
 		t.Fatalf("failed to create temporary keystore: %v", err)
 	}
 
-	// Create a networkless protocol stack and start an Ethereum service within
+	// Create a networkless protocol stack and start an Probeum service within
 	stack, err := node.New(&node.Config{DataDir: workspace, UseLightweightKDF: true, Name: testInstance})
 	if err != nil {
 		t.Fatalf("failed to create node: %v", err)
 	}
-	ethConf := &ethconfig.Config{
+	probeConf := &probeconfig.Config{
 		Genesis: core.DeveloperGenesisBlock(15, common.Address{}),
 		Miner: miner.Config{
-			Etherbase: common.HexToAddress(testAddress),
+			Probeerbase: common.HexToAddress(testAddress),
 		},
-		Ethash: ethash.Config{
-			PowMode: ethash.ModeTest,
+		Probeash: probeash.Config{
+			PowMode: probeash.ModeTest,
 		},
 	}
 	if confOverride != nil {
-		confOverride(ethConf)
+		confOverride(probeConf)
 	}
-	ethBackend, err := eth.New(stack, ethConf)
+	probeBackend, err := probe.New(stack, probeConf)
 	if err != nil {
-		t.Fatalf("failed to register Ethereum protocol: %v", err)
+		t.Fatalf("failed to register Probeum protocol: %v", err)
 	}
 	// Start the node and assemble the JavaScript console around it
 	if err = stack.Start(); err != nil {
@@ -140,7 +140,7 @@ func newTester(t *testing.T, confOverride func(*ethconfig.Config)) *tester {
 	return &tester{
 		workspace: workspace,
 		stack:     stack,
-		ethereum:  ethBackend,
+		probeum:  probeBackend,
 		console:   console,
 		input:     prompter,
 		output:    printer,

@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package snapshot implements a journalled, dynamic state dump.
 package snapshot
@@ -24,13 +24,13 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 )
 
 var (
@@ -137,7 +137,7 @@ type snapshot interface {
 	// flattening everything down (bad for reorgs).
 	Journal(buffer *bytes.Buffer) (common.Hash, error)
 
-	// Stale return whether this layer has become stale (was flattened across) or
+	// Stale return whprobeer this layer has become stale (was flattened across) or
 	// if it's still live.
 	Stale() bool
 
@@ -148,7 +148,7 @@ type snapshot interface {
 	StorageIterator(account common.Hash, seek common.Hash) (StorageIterator, bool)
 }
 
-// Tree is an Ethereum state snapshot tree. It consists of one persistent base
+// Tree is an Probeum state snapshot tree. It consists of one persistent base
 // layer backed by a key-value store, on top of which arbitrarily many in-memory
 // diff layers are topped. The memory diffs can form a tree with branching, but
 // the disk layer is singleton and common to all. If a reorg goes deeper than the
@@ -158,7 +158,7 @@ type snapshot interface {
 // storage data to avoid expensive multi-level trie lookups; and to allow sorted,
 // cheap iteration of the account/storage tries for sync aid.
 type Tree struct {
-	diskdb ethdb.KeyValueStore      // Persistent database to store the snapshot
+	diskdb probedb.KeyValueStore      // Persistent database to store the snapshot
 	triedb *trie.Database           // In-memory cache to access the trie through
 	cache  int                      // Megabytes permitted to use for read caches
 	layers map[common.Hash]snapshot // Collection of all known layers
@@ -174,7 +174,7 @@ type Tree struct {
 // store, on a background thread. If the memory layers from the journal is not
 // continuous with disk layer or the journal is missing, all diffs will be discarded
 // iff it's in "recovery" mode, otherwise rebuild is mandatory.
-func New(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, root common.Hash, async bool, rebuild bool, recovery bool) (*Tree, error) {
+func New(diskdb probedb.KeyValueStore, triedb *trie.Database, cache int, root common.Hash, async bool, rebuild bool, recovery bool) (*Tree, error) {
 	// Create a new, empty snapshot tree
 	snap := &Tree{
 		diskdb: diskdb,
@@ -538,7 +538,7 @@ func diffToDisk(bottom *diffLayer) *diskLayer {
 				// Ensure we don't delete too much data blindly (contract can be
 				// huge). It's ok to flush, the root will go missing in case of a
 				// crash and we'll detect and regenerate the snapshot.
-				if batch.ValueSize() > ethdb.IdealBatchSize {
+				if batch.ValueSize() > probedb.IdealBatchSize {
 					if err := batch.Write(); err != nil {
 						log.Crit("Failed to write storage deletions", "err", err)
 					}
@@ -565,7 +565,7 @@ func diffToDisk(bottom *diffLayer) *diskLayer {
 		// Ensure we don't write too much data blindly. It's ok to flush, the
 		// root will go missing in case of a crash and we'll detect and regen
 		// the snapshot.
-		if batch.ValueSize() > ethdb.IdealBatchSize {
+		if batch.ValueSize() > probedb.IdealBatchSize {
 			if err := batch.Write(); err != nil {
 				log.Crit("Failed to write storage deletions", "err", err)
 			}
@@ -751,7 +751,7 @@ func (t *Tree) Verify(root common.Hash) error {
 	}
 	defer acctIt.Release()
 
-	got, err := generateTrieRoot(nil, acctIt, common.Hash{}, stackTrieGenerate, func(db ethdb.KeyValueWriter, accountHash, codeHash common.Hash, stat *generateStats) (common.Hash, error) {
+	got, err := generateTrieRoot(nil, acctIt, common.Hash{}, stackTrieGenerate, func(db probedb.KeyValueWriter, accountHash, codeHash common.Hash, stat *generateStats) (common.Hash, error) {
 		storageIt, err := t.StorageIterator(root, accountHash, common.Hash{})
 		if err != nil {
 			return common.Hash{}, err
@@ -805,7 +805,7 @@ func (t *Tree) diskRoot() common.Hash {
 	return disklayer.Root()
 }
 
-// generating is an internal helper function which reports whether the snapshot
+// generating is an internal helper function which reports whprobeer the snapshot
 // is still under the construction.
 func (t *Tree) generating() (bool, error) {
 	t.lock.Lock()

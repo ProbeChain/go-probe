@@ -11,7 +11,7 @@
       },
       {
         "name": "chainId",
-        "type": "uint256 ... and now for something completely different"
+        "type": "uint256 ... and now for somprobeing completely different"
       },
       {
         "name": "verifyingContract",
@@ -53,7 +53,7 @@
   },
   "primaryType": "Mail",
   "domain": {
-    "name": "Ether Mail",
+    "name": "Probeer Mail",
     "version": "1",
     "chainId": "1",
     "verifyingContract": "0xCCCcccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"

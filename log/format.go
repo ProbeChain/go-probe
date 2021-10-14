@@ -24,7 +24,7 @@ const (
 
 // locationTrims are trimmed for display to avoid unwieldy log lines.
 var locationTrims = []string{
-	"github.com/ethereum/go-ethereum/",
+	"github.com/probeum/go-probeum/",
 }
 
 // PrintOrigins sets or unsets log location (file:line) printing for terminal
@@ -37,7 +37,7 @@ func PrintOrigins(print bool) {
 	}
 }
 
-// locationEnabled is an atomic flag controlling whether the terminal formatter
+// locationEnabled is an atomic flag controlling whprobeer the terminal formatter
 // should append the log locations too when printing entries.
 var locationEnabled uint32
 

@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -21,11 +21,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/probedb/memorydb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 // Prove constructs a merkle proof for key. The result contains all encoded nodes
@@ -35,7 +35,7 @@ import (
 // If the trie does not contain a value for key, the returned proof contains all
 // nodes of the longest existing prefix of the key (at least the root node), ending
 // with the node that proves the absence of the key.
-func (t *Trie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error {
+func (t *Trie) Prove(key []byte, fromLevel uint, proofDb probedb.KeyValueWriter) error {
 	// Collect all nodes on the path to key.
 	key = keybytesToHex(key)
 	var nodes []node
@@ -96,14 +96,14 @@ func (t *Trie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) e
 // If the trie does not contain a value for key, the returned proof contains all
 // nodes of the longest existing prefix of the key (at least the root node), ending
 // with the node that proves the absence of the key.
-func (t *SecureTrie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error {
+func (t *SecureTrie) Prove(key []byte, fromLevel uint, proofDb probedb.KeyValueWriter) error {
 	return t.trie.Prove(key, fromLevel, proofDb)
 }
 
 // VerifyProof checks merkle proofs. The given proof must contain the value for
 // key in a trie with the given root hash. VerifyProof returns an error if the
 // proof contains invalid trie nodes or the wrong value.
-func VerifyProof(rootHash common.Hash, key []byte, proofDb ethdb.KeyValueReader) (value []byte, err error) {
+func VerifyProof(rootHash common.Hash, key []byte, proofDb probedb.KeyValueReader) (value []byte, err error) {
 	key = keybytesToHex(key)
 	wantHash := rootHash
 	for i := 0; ; i++ {
@@ -134,7 +134,7 @@ func VerifyProof(rootHash common.Hash, key []byte, proofDb ethdb.KeyValueReader)
 // necessary nodes will be resolved and leave the remaining as hashnode.
 //
 // The given edge proof is allowed to be an existent or non-existent proof.
-func proofToPath(rootHash common.Hash, root node, key []byte, proofDb ethdb.KeyValueReader, allowNonExistent bool) (node, []byte, error) {
+func proofToPath(rootHash common.Hash, root node, key []byte, proofDb probedb.KeyValueReader, allowNonExistent bool) (node, []byte, error) {
 	// resolveNode retrieves and resolves trie node from merkle proof stream
 	resolveNode := func(hash common.Hash) (node, error) {
 		buf, _ := proofDb.Get(hash[:])
@@ -405,7 +405,7 @@ func unset(parent node, child node, key []byte, pos int, removeLeft bool) error 
 	}
 }
 
-// hasRightElement returns the indicator whether there exists more elements
+// hasRightElement returns the indicator whprobeer there exists more elements
 // in the right side of the given path. The given path can point to an existent
 // key or a non-existent one. This function has the assumption that the whole
 // path should already be resolved.
@@ -434,7 +434,7 @@ func hasRightElement(node node, key []byte) bool {
 	return false
 }
 
-// VerifyRangeProof checks whether the given leaf nodes and edge proof
+// VerifyRangeProof checks whprobeer the given leaf nodes and edge proof
 // can prove the given trie leaves range is matched with the specific root.
 // Besides, the range should be consecutive (no gap inside) and monotonic
 // increasing.
@@ -463,12 +463,12 @@ func hasRightElement(node node, key []byte) bool {
 //   an error will be returned.
 //
 // Except returning the error to indicate the proof is valid or not, the function will
-// also return a flag to indicate whether there exists more accounts/slots in the trie.
+// also return a flag to indicate whprobeer there exists more accounts/slots in the trie.
 //
 // Note: This method does not verify that the proof is of minimal form. If the input
 // proofs are 'bloated' with neighbour leaves or random data, aside from the 'useful'
 // data, then the proof will still be accepted.
-func VerifyRangeProof(rootHash common.Hash, firstKey []byte, lastKey []byte, keys [][]byte, values [][]byte, proof ethdb.KeyValueReader) (bool, error) {
+func VerifyRangeProof(rootHash common.Hash, firstKey []byte, lastKey []byte, keys [][]byte, values [][]byte, proof probedb.KeyValueReader) (bool, error) {
 	if len(keys) != len(values) {
 		return false, fmt.Errorf("inconsistent proof data, keys: %d, values: %d", len(keys), len(values))
 	}

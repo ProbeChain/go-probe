@@ -1,18 +1,18 @@
-// Copyright 2021 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2021 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains a miner stress test for eip 1559.
 package main
@@ -26,22 +26,22 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/accounts/keystore"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/fdlimit"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/probe"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/miner"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/params"
 )
 
 var (
@@ -57,19 +57,19 @@ func main() {
 	for i := 0; i < len(faucets); i++ {
 		faucets[i], _ = crypto.GenerateKey()
 	}
-	// Pre-generate the ethash mining DAG so we don't race
-	ethash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".ethash"))
+	// Pre-generate the probeash mining DAG so we don't race
+	probeash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".probeash"))
 
-	// Create an Ethash network based off of the Ropsten config
+	// Create an Probeash network based off of the Ropsten config
 	genesis := makeGenesis(faucets)
 
 	var (
-		nodes  []*eth.Ethereum
+		nodes  []*probe.Probeum
 		enodes []*enode.Node
 	)
 	for i := 0; i < 4; i++ {
 		// Start the node and wait until it's up
-		stack, ethBackend, err := makeMiner(genesis)
+		stack, probeBackend, err := makeMiner(genesis)
 		if err != nil {
 			panic(err)
 		}
@@ -83,7 +83,7 @@ func main() {
 			stack.Server().AddPeer(n)
 		}
 		// Start tracking the node and its enode
-		nodes = append(nodes, ethBackend)
+		nodes = append(nodes, probeBackend)
 		enodes = append(enodes, stack.Server().Self())
 
 		// Inject the signer key and start sealing with it
@@ -183,12 +183,12 @@ func makeTransaction(nonce uint64, privKey *ecdsa.PrivateKey, signer types.Signe
 	})
 }
 
-// makeGenesis creates a custom Ethash genesis block based on some pre-defined
+// makeGenesis creates a custom Probeash genesis block based on some pre-defined
 // faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	genesis := core.DefaultRopstenGenesisBlock()
 
-	genesis.Config = params.AllEthashProtocolChanges
+	genesis.Config = params.AllProbeashProtocolChanges
 	genesis.Config.LondonBlock = londonBlock
 	genesis.Difficulty = params.MinimumDifficulty
 
@@ -212,12 +212,12 @@ func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	return genesis
 }
 
-func makeMiner(genesis *core.Genesis) (*node.Node, *eth.Ethereum, error) {
-	// Define the basic configurations for the Ethereum node
+func makeMiner(genesis *core.Genesis) (*node.Node, *probe.Probeum, error) {
+	// Define the basic configurations for the Probeum node
 	datadir, _ := ioutil.TempDir("", "")
 
 	config := &node.Config{
-		Name:    "geth",
+		Name:    "gprobe",
 		Version: params.Version,
 		DataDir: datadir,
 		P2P: p2p.Config{
@@ -227,20 +227,20 @@ func makeMiner(genesis *core.Genesis) (*node.Node, *eth.Ethereum, error) {
 		},
 		UseLightweightKDF: true,
 	}
-	// Create the node and configure a full Ethereum node on it
+	// Create the node and configure a full Probeum node on it
 	stack, err := node.New(config)
 	if err != nil {
 		return nil, nil, err
 	}
-	ethBackend, err := eth.New(stack, &ethconfig.Config{
+	probeBackend, err := probe.New(stack, &probeconfig.Config{
 		Genesis:         genesis,
 		NetworkId:       genesis.Config.ChainID.Uint64(),
 		SyncMode:        downloader.FullSync,
 		DatabaseCache:   256,
 		DatabaseHandles: 256,
 		TxPool:          core.DefaultTxPoolConfig,
-		GPO:             ethconfig.Defaults.GPO,
-		Ethash:          ethconfig.Defaults.Ethash,
+		GPO:             probeconfig.Defaults.GPO,
+		Probeash:          probeconfig.Defaults.Probeash,
 		Miner: miner.Config{
 			GasFloor: genesis.GasLimit * 9 / 10,
 			GasCeil:  genesis.GasLimit * 11 / 10,
@@ -252,5 +252,5 @@ func makeMiner(genesis *core.Genesis) (*node.Node, *eth.Ethereum, error) {
 		return nil, nil, err
 	}
 	err = stack.Start()
-	return stack, ethBackend, err
+	return stack, probeBackend, err
 }

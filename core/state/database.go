@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package state
 
@@ -21,10 +21,10 @@ import (
 	"fmt"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/trie"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -60,7 +60,7 @@ type Database interface {
 	OpenBinTrie(root common.Hash, path string, depth int) (Trie, error)
 }
 
-// Trie is a Ethereum Merkle Patricia trie.
+// Trie is a Probeum Merkle Patricia trie.
 type Trie interface {
 	// GetKey returns the sha3 preimage of a hashed key that was previously used
 	// to store a value.
@@ -102,7 +102,7 @@ type Trie interface {
 	// If the trie does not contain a value for key, the returned proof contains all
 	// nodes of the longest existing prefix of the key (at least the root), ending
 	// with the node that proves the absence of the key.
-	Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error
+	Prove(key []byte, fromLevel uint, proofDb probedb.KeyValueWriter) error
 
 	Print()
 }
@@ -110,14 +110,14 @@ type Trie interface {
 // NewDatabase creates a backing store for state. The returned database is safe for
 // concurrent use, but does not retain any recent trie nodes in memory. To keep some
 // historical state in memory, use the NewDatabaseWithConfig constructor.
-func NewDatabase(db ethdb.Database) Database {
+func NewDatabase(db probedb.Database) Database {
 	return NewDatabaseWithConfig(db, nil)
 }
 
 // NewDatabaseWithConfig creates a backing store for state. The returned database
 // is safe for concurrent use and retains a lot of collapsed RLP trie nodes in a
 // large memory cache.
-func NewDatabaseWithConfig(db ethdb.Database, config *trie.Config) Database {
+func NewDatabaseWithConfig(db probedb.Database, config *trie.Config) Database {
 	csc, _ := lru.New(codeSizeCacheSize)
 	return &cachingDB{
 		db:            trie.NewDatabaseWithConfig(db, config),

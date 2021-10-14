@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/probedb/memorydb"
 )
 
 func TestSizeBug(t *testing.T) {

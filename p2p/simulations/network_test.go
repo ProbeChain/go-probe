@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package simulations
 
@@ -27,10 +27,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/simulations/adapters"
 )
 
 // Tests that a created snapshot with a minimal service only contains the expected connections
@@ -845,7 +845,7 @@ func casesNodeUnmarshalJSONUpField() []nodeUnmarshalTestCase {
 			wantErr:   "invalid character",
 		},
 		{
-			name:      "bool value expected but got something else (string)",
+			name:      "bool value expected but got somprobeing else (string)",
 			marshaled: "{\"up\": \"true\"}",
 			wantErr:   "cannot unmarshal string into Go struct",
 		},

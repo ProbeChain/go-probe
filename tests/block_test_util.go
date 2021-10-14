@@ -1,20 +1,20 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package tests implements execution of Ethereum JSON tests.
+// Package tests implements execution of Probeum JSON tests.
 package tests
 
 import (
@@ -25,18 +25,18 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/common/math"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 // A BlockTest checks handling of entire blocks.
@@ -118,9 +118,9 @@ func (t *BlockTest) Run(snapshotter bool) error {
 	}
 	var engine consensus.Engine
 	if t.json.SealEngine == "NoProof" {
-		engine = ethash.NewFaker()
+		engine = probeash.NewFaker()
 	} else {
-		engine = ethash.NewShared()
+		engine = probeash.NewShared()
 	}
 	cache := &core.CacheConfig{TrieCleanLimit: 0}
 	if snapshotter {
@@ -174,9 +174,9 @@ func (t *BlockTest) genesis(config *params.ChainConfig) *core.Genesis {
 	}
 }
 
-/* See https://github.com/ethereum/tests/wiki/Blockchain-Tests-II
+/* See https://github.com/probeum/tests/wiki/Blockchain-Tests-II
 
-   Whether a block is valid or not is a bit subtle, it's defined by presence of
+   Whprobeer a block is valid or not is a bit subtle, it's defined by presence of
    blockHeader, transactions and uncleHeaders fields. If they are missing, the block is
    invalid and we must verify that we do not accept it.
 

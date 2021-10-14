@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package checkpointoracle
 
@@ -27,13 +27,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/checkpointoracle/contract"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/accounts/abi/bind"
+	"github.com/probeum/go-probeum/accounts/abi/bind/backends"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/contracts/checkpointoracle/contract"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/params"
 )
 
 var (
@@ -140,7 +140,7 @@ func signCheckpoint(addr common.Address, privateKey *ecdsa.PrivateKey, index uin
 	return sig
 }
 
-// assertSignature verifies whether the recovered signers are equal with expected.
+// assertSignature verifies whprobeer the recovered signers are equal with expected.
 func assertSignature(addr common.Address, index uint64, hash [32]byte, r, s [32]byte, v uint8, expect common.Address) bool {
 	buf := make([]byte, 8)
 	binary.BigEndian.PutUint64(buf, index)
@@ -218,7 +218,7 @@ func TestCheckpointRegister(t *testing.T) {
 			contractBackend.Commit()
 		}
 	}
-	// assert checks whether the current contract status is same with
+	// assert checks whprobeer the current contract status is same with
 	// the expected.
 	assert := func(index uint64, hash [32]byte, height *big.Int) error {
 		lindex, lhash, lheight, err := c.GetLatestCheckpoint(nil)

@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package rlpx implements the RLPx transport protocol.
 package rlpx
@@ -26,16 +26,16 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"hash"
 	"io"
 	mrand "math/rand"
 	"net"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/ecies"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/crypto/ecies"
+	"github.com/probeum/go-probeum/rlp"
 	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
 )
@@ -206,7 +206,7 @@ func (h *sessionState) readFrame(conn io.Reader) ([]byte, error) {
 // Write writes a message to the connection.
 //
 // Write returns the written size of the message data. This may be less than or equal to
-// len(data) depending on whether snappy compression is enabled.
+// len(data) depending on whprobeer snappy compression is enabled.
 func (c *Conn) Write(code uint64, data []byte) (uint32, error) {
 	if c.session == nil {
 		panic("can't WriteMsg before handshake")

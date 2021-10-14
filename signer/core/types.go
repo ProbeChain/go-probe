@@ -1,18 +1,18 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/internal/probeapi"
 )
 
 type ValidationInfo struct {
@@ -66,7 +66,7 @@ func (v *ValidationMessages) getWarnings() error {
 }
 
 // SendTxArgs represents the arguments to submit a transaction
-// This struct is identical to ethapi.TransactionArgs, except for the usage of
+// This struct is identical to probeapi.TransactionArgs, except for the usage of
 // common.MixedcaseAddress in From and To
 type SendTxArgs struct {
 	From                 common.MixedcaseAddress  `json:"from"`
@@ -80,7 +80,7 @@ type SendTxArgs struct {
 
 	// We accept "data" and "input" for backwards-compatibility reasons.
 	// "input" is the newer name and should be preferred by clients.
-	// Issue detail: https://github.com/ethereum/go-ethereum/issues/15628
+	// Issue detail: https://github.com/probeum/go-probeum/issues/15628
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input,omitempty"`
 
@@ -98,7 +98,7 @@ func (args SendTxArgs) String() string {
 }
 
 func (args *SendTxArgs) toTransaction() *types.Transaction {
-	txArgs := ethapi.TransactionArgs{
+	txArgs := probeapi.TransactionArgs{
 		Gas:                  &args.Gas,
 		GasPrice:             args.GasPrice,
 		MaxFeePerGas:         args.MaxFeePerGas,

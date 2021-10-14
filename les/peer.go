@@ -1,25 +1,25 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package les
 
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"math/big"
 	"math/rand"
 	"net"
@@ -27,20 +27,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/forkid"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/les/flowcontrol"
-	"github.com/ethereum/go-ethereum/les/utils"
-	vfc "github.com/ethereum/go-ethereum/les/vflux/client"
-	vfs "github.com/ethereum/go-ethereum/les/vflux/server"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/forkid"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/les/flowcontrol"
+	"github.com/probeum/go-probeum/les/utils"
+	vfc "github.com/probeum/go-probeum/les/vflux/client"
+	vfs "github.com/probeum/go-probeum/les/vflux/server"
+	"github.com/probeum/go-probeum/light"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 var (
@@ -125,7 +125,7 @@ type peerCommons struct {
 	id           string    // Peer identity.
 	version      int       // Protocol version negotiated.
 	network      uint64    // Network ID being on.
-	frozen       uint32    // Flag whether the peer is frozen.
+	frozen       uint32    // Flag whprobeer the peer is frozen.
 	announceType uint64    // New block announcement type.
 	serving      uint32    // The status indicates the peer is served.
 	headInfo     blockInfo // Last announced block information.
@@ -147,7 +147,7 @@ func (p *peerCommons) isFrozen() bool {
 	return atomic.LoadUint32(&p.frozen) != 0
 }
 
-// canQueue returns an indicator whether the peer can queue an operation.
+// canQueue returns an indicator whprobeer the peer can queue an operation.
 func (p *peerCommons) canQueue() bool {
 	return p.sendQueue.CanQueue() && !p.isFrozen()
 }
@@ -163,10 +163,10 @@ func (p *peerCommons) String() string {
 	return fmt.Sprintf("Peer %s [%s]", p.id, fmt.Sprintf("les/%d", p.version))
 }
 
-// PeerInfo represents a short summary of the `eth` sub-protocol metadata known
+// PeerInfo represents a short summary of the `probe` sub-protocol metadata known
 // about a connected peer.
 type PeerInfo struct {
-	Version    int      `json:"version"`    // Ethereum protocol version negotiated
+	Version    int      `json:"version"`    // Probeum protocol version negotiated
 	Difficulty *big.Int `json:"difficulty"` // Total difficulty of the peer's blockchain
 	Head       string   `json:"head"`       // SHA3 hash of the peer's best owned block
 }
@@ -273,7 +273,7 @@ func (p *peerCommons) handshake(td *big.Int, head common.Hash, headNum uint64, g
 	send = send.add("genesisHash", genesis)
 
 	// If the protocol version is beyond les4, then pass the forkID
-	// as well. Check http://eips.ethereum.org/EIPS/eip-2124 for more
+	// as well. Check http://eips.probeum.org/EIPS/eip-2124 for more
 	// spec detail.
 	if p.version >= lpv4 {
 		send = send.add("forkID", forkID)
@@ -339,8 +339,8 @@ type serverPeer struct {
 	peerCommons
 
 	// Status fields
-	trusted                 bool   // The flag whether the server is selected as trusted server.
-	onlyAnnounce            bool   // The flag whether the server sends announcement only.
+	trusted                 bool   // The flag whprobeer the server is selected as trusted server.
+	onlyAnnounce            bool   // The flag whprobeer the server sends announcement only.
 	chainSince, chainRecent uint64 // The range of chain server peer can serve.
 	stateSince, stateRecent uint64 // The range of state server peer can serve.
 	txHistory               uint64 // The length of available tx history, 0 means all, 1 means disabled
@@ -360,7 +360,7 @@ type serverPeer struct {
 	updateTime  mclock.AbsTime
 
 	// Test callback hooks
-	hasBlockHook func(common.Hash, uint64, bool) bool // Used to determine whether the server has the specified block.
+	hasBlockHook func(common.Hash, uint64, bool) bool // Used to determine whprobeer the server has the specified block.
 }
 
 func newServerPeer(version int, network uint64, trusted bool, p *p2p.Peer, rw p2p.MsgReadWriter) *serverPeer {
@@ -1056,7 +1056,7 @@ func (p *clientPeer) Handshake(td *big.Int, head common.Hash, headNum uint64, ge
 			*lists = (*lists).add("serveChainSince", uint64(0))
 			*lists = (*lists).add("serveStateSince", uint64(0))
 
-			// If local ethereum node is running in archive mode, advertise ourselves we have
+			// If local probeum node is running in archive mode, advertise ourselves we have
 			// all version state data. Otherwise only recent state is available.
 			stateRecent := uint64(core.TriesInMemory - blockSafetyMargin)
 			if server.archiveMode {
@@ -1129,7 +1129,7 @@ type serverPeerSubscriber interface {
 }
 
 // serverPeerSet represents the set of active server peers currently
-// participating in the Light Ethereum sub-protocol.
+// participating in the Light Probeum sub-protocol.
 type serverPeerSet struct {
 	peers map[string]*serverPeer
 	// subscribers is a batch of subscribers and peerset will notify
@@ -1280,7 +1280,7 @@ func (ps *serverPeerSet) close() {
 }
 
 // clientPeerSet represents the set of active client peers currently
-// participating in the Light Ethereum sub-protocol.
+// participating in the Light Probeum sub-protocol.
 type clientPeerSet struct {
 	peers  map[enode.ID]*clientPeer
 	lock   sync.RWMutex

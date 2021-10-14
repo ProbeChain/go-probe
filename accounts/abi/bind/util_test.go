@@ -1,34 +1,34 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package bind_test
 
 import (
 	"context"
 	"errors"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind/backends"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/probeum/go-probeum/accounts/abi/bind"
+	"github.com/probeum/go-probeum/accounts/abi/bind/backends"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/types"
 )
 
 var testKey, _ = probe.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")

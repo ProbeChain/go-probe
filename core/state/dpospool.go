@@ -2,7 +2,7 @@ package state
 
 import (
 	"container/list"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/probeum/go-probeum/common"
 	"math/big"
 	"strings"
 	"sync"

@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2017 The go-probeum Authors
+// This file is part of go-probeum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-probeum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-probeum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+// along with go-probeum. If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
@@ -28,16 +28,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/cmd/evm/internal/compiler"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/core/vm/runtime"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/cmd/evm/internal/compiler"
+	"github.com/probeum/go-probeum/cmd/utils"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/core/vm/runtime"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -233,7 +233,7 @@ func runCmd(ctx *cli.Context) error {
 	if chainConfig != nil {
 		runtimeConfig.ChainConfig = chainConfig
 	} else {
-		runtimeConfig.ChainConfig = params.AllEthashProtocolChanges
+		runtimeConfig.ChainConfig = params.AllProbeashProtocolChanges
 	}
 
 	var hexInput []byte

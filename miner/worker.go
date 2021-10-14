@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package miner
 
@@ -20,23 +20,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	ethhash2 "github.com/ethereum/go-ethereum/consensus/ethash"
-	greatri2 "github.com/ethereum/go-ethereum/consensus/greatri"
+	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
+	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
 	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/trie"
 )
 
 const (
@@ -157,7 +157,7 @@ type worker struct {
 	chainConfig *params.ChainConfig
 	engine      consensus.Engine
 	powEngine   consensus.Engine
-	eth         Backend
+	probe         Backend
 	chain       *core.BlockChain
 
 	// Feeds
@@ -208,10 +208,10 @@ type worker struct {
 	snapshotState    *state.StateDB
 
 	// atomic status counters
-	running int32 // The indicator whether the consensus engine is running or not.
+	running int32 // The indicator whprobeer the consensus engine is running or not.
 	//newTxs  int32 // New arrival transaction count since last sealing work submitting.
 
-	// noempty is the flag used to control whether the feature of pre-seal empty
+	// noempty is the flag used to control whprobeer the feature of pre-seal empty
 	// block is enabled. The default value is false(pre-seal is enabled by default).
 	// But in some special scenario the consensus engine will seal blocks instantaneously,
 	// in this case this feature will add all empty blocks into canonical chain
@@ -219,7 +219,7 @@ type worker struct {
 	noempty uint32
 
 	// External functions
-	isLocalBlock func(block *types.Block) bool // Function used to determine whether the specified block is mined by local miner.
+	isLocalBlock func(block *types.Block) bool // Function used to determine whprobeer the specified block is mined by local miner.
 
 	// Test hooks
 	newTaskHook  func(*task)                        // Method to call upon receiving a new sealing task.
@@ -228,9 +228,9 @@ type worker struct {
 	resubmitHook func(time.Duration, time.Duration) // Method to call upon updating resubmitting interval.
 }
 
-func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, powEngine consensus.Engine, eth Backend, mux *event.TypeMux,
+func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, powEngine consensus.Engine, probe Backend, mux *event.TypeMux,
 	isLocalBlock func(*types.Block) bool, init bool) *worker {
-	chain := eth.BlockChain()
+	chain := probe.BlockChain()
 	number := chain.CurrentHeader().Number.Uint64()
 	size := chain.GetDposAccountSize(number)
 	log.Info("UpdateDposParams newWorker", "blockNumber", number, "size", size)
@@ -239,16 +239,16 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	worker := &worker{
 		config:             config,
 		chainConfig:        chainConfig,
-		coinbase:           config.Etherbase,
+		coinbase:           config.Probeerbase,
 		engine:             engine,
 		powEngine:          powEngine,
-		eth:                eth,
+		probe:                probe,
 		mux:                mux,
 		chain:              chain,
 		isLocalBlock:       isLocalBlock,
 		localUncles:        make(map[common.Hash]*types.Block),
 		remoteUncles:       make(map[common.Hash]*types.Block),
-		unconfirmed:        newUnconfirmedBlocks(eth.BlockChain(), miningLogAtDepth),
+		unconfirmed:        newUnconfirmedBlocks(probe.BlockChain(), miningLogAtDepth),
 		pendingTasks:       make(map[common.Hash]*task),
 		txsCh:              make(chan core.NewTxsEvent, txChanSize),
 		chainHeadCh:        make(chan core.ChainHeadEvent, chainHeadChanSize),
@@ -264,13 +264,13 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		powMinerResultCh:   make(chan *types.PowAnswer, powMinerResultChanSize),
 	}
 	// Subscribe NewTxsEvent for tx pool
-	worker.txsSub = eth.TxPool().SubscribeNewTxsEvent(worker.txsCh)
+	worker.txsSub = probe.TxPool().SubscribeNewTxsEvent(worker.txsCh)
 	// Subscribe events for blockchain
-	worker.chainHeadSub = eth.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
-	worker.chainSideSub = eth.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
+	worker.chainHeadSub = probe.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
+	worker.chainSideSub = probe.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
 
-	worker.powAnswerSub = eth.BlockChain().SubscribePowAnswerEvent(worker.powAnswerCh)
-	worker.dposAckSub = eth.BlockChain().SubscribeDposAckEvent(worker.dposAckCh)
+	worker.powAnswerSub = probe.BlockChain().SubscribePowAnswerEvent(worker.powAnswerCh)
+	worker.dposAckSub = probe.BlockChain().SubscribeDposAckEvent(worker.dposAckCh)
 
 	// Sanitize recommit interval if the user-specified one is too short.
 	recommit := worker.config.Recommit
@@ -292,8 +292,8 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	return worker
 }
 
-// setEtherbase sets the etherbase used to initialize the block coinbase field.
-func (w *worker) setEtherbase(addr common.Address) {
+// setProbeerbase sets the probeerbase used to initialize the block coinbase field.
+func (w *worker) setProbeerbase(addr common.Address) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.coinbase = addr
@@ -361,7 +361,7 @@ func (w *worker) stop() {
 	atomic.StoreInt32(&w.running, 0)
 }
 
-// isRunning returns an indicator whether worker is running or not.
+// isRunning returns an indicator whprobeer worker is running or not.
 func (w *worker) isRunning() bool {
 	return atomic.LoadInt32(&w.running) == 1
 }
@@ -369,7 +369,7 @@ func (w *worker) isRunning() bool {
 func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 	account := w.chain.GetSealDposAccount(blockNumber)
 	if account == nil {
-		log.Error("something wrong in get dpos account, neeQd to check", "blockNumber", blockNumber)
+		log.Error("somprobeing wrong in get dpos account, neeQd to check", "blockNumber", blockNumber)
 		return false
 	}
 	if account.Owner == w.coinbase {
@@ -512,23 +512,23 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			if w.imDpostWorkNode() {
 				position, err := w.chain.GetLatestDposAccountIndex(w.coinbase)
 				if err != nil {
-					log.Error("something wrong in get dpos account postion", "blockNumber", w.chain.CurrentBlock().Number())
+					log.Error("somprobeing wrong in get dpos account postion", "blockNumber", w.chain.CurrentBlock().Number())
 					continue
 				}
 				ack := &types.DposAck{
 					EpochPosition: uint8(position),
-					Number:        w.eth.BlockChain().CurrentBlock().Number(),
-					BlockHash:     w.eth.BlockChain().CurrentBlock().Hash(),
+					Number:        w.probe.BlockChain().CurrentBlock().Number(),
+					BlockHash:     w.probe.BlockChain().CurrentBlock().Hash(),
 					AckType:       types.AckTypeAgree,
 				}
 				greatri, ok := w.engine.(*greatri2.Greatri)
 				if !ok {
-					log.Error("something wrong in produce dposAck", "blockNumber", ack.Number)
+					log.Error("somprobeing wrong in produce dposAck", "blockNumber", ack.Number)
 					continue
 				}
 				ackSig, err := greatri.DposAckSig(ack)
 				if err != nil {
-					log.Error("something wrong in DposAckSig", "blockNumber", ack.Number)
+					log.Error("somprobeing wrong in DposAckSig", "blockNumber", ack.Number)
 					continue
 				}
 				ack.WitnessSig = append(ack.WitnessSig, ackSig...)
@@ -538,16 +538,16 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				w.mux.Post(core.DposAckEvent{DposAck: ack})
 			}
 
-			if w.chainConfig.Ethash != nil {
+			if w.chainConfig.Probeash != nil {
 				interruptSeal()
 				stopCh = make(chan struct{})
-				ethash, ok := w.powEngine.(*ethhash2.Ethash)
+				probeash, ok := w.powEngine.(*probehash2.Probeash)
 				if !ok {
-					log.Error("something wrong in produce dposAck", "blockNumber", w.chain.CurrentBlock().Number())
+					log.Error("somprobeing wrong in produce dposAck", "blockNumber", w.chain.CurrentBlock().Number())
 					continue
 				}
 
-				if err := ethash.PowSeal(w.chain, w.chain.CurrentBlock(), w.powMinerResultCh, stopCh, w.coinbase); err != nil {
+				if err := probeash.PowSeal(w.chain, w.chain.CurrentBlock(), w.powMinerResultCh, stopCh, w.coinbase); err != nil {
 					log.Warn("pow Miner failed", "err", err)
 				}
 			}
@@ -949,7 +949,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 		//
 		// We use the eip155 signer regardless of the current hf.
 		from, _ := types.Sender(w.current.signer, tx)
-		// Check whether the tx is replay protected. If we're not in the EIP155 hf
+		// Check whprobeer the tx is replay protected. If we're not in the EIP155 hf
 		// phase, start ignoring the sender until we do.
 		if tx.Protected() && !w.chainConfig.IsEIP155(w.current.header.Number) {
 			log.Trace("Ignoring reply protected transaction", "hash", tx.Hash(), "eip155", w.chainConfig.EIP155Block)
@@ -1030,7 +1030,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 	defer w.muProduce.Unlock()
 
 	if w.coinbase == (common.Address{}) {
-		log.Error("Refusing to mine without etherbase")
+		log.Error("Refusing to mine without probeerbase")
 		return
 	}
 
@@ -1063,14 +1063,14 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 	}
 
 	// Fill the block with all available pending transactions.
-	pending, err := w.eth.TxPool().Pending(true)
+	pending, err := w.probe.TxPool().Pending(true)
 	if err != nil {
 		log.Error("Failed to fetch pending transactions", "err", err)
 		return
 	}
 	// Split the pending transactions into locals and remotes
 	localTxs, remoteTxs := make(map[common.Address]types.Transactions), pending
-	for _, account := range w.eth.TxPool().Locals() {
+	for _, account := range w.probe.TxPool().Locals() {
 		if txs := remoteTxs[account]; len(txs) > 0 {
 			delete(remoteTxs, account)
 			localTxs[account] = txs
@@ -1089,12 +1089,12 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 		}
 	}
 
-	w.current.powAnswerUncles = w.eth.BlockChain().GetUnclePowAnswers(parentBlockNum)
-	w.current.dposAcks = w.eth.BlockChain().GetDposAck(parentBlockNum, types.AckTypeAll)
+	w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(parentBlockNum)
+	w.current.dposAcks = w.probe.BlockChain().GetDposAck(parentBlockNum, types.AckTypeAll)
 
-	dposAckCount := w.eth.BlockChain().GetDposAckSize(parentBlockNum, types.AckTypeAll)
+	dposAckCount := w.probe.BlockChain().GetDposAckSize(parentBlockNum, types.AckTypeAll)
 	if dposAckCount < 1 {
-		log.Error("no dposAck in blockchain! something error", "parentBlockNum", parentBlockNum)
+		log.Error("no dposAck in blockchain! somprobeing error", "parentBlockNum", parentBlockNum)
 		return
 	}
 	ackCount := types.DposAckCount{
@@ -1102,17 +1102,17 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 		uint(dposAckCount),
 	}
 	w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, &ackCount)
-	//for i := 0; i <= w.eth.BlockChain().JumpBlockNumber; i++ {
+	//for i := 0; i <= w.probe.BlockChain().JumpBlockNumber; i++ {
 	//	blockNumber := big.NewInt(int64(0))
-	//	blockNumber.Sub(w.eth.BlockChain().CurrentBlock().Number(), big.NewInt(int64(i)))
+	//	blockNumber.Sub(w.probe.BlockChain().CurrentBlock().Number(), big.NewInt(int64(i)))
 	//	//todo：Lock access required
-	//	//w.current.dposAcks = append(w.current.dposAcks, w.eth.BlockChain().DposAckMap[blockNumber]...)
-	//	//w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, types.DposAckCount{blockNumber, w.eth.BlockChain().DposAckCount[blockNumber]})
+	//	//w.current.dposAcks = append(w.current.dposAcks, w.probe.BlockChain().DposAckMap[blockNumber]...)
+	//	//w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, types.DposAckCount{blockNumber, w.probe.BlockChain().DposAckCount[blockNumber]})
 	//}
 
-	answers := w.eth.BlockChain().GetLatestPowAnswer(parentBlockNum)
+	answers := w.probe.BlockChain().GetLatestPowAnswer(parentBlockNum)
 	if answers == nil {
-		log.Error("Refusing to mine without PowAnswers, something error, need to check")
+		log.Error("Refusing to mine without PowAnswers, somprobeing error, need to check")
 		return
 	}
 	w.current.header.PowAnswers = append(w.current.header.PowAnswers, answers)
@@ -1161,7 +1161,7 @@ func totalFees(block *types.Block, receipts []*types.Receipt) *big.Float {
 		minerFee, _ := tx.EffectiveGasTip(block.BaseFee())
 		feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
 	}
-	return new(big.Float).Quo(new(big.Float).SetInt(feesWei), new(big.Float).SetInt(big.NewInt(params.Ether)))
+	return new(big.Float).Quo(new(big.Float).SetInt(feesWei), new(big.Float).SetInt(big.NewInt(params.Probeer)))
 }
 
 // calcDifficulty

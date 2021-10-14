@@ -14,7 +14,7 @@ Example:
   "messages": [
     {
       "name": "message",
-      "value": "\u0019Ethereum Signed Message:\n11hello world",
+      "value": "\u0019Probeum Signed Message:\n11hello world",
       "type": "text/plain"
     }
   ],
@@ -71,7 +71,7 @@ Example:
   "call_info": [
     {
       "type": "Warning",
-      "message": "Something looks odd, show this message as a warning"
+      "message": "Somprobeing looks odd, show this message as a warning"
     },
     {
       "type": "Info",
@@ -205,7 +205,7 @@ Example:
 ```
 ### ListResponse
 
-Response to list request. The response contains a list of all addresses to show to the caller. Note: the UI is free to respond with any address the caller, regardless of whether it exists or not
+Response to list request. The response contains a list of all addresses to show to the caller. Note: the UI is free to respond with any address the caller, regardless of whprobeer it exists or not
 
 Example:
 ```json

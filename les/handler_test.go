@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package les
 
@@ -23,19 +23,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/light"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 )
 
 func expectResponse(r p2p.MsgReader, msgcode, reqID, bv uint64, data interface{}) error {
@@ -640,7 +640,7 @@ func testTransactionStatus(t *testing.T, protocol int) {
 	test(tx3, false, light.TxStatus{Status: core.TxStatusPending})
 
 	// generate and add a block with tx1 and tx2 included
-	gchain, _ := core.GenerateChain(params.TestChainConfig, chain.GetBlockByNumber(0), ethash.NewFaker(), server.db, 1, func(i int, block *core.BlockGen) {
+	gchain, _ := core.GenerateChain(params.TestChainConfig, chain.GetBlockByNumber(0), probeash.NewFaker(), server.db, 1, func(i int, block *core.BlockGen) {
 		block.AddTx(tx1)
 		block.AddTx(tx2)
 	})
@@ -668,7 +668,7 @@ func testTransactionStatus(t *testing.T, protocol int) {
 	test(tx2, false, light.TxStatus{Status: core.TxStatusIncluded, Lookup: &rawdb.LegacyTxLookupEntry{BlockHash: block1hash, BlockIndex: 1, Index: 1}})
 
 	// create a reorg that rolls them back
-	gchain, _ = core.GenerateChain(params.TestChainConfig, chain.GetBlockByNumber(0), ethash.NewFaker(), server.db, 2, func(i int, block *core.BlockGen) {})
+	gchain, _ = core.GenerateChain(params.TestChainConfig, chain.GetBlockByNumber(0), probeash.NewFaker(), server.db, 2, func(i int, block *core.BlockGen) {})
 	if _, err := chain.InsertChain(gchain); err != nil {
 		panic(err)
 	}

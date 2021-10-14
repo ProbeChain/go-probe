@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package rpc
 
@@ -33,7 +33,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/probeum/go-probeum/log"
 )
 
 func TestClientRequest(t *testing.T) {
@@ -260,17 +260,17 @@ func TestClientSubscribeInvalidArg(t *testing.T) {
 		defer func() {
 			err := recover()
 			if shouldPanic && err == nil {
-				t.Errorf("EthSubscribe should've panicked for %#v", arg)
+				t.Errorf("ProbeSubscribe should've panicked for %#v", arg)
 			}
 			if !shouldPanic && err != nil {
-				t.Errorf("EthSubscribe shouldn't have panicked for %#v", arg)
+				t.Errorf("ProbeSubscribe shouldn't have panicked for %#v", arg)
 				buf := make([]byte, 1024*1024)
 				buf = buf[:runtime.Stack(buf, false)]
 				t.Error(err)
 				t.Error(string(buf))
 			}
 		}()
-		client.EthSubscribe(context.Background(), arg, "foo_bar")
+		client.ProbeSubscribe(context.Background(), arg, "foo_bar")
 	}
 	check(true, nil)
 	check(true, 1)
@@ -354,7 +354,7 @@ func TestClientSubscribeClose(t *testing.T) {
 	}
 }
 
-// This test reproduces https://github.com/ethereum/go-ethereum/issues/17837 where the
+// This test reproduces https://github.com/probeum/go-probeum/issues/17837 where the
 // client hangs during shutdown when Unsubscribe races with Client.Close.
 func TestClientCloseUnsubscribeRace(t *testing.T) {
 	server := newTestServer()
@@ -438,7 +438,7 @@ func TestClientSubscriptionUnsubscribeServer(t *testing.T) {
 }
 
 // This checks that the subscribed channel can be closed after Unsubscribe.
-// It is the reproducer for https://github.com/ethereum/go-ethereum/issues/22322
+// It is the reproducer for https://github.com/probeum/go-probeum/issues/22322
 func TestClientSubscriptionChannelClose(t *testing.T) {
 	t.Parallel()
 
@@ -638,7 +638,7 @@ func TestClientReconnect(t *testing.T) {
 	}
 
 	// Start it up again and call again. The connection should be reestablished.
-	// We spawn multiple calls here to check whether this hangs somehow.
+	// We spawn multiple calls here to check whprobeer this hangs somehow.
 	s2, l2 := startServer(l1.Addr().String())
 	defer l2.Close()
 	defer s2.Stop()
@@ -692,7 +692,7 @@ func httpTestClient(srv *Server, transport string, fl *flakeyListener) (*Client,
 
 func ipcTestClient(srv *Server, fl *flakeyListener) (*Client, net.Listener) {
 	// Listen on a random endpoint.
-	endpoint := fmt.Sprintf("go-ethereum-test-ipc-%d-%d", os.Getpid(), rand.Int63())
+	endpoint := fmt.Sprintf("go-probeum-test-ipc-%d-%d", os.Getpid(), rand.Int63())
 	if runtime.GOOS == "windows" {
 		endpoint = `\\.\pipe\` + endpoint
 	} else {

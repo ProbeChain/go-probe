@@ -1,8 +1,8 @@
 package state
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/crypto"
 	"math/big"
 	"sync"
 )

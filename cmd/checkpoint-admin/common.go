@@ -1,41 +1,41 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2019 The go-probeum Authors
+// This file is part of go-probeum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-probeum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-probeum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+// along with go-probeum. If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
 import (
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/accounts/external"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/checkpointoracle"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/accounts/abi/bind"
+	"github.com/probeum/go-probeum/accounts/external"
+	"github.com/probeum/go-probeum/cmd/utils"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/contracts/checkpointoracle"
+	"github.com/probeum/go-probeum/probeclient"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
 
 // newClient creates a client with specified remote URL.
-func newClient(ctx *cli.Context) *ethclient.Client {
-	client, err := ethclient.Dial(ctx.GlobalString(nodeURLFlag.Name))
+func newClient(ctx *cli.Context) *probeclient.Client {
+	client, err := probeclient.Dial(ctx.GlobalString(nodeURLFlag.Name))
 	if err != nil {
-		utils.Fatalf("Failed to connect to Ethereum node: %v", err)
+		utils.Fatalf("Failed to connect to Probeum node: %v", err)
 	}
 	return client
 }
@@ -44,7 +44,7 @@ func newClient(ctx *cli.Context) *ethclient.Client {
 func newRPCClient(url string) *rpc.Client {
 	client, err := rpc.Dial(url)
 	if err != nil {
-		utils.Fatalf("Failed to connect to Ethereum node: %v", err)
+		utils.Fatalf("Failed to connect to Probeum node: %v", err)
 	}
 	return client
 }
@@ -103,7 +103,7 @@ func newContract(client *rpc.Client) (common.Address, *checkpointoracle.Checkpoi
 	if addr == (common.Address{}) {
 		utils.Fatalf("No specified registrar contract address")
 	}
-	contract, err := checkpointoracle.NewCheckpointOracle(addr, ethclient.NewClient(client))
+	contract, err := checkpointoracle.NewCheckpointOracle(addr, probeclient.NewClient(client))
 	if err != nil {
 		utils.Fatalf("Failed to setup registrar contract %s: %v", addr, err)
 	}

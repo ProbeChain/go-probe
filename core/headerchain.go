@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -26,13 +26,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -58,7 +58,7 @@ const (
 type HeaderChain struct {
 	config *params.ChainConfig
 
-	chainDb       ethdb.Database
+	chainDb       probedb.Database
 	genesisHeader *types.Header
 
 	currentHeader     atomic.Value // Current head of the header chain (may be above the block chain!)
@@ -76,7 +76,7 @@ type HeaderChain struct {
 
 // NewHeaderChain creates a new HeaderChain structure. ProcInterrupt points
 // to the parent's interrupt semaphore.
-func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, engine consensus.Engine, procInterrupt func() bool) (*HeaderChain, error) {
+func NewHeaderChain(chainDb probedb.Database, config *params.ChainConfig, engine consensus.Engine, procInterrupt func() bool) (*HeaderChain, error) {
 	headerCache, _ := lru.New(headerCacheLimit)
 	tdCache, _ := lru.New(tdCacheLimit)
 	numberCache, _ := lru.New(numberCacheLimit)
@@ -551,11 +551,11 @@ type (
 	// before head header is updated. The method will return the actual block it
 	// updated the head to (missing state) and a flag if setHead should continue
 	// rewinding till that forcefully (exceeded ancient limits)
-	UpdateHeadBlocksCallback func(ethdb.KeyValueWriter, *types.Header) (uint64, bool)
+	UpdateHeadBlocksCallback func(probedb.KeyValueWriter, *types.Header) (uint64, bool)
 
 	// DeleteBlockContentCallback is a callback function that is called by SetHead
 	// before each header is deleted.
-	DeleteBlockContentCallback func(ethdb.KeyValueWriter, common.Hash, uint64)
+	DeleteBlockContentCallback func(probedb.KeyValueWriter, common.Hash, uint64)
 )
 
 // SetHead rewinds the local chain to a new head. Everything above the new head
@@ -576,7 +576,7 @@ func (hc *HeaderChain) SetHead(head uint64, updateFn UpdateHeadBlocksCallback, d
 		}
 		parentHash = hdr.ParentHash
 
-		// Notably, since geth has the possibility for setting the head to a low
+		// Notably, since gprobe has the possibility for setting the head to a low
 		// height which is even lower than ancient head.
 		// In order to ensure that the head is always no higher than the data in
 		// the database (ancient store or active store), we need to update head

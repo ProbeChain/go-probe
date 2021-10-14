@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -20,10 +20,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/prque"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
 )
 
 // ErrNotRequested is returned by the trie sync when it's requested to process a
@@ -44,7 +44,7 @@ type request struct {
 	path []byte      // Merkle path leading to this node for prioritization
 	hash common.Hash // Hash of the node data content to retrieve
 	data []byte      // Data content of the node, cached until all subtrees complete
-	code bool        // Whether this is a code entry
+	code bool        // Whprobeer this is a code entry
 
 	parents []*request // Parent state nodes referencing this entry (notify all upon completion)
 	deps    int        // Number of dependencies before allowed to commit this node
@@ -122,7 +122,7 @@ func (batch *syncMemBatch) hasCode(hash common.Hash) bool {
 // unknown trie hashes to retrieve, accepts node data associated with said hashes
 // and reconstructs the trie step by step until all is done.
 type Sync struct {
-	database ethdb.KeyValueReader     // Persistent database to check for existing entries
+	database probedb.KeyValueReader     // Persistent database to check for existing entries
 	membatch *syncMemBatch            // Memory buffer to avoid frequent database writes
 	nodeReqs map[common.Hash]*request // Pending requests pertaining to a trie node hash
 	codeReqs map[common.Hash]*request // Pending requests pertaining to a code hash
@@ -132,7 +132,7 @@ type Sync struct {
 }
 
 // NewSync creates a new trie data download scheduler.
-func NewSync(root common.Hash, database ethdb.KeyValueReader, callback LeafCallback, bloom *SyncBloom) *Sync {
+func NewSync(root common.Hash, database probedb.KeyValueReader, callback LeafCallback, bloom *SyncBloom) *Sync {
 	ts := &Sync{
 		database: database,
 		membatch: newSyncMemBatch(),
@@ -172,7 +172,7 @@ func (s *Sync) AddSubTrie(root common.Hash, path []byte, parent common.Hash, cal
 		hash:     root,
 		callback: callback,
 	}
-	// If this sub-trie has a designated parent, link them together
+	// If this sub-trie has a designated parent, link them togprobeer
 	if parent != (common.Hash{}) {
 		ancestor := s.nodeReqs[parent]
 		if ancestor == nil {
@@ -214,7 +214,7 @@ func (s *Sync) AddCodeEntry(hash common.Hash, path []byte, parent common.Hash) {
 		hash: hash,
 		code: true,
 	}
-	// If this sub-trie has a designated parent, link them together
+	// If this sub-trie has a designated parent, link them togprobeer
 	if parent != (common.Hash{}) {
 		ancestor := s.nodeReqs[parent] // the parent of codereq can ONLY be nodereq
 		if ancestor == nil {
@@ -227,7 +227,7 @@ func (s *Sync) AddCodeEntry(hash common.Hash, path []byte, parent common.Hash) {
 }
 
 // Missing retrieves the known missing nodes from the trie for retrieval. To aid
-// both eth/6x style fast sync and snap/1x style state sync, the paths of trie
+// both probe/6x style fast sync and snap/1x style state sync, the paths of trie
 // nodes are returned too, as well as separate hash list for codes.
 func (s *Sync) Missing(max int) (nodes []common.Hash, paths []SyncPath, codes []common.Hash) {
 	var (
@@ -309,7 +309,7 @@ func (s *Sync) Process(result SyncResult) error {
 
 // Commit flushes the data stored in the internal membatch out to persistent
 // storage, returning any occurred error.
-func (s *Sync) Commit(dbw ethdb.Batch) error {
+func (s *Sync) Commit(dbw probedb.Batch) error {
 	// Dump the membatch into a database dbw
 	for key, value := range s.membatch.nodes {
 		rawdb.WriteTrieNode(dbw, key, value)
@@ -363,7 +363,7 @@ func (s *Sync) schedule(req *request) {
 // children retrieves all the missing children of a state trie entry for future
 // retrieval scheduling.
 func (s *Sync) children(req *request, object node) ([]*request, error) {
-	// Gather all the children of the node, irrelevant whether known or not
+	// Gather all the children of the node, irrelevant whprobeer known or not
 	type child struct {
 		path []byte
 		node node

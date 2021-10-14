@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package flowcontrol implements a client side flow control mechanism
 package flowcontrol
@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/log"
 )
 
 const (
@@ -197,7 +197,7 @@ func (node *ClientNode) updateParams(params ServerParams, now mclock.AbsTime) {
 	node.cm.updateParams(node, params, now)
 }
 
-// AcceptRequest returns whether a new request can be accepted and the missing
+// AcceptRequest returns whprobeer a new request can be accepted and the missing
 // buffer amount if it was rejected due to a buffer underrun. If accepted, maxCost
 // is deducted from the flow control buffer.
 func (node *ClientNode) AcceptRequest(reqID, index, maxCost uint64) (accepted bool, bufShort uint64, priority int64) {

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -21,9 +21,9 @@ import (
 	"container/heap"
 	"errors"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 // Iterator is a key-value trie iterator that traverses a Trie.
@@ -112,10 +112,10 @@ type NodeIterator interface {
 	// reading from disk. In those cases, this resolver allows short circuiting
 	// accesses and returning them from memory.
 	//
-	// Before adding a similar mechanism to any other place in Geth, consider
+	// Before adding a similar mechanism to any other place in Gprobe, consider
 	// making trie.Database an interface and wrapping at that level. It's a huge
 	// refactor, but it could be worth it if another occurrence arises.
-	AddResolver(ethdb.KeyValueStore)
+	AddResolver(probedb.KeyValueStore)
 }
 
 // nodeIteratorState represents the iteration state at one particular node of the
@@ -134,7 +134,7 @@ type nodeIterator struct {
 	path  []byte               // Path to the current node
 	err   error                // Failure set in case of an internal error in the iterator
 
-	resolver ethdb.KeyValueStore // Optional intermediate resolver above the disk layer
+	resolver probedb.KeyValueStore // Optional intermediate resolver above the disk layer
 }
 
 // errIteratorEnd is stored in nodeIterator.err when iteration is done.
@@ -159,7 +159,7 @@ func newNodeIterator(trie *Trie, start []byte) NodeIterator {
 	return it
 }
 
-func (it *nodeIterator) AddResolver(resolver ethdb.KeyValueStore) {
+func (it *nodeIterator) AddResolver(resolver probedb.KeyValueStore) {
 	it.resolver = resolver
 }
 
@@ -234,7 +234,7 @@ func (it *nodeIterator) Error() error {
 	return it.err
 }
 
-// Next moves the iterator to the next node, returning whether there are any
+// Next moves the iterator to the next node, returning whprobeer there are any
 // further nodes. In case of an internal error this method returns false and
 // sets the Error field to the encountered failure. If `descend` is false,
 // skips iterating over any subnodes of the current node.
@@ -549,7 +549,7 @@ func (it *differenceIterator) Path() []byte {
 	return it.b.Path()
 }
 
-func (it *differenceIterator) AddResolver(resolver ethdb.KeyValueStore) {
+func (it *differenceIterator) AddResolver(resolver probedb.KeyValueStore) {
 	panic("not implemented")
 }
 
@@ -660,7 +660,7 @@ func (it *unionIterator) Path() []byte {
 	return (*it.items)[0].Path()
 }
 
-func (it *unionIterator) AddResolver(resolver ethdb.KeyValueStore) {
+func (it *unionIterator) AddResolver(resolver probedb.KeyValueStore) {
 	panic("not implemented")
 }
 

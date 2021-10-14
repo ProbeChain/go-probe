@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package checkpointoracle is a wrapper of checkpoint oracle contract with
 // additional rules defined. This package can be used both in LES client or
@@ -25,12 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/checkpointoracle"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/accounts/abi/bind"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/contracts/checkpointoracle"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 )
 
 // CheckpointOracle is responsible for offering the latest stable checkpoint
@@ -40,7 +40,7 @@ type CheckpointOracle struct {
 	config   *params.CheckpointOracleConfig
 	contract *checkpointoracle.CheckpointOracle
 
-	running  int32                                 // Flag whether the contract backend is set or not
+	running  int32                                 // Flag whprobeer the contract backend is set or not
 	getLocal func(uint64) params.TrustedCheckpoint // Function used to retrieve local checkpoint
 
 	checkMu              sync.Mutex                // Mutex to sync access to the fields below
@@ -72,7 +72,7 @@ func (oracle *CheckpointOracle) Start(backend bind.ContractBackend) {
 	oracle.contract = contract
 }
 
-// IsRunning returns an indicator whether the oracle is running.
+// IsRunning returns an indicator whprobeer the oracle is running.
 func (oracle *CheckpointOracle) IsRunning() bool {
 	return atomic.LoadInt32(&oracle.running) == 1
 }
@@ -117,7 +117,7 @@ func (oracle *CheckpointOracle) StableCheckpoint() (*params.TrustedCheckpoint, u
 }
 
 // VerifySigners recovers the signer addresses according to the signature and
-// checks whether there are enough approvals to finalize the checkpoint.
+// checks whprobeer there are enough approvals to finalize the checkpoint.
 func (oracle *CheckpointOracle) VerifySigners(index uint64, hash [32]byte, signatures [][]byte) (bool, []common.Address) {
 	// Short circuit if the given signatures doesn't reach the threshold.
 	if len(signatures) < int(oracle.config.Threshold) {

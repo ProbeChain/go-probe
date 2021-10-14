@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package snapshot
 
@@ -26,8 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/rlp"
 	bloomfilter "github.com/holiman/bloomfilter/v2"
 )
 
@@ -166,7 +166,7 @@ func (h storageBloomHasher) Sum64() uint64 {
 		binary.BigEndian.Uint64(h[1][bloomStorageHasherOffset:bloomStorageHasherOffset+8])
 }
 
-// newDiffLayer creates a new diff on top of an existing snapshot, whether that's a low
+// newDiffLayer creates a new diff on top of an existing snapshot, whprobeer that's a low
 // level persistent database or a hierarchical diff already.
 func newDiffLayer(parent snapshot, root common.Hash, destructs map[common.Hash]struct{}, accounts map[common.Hash][]byte, storage map[common.Hash]map[common.Hash][]byte) *diffLayer {
 	// Create the new layer with some pre-allocated data segments
@@ -261,7 +261,7 @@ func (dl *diffLayer) Parent() snapshot {
 	return dl.parent
 }
 
-// Stale return whether this layer has become stale (was flattened across) or if
+// Stale return whprobeer this layer has become stale (was flattened across) or if
 // it's still live.
 func (dl *diffLayer) Stale() bool {
 	return atomic.LoadUint32(&dl.stale) != 0
@@ -289,7 +289,7 @@ func (dl *diffLayer) Account(hash common.Hash) (*Account, error) {
 //
 // Note the returned account is not a copy, please don't modify it.
 func (dl *diffLayer) AccountRLP(hash common.Hash) ([]byte, error) {
-	// Check the bloom filter first whether there's even a point in reaching into
+	// Check the bloom filter first whprobeer there's even a point in reaching into
 	// all the maps in all the layers below
 	dl.lock.RLock()
 	hit := dl.diffed.Contains(accountBloomHasher(hash))
@@ -355,7 +355,7 @@ func (dl *diffLayer) accountRLP(hash common.Hash, depth int) ([]byte, error) {
 //
 // Note the returned slot is not a copy, please don't modify it.
 func (dl *diffLayer) Storage(accountHash, storageHash common.Hash) ([]byte, error) {
-	// Check the bloom filter first whether there's even a point in reaching into
+	// Check the bloom filter first whprobeer there's even a point in reaching into
 	// all the maps in all the layers below
 	dl.lock.RLock()
 	hit := dl.diffed.Contains(storageBloomHasher{accountHash, storageHash})
@@ -438,7 +438,7 @@ func (dl *diffLayer) flatten() snapshot {
 	}
 	// Parent is a diff, flatten it first (note, apart from weird corned cases,
 	// flatten will realistically only ever merge 1 layer, so there's no need to
-	// be smarter about grouping flattens together).
+	// be smarter about grouping flattens togprobeer).
 	parent = parent.flatten().(*diffLayer)
 
 	parent.lock.Lock()

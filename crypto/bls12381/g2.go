@@ -1,18 +1,18 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2020 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package bls12381
 
@@ -220,7 +220,7 @@ func (g *G2) Equal(p1, p2 *PointG2) bool {
 	return t[0].equal(t[1]) && t[2].equal(t[3])
 }
 
-// InCorrectSubgroup checks whether given point is in correct subgroup.
+// InCorrectSubgroup checks whprobeer given point is in correct subgroup.
 func (g *G2) InCorrectSubgroup(p *PointG2) bool {
 	tmp := &PointG2{}
 	g.MulScalar(tmp, p, q)
@@ -244,7 +244,7 @@ func (g *G2) IsOnCurve(p *PointG2) bool {
 	return t[0].equal(t[1])
 }
 
-// IsAffine checks a G2 point whether it is in affine form.
+// IsAffine checks a G2 point whprobeer it is in affine form.
 func (g *G2) IsAffine(p *PointG2) bool {
 	return p[2].isOne()
 }

@@ -1,20 +1,20 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package state provides a caching layer atop the Ethereum state trie.
+// Package state provides a caching layer atop the Probeum state trie.
 package state
 
 import (
@@ -22,23 +22,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/globalconfig"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/probeum/go-probeum/core/globalconfig"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/probedb"
 	"math/big"
 	"net"
 	"sort"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state/snapshot"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state/snapshot"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 )
 
 type revision struct {
@@ -287,7 +287,7 @@ func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err erro
 //	}
 //}
 
-func (t *TotalTrie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWriter) error {
+func (t *TotalTrie) Prove(key []byte, fromLevel uint, proofDb probedb.KeyValueWriter) error {
 	trieType, err := common.ValidAddress(common.BytesToAddress(key))
 	if err != nil {
 		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
@@ -311,7 +311,7 @@ func (t *TotalTrie) Prove(key []byte, fromLevel uint, proofDb ethdb.KeyValueWrit
 	}
 }
 
-// StateDB structs within the ethereum protocol are used to store anything
+// StateDB structs within the probeum protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
 // * Contracts
@@ -589,13 +589,13 @@ func (s *StateDB) SubRefund(gas uint64) {
 	s.refund -= gas
 }
 
-// Exist reports whether the given account address exists in the state.
+// Exist reports whprobeer the given account address exists in the state.
 // Notably this also returns true for suicided accounts.
 func (s *StateDB) Exist(addr common.Address) bool {
 	return s.getStateObject(addr) != nil
 }
 
-// Empty returns whether the state object is either non-existent
+// Empty returns whprobeer the state object is either non-existent
 // or empty according to the EIP161 specification (balance = nonce = code = 0)
 func (s *StateDB) Empty(addr common.Address) bool {
 	so := s.getStateObject(addr)
@@ -1045,7 +1045,7 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 //   1. sends funds to sha(account ++ (nonce + 1))
 //   2. tx_create(sha(account ++ nonce)) (note that this gets the address of 1)
 //
-// Carrying over the balance ensures that Ether doesn't disappear.
+// Carrying over the balance ensures that Probeer doesn't disappear.
 func (s *StateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
@@ -1191,7 +1191,7 @@ func (s *StateDB) Copy() *StateDB {
 	}
 	// Copy the dirty states, logs, and preimages
 	for addr := range s.journal.dirties {
-		// As documented [here](https://github.com/ethereum/go-ethereum/pull/16485#issuecomment-380438527),
+		// As documented [here](https://github.com/probeum/go-probeum/pull/16485#issuecomment-380438527),
 		// and in the Finalise-method, there is a case where an object is in the journal but not
 		// in the stateObjects: OOG after touch on ripeMD prior to Byzantium. Thus, we need to check for
 		// nil

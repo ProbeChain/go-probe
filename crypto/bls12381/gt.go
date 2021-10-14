@@ -1,18 +1,18 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2020 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package bls12381
 
@@ -78,7 +78,7 @@ func (g *GT) ToBytes(e *E) []byte {
 	return g.fp12.toBytes(e)
 }
 
-// IsValid checks whether given target group element is in correct subgroup.
+// IsValid checks whprobeer given target group element is in correct subgroup.
 func (g *GT) IsValid(e *E) bool {
 	r := g.New()
 	g.fp12.exp(r, e, q)

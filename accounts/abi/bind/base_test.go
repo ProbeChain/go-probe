@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package bind_test
 
@@ -23,14 +23,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum"
+	"github.com/probeum/go-probeum/accounts/abi"
+	"github.com/probeum/go-probeum/accounts/abi/bind"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 type mockCaller struct {
@@ -45,7 +45,7 @@ func (mc *mockCaller) CodeAt(ctx context.Context, contract common.Address, block
 	return []byte{1, 2, 3}, nil
 }
 
-func (mc *mockCaller) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (mc *mockCaller) CallContract(ctx context.Context, call probeum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	mc.callContractBlockNumber = blockNumber
 	return nil, nil
 }
@@ -55,7 +55,7 @@ func (mc *mockCaller) PendingCodeAt(ctx context.Context, contract common.Address
 	return nil, nil
 }
 
-func (mc *mockCaller) PendingCallContract(ctx context.Context, call ethereum.CallMsg) ([]byte, error) {
+func (mc *mockCaller) PendingCallContract(ctx context.Context, call probeum.CallMsg) ([]byte, error) {
 	mc.pendingCallContractCalled = true
 	return nil, nil
 }
@@ -65,8 +65,8 @@ func TestPassingBlockNumber(t *testing.T) {
 
 	bc := bind.NewBoundContract(common.HexToAddress("0x0"), abi.ABI{
 		Methods: map[string]abi.Method{
-			"something": {
-				Name:    "something",
+			"somprobeing": {
+				Name:    "somprobeing",
 				Outputs: abi.Arguments{},
 			},
 		},
@@ -74,7 +74,7 @@ func TestPassingBlockNumber(t *testing.T) {
 
 	blockNumber := big.NewInt(42)
 
-	bc.Call(&bind.CallOpts{BlockNumber: blockNumber}, nil, "something")
+	bc.Call(&bind.CallOpts{BlockNumber: blockNumber}, nil, "somprobeing")
 
 	if mc.callContractBlockNumber != blockNumber {
 		t.Fatalf("CallContract() was not passed the block number")
@@ -84,7 +84,7 @@ func TestPassingBlockNumber(t *testing.T) {
 		t.Fatalf("CodeAt() was not passed the block number")
 	}
 
-	bc.Call(&bind.CallOpts{}, nil, "something")
+	bc.Call(&bind.CallOpts{}, nil, "somprobeing")
 
 	if mc.callContractBlockNumber != nil {
 		t.Fatalf("CallContract() was passed a block number when it should not have been")
@@ -94,7 +94,7 @@ func TestPassingBlockNumber(t *testing.T) {
 		t.Fatalf("CodeAt() was passed a block number when it should not have been")
 	}
 
-	bc.Call(&bind.CallOpts{BlockNumber: blockNumber, Pending: true}, nil, "something")
+	bc.Call(&bind.CallOpts{BlockNumber: blockNumber, Pending: true}, nil, "somprobeing")
 
 	if !mc.pendingCallContractCalled {
 		t.Fatalf("CallContract() was not passed the block number")

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package p2p
 
@@ -25,9 +25,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 // Msg defines the structure of a p2p message.
@@ -127,7 +127,7 @@ type eofSignal struct {
 	eof     chan<- struct{}
 }
 
-// note: when using eofSignal to detect whether a message payload
+// note: when using eofSignal to detect whprobeer a message payload
 // has been read, Read might not be called for zero sized messages.
 func (r *eofSignal) Read(buf []byte) (int, error) {
 	if r.count == 0 {

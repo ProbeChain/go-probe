@@ -4,8 +4,8 @@ The `signer` binary contains a ruleset engine, implemented with [OttoVM](https:/
 
 It enables usecases like the following:
 
-* I want to auto-approve transactions with contract `CasinoDapp`, with up to `0.05 ether` in value to maximum `1 ether` per 24h period
-* I want to auto-approve transaction to contract `EthAlarmClock` with `data`=`0xdeadbeef`, if `value=0`, `gas < 44k` and `gasPrice < 40Gwei`
+* I want to auto-approve transactions with contract `CasinoDapp`, with up to `0.05 probeer` in value to maximum `1 probeer` per 24h period
+* I want to auto-approve transaction to contract `ProbeAlarmClock` with `data`=`0xdeadbeef`, if `value=0`, `gas < 44k` and `gasPrice < 40Gwei`
 
 The two main features that are required for this to work well are;
 
@@ -52,7 +52,7 @@ invokes the corresponding method. In doing so, there are three possible outcomes
   * Auto-approve request
 2. JS returns "Reject"
   * Auto-reject request
-3. Error occurs, or something else is returned
+3. Error occurs, or somprobeing else is returned
   * Pass on to `next` ui: the regular UI channel.
 
 A more advanced example can be found below, "Example 1: ruleset for a rate-limited window", using `storage` to `Put` and `Get` `string`s by key.
@@ -89,7 +89,7 @@ Some security precautions can be made, such as:
 ##### Security of implementation
 
 The drawbacks of this very flexible solution is that the `signer` needs to contain a javascript engine. This is pretty simple to implement, since it's already
-implemented for `geth`. There are no known security vulnerabilities in, nor have we had any security-problems with it so far.
+implemented for `gprobe`. There are no known security vulnerabilities in, nor have we had any security-problems with it so far.
 
 The javascript engine would be an added attack surface; but if the validation of `rulesets` is made good (with hash-based attestation), the actual javascript cannot be considered
 an attack surface -- if an attacker can control the ruleset, a much simpler attack would be to implement an "always-approve" rule instead of exploiting the js vm. The only benefit
@@ -100,7 +100,7 @@ to be gained from attacking the actual `signer` process from the `js` side would
 Javascript is flexible, but also easy to get wrong, especially when users assume that `js` can handle large integers natively. Typical errors
 include trying to multiply `gasCost` with `gas` without using `bigint`:s.
 
-It's unclear whether any other DSL could be more secure; since there's always the possibility of erroneously implementing a rule.
+It's unclear whprobeer any other DSL could be more secure; since there's always the possibility of erroneously implementing a rule.
 
 
 ## Credential management
@@ -149,7 +149,7 @@ function big(str) {
 // Time window: 1 week
 var window = 1000* 3600*24*7;
 
-// Limit : 1 ether
+// Limit : 1 probeer
 var limit = new BigNumber("1e18");
 
 function isLimitOk(transaction) {

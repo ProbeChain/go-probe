@@ -3,9 +3,9 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/types"
 	"math/big"
 )
 

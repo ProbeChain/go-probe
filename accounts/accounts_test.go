@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package accounts
 
@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/probe"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/p2p/enode"
 	"math/big"
 	"net"
 	"testing"
@@ -213,7 +213,7 @@ func TestSign(*testing.T) {
 	fmt.Println("address ", common.BytesToHash(common.FromHex("031C98b32Cf0990eCAeB2706E3Fb70F6ad04663c199dC96463")))
 	fmt.Println("priveaddress ", common.BytesToHash(common.FromHex("03faeb343468fdb38cd39114af7b6b9a3452768116fed047623c138100d9bd4e4e")))
 	/*//字节转地址
-	addr3      := common.BytesToAddress([]byte("ethereum"))
+	addr3      := common.BytesToAddress([]byte("probeum"))
 	fmt.Println("address ",addr3.String())
 
 	//字节转hash

@@ -1,1 +1,1 @@
-killall geth
+killall gprobe

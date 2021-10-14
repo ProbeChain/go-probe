@@ -637,7 +637,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file coder.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -924,7 +924,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file formatters.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -1212,7 +1212,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file param.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -1758,7 +1758,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file config.js
      * @authors:
-     *   Marek Kotewicz <marek@ethdev.com>
+     *   Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -1786,27 +1786,27 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       'Gwei',
       'szabo',
       'finney',
-      'femtoether',
-      'picoether',
-      'nanoether',
-      'microether',
-      'milliether',
+      'femtoprobeer',
+      'picoprobeer',
+      'nanoprobeer',
+      'microprobeer',
+      'milliprobeer',
       'nano',
       'micro',
       'milli',
-      'ether',
+      'probeer',
       'grand',
-      'Mether',
-      'Gether',
-      'Tether',
-      'Pether',
-      'Eether',
-      'Zether',
-      'Yether',
-      'Nether',
-      'Dether',
-      'Vether',
-      'Uether'
+      'Mprobeer',
+      'Gprobeer',
+      'Tprobeer',
+      'Pprobeer',
+      'Eprobeer',
+      'Zprobeer',
+      'Yprobeer',
+      'Nprobeer',
+      'Dprobeer',
+      'Vprobeer',
+      'Uprobeer'
     ];
 
     module.exports = {
@@ -1839,7 +1839,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file sha3.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -1879,7 +1879,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file utils.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -1902,33 +1902,33 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     var utf8 = require('utf8');
 
     var unitMap = {
-      'noether':      '0',
+      'noprobeer':      '0',
       'wei':          '1',
       'kwei':         '1000',
       'Kwei':         '1000',
       'babbage':      '1000',
-      'femtoether':   '1000',
+      'femtoprobeer':   '1000',
       'mwei':         '1000000',
       'Mwei':         '1000000',
       'lovelace':     '1000000',
-      'picoether':    '1000000',
+      'picoprobeer':    '1000000',
       'gwei':         '1000000000',
       'Gwei':         '1000000000',
       'shannon':      '1000000000',
-      'nanoether':    '1000000000',
+      'nanoprobeer':    '1000000000',
       'nano':         '1000000000',
       'szabo':        '1000000000000',
-      'microether':   '1000000000000',
+      'microprobeer':   '1000000000000',
       'micro':        '1000000000000',
       'finney':       '1000000000000000',
-      'milliether':    '1000000000000000',
+      'milliprobeer':    '1000000000000000',
       'milli':         '1000000000000000',
-      'ether':        '1000000000000000000',
-      'kether':       '1000000000000000000000',
+      'probeer':        '1000000000000000000',
+      'kprobeer':       '1000000000000000000000',
       'grand':        '1000000000000000000000',
-      'mether':       '1000000000000000000000000',
-      'gether':       '1000000000000000000000000000',
-      'tether':       '1000000000000000000000000000000'
+      'mprobeer':       '1000000000000000000000000',
+      'gprobeer':       '1000000000000000000000000000',
+      'tprobeer':       '1000000000000000000000000000000'
     };
 
     /**
@@ -2142,12 +2142,12 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * Returns value of unit in Wei
      *
      * @method getValueOfUnit
-     * @param {String} unit the unit to convert to, default ether
+     * @param {String} unit the unit to convert to, default probeer
      * @returns {BigNumber} value of the unit (in Wei)
      * @throws error if the unit is not correct:w
      */
     var getValueOfUnit = function (unit) {
-      unit = unit ? unit.toLowerCase() : 'ether';
+      unit = unit ? unit.toLowerCase() : 'probeer';
       var unitValue = unitMap[unit];
       if (unitValue === undefined) {
         throw new Error('This unit doesn\'t exists, please use the one of the following units' + JSON.stringify(unitMap, null, 2));
@@ -2156,24 +2156,24 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     };
 
     /**
-     * Takes a number of wei and converts it to any other ether unit.
+     * Takes a number of wei and converts it to any other probeer unit.
      *
      * Possible units are:
      *   SI Short   SI Full        Effigy       Other
-     * - kwei       femtoether     babbage
-     * - mwei       picoether      lovelace
-     * - gwei       nanoether      shannon      nano
-     * - --         microether     szabo        micro
-     * - --         milliether     finney       milli
-     * - ether      --             --
-     * - kether                    --           grand
-     * - mether
-     * - gether
-     * - tether
+     * - kwei       femtoprobeer     babbage
+     * - mwei       picoprobeer      lovelace
+     * - gwei       nanoprobeer      shannon      nano
+     * - --         microprobeer     szabo        micro
+     * - --         milliprobeer     finney       milli
+     * - probeer      --             --
+     * - kprobeer                    --           grand
+     * - mprobeer
+     * - gprobeer
+     * - tprobeer
      *
      * @method fromWei
      * @param {Number|String} number can be a number, number string or a HEX of a decimal
-     * @param {String} unit the unit to convert to, default ether
+     * @param {String} unit the unit to convert to, default probeer
      * @return {String|Object} When given a BigNumber object it returns one as well, otherwise a number
      */
     var fromWei = function(number, unit) {
@@ -2187,21 +2187,21 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      *
      * Possible units are:
      *   SI Short   SI Full        Effigy       Other
-     * - kwei       femtoether     babbage
-     * - mwei       picoether      lovelace
-     * - gwei       nanoether      shannon      nano
-     * - --         microether     szabo        micro
-     * - --         microether     szabo        micro
-     * - --         milliether     finney       milli
-     * - ether      --             --
-     * - kether                    --           grand
-     * - mether
-     * - gether
-     * - tether
+     * - kwei       femtoprobeer     babbage
+     * - mwei       picoprobeer      lovelace
+     * - gwei       nanoprobeer      shannon      nano
+     * - --         microprobeer     szabo        micro
+     * - --         microprobeer     szabo        micro
+     * - --         milliprobeer     finney       milli
+     * - probeer      --             --
+     * - kprobeer                    --           grand
+     * - mprobeer
+     * - gprobeer
+     * - tprobeer
      *
      * @method toWei
      * @param {Number|String|BigNumber} number can be a number, number string or a HEX of a decimal
-     * @param {String} unit the unit to convert from, default ether
+     * @param {String} unit the unit to convert from, default probeer
      * @return {String|Object} When given a BigNumber object it returns one as well, otherwise a number
      */
     var toWei = function(number, unit) {
@@ -2427,7 +2427,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     };
 
     /**
-     * Returns true if given string is a valid Ethereum block header bloom.
+     * Returns true if given string is a valid Probeum block header bloom.
      *
      * @method isBloom
      * @param {String} hex encoded bloom filter
@@ -2516,17 +2516,17 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     /**
      * @file web3.js
      * @authors:
-     *   Jeffrey Wilcke <jeff@ethdev.com>
-     *   Marek Kotewicz <marek@ethdev.com>
-     *   Marian Oancea <marian@ethdev.com>
-     *   Fabian Vogelsteller <fabian@ethdev.com>
-     *   Gav Wood <g@ethdev.com>
+     *   Jeffrey Wilcke <jeff@probedev.com>
+     *   Marek Kotewicz <marek@probedev.com>
+     *   Marian Oancea <marian@probedev.com>
+     *   Fabian Vogelsteller <fabian@probedev.com>
+     *   Gav Wood <g@probedev.com>
      * @date 2014
      */
 
     var RequestManager = require('./web3/requestmanager');
     var Iban = require('./web3/iban');
-    var Eth = require('./web3/methods/eth');
+    var Probe = require('./web3/methods/eth');
     var DB = require('./web3/methods/db');
     var Shh = require('./web3/methods/shh');
     var Net = require('./web3/methods/net');
@@ -2548,7 +2548,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     function Web3 (provider) {
       this._requestManager = new RequestManager(provider);
       this.currentProvider = provider;
-      this.eth = new Eth(this);
+      this.probe = new Probe(this);
       this.db = new DB(this);
       this.shh = new Shh(this);
       this.net = new Net(this);
@@ -2627,8 +2627,8 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
           inputFormatter: utils.toDecimal
         }),
         new Property({
-          name: 'version.ethereum',
-          getter: 'eth_protocolVersion',
+          name: 'version.probeum',
+          getter: 'probe_protocolVersion',
           inputFormatter: utils.toDecimal
         }),
         new Property({
@@ -2669,7 +2669,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file allevents.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2014
      */
 
@@ -2729,7 +2729,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var o = this.encode(options);
       var formatter = this.decode.bind(this);
-      return new Filter(o, 'eth', this._requestManager, watches.eth(), formatter, callback);
+      return new Filter(o, 'probe', this._requestManager, watches.probe(), formatter, callback);
     };
 
     AllSolidityEvents.prototype.attachToContract = function (contract) {
@@ -2759,7 +2759,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file batch.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -2827,7 +2827,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file contract.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2014
      */
 
@@ -2867,7 +2867,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       contract.abi.filter(function (json) {
         return json.type === 'function';
       }).map(function (json) {
-        return new SolidityFunction(contract._eth, json, contract.address);
+        return new SolidityFunction(contract._probe, json, contract.address);
       }).forEach(function (f) {
         f.attachToContract(contract);
       });
@@ -2885,11 +2885,11 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
         return json.type === 'event';
       });
 
-      var All = new AllEvents(contract._eth._requestManager, events, contract.address);
+      var All = new AllEvents(contract._probe._requestManager, events, contract.address);
       All.attachToContract(contract);
 
       events.map(function (json) {
-        return new SolidityEvent(contract._eth._requestManager, json, contract.address);
+        return new SolidityEvent(contract._probe._requestManager, json, contract.address);
       }).forEach(function (e) {
         e.attachToContract(contract);
       });
@@ -2909,7 +2909,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
           callbackFired = false;
 
       // wait for receipt
-      var filter = contract._eth.filter('latest', function(e){
+      var filter = contract._probe.filter('latest', function(e){
         if (!e && !callbackFired) {
           count++;
 
@@ -2927,10 +2927,10 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
           } else {
 
-            contract._eth.getTransactionReceipt(contract.transactionHash, function(e, receipt){
+            contract._probe.getTransactionReceipt(contract.transactionHash, function(e, receipt){
               if(receipt && !callbackFired) {
 
-                contract._eth.getCode(receipt.contractAddress, function(e, code){
+                contract._probe.getCode(receipt.contractAddress, function(e, code){
                   /*jshint maxcomplexity: 6 */
 
                   if(callbackFired || !code)
@@ -2973,8 +2973,8 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @method ContractFactory
      * @param {Array} abi
      */
-    var ContractFactory = function (eth, abi) {
-      this.eth = eth;
+    var ContractFactory = function (probe, abi) {
+      this.probe = probe;
       this.abi = abi;
 
       /**
@@ -2990,7 +2990,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       this.new = function () {
         /*jshint maxcomplexity: 7 */
 
-        var contract = new Contract(this.eth, this.abi);
+        var contract = new Contract(this.probe, this.abi);
 
         // parse arguments
         var options = {}; // required!
@@ -3022,7 +3022,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
         if (callback) {
 
           // wait for the contract address and check if the code was deployed
-          this.eth.sendTransaction(options, function (err, hash) {
+          this.probe.sendTransaction(options, function (err, hash) {
             if (err) {
               callback(err);
             } else {
@@ -3036,7 +3036,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
             }
           });
         } else {
-          var hash = this.eth.sendTransaction(options);
+          var hash = this.probe.sendTransaction(options);
           // add the transaction hash
           contract.transactionHash = hash;
           checkForContractAddress(contract);
@@ -3071,7 +3071,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * otherwise calls callback function (err, contract)
      */
     ContractFactory.prototype.at = function (address, callback) {
-      var contract = new Contract(this.eth, this.abi, address);
+      var contract = new Contract(this.probe, this.abi, address);
 
       // this functions are not part of prototype,
       // because we don't want to spoil the interface
@@ -3111,8 +3111,8 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @param {Array} abi
      * @param {Address} contract address
      */
-    var Contract = function (eth, abi, address) {
-      this._eth = eth;
+    var Contract = function (probe, abi, address) {
+      this._probe = probe;
       this.transactionHash = null;
       this.address = address;
       this.abi = abi;
@@ -3139,7 +3139,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file errors.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -3184,7 +3184,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file event.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2014
      */
 
@@ -3257,7 +3257,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @method encode
      * @param {Object} indexed
      * @param {Object} options
-     * @return {Object} everything combined together and encoded
+     * @return {Object} everything combined togprobeer and encoded
      */
     SolidityEvent.prototype.encode = function (indexed, options) {
       indexed = indexed || {};
@@ -3354,7 +3354,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var o = this.encode(indexed, options);
       var formatter = this.decode.bind(this);
-      return new Filter(o, 'eth', this._requestManager, watches.eth(), formatter, callback);
+      return new Filter(o, 'probe', this._requestManager, watches.probe(), formatter, callback);
     };
 
     /**
@@ -3444,11 +3444,11 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file filter.js
      * @authors:
-     *   Jeffrey Wilcke <jeff@ethdev.com>
-     *   Marek Kotewicz <marek@ethdev.com>
-     *   Marian Oancea <marian@ethdev.com>
-     *   Fabian Vogelsteller <fabian@ethdev.com>
-     *   Gav Wood <g@ethdev.com>
+     *   Jeffrey Wilcke <jeff@probedev.com>
+     *   Marek Kotewicz <marek@probedev.com>
+     *   Marian Oancea <marian@probedev.com>
+     *   Fabian Vogelsteller <fabian@probedev.com>
+     *   Gav Wood <g@probedev.com>
      * @date 2014
      */
 
@@ -3488,7 +3488,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
 
       switch(type) {
-        case 'eth':
+        case 'probe':
 
           // make sure topics, get converted to hex
           options.topics = options.topics || [];
@@ -3693,8 +3693,8 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file formatters.js
-     * @author Marek Kotewicz <marek@ethdev.com>
-     * @author Fabian Vogelsteller <fabian@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
+     * @author Fabian Vogelsteller <fabian@probedev.com>
      * @date 2015
      */
 
@@ -4011,7 +4011,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file function.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -4024,8 +4024,8 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     /**
      * This prototype should be used to call/sendTransaction to solidity functions
      */
-    var SolidityFunction = function (eth, json, address) {
-      this._eth = eth;
+    var SolidityFunction = function (probe, json, address) {
+      this._probe = probe;
       this._inputTypes = json.inputs.map(function (i) {
         return i.type;
       });
@@ -4127,12 +4127,12 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
 
       if (!callback) {
-        var output = this._eth.call(payload, defaultBlock);
+        var output = this._probe.call(payload, defaultBlock);
         return this.unpackOutput(output);
       }
 
       var self = this;
-      this._eth.call(payload, defaultBlock, function (error, output) {
+      this._probe.call(payload, defaultBlock, function (error, output) {
         if (error) return callback(error, null);
 
         var unpacked = null;
@@ -4162,10 +4162,10 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       }
 
       if (!callback) {
-        return this._eth.sendTransaction(payload);
+        return this._probe.sendTransaction(payload);
       }
 
-      this._eth.sendTransaction(payload, callback);
+      this._probe.sendTransaction(payload, callback);
     };
 
     /**
@@ -4179,10 +4179,10 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       var payload = this.toPayload(args);
 
       if (!callback) {
-        return this._eth.estimateGas(payload);
+        return this._probe.estimateGas(payload);
       }
 
-      this._eth.estimateGas(payload, callback);
+      this._probe.estimateGas(payload, callback);
     };
 
     /**
@@ -4296,9 +4296,9 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file httpprovider.js
      * @authors:
-     *   Marek Kotewicz <marek@ethdev.com>
-     *   Marian Oancea <marian@ethdev.com>
-     *   Fabian Vogelsteller <fabian@ethdev.com>
+     *   Marek Kotewicz <marek@probedev.com>
+     *   Marian Oancea <marian@probedev.com>
+     *   Fabian Vogelsteller <fabian@probedev.com>
      * @date 2015
      */
 
@@ -4455,7 +4455,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file iban.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -4524,7 +4524,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     };
 
     /**
-     * This method should be used to create iban object from ethereum address
+     * This method should be used to create iban object from probeum address
      *
      * @method fromAddress
      * @param {String} address
@@ -4684,7 +4684,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file ipcprovider.js
      * @authors:
-     *   Fabian Vogelsteller <fabian@ethdev.com>
+     *   Fabian Vogelsteller <fabian@probedev.com>
      * @date 2015
      */
 
@@ -4893,7 +4893,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file jsonrpc.js
      * @authors:
-     *   Marek Kotewicz <marek@ethdev.com>
+     *   Marek Kotewicz <marek@probedev.com>
      *   Aaron Kumavis <aaron@kumavis.me>
      * @date 2015
      */
@@ -4980,7 +4980,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file method.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -5146,7 +5146,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file db.js
      * @authors:
-     *   Marek Kotewicz <marek@ethdev.com>
+     *   Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -5213,9 +5213,9 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
     /**
-     * @file eth.js
-     * @author Marek Kotewicz <marek@ethdev.com>
-     * @author Fabian Vogelsteller <fabian@ethdev.com>
+     * @file probe.js
+     * @author Marek Kotewicz <marek@probedev.com>
+     * @author Fabian Vogelsteller <fabian@probedev.com>
      * @date 2015
      */
 
@@ -5235,26 +5235,26 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     var transfer = require('../transfer');
 
     var blockCall = function (args) {
-      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? "eth_getBlockByHash" : "eth_getBlockByNumber";
+      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? "probe_getBlockByHash" : "probe_getBlockByNumber";
     };
 
     var transactionFromBlockCall = function (args) {
-      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getTransactionByBlockHashAndIndex' : 'eth_getTransactionByBlockNumberAndIndex';
+      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'probe_getTransactionByBlockHashAndIndex' : 'probe_getTransactionByBlockNumberAndIndex';
     };
 
     var uncleCall = function (args) {
-      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getUncleByBlockHashAndIndex' : 'eth_getUncleByBlockNumberAndIndex';
+      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'probe_getUncleByBlockHashAndIndex' : 'probe_getUncleByBlockNumberAndIndex';
     };
 
     var getBlockTransactionCountCall = function (args) {
-      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getBlockTransactionCountByHash' : 'eth_getBlockTransactionCountByNumber';
+      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'probe_getBlockTransactionCountByHash' : 'probe_getBlockTransactionCountByNumber';
     };
 
     var uncleCountCall = function (args) {
-      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getUncleCountByBlockHash' : 'eth_getUncleCountByBlockNumber';
+      return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'probe_getUncleCountByBlockHash' : 'probe_getUncleCountByBlockNumber';
     };
 
-    function Eth(web3) {
+    function Probe(web3) {
       this._requestManager = web3._requestManager;
 
       var self = this;
@@ -5274,7 +5274,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       this.sendIBANTransaction = transfer.bind(null, this);
     }
 
-    Object.defineProperty(Eth.prototype, 'defaultBlock', {
+    Object.defineProperty(Probe.prototype, 'defaultBlock', {
       get: function () {
         return c.defaultBlock;
       },
@@ -5284,7 +5284,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       }
     });
 
-    Object.defineProperty(Eth.prototype, 'defaultAccount', {
+    Object.defineProperty(Probe.prototype, 'defaultAccount', {
       get: function () {
         return c.defaultAccount;
       },
@@ -5297,7 +5297,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     var methods = function () {
       var getBalance = new Method({
         name: 'getBalance',
-        call: 'eth_getBalance',
+        call: 'probe_getBalance',
         params: 2,
         inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter],
         outputFormatter: formatters.outputBigNumberFormatter
@@ -5305,14 +5305,14 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var getStorageAt = new Method({
         name: 'getStorageAt',
-        call: 'eth_getStorageAt',
+        call: 'probe_getStorageAt',
         params: 3,
         inputFormatter: [null, utils.toHex, formatters.inputDefaultBlockNumberFormatter]
       });
 
       var getCode = new Method({
         name: 'getCode',
-        call: 'eth_getCode',
+        call: 'probe_getCode',
         params: 2,
         inputFormatter: [formatters.inputAddressFormatter, formatters.inputDefaultBlockNumberFormatter]
       });
@@ -5336,7 +5336,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var getCompilers = new Method({
         name: 'getCompilers',
-        call: 'eth_getCompilers',
+        call: 'probe_getCompilers',
         params: 0
       });
 
@@ -5358,7 +5358,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var getTransaction = new Method({
         name: 'getTransaction',
-        call: 'eth_getTransactionByHash',
+        call: 'probe_getTransactionByHash',
         params: 1,
         outputFormatter: formatters.outputTransactionFormatter
       });
@@ -5373,14 +5373,14 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var getTransactionReceipt = new Method({
         name: 'getTransactionReceipt',
-        call: 'eth_getTransactionReceipt',
+        call: 'probe_getTransactionReceipt',
         params: 1,
         outputFormatter: formatters.outputTransactionReceiptFormatter
       });
 
       var getTransactionCount = new Method({
         name: 'getTransactionCount',
-        call: 'eth_getTransactionCount',
+        call: 'probe_getTransactionCount',
         params: 2,
         inputFormatter: [null, formatters.inputDefaultBlockNumberFormatter],
         outputFormatter: utils.toDecimal
@@ -5388,42 +5388,42 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var sendRawTransaction = new Method({
         name: 'sendRawTransaction',
-        call: 'eth_sendRawTransaction',
+        call: 'probe_sendRawTransaction',
         params: 1,
         inputFormatter: [null]
       });
 
       var sendTransaction = new Method({
         name: 'sendTransaction',
-        call: 'eth_sendTransaction',
+        call: 'probe_sendTransaction',
         params: 1,
         inputFormatter: [formatters.inputTransactionFormatter]
       });
 
       var signTransaction = new Method({
         name: 'signTransaction',
-        call: 'eth_signTransaction',
+        call: 'probe_signTransaction',
         params: 1,
         inputFormatter: [formatters.inputTransactionFormatter]
       });
 
       var sign = new Method({
         name: 'sign',
-        call: 'eth_sign',
+        call: 'probe_sign',
         params: 2,
         inputFormatter: [formatters.inputAddressFormatter, null]
       });
 
       var call = new Method({
         name: 'call',
-        call: 'eth_call',
+        call: 'probe_call',
         params: 2,
         inputFormatter: [formatters.inputCallFormatter, formatters.inputDefaultBlockNumberFormatter]
       });
 
       var estimateGas = new Method({
         name: 'estimateGas',
-        call: 'eth_estimateGas',
+        call: 'probe_estimateGas',
         params: 1,
         inputFormatter: [formatters.inputCallFormatter],
         outputFormatter: utils.toDecimal
@@ -5431,31 +5431,31 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var compileSolidity = new Method({
         name: 'compile.solidity',
-        call: 'eth_compileSolidity',
+        call: 'probe_compileSolidity',
         params: 1
       });
 
       var compileLLL = new Method({
         name: 'compile.lll',
-        call: 'eth_compileLLL',
+        call: 'probe_compileLLL',
         params: 1
       });
 
       var compileSerpent = new Method({
         name: 'compile.serpent',
-        call: 'eth_compileSerpent',
+        call: 'probe_compileSerpent',
         params: 1
       });
 
       var submitWork = new Method({
         name: 'submitWork',
-        call: 'eth_submitWork',
+        call: 'probe_submitWork',
         params: 3
       });
 
       var getWork = new Method({
         name: 'getWork',
-        call: 'eth_getWork',
+        call: 'probe_getWork',
         params: 0
       });
 
@@ -5491,65 +5491,65 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       return [
         new Property({
           name: 'coinbase',
-          getter: 'eth_coinbase'
+          getter: 'probe_coinbase'
         }),
         new Property({
           name: 'mining',
-          getter: 'eth_mining'
+          getter: 'probe_mining'
         }),
         new Property({
           name: 'hashrate',
-          getter: 'eth_hashrate',
+          getter: 'probe_hashrate',
           outputFormatter: utils.toDecimal
         }),
         new Property({
           name: 'syncing',
-          getter: 'eth_syncing',
+          getter: 'probe_syncing',
           outputFormatter: formatters.outputSyncingFormatter
         }),
         new Property({
           name: 'gasPrice',
-          getter: 'eth_gasPrice',
+          getter: 'probe_gasPrice',
           outputFormatter: formatters.outputBigNumberFormatter
         }),
         new Property({
           name: 'accounts',
-          getter: 'eth_accounts'
+          getter: 'probe_accounts'
         }),
         new Property({
           name: 'blockNumber',
-          getter: 'eth_blockNumber',
+          getter: 'probe_blockNumber',
           outputFormatter: utils.toDecimal
         }),
         new Property({
           name: 'protocolVersion',
-          getter: 'eth_protocolVersion'
+          getter: 'probe_protocolVersion'
         })
       ];
     };
 
-    Eth.prototype.contract = function (abi) {
+    Probe.prototype.contract = function (abi) {
       var factory = new Contract(this, abi);
       return factory;
     };
 
-    Eth.prototype.filter = function (options, callback, filterCreationErrorCallback) {
-      return new Filter(options, 'eth', this._requestManager, watches.eth(), formatters.outputLogFormatter, callback, filterCreationErrorCallback);
+    Probe.prototype.filter = function (options, callback, filterCreationErrorCallback) {
+      return new Filter(options, 'probe', this._requestManager, watches.probe(), formatters.outputLogFormatter, callback, filterCreationErrorCallback);
     };
 
-    Eth.prototype.namereg = function () {
+    Probe.prototype.namereg = function () {
       return this.contract(namereg.global.abi).at(namereg.global.address);
     };
 
-    Eth.prototype.icapNamereg = function () {
+    Probe.prototype.icapNamereg = function () {
       return this.contract(namereg.icap.abi).at(namereg.icap.address);
     };
 
-    Eth.prototype.isSyncing = function (callback) {
+    Probe.prototype.isSyncing = function (callback) {
       return new IsSyncing(this._requestManager, callback);
     };
 
-    module.exports = Eth;
+    module.exports = Probe;
 
   },{"../../utils/config":18,"../../utils/utils":20,"../contract":25,"../filter":29,"../formatters":30,"../iban":33,"../method":36,"../namereg":44,"../property":45,"../syncing":48,"../transfer":49,"./watches":43}],39:[function(require,module,exports){
     /*
@@ -5568,9 +5568,9 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     You should have received a copy of the GNU Lesser General Public License
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
-    /** @file eth.js
+    /** @file probe.js
      * @authors:
-     *   Marek Kotewicz <marek@ethdev.com>
+     *   Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -5588,7 +5588,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       });
     };
 
-/// @returns an array of objects describing web3.eth api properties
+/// @returns an array of objects describing web3.probe api properties
     var properties = function () {
       return [
         new Property({
@@ -5623,9 +5623,9 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
 */
     /**
-     * @file eth.js
-     * @author Marek Kotewicz <marek@ethdev.com>
-     * @author Fabian Vogelsteller <fabian@ethdev.com>
+     * @file probe.js
+     * @author Marek Kotewicz <marek@probedev.com>
+     * @author Fabian Vogelsteller <fabian@probedev.com>
      * @date 2015
      */
 
@@ -5741,8 +5741,8 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file shh.js
      * @authors:
-     *   Fabian Vogelsteller <fabian@ethereum.org>
-     *   Marek Kotewicz <marek@ethcore.io>
+     *   Fabian Vogelsteller <fabian@probeum.org>
+     *   Marek Kotewicz <marek@probecore.io>
      * @date 2017
      */
 
@@ -5890,7 +5890,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @author Alex Beregszaszi <alex@rtfs.hu>
      * @date 2016
      *
-     * Reference: https://github.com/ethereum/go-ethereum/blob/swarm/internal/web3ext/web3ext.go#L33
+     * Reference: https://github.com/probeum/go-probeum/blob/swarm/internal/web3ext/web3ext.go#L33
      */
 
     "use strict";
@@ -6034,14 +6034,14 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file watches.js
      * @authors:
-     *   Marek Kotewicz <marek@ethdev.com>
+     *   Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
     var Method = require('../method');
 
 /// @returns an array of objects describing web3.eth.filter api methods
-    var eth = function () {
+    var probe = function () {
       var newFilterCall = function (args) {
         var type = args[0];
 
@@ -6049,13 +6049,13 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
           case 'latest':
             args.shift();
             this.params = 0;
-            return 'eth_newBlockFilter';
+            return 'probe_newBlockFilter';
           case 'pending':
             args.shift();
             this.params = 0;
-            return 'eth_newPendingTransactionFilter';
+            return 'probe_newPendingTransactionFilter';
           default:
-            return 'eth_newFilter';
+            return 'probe_newFilter';
         }
       };
 
@@ -6067,19 +6067,19 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
       var uninstallFilter = new Method({
         name: 'uninstallFilter',
-        call: 'eth_uninstallFilter',
+        call: 'probe_uninstallFilter',
         params: 1
       });
 
       var getLogs = new Method({
         name: 'getLogs',
-        call: 'eth_getFilterLogs',
+        call: 'probe_getFilterLogs',
         params: 1
       });
 
       var poll = new Method({
         name: 'poll',
-        call: 'eth_getFilterChanges',
+        call: 'probe_getFilterChanges',
         params: 1
       });
 
@@ -6119,7 +6119,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     };
 
     module.exports = {
-      eth: eth,
+      probe: probe,
       shh: shh
     };
 
@@ -6143,7 +6143,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file namereg.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -6185,7 +6185,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
     /**
      * @file property.js
      * @author Fabian Vogelsteller <fabian@frozeman.de>
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -6330,11 +6330,11 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file requestmanager.js
-     * @author Jeffrey Wilcke <jeff@ethdev.com>
-     * @author Marek Kotewicz <marek@ethdev.com>
-     * @author Marian Oancea <marian@ethdev.com>
-     * @author Fabian Vogelsteller <fabian@ethdev.com>
-     * @author Gav Wood <g@ethdev.com>
+     * @author Jeffrey Wilcke <jeff@probedev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
+     * @author Marian Oancea <marian@probedev.com>
+     * @author Fabian Vogelsteller <fabian@probedev.com>
+     * @author Gav Wood <g@probedev.com>
      * @date 2014
      */
 
@@ -6345,7 +6345,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 
     /**
      * It's responsible for passing messages to providers
-     * It's also responsible for polling the ethereum node for incoming messages
+     * It's also responsible for polling the probeum node for incoming messages
      * Default poll timeout is 1 second
      * Singleton
      */
@@ -6608,7 +6608,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /** @file syncing.js
      * @authors:
-     *   Fabian Vogelsteller <fabian@ethdev.com>
+     *   Fabian Vogelsteller <fabian@probedev.com>
      * @date 2015
      */
 
@@ -6703,7 +6703,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
 */
     /**
      * @file transfer.js
-     * @author Marek Kotewicz <marek@ethdev.com>
+     * @author Marek Kotewicz <marek@probedev.com>
      * @date 2015
      */
 
@@ -6721,13 +6721,13 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @param {Value} value to be tranfered
      * @param {Function} callback, callback
      */
-    var transfer = function (eth, from, to, newAccount,bizType,value, callback) {
+    var transfer = function (probe, from, to, newAccount,bizType,value, callback) {
       checkBizType(bizType)
       var iban = new Iban(to);
 
       switch(parseInt(bizType)){
         case biz_type_of_register:
-          return transferToAddress(eth, from, null, newAccount, bizType, null, callback);
+          return transferToAddress(probe, from, null, newAccount, bizType, null, callback);
           break;
         case biz_type_of_cancellation:
           break;
@@ -6738,7 +6738,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
             throw new Error('invalid iban address');
           }
           if (iban.isDirect()) {
-            return transferToAddress(eth, from, iban.address(), null, bizType, value, callback);
+            return transferToAddress(probe, from, iban.address(), null, bizType, value, callback);
           }
           break;
         case biz_type_of_contract_call:
@@ -6746,12 +6746,12 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
             throw new Error('invalid iban address');
           }
           if (!callback) {
-            var address = eth.icapNamereg().addr(iban.institution());
-            return deposit(eth, from, address, value, iban.client());
+            var address = probe.icapNamereg().addr(iban.institution());
+            return deposit(probe, from, address, value, iban.client());
           }
 
-          eth.icapNamereg().addr(iban.institution(), function (err, address) {
-            return deposit(eth, from, address, value, iban.client(), callback);
+          probe.icapNamereg().addr(iban.institution(), function (err, address) {
+            return deposit(probe, from, address, value, iban.client(), callback);
           });
           break
         //todo  implement other operations
@@ -6790,8 +6790,8 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @param {Value} value to be tranfered
      * @param {Function} callback, callback
      */
-    var transferToAddress = function (eth, from, to, newAccount, bizType, value, callback) {
-      return eth.sendTransaction({
+    var transferToAddress = function (probe, from, to, newAccount, bizType, value, callback) {
+      return probe.sendTransaction({
         address: to,
         new: newAccount,
         from: from,
@@ -6810,9 +6810,9 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @param {String} client unique identifier
      * @param {Function} callback, callback
      */
-    var deposit = function (eth, from, to, value, client, callback) {
+    var deposit = function (probe, from, to, value, client, callback) {
       var abi = exchangeAbi;
-      return eth.contract(abi).at(to).deposit(client, {
+      return probe.contract(abi).at(to).deposit(client, {
         from: from,
         value: value
       }, callback);
@@ -8479,7 +8479,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
            *
            * This method invokes _doProcessBlock(offset), which must be implemented by a concrete subtype.
            *
-           * @param {boolean} doFlush Whether all blocks and partial blocks should be processed.
+           * @param {boolean} doFlush Whprobeer all blocks and partial blocks should be processed.
            *
            * @return {WordArray} The processed data.
            *

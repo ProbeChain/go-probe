@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -23,22 +23,22 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/probedb/memorydb"
 )
 
 func TestIterator(t *testing.T) {
 	trie := newEmpty()
 	vals := []struct{ k, v string }{
 		{"do", "verb"},
-		{"ether", "wookiedoo"},
+		{"probeer", "wookiedoo"},
 		{"horse", "stallion"},
 		{"shaman", "horse"},
 		{"doge", "coin"},
 		{"dog", "puppy"},
-		{"somethingveryoddindeedthis is", "myothernodedata"},
+		{"somprobeingveryoddindeedthis is", "myothernodedata"},
 	}
 	all := make(map[string]string)
 	for _, val := range vals {
@@ -446,7 +446,7 @@ func checkIteratorNoDups(t *testing.T, it NodeIterator, seen map[string]bool) in
 
 type loggingDb struct {
 	getCount uint64
-	backend  ethdb.KeyValueStore
+	backend  probedb.KeyValueStore
 }
 
 func (l *loggingDb) Has(key []byte) (bool, error) {
@@ -466,11 +466,11 @@ func (l *loggingDb) Delete(key []byte) error {
 	return l.backend.Delete(key)
 }
 
-func (l *loggingDb) NewBatch() ethdb.Batch {
+func (l *loggingDb) NewBatch() probedb.Batch {
 	return l.backend.NewBatch()
 }
 
-func (l *loggingDb) NewIterator(prefix []byte, start []byte) ethdb.Iterator {
+func (l *loggingDb) NewIterator(prefix []byte, start []byte) probedb.Iterator {
 	fmt.Printf("NewIterator\n")
 	return l.backend.NewIterator(prefix, start)
 }

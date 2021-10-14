@@ -2,17 +2,17 @@ package state
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/rlp"
 	"math/big"
 	"testing"
 )
 
 type stateNewTest struct {
-	db    ethdb.Database
+	db    probedb.Database
 	state *StateDB
 }
 

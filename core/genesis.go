@@ -1,18 +1,18 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -22,22 +22,22 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/core/globalconfig"
+	"github.com/probeum/go-probeum/core/globalconfig"
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/common/math"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 )
 
 //go:generate gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -156,14 +156,14 @@ func (e *GenesisMismatchError) Error() string {
 // error is a *params.ConfigCompatError and the new, unwritten config is returned.
 //
 // The returned chain configuration is never nil.
-func SetupGenesisBlock(db ethdb.Database, genesis *Genesis, dataDir string) (*params.ChainConfig, common.Hash, error) {
+func SetupGenesisBlock(db probedb.Database, genesis *Genesis, dataDir string) (*params.ChainConfig, common.Hash, error) {
 	return SetupGenesisBlockWithOverride(db, genesis, nil, dataDir)
 }
 
-func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, overrideLondon *big.Int, dataDir string) (*params.ChainConfig, common.Hash, error) {
+func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overrideLondon *big.Int, dataDir string) (*params.ChainConfig, common.Hash, error) {
 	globalconfig.DataDir = dataDir
 	if genesis != nil && genesis.Config == nil {
-		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
+		return params.AllProbeashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
 	// Just commit the new block if there is no stored genesis block.
 	// 如果没有存储的genesis块，只需提交新块。
@@ -202,7 +202,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 		}
 		return genesis.Config, block.Hash(), nil
 	}
-	// Check whether the genesis block is already written.
+	// Check whprobeer the genesis block is already written.
 	if genesis != nil {
 		genesis.Config.DposConfig = genesis.DposConfig
 		hash := genesis.ToBlock(nil).Hash()
@@ -262,13 +262,13 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	case ghash == params.CalaverasGenesisHash:
 		return params.CalaverasChainConfig
 	default:
-		return params.AllEthashProtocolChanges
+		return params.AllProbeashProtocolChanges
 	}
 }
 
 // ToBlock creates the genesis block and writes state of a genesis specification
 // to the given database (or discards it if nil).
-func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
+func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	if db == nil {
 		db = rawdb.NewMemoryDatabase()
 	}
@@ -375,14 +375,14 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 
 // Commit writes the block and state of a genesis specification to the database.
 // The block is committed as the canonical head block.
-func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
+func (g *Genesis) Commit(db probedb.Database) (*types.Block, error) {
 	block := g.ToBlock(db)
 	if block.Number().Sign() != 0 {
 		return nil, fmt.Errorf("can't commit genesis block with number > 0")
 	}
 	config := g.Config
 	if config == nil {
-		config = params.AllEthashProtocolChanges
+		config = params.AllProbeashProtocolChanges
 	}
 	if nil != g.DposConfig {
 		config.DposConfig = g.DposConfig
@@ -403,7 +403,7 @@ func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 
 // MustCommit writes the genesis block and state to db, panicking on error.
 // The block is committed as the canonical head block.
-func (g *Genesis) MustCommit(db ethdb.Database) *types.Block {
+func (g *Genesis) MustCommit(db probedb.Database) *types.Block {
 	block, err := g.Commit(db)
 	if err != nil {
 		panic(err)
@@ -412,7 +412,7 @@ func (g *Genesis) MustCommit(db ethdb.Database) *types.Block {
 }
 
 // GenesisBlockForTesting creates and writes a block in which addr has the given wei balance.
-func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big.Int) *types.Block {
+func GenesisBlockForTesting(db probedb.Database, addr common.Address, balance *big.Int) *types.Block {
 	g := Genesis{
 		Alloc:   GenesisAlloc{addr: {Balance: balance}},
 		BaseFee: big.NewInt(params.InitialBaseFee),
@@ -420,7 +420,7 @@ func GenesisBlockForTesting(db ethdb.Database, addr common.Address, balance *big
 	return g.MustCommit(db)
 }
 
-// DefaultGenesisBlock returns the Ethereum main net genesis block.
+// DefaultGenesisBlock returns the Probeum main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
@@ -482,7 +482,7 @@ func DefaultCalaverasGenesisBlock() *Genesis {
 	}
 }
 
-// DeveloperGenesisBlock returns the 'geth --dev' genesis block.
+// DeveloperGenesisBlock returns the 'gprobe --dev' genesis block.
 func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
 	config := *params.AllCliqueProtocolChanges

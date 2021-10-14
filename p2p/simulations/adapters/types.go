@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package adapters
 
@@ -20,18 +20,18 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"net"
 	"os"
 	"strconv"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probeum/go-probeum/rpc"
 	"github.com/gorilla/websocket"
 )
 
@@ -259,7 +259,7 @@ type ServiceContext struct {
 
 // RPCDialer is used when initialising services which need to connect to
 // other nodes in the network (for example a simulated Swarm node which needs
-// to connect to a Geth node to resolve ENS names)
+// to connect to a Gprobe node to resolve ENS names)
 type RPCDialer interface {
 	DialRPC(id enode.ID) (*rpc.Client, error)
 }

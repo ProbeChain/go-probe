@@ -1,30 +1,30 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	//uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
-	uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/math"
+	//uint256 "github.com/probeum/go-probeum/core/vm/uint256"
+	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
 )
 
 // calcMemSize64 calculates the required memory size, and returns
-// the size and whether the result overflowed uint64
+// the size and whprobeer the result overflowed uint64
 func calcMemSize64(off, l *uint256.Int) (uint64, bool) {
 	if !l.IsUint64() {
 		return 0, true
@@ -33,7 +33,7 @@ func calcMemSize64(off, l *uint256.Int) (uint64, bool) {
 }
 
 // calcMemSize64WithUint calculates the required memory size, and returns
-// the size and whether the result overflowed uint64
+// the size and whprobeer the result overflowed uint64
 // Identical to calcMemSize64, but length is a uint64
 func calcMemSize64WithUint(off *uint256.Int, length64 uint64) (uint64, bool) {
 	// if length is zero, memsize is always zero, regardless of offset

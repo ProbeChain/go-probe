@@ -1,34 +1,34 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package state
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/common/hexutil"
 	"io"
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 var emptyCodeHash = crypto.Keccak256(nil)
@@ -58,7 +58,7 @@ func (s Storage) Copy() Storage {
 	return cpy
 }
 
-// stateObject represents an Ethereum account which is being modified.
+// stateObject represents an Probeum account which is being modified.
 //
 // The usage pattern is as follows:
 // First you need to obtain a state object.
@@ -66,7 +66,7 @@ func (s Storage) Copy() Storage {
 // Finally, call CommitTrie to write the modified storage trie into a database.
 type stateObject struct {
 	address  common.Address
-	addrHash common.Hash // hash of ethereum address of the account
+	addrHash common.Hash // hash of probeum address of the account
 	db       *StateDB
 
 	accountType byte
@@ -107,7 +107,7 @@ type stateObject struct {
 	deleted   bool
 }
 
-// Account is the Ethereum consensus representation of accounts.
+// Account is the Probeum consensus representation of accounts.
 // These objects are stored in the main account trie.
 //type RegularAccount struct {
 //	Nonce    uint64

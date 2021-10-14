@@ -173,7 +173,7 @@ func (z *Int) Uint64() uint64 {
 	return z[0]
 }
 
-// Uint64WithOverflow returns the lower 64-bits of z and bool whether overflow occurred
+// Uint64WithOverflow returns the lower 64-bits of z and bool whprobeer overflow occurred
 func (z *Int) Uint64WithOverflow() (uint64, bool) {
 	return z[0], (z[1] | z[2] | z[3]) != 0
 }
@@ -193,7 +193,7 @@ func (z *Int) Add(x, y *Int) *Int {
 	return z
 }
 
-// AddOverflow sets z to the sum x+y, and returns z and whether overflow occurred
+// AddOverflow sets z to the sum x+y, and returns z and whprobeer overflow occurred
 func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 	var carry uint64
 	z[0], carry = bits.Add64(x[0], y[0], 0)
@@ -348,7 +348,7 @@ func (z *Int) Mul(x, y *Int) *Int {
 	return z.Set(&res)
 }
 
-// MulOverflow sets z to the product x*y, and returns z and  whether overflow occurred
+// MulOverflow sets z to the product x*y, and returns z and  whprobeer overflow occurred
 func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
 	p := umul(x, y)
 	copy(z[:], p[:4])
@@ -818,7 +818,7 @@ func (z *Int) GtUint64(n uint64) bool {
 	return z[0] > n || (z[1]|z[2]|z[3]) != 0
 }
 
-// IsUint64 reports whether z can be represented as a uint64.
+// IsUint64 reports whprobeer z can be represented as a uint64.
 func (z *Int) IsUint64() bool {
 	return (z[1] | z[2] | z[3]) == 0
 }

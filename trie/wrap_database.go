@@ -1,6 +1,6 @@
 package trie
 
-import "github.com/ethereum/go-ethereum/common"
+import "github.com/probeum/go-probeum/common"
 
 // WrapDatabase is an intermediate write layer between the trie data structures and
 // the disk database.

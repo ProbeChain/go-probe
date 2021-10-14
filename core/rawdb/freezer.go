@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package rawdb
 
@@ -26,11 +26,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/params"
 	"github.com/prometheus/tsdb/fileutil"
 )
 
@@ -68,8 +68,8 @@ const (
 //
 // - The append only nature ensures that disk writes are minimized.
 // - The memory mapping ensures we can max out system memory for caching without
-//   reserving it for go-ethereum. This would also reduce the memory requirements
-//   of Geth, and thus also GC overhead.
+//   reserving it for go-probeum. This would also reduce the memory requirements
+//   of Gprobe, and thus also GC overhead.
 type freezer struct {
 	// WARNING: The `frozen` field is accessed atomically. On 32 bit platforms, only
 	// 64-bit aligned fields can be atomic. The struct is guaranteed to be so aligned,
@@ -163,7 +163,7 @@ func (f *freezer) Close() error {
 	return nil
 }
 
-// HasAncient returns an indicator whether the specified ancient data exists
+// HasAncient returns an indicator whprobeer the specified ancient data exists
 // in the freezer.
 func (f *freezer) HasAncient(kind string, number uint64) (bool, error) {
 	if table := f.tables[kind]; table != nil {
@@ -279,7 +279,7 @@ func (f *freezer) Sync() error {
 //
 // This functionality is deliberately broken off from block importing to avoid
 // incurring additional data shuffling delays on block propagation.
-func (f *freezer) freeze(db ethdb.KeyValueStore) {
+func (f *freezer) freeze(db probedb.KeyValueStore) {
 	nfdb := &nofreezedb{KeyValueStore: db}
 
 	var (
@@ -452,7 +452,7 @@ func (f *freezer) freeze(db ethdb.KeyValueStore) {
 				log.Crit("Failed to delete dangling side blocks", "err", err)
 			}
 		}
-		// Log something friendly for the user
+		// Log somprobeing friendly for the user
 		context := []interface{}{
 			"blocks", f.frozen - first, "elapsed", common.PrettyDuration(time.Since(start)), "number", f.frozen - 1,
 		}

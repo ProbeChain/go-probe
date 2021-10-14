@@ -1,5 +1,5 @@
-rm -rf data/geth/*data/*
-rm -rf data/geth/trie/*
-rm -rf data/geth/triecache/*
-rm -rf data/geth/nodes/*
-rm -rf data/geth/transactions.rlp
+rm -rf data/gprobe/*data/*
+rm -rf data/gprobe/trie/*
+rm -rf data/gprobe/triecache/*
+rm -rf data/gprobe/nodes/*
+rm -rf data/gprobe/transactions.rlp

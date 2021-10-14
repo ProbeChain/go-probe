@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package les
 
@@ -28,19 +28,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/les/flowcontrol"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/simulations"
-	"github.com/ethereum/go-ethereum/p2p/simulations/adapters"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/probe"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/les/flowcontrol"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/simulations"
+	"github.com/probeum/go-probeum/p2p/simulations/adapters"
+	"github.com/probeum/go-probeum/rpc"
 	"github.com/mattn/go-colorable"
 )
 
@@ -87,7 +87,7 @@ func TestCapacityAPI10(t *testing.T) {
 // testCapacityAPI runs an end-to-end simulation test connecting one server with
 // a given number of clients. It sets different priority capacities to all clients
 // except a randomly selected one which runs in free client mode. All clients send
-// similar requests at the maximum allowed rate and the test verifies whether the
+// similar requests at the maximum allowed rate and the test verifies whprobeer the
 // ratio of processed requests is close enough to the ratio of assigned capacities.
 // Running multiple rounds with different settings ensures that changing capacity
 // while connected and going back and forth between free and priority mode with
@@ -304,7 +304,7 @@ func testCapacityAPI(t *testing.T, clientCount int) {
 
 func getHead(ctx context.Context, t *testing.T, client *rpc.Client) (uint64, common.Hash) {
 	res := make(map[string]interface{})
-	if err := client.CallContext(ctx, &res, "eth_getBlockByNumber", "latest", false); err != nil {
+	if err := client.CallContext(ctx, &res, "probe_getBlockByNumber", "latest", false); err != nil {
 		t.Fatalf("Failed to obtain head block: %v", err)
 	}
 	numStr, ok := res["number"].(string)
@@ -329,7 +329,7 @@ func testRequest(ctx context.Context, t *testing.T, client *rpc.Client) bool {
 	rand.Read(addr[:])
 	c, cancel := context.WithTimeout(ctx, time.Second*12)
 	defer cancel()
-	err := client.CallContext(c, &res, "eth_getBalance", addr, "latest")
+	err := client.CallContext(c, &res, "probe_getBalance", addr, "latest")
 	if err != nil {
 		t.Log("request error:", err)
 	}
@@ -493,24 +493,24 @@ func testSim(t *testing.T, serverCount, clientCount int, serverDir, clientDir []
 }
 
 func newLesClientService(ctx *adapters.ServiceContext, stack *node.Node) (node.Lifecycle, error) {
-	config := ethconfig.Defaults
+	config := probeconfig.Defaults
 	config.SyncMode = downloader.LightSync
-	config.Ethash.PowMode = ethash.ModeFake
+	config.Probeash.PowMode = probeash.ModeFake
 	return New(stack, &config)
 }
 
 func newLesServerService(ctx *adapters.ServiceContext, stack *node.Node) (node.Lifecycle, error) {
-	config := ethconfig.Defaults
+	config := probeconfig.Defaults
 	config.SyncMode = downloader.FullSync
 	config.LightServ = testServerCapacity
 	config.LightPeers = testMaxClients
-	ethereum, err := eth.New(stack, &config)
+	probeum, err := probe.New(stack, &config)
 	if err != nil {
 		return nil, err
 	}
-	_, err = NewLesServer(stack, ethereum, &config)
+	_, err = NewLesServer(stack, probeum, &config)
 	if err != nil {
 		return nil, err
 	}
-	return ethereum, nil
+	return probeum, nil
 }

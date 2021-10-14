@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package snapshot
 
@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
 )
 
 // Iterator is an iterator to step over all the accounts or the specific
@@ -163,7 +163,7 @@ func (it *diffAccountIterator) Release() {}
 // contained within a disk layer.
 type diskAccountIterator struct {
 	layer *diskLayer
-	it    ethdb.Iterator
+	it    probedb.Iterator
 }
 
 // AccountIterator creates an account iterator over a disk layer.
@@ -332,7 +332,7 @@ func (it *diffStorageIterator) Release() {}
 type diskStorageIterator struct {
 	layer   *diskLayer
 	account common.Hash
-	it      ethdb.Iterator
+	it      probedb.Iterator
 }
 
 // StorageIterator creates a storage iterator over a disk layer.

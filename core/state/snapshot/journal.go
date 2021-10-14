@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package snapshot
 
@@ -21,12 +21,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 	"io"
 )
 
@@ -34,11 +34,11 @@ const journalVersion uint64 = 0
 
 // journalGenerator is a disk layer entry containing the generator progress marker.
 type journalGenerator struct {
-	// Indicator that whether the database was in progress of being wiped.
+	// Indicator that whprobeer the database was in progress of being wiped.
 	// It's deprecated but keep it here for background compatibility.
 	Wiping bool
 
-	Done     bool // Whether the generator finished creating the snapshot
+	Done     bool // Whprobeer the generator finished creating the snapshot
 	Marker   []byte
 	Accounts uint64
 	Slots    uint64
@@ -64,7 +64,7 @@ type journalStorage struct {
 }
 
 // loadAndParseJournal tries to parse the snapshot journal in latest format.
-func loadAndParseJournal(db ethdb.KeyValueStore, base *diskLayer) (snapshot, journalGenerator, error) {
+func loadAndParseJournal(db probedb.KeyValueStore, base *diskLayer) (snapshot, journalGenerator, error) {
 	// Retrieve the disk layer generator. It must exist, no matter the
 	// snapshot is fully generated or not. Otherwise the entire disk
 	// layer is invalid.
@@ -77,7 +77,7 @@ func loadAndParseJournal(db ethdb.KeyValueStore, base *diskLayer) (snapshot, jou
 		return nil, journalGenerator{}, fmt.Errorf("failed to decode snapshot generator: %v", err)
 	}
 	// Retrieve the diff layer journal. It's possible that the journal is
-	// not existent, e.g. the disk layer is generating while that the Geth
+	// not existent, e.g. the disk layer is generating while that the Gprobe
 	// crashes without persisting the diff journal.
 	// So if there is no journal, or the journal is invalid(e.g. the journal
 	// is not matched with disk layer; or the it's the legacy-format journal,
@@ -107,7 +107,7 @@ func loadAndParseJournal(db ethdb.KeyValueStore, base *diskLayer) (snapshot, jou
 		return nil, journalGenerator{}, errors.New("missing disk layer root")
 	}
 	// The diff journal is not matched with disk, discard them.
-	// It can happen that Geth crashes without persisting the latest
+	// It can happen that Gprobe crashes without persisting the latest
 	// diff journal.
 	if !bytes.Equal(root.Bytes(), base.root.Bytes()) {
 		log.Warn("Loaded snapshot journal", "diskroot", base.root, "diffs", "unmatched")
@@ -123,9 +123,9 @@ func loadAndParseJournal(db ethdb.KeyValueStore, base *diskLayer) (snapshot, jou
 }
 
 // loadSnapshot loads a pre-existing state snapshot backed by a key-value store.
-func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, root common.Hash, recovery bool) (snapshot, bool, error) {
+func loadSnapshot(diskdb probedb.KeyValueStore, triedb *trie.Database, cache int, root common.Hash, recovery bool) (snapshot, bool, error) {
 	// If snapshotting is disabled (initial sync in progress), don't do anything,
-	// wait for the chain to permit us to do something meaningful
+	// wait for the chain to permit us to do somprobeing meaningful
 	if rawdb.ReadSnapshotDisabled(diskdb) {
 		return nil, true, nil
 	}
@@ -150,7 +150,7 @@ func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, 
 	// snapshot is not matched with current state root, print a warning log
 	// or discard the entire snapshot it's legacy snapshot.
 	//
-	// Possible scenario: Geth was crashed without persisting journal and then
+	// Possible scenario: Gprobe was crashed without persisting journal and then
 	// restart, the head is rewound to the point with available state(trie)
 	// which is below the snapshot. In this case the snapshot can be recovered
 	// by re-executing blocks but right now it's unavailable.
@@ -169,7 +169,7 @@ func loadSnapshot(diskdb ethdb.KeyValueStore, triedb *trie.Database, cache int, 
 	}
 	// Everything loaded correctly, resume any suspended operations
 	if !generator.Done {
-		// Whether or not wiping was in progress, load any generator progress too
+		// Whprobeer or not wiping was in progress, load any generator progress too
 		base.genMarker = generator.Marker
 		if base.genMarker == nil {
 			base.genMarker = []byte{}

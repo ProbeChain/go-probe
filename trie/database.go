@@ -1,18 +1,18 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -26,12 +26,12 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 var (
@@ -60,7 +60,7 @@ var (
 
 // commitLeaf
 type commitLeaf struct {
-	Commit bool        // Whether you have committed to levelDb
+	Commit bool        // Whprobeer you have committed to levelDb
 	Hash   common.Hash // the key commit to levelDb
 	Index  int         // the index in the binary leaf
 }
@@ -74,7 +74,7 @@ type commitLeaf struct {
 // behind this split design is to provide read access to RPC handlers and sync
 // servers even while the trie is executing expensive garbage collection.
 type Database struct {
-	diskdb ethdb.KeyValueStore // Persistent storage for matured trie nodes
+	diskdb probedb.KeyValueStore // Persistent storage for matured trie nodes
 
 	cleans      *fastcache.Cache            // GC friendly memory cache of clean node RLPs
 	dirties     map[common.Hash]*cachedNode // Data and references relationships of dirty trie nodes
@@ -288,20 +288,20 @@ func expandNode(hash hashNode, n node) node {
 type Config struct {
 	Cache     int    // Memory allowance (MB) to use for caching trie nodes in memory
 	Journal   string // Journal of clean cache to survive node restarts
-	Preimages bool   // Flag whether the preimage of trie key is recorded
+	Preimages bool   // Flag whprobeer the preimage of trie key is recorded
 }
 
 // NewDatabase creates a new trie database to store ephemeral trie content before
 // its written out to disk or garbage collected. No read cache is created, so all
 // data retrievals will hit the underlying disk database.
-func NewDatabase(diskdb ethdb.KeyValueStore) *Database {
+func NewDatabase(diskdb probedb.KeyValueStore) *Database {
 	return NewDatabaseWithConfig(diskdb, nil)
 }
 
 // NewDatabaseWithConfig creates a new trie database to store ephemeral trie content
 // before its written out to disk or garbage collected. It also acts as a read cache
 // for nodes loaded from disk.
-func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database {
+func NewDatabaseWithConfig(diskdb probedb.KeyValueStore, config *Config) *Database {
 	var cleans *fastcache.Cache
 	if config != nil && config.Cache > 0 {
 		if config.Journal == "" {
@@ -325,7 +325,7 @@ func NewDatabaseWithConfig(diskdb ethdb.KeyValueStore, config *Config) *Database
 }
 
 // DiskDB retrieves the persistent storage backing the trie database.
-func (db *Database) DiskDB() ethdb.KeyValueStore {
+func (db *Database) DiskDB() probedb.KeyValueStore {
 	return db.diskdb
 }
 
@@ -633,7 +633,7 @@ func (db *Database) Nodes() []common.Hash {
 // Reference adds a new reference from a parent node to a child node.
 // This function is used to add reference between internal trie node
 // and external node(e.g. storage trie root), all internal trie nodes
-// are referenced together by database itself.
+// are referenced togprobeer by database itself.
 func (db *Database) Reference(child common.Hash, parent common.Hash) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
@@ -826,7 +826,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 			log.Error("Attempted to write preimages whilst disabled")
 		} else {
 			rawdb.WritePreimages(batch, db.preimages)
-			if batch.ValueSize() > ethdb.IdealBatchSize {
+			if batch.ValueSize() > probedb.IdealBatchSize {
 				if err := batch.Write(); err != nil {
 					return err
 				}
@@ -842,7 +842,7 @@ func (db *Database) Cap(limit common.StorageSize) error {
 		rawdb.WriteTrieNode(batch, oldest, node.rlp())
 
 		// If we exceeded the ideal batch size, commit and reset
-		if batch.ValueSize() >= ethdb.IdealBatchSize {
+		if batch.ValueSize() >= probedb.IdealBatchSize {
 			if err := batch.Write(); err != nil {
 				log.Error("Failed to write flush list to disk", "err", err)
 				return err
@@ -999,7 +999,7 @@ func (db *Database) Commit(hash common.Hash, report bool, callback func(common.H
 }
 
 // commit is the private locked version of Commit.
-func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleaner, callback func(common.Hash)) error {
+func (db *Database) commit(hash common.Hash, batch probedb.Batch, uncacher *cleaner, callback func(common.Hash)) error {
 	// If the node does not exist, it's a previously committed node
 	node, ok := db.dirties[hash]
 	if !ok {
@@ -1019,7 +1019,7 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 	if callback != nil {
 		callback(hash)
 	}
-	if batch.ValueSize() >= ethdb.IdealBatchSize {
+	if batch.ValueSize() >= probedb.IdealBatchSize {
 		if err := batch.Write(); err != nil {
 			return err
 		}
@@ -1032,7 +1032,7 @@ func (db *Database) commit(hash common.Hash, batch ethdb.Batch, uncacher *cleane
 }
 
 // commitAlter commit alters
-func (db *Database) commitAlter(batch ethdb.Batch) {
+func (db *Database) commitAlter(batch probedb.Batch) {
 	if db.Binary() {
 		alters := db.trie.bt.alters
 		for i, alter := range alters {

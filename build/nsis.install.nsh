@@ -1,41 +1,41 @@
-Name "geth ${MAJORVERSION}.${MINORVERSION}.${BUILDVERSION}" # VERSION variables set through command line arguments
+Name "gprobe ${MAJORVERSION}.${MINORVERSION}.${BUILDVERSION}" # VERSION variables set through command line arguments
 InstallDir "$InstDir"
 OutFile "${OUTPUTFILE}" # set through command line arguments
 
 # Links for "Add/Remove Programs"
-!define HELPURL "https://github.com/ethereum/go-ethereum/issues"
-!define UPDATEURL "https://github.com/ethereum/go-ethereum/releases"
-!define ABOUTURL "https://github.com/ethereum/go-ethereum#ethereum-go"
+!define HELPURL "https://github.com/probeum/go-probeum/issues"
+!define UPDATEURL "https://github.com/probeum/go-probeum/releases"
+!define ABOUTURL "https://github.com/probeum/go-probeum#probeum-go"
 !define /date NOW "%Y%m%d"
 
 PageEx license
   LicenseData {{.License}}
 PageExEnd
 
-# Install geth binary
-Section "Geth" GETH_IDX
+# Install gprobe binary
+Section "Gprobe" GETH_IDX
   SetOutPath $INSTDIR
-  file {{.Geth}}
+  file {{.Gprobe}}
 
   # Create start menu launcher
   createDirectory "$SMPROGRAMS\${APPNAME}"
-  createShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\geth.exe"
-  createShortCut "$SMPROGRAMS\${APPNAME}\Attach.lnk" "$INSTDIR\geth.exe" "attach"
+  createShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\gprobe.exe"
+  createShortCut "$SMPROGRAMS\${APPNAME}\Attach.lnk" "$INSTDIR\gprobe.exe" "attach"
   createShortCut "$SMPROGRAMS\${APPNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 
   # Firewall - remove rules (if exists)
-  SimpleFC::AdvRemoveRule "Geth incoming peers (TCP:30303)"
-  SimpleFC::AdvRemoveRule "Geth outgoing peers (TCP:30303)"
-  SimpleFC::AdvRemoveRule "Geth UDP discovery (UDP:30303)"
+  SimpleFC::AdvRemoveRule "Gprobe incoming peers (TCP:30303)"
+  SimpleFC::AdvRemoveRule "Gprobe outgoing peers (TCP:30303)"
+  SimpleFC::AdvRemoveRule "Gprobe UDP discovery (UDP:30303)"
 
   # Firewall - add rules
-  SimpleFC::AdvAddRule "Geth incoming peers (TCP:30303)" ""  6 1 1 2147483647 1 "$INSTDIR\geth.exe" "" "" "Ethereum" 30303 "" "" ""
-  SimpleFC::AdvAddRule "Geth outgoing peers (TCP:30303)" ""  6 2 1 2147483647 1 "$INSTDIR\geth.exe" "" "" "Ethereum" "" 30303 "" ""
-  SimpleFC::AdvAddRule "Geth UDP discovery (UDP:30303)" "" 17 2 1 2147483647 1 "$INSTDIR\geth.exe" "" "" "Ethereum" "" 30303 "" ""
+  SimpleFC::AdvAddRule "Gprobe incoming peers (TCP:30303)" ""  6 1 1 2147483647 1 "$INSTDIR\gprobe.exe" "" "" "Probeum" 30303 "" "" ""
+  SimpleFC::AdvAddRule "Gprobe outgoing peers (TCP:30303)" ""  6 2 1 2147483647 1 "$INSTDIR\gprobe.exe" "" "" "Probeum" "" 30303 "" ""
+  SimpleFC::AdvAddRule "Gprobe UDP discovery (UDP:30303)" "" 17 2 1 2147483647 1 "$INSTDIR\gprobe.exe" "" "" "Probeum" "" 30303 "" ""
 
-  # Set default IPC endpoint (https://github.com/ethereum/EIPs/issues/147)
-  ${EnvVarUpdate} $0 "ETHEREUM_SOCKET" "R" "HKLM" "\\.\pipe\geth.ipc"
-  ${EnvVarUpdate} $0 "ETHEREUM_SOCKET" "A" "HKLM" "\\.\pipe\geth.ipc"
+  # Set default IPC endpoint (https://github.com/probeum/EIPs/issues/147)
+  ${EnvVarUpdate} $0 "ETHEREUM_SOCKET" "R" "HKLM" "\\.\pipe\gprobe.ipc"
+  ${EnvVarUpdate} $0 "ETHEREUM_SOCKET" "A" "HKLM" "\\.\pipe\gprobe.ipc"
 
   # Add instdir to PATH
   Push "$INSTDIR"

@@ -1,18 +1,18 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2018 The go-probeum Authors
+// This file is part of go-probeum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-probeum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-probeum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+// along with go-probeum. If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
@@ -35,24 +35,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/ethereum/go-ethereum/signer/core"
-	"github.com/ethereum/go-ethereum/signer/fourbyte"
-	"github.com/ethereum/go-ethereum/signer/rules"
-	"github.com/ethereum/go-ethereum/signer/storage"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/accounts/keystore"
+	"github.com/probeum/go-probeum/cmd/utils"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/internal/probeapi"
+	"github.com/probeum/go-probeum/internal/flags"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/rpc"
+	"github.com/probeum/go-probeum/signer/core"
+	"github.com/probeum/go-probeum/signer/fourbyte"
+	"github.com/probeum/go-probeum/signer/rules"
+	"github.com/probeum/go-probeum/signer/storage"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -249,7 +249,7 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 
 func init() {
 	app.Name = "Clef"
-	app.Usage = "Manage Ethereum account operations"
+	app.Usage = "Manage Probeum account operations"
 	app.Flags = []cli.Flag{
 		logLevelFlag,
 		keystoreFlag,
@@ -795,7 +795,7 @@ func checkFile(filename string) error {
 	}
 	// Check the unix permission bits
 	// However, on windows, we cannot use the unix perm-bits, see
-	// https://github.com/ethereum/go-ethereum/issues/20123
+	// https://github.com/probeum/go-probeum/issues/20123
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0377 != 0 {
 		return fmt.Errorf("file (%v) has insecure file permissions (%v)", filename, info.Mode().String())
 	}
@@ -896,7 +896,7 @@ func testExternalUI(api *core.SignerAPI) {
 		api.UI.ShowInfo("Please approve the next request for signing EIP-712 typed data")
 		time.Sleep(delay)
 		addr, _ := common.NewMixedcaseAddressFromString("0x0011223344556677889900112233445566778899")
-		data := `{"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"Person":[{"name":"name","type":"string"},{"name":"test","type":"uint8"},{"name":"wallet","type":"address"}],"Mail":[{"name":"from","type":"Person"},{"name":"to","type":"Person"},{"name":"contents","type":"string"}]},"primaryType":"Mail","domain":{"name":"Ether Mail","version":"1","chainId":"1","verifyingContract":"0xCCCcccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"},"message":{"from":{"name":"Cow","test":"3","wallet":"0xcD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"},"to":{"name":"Bob","wallet":"0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB","test":"2"},"contents":"Hello, Bob!"}}`
+		data := `{"types":{"EIP712Domain":[{"name":"name","type":"string"},{"name":"version","type":"string"},{"name":"chainId","type":"uint256"},{"name":"verifyingContract","type":"address"}],"Person":[{"name":"name","type":"string"},{"name":"test","type":"uint8"},{"name":"wallet","type":"address"}],"Mail":[{"name":"from","type":"Person"},{"name":"to","type":"Person"},{"name":"contents","type":"string"}]},"primaryType":"Mail","domain":{"name":"Probeer Mail","version":"1","chainId":"1","verifyingContract":"0xCCCcccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC"},"message":{"from":{"name":"Cow","test":"3","wallet":"0xcD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826"},"to":{"name":"Bob","wallet":"0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB","test":"2"},"contents":"Hello, Bob!"}}`
 		//_, err := api.SignData(ctx, accounts.MimetypeTypedData, *addr, hexutil.Encode([]byte(data)))
 		var typedData core.TypedData
 		json.Unmarshal([]byte(data), &typedData)
@@ -1056,7 +1056,7 @@ func GenDoc(ctx *cli.Context) {
 		add("SignTxRequest", desc, &core.SignTxRequest{
 			Meta: meta,
 			Callinfo: []core.ValidationInfo{
-				{Typ: "Warning", Message: "Something looks odd, show this message as a warning"},
+				{Typ: "Warning", Message: "Somprobeing looks odd, show this message as a warning"},
 				{Typ: "Info", Message: "User should see this as well"},
 			},
 			Transaction: core.SendTxArgs{
@@ -1107,7 +1107,7 @@ func GenDoc(ctx *cli.Context) {
 		rlpdata := common.FromHex("0xf85d640101948a8eafb1cf62bfbeb1741769dae1a9dd47996192018026a0716bd90515acb1e68e5ac5867aa11a1e65399c3349d479f5fb698554ebc6f293a04e8a4ebfff434e971e0ef12c5bf3a881b06fd04fc3f8b8a7291fb67a26a1d4ed")
 		var tx types.Transaction
 		tx.UnmarshalBinary(rlpdata)
-		add("OnApproved - SignTransactionResult", desc, &ethapi.SignTransactionResult{Raw: rlpdata, Tx: &tx})
+		add("OnApproved - SignTransactionResult", desc, &probeapi.SignTransactionResult{Raw: rlpdata, Tx: &tx})
 
 	}
 	{ // User input
@@ -1128,7 +1128,7 @@ func GenDoc(ctx *cli.Context) {
 			})
 
 		add("ListResponse", "Response to list request. The response contains a list of all addresses to show to the caller. "+
-			"Note: the UI is free to respond with any address the caller, regardless of whether it exists or not",
+			"Note: the UI is free to respond with any address the caller, regardless of whprobeer it exists or not",
 			&core.ListResponse{
 				Accounts: []accounts.Account{
 					{

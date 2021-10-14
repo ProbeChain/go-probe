@@ -36,7 +36,7 @@ import (
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"hash"
 	"io"
 	"math/big"

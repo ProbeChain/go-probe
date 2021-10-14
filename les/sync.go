@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package les
 
@@ -21,12 +21,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/light"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 )
 
 var errInvalidCheckpoint = errors.New("invalid advertised checkpoint")
@@ -127,7 +127,7 @@ func (h *clientHandler) synchronise(peer *serverPeer) {
 			checkpoint = &params.TrustedCheckpoint{}
 		}
 	}
-	// Determine whether we should run checkpoint syncing or normal light syncing.
+	// Determine whprobeer we should run checkpoint syncing or normal light syncing.
 	//
 	// Here has four situations that we will disable the checkpoint syncing:
 	//
@@ -178,7 +178,7 @@ func (h *clientHandler) synchronise(peer *serverPeer) {
 
 		// Fetch the start point block header.
 		//
-		// For the ethash consensus engine, the start header is the block header
+		// For the probeash consensus engine, the start header is the block header
 		// of the checkpoint.
 		//
 		// For the clique consensus engine, the start header is the block header

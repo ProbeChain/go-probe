@@ -1,23 +1,23 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package bind generates Ethereum contract Go bindings.
+// Package bind generates Probeum contract Go bindings.
 //
-// Detailed usage document and tutorial available on the go-ethereum Wiki page:
-// https://github.com/ethereum/go-ethereum/wiki/Native-DApps:-Go-bindings-to-Ethereum-contracts
+// Detailed usage document and tutorial available on the go-probeum Wiki page:
+// https://github.com/probeum/go-probeum/wiki/Native-DApps:-Go-bindings-to-Probeum-contracts
 package bind
 
 import (
@@ -30,8 +30,8 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/probeum/go-probeum/accounts/abi"
+	"github.com/probeum/go-probeum/log"
 )
 
 // Lang is a target programming language selector to generate bindings for.
@@ -416,10 +416,10 @@ func bindStructTypeGo(kind abi.Type, structs map[string]*tmplStruct) string {
 	switch kind.T {
 	case abi.TupleTy:
 		// We compose a raw struct name and a canonical parameter expression
-		// together here. The reason is before solidity v0.5.11, kind.TupleRawName
+		// togprobeer here. The reason is before solidity v0.5.11, kind.TupleRawName
 		// is empty, so we use canonical parameter expression to distinguish
 		// different struct definition. From the consideration of backward
-		// compatibility, we concat these two together so that if kind.TupleRawName
+		// compatibility, we concat these two togprobeer so that if kind.TupleRawName
 		// is not empty, it can have unique id.
 		id := kind.TupleRawName + kind.String()
 		if s, exist := structs[id]; exist {
@@ -455,10 +455,10 @@ func bindStructTypeJava(kind abi.Type, structs map[string]*tmplStruct) string {
 	switch kind.T {
 	case abi.TupleTy:
 		// We compose a raw struct name and a canonical parameter expression
-		// together here. The reason is before solidity v0.5.11, kind.TupleRawName
+		// togprobeer here. The reason is before solidity v0.5.11, kind.TupleRawName
 		// is empty, so we use canonical parameter expression to distinguish
 		// different struct definition. From the consideration of backward
-		// compatibility, we concat these two together so that if kind.TupleRawName
+		// compatibility, we concat these two togprobeer so that if kind.TupleRawName
 		// is not empty, it can have unique id.
 		id := kind.TupleRawName + kind.String()
 		if s, exist := structs[id]; exist {
@@ -547,7 +547,7 @@ func decapitalise(input string) string {
 	return strings.ToLower(goForm[:1]) + goForm[1:]
 }
 
-// structured checks whether a list of ABI data types has enough information to
+// structured checks whprobeer a list of ABI data types has enough information to
 // operate through a proper Go struct or if flat returns are needed.
 func structured(args abi.Arguments) bool {
 	if len(args) < 2 {
@@ -570,7 +570,7 @@ func structured(args abi.Arguments) bool {
 	return true
 }
 
-// hasStruct returns an indicator whether the given type is struct, struct slice
+// hasStruct returns an indicator whprobeer the given type is struct, struct slice
 // or struct array.
 func hasStruct(t abi.Type) bool {
 	switch t.T {

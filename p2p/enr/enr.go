@@ -1,20 +1,20 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package enr implements Ethereum Node Records as defined in EIP-778. A node record holds
+// Package enr implements Probeum Node Records as defined in EIP-778. A node record holds
 // arbitrary information about a node on the peer-to-peer network. Node information is
 // stored in key/value pairs. To store and retrieve key/values in a record, use the Entry
 // interface.
@@ -40,7 +40,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 const SizeLimit = 300 // maximum encoded size of a node record in bytes
@@ -258,7 +258,7 @@ func (r *Record) IdentityScheme() string {
 	return string(id)
 }
 
-// VerifySignature checks whether the record is signed using the given identity scheme.
+// VerifySignature checks whprobeer the record is signed using the given identity scheme.
 func (r *Record) VerifySignature(s IdentityScheme) error {
 	return s.Verify(r, r.signature)
 }

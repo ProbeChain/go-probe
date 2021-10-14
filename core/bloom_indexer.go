@@ -1,18 +1,18 @@
-// Copyright 2021 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2021 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -20,12 +20,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/bitutil"
-	"github.com/ethereum/go-ethereum/core/bloombits"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/bitutil"
+	"github.com/probeum/go-probeum/core/bloombits"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probedb"
 )
 
 const (
@@ -35,10 +35,10 @@ const (
 )
 
 // BloomIndexer implements a core.ChainIndexer, building up a rotated bloom bits index
-// for the Ethereum header bloom filters, permitting blazing fast filtering.
+// for the Probeum header bloom filters, permitting blazing fast filtering.
 type BloomIndexer struct {
 	size    uint64               // section size to generate bloombits for
-	db      ethdb.Database       // database instance to write index data and metadata into
+	db      probedb.Database       // database instance to write index data and metadata into
 	gen     *bloombits.Generator // generator to rotate the bloom bits crating the bloom index
 	section uint64               // Section is the section number being processed currently
 	head    common.Hash          // Head is the hash of the last header processed
@@ -46,7 +46,7 @@ type BloomIndexer struct {
 
 // NewBloomIndexer returns a chain indexer that generates bloom bits data for the
 // canonical chain for fast logs filtering.
-func NewBloomIndexer(db ethdb.Database, size, confirms uint64) *ChainIndexer {
+func NewBloomIndexer(db probedb.Database, size, confirms uint64) *ChainIndexer {
 	backend := &BloomIndexer{
 		db:   db,
 		size: size,

@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package node
 
@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/probe"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/log"
 	"io"
 	"io/ioutil"
 	"net"
@@ -32,9 +32,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/rpc"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -114,7 +114,7 @@ func TestNodeUsedDataDir(t *testing.T) {
 	}
 }
 
-// Tests whether a Lifecycle can be registered.
+// Tests whprobeer a Lifecycle can be registered.
 func TestLifecycleRegistry_Successful(t *testing.T) {
 	stack, err := New(testNodeConfig())
 	if err != nil {
@@ -130,7 +130,7 @@ func TestLifecycleRegistry_Successful(t *testing.T) {
 	}
 }
 
-// Tests whether a service's protocols can be registered properly on the node's p2p server.
+// Tests whprobeer a service's protocols can be registered properly on the node's p2p server.
 func TestRegisterProtocols(t *testing.T) {
 	stack, err := New(testNodeConfig())
 	if err != nil {
@@ -180,7 +180,7 @@ func TestNodeOpenDatabaseFromLifecycleStart(t *testing.T) {
 	stack, _ := New(testNodeConfig())
 	defer stack.Close()
 
-	var db ethdb.Database
+	var db probedb.Database
 	var err error
 	stack.RegisterLifecycle(&InstrumentedService{
 		startHook: func() {
@@ -392,7 +392,7 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 	stack.server.PrivateKey = testNodeKey
 }
 
-// Tests whether a handler can be successfully mounted on the canonical HTTP server
+// Tests whprobeer a handler can be successfully mounted on the canonical HTTP server
 // on the given prefix
 func TestRegisterHandler_Successful(t *testing.T) {
 	node := createNode(t, 7878, 7979)
@@ -439,7 +439,7 @@ func TestRegisterHandler_Unsuccessful(t *testing.T) {
 	node.RegisterHandler("test", "/test", handler)
 }
 
-// Tests whether websocket requests can be handled on the same port as a regular http server.
+// Tests whprobeer websocket requests can be handled on the same port as a regular http server.
 func TestWebsocketHTTPOnSamePort_WebsocketRequest(t *testing.T) {
 	node := startHTTP(t, 0, 0)
 	defer node.Close()

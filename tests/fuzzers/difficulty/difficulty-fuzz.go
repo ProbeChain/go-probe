@@ -1,18 +1,18 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2020 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package difficulty
 
@@ -23,8 +23,8 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core/types"
 )
 
 type fuzzer struct {
@@ -130,9 +130,9 @@ func (f *fuzzer) fuzz() int {
 		bigFn  calculator
 		u256Fn calculator
 	}{
-		{ethash.FrontierDifficultyCalulator, ethash.CalcDifficultyFrontierU256},
-		{ethash.HomesteadDifficultyCalulator, ethash.CalcDifficultyHomesteadU256},
-		{ethash.DynamicDifficultyCalculator(bombDelay), ethash.MakeDifficultyCalculatorU256(bombDelay)},
+		{probeash.FrontierDifficultyCalulator, probeash.CalcDifficultyFrontierU256},
+		{probeash.HomesteadDifficultyCalulator, probeash.CalcDifficultyHomesteadU256},
+		{probeash.DynamicDifficultyCalculator(bombDelay), probeash.MakeDifficultyCalculatorU256(bombDelay)},
 	} {
 		want := pair.bigFn(time, header)
 		have := pair.u256Fn(time, header)

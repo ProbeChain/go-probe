@@ -2,24 +2,24 @@
 
 ## Supported Versions
 
-Please see [Releases](https://github.com/ethereum/go-ethereum/releases). We recommend using the [most recently released version](https://github.com/ethereum/go-ethereum/releases/latest).
+Please see [Releases](https://github.com/probeum/go-probeum/releases). We recommend using the [most recently released version](https://github.com/probeum/go-probeum/releases/latest).
 
 ## Audit reports
 
-Audit reports are published in the `docs` folder: https://github.com/ethereum/go-ethereum/tree/master/docs/audits 
+Audit reports are published in the `docs` folder: https://github.com/probeum/go-probeum/tree/master/docs/audits 
 
 | Scope | Date | Report Link |
 | ------- | ------- | ----------- |
-| `geth` | 20170425 | [pdf](https://github.com/ethereum/go-ethereum/blob/master/docs/audits/2017-04-25_Geth-audit_Truesec.pdf) |
-| `clef` | 20180914 | [pdf](https://github.com/ethereum/go-ethereum/blob/master/docs/audits/2018-09-14_Clef-audit_NCC.pdf) |
+| `gprobe` | 20170425 | [pdf](https://github.com/probeum/go-probeum/blob/master/docs/audits/2017-04-25_Gprobe-audit_Truesec.pdf) |
+| `clef` | 20180914 | [pdf](https://github.com/probeum/go-probeum/blob/master/docs/audits/2018-09-14_Clef-audit_NCC.pdf) |
 
 ## Reporting a Vulnerability
 
 **Please do not file a public ticket** mentioning the vulnerability.
 
-To find out how to disclose a vulnerability in Ethereum visit [https://bounty.ethereum.org](https://bounty.ethereum.org) or email bounty@ethereum.org. Please read the [disclosure page](https://github.com/ethereum/go-ethereum/security/advisories?state=published) for more information about publically disclosed security vulnerabilities.
+To find out how to disclose a vulnerability in Probeum visit [https://bounty.probeum.org](https://bounty.probeum.org) or email bounty@probeum.org. Please read the [disclosure page](https://github.com/probeum/go-probeum/security/advisories?state=published) for more information about publically disclosed security vulnerabilities.
 
-Use the built-in `geth version-check` feature to check whether the software is affected by any known vulnerability. This command will fetch the latest [`vulnerabilities.json`](https://geth.ethereum.org/docs/vulnerabilities/vulnerabilities.json) file which contains known security vulnerabilities concerning `geth`, and cross-check the data against its own version number.
+Use the built-in `gprobe version-check` feature to check whprobeer the software is affected by any known vulnerability. This command will fetch the latest [`vulnerabilities.json`](https://gprobe.probeum.org/docs/vulnerabilities/vulnerabilities.json) file which contains known security vulnerabilities concerning `gprobe`, and cross-check the data against its own version number.
 
 The following key may be used to communicate sensitive information to developers.
 

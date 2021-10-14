@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package clique implements the proof-of-authority consensus engine.
 package clique
@@ -21,27 +21,27 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"io"
 	"math/big"
 	"math/rand"
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/consensus/misc"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/rpc"
+	"github.com/probeum/go-probeum/trie"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/crypto/sha3"
 )
@@ -83,7 +83,7 @@ var (
 	// block has a beneficiary set to non-zeroes.
 	errInvalidCheckpointBeneficiary = errors.New("beneficiary in checkpoint block non-zero")
 
-	// errInvalidVote is returned if a nonce value is something else that the two
+	// errInvalidVote is returned if a nonce value is somprobeing else that the two
 	// allowed constants of 0x00..0 or 0xff..f.
 	errInvalidVote = errors.New("vote nonce not 0x00..0 or 0xff..f")
 
@@ -143,7 +143,7 @@ var (
 // SignerFn hashes and signs the data to be signed by a backing account.
 type SignerFn func(signer accounts.Account, mimeType string, message []byte) ([]byte, error)
 
-// ecrecover extracts the Ethereum account address from a signed header.
+// ecrecover extracts the Probeum account address from a signed header.
 func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, error) {
 	// If the signature's already cached, return that
 	hash := header.Hash()
@@ -155,7 +155,7 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 		return common.Address{}, errMissingSignature
 	}
 	signature := header.Extra[len(header.Extra)-extraSeal:]
-	// Recover the public key and the Ethereum address
+	// Recover the public key and the Probeum address
 	pubkey, err := crypto.Ecrecover(SealHash(header).Bytes(), signature)
 	if err != nil {
 		return common.Address{}, err
@@ -170,17 +170,17 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 }
 
 // Clique is the proof-of-authority consensus engine proposed to support the
-// Ethereum testnet following the Ropsten attacks.
+// Probeum testnet following the Ropsten attacks.
 type Clique struct {
 	config *params.CliqueConfig // Consensus engine configuration parameters
-	db     ethdb.Database       // Database to store and retrieve snapshot checkpoints
+	db     probedb.Database       // Database to store and retrieve snapshot checkpoints
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
 
 	proposals map[common.Address]bool // Current list of proposals we are pushing
 
-	signer common.Address // Ethereum address of the signing key
+	signer common.Address // Probeum address of the signing key
 	signFn SignerFn       // Signer function to authorize hashes with
 	lock   sync.RWMutex   // Protects the signer fields
 
@@ -190,7 +190,7 @@ type Clique struct {
 
 // New creates a Clique proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
-func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
+func New(config *params.CliqueConfig, db probedb.Database) *Clique {
 	// Set any missing consensus parameters to their defaults
 	conf := *config
 	if conf.Epoch == 0 {
@@ -209,13 +209,13 @@ func New(config *params.CliqueConfig, db ethdb.Database) *Clique {
 	}
 }
 
-// Author implements consensus.Engine, returning the Ethereum address recovered
+// Author implements consensus.Engine, returning the Probeum address recovered
 // from the signature in the header's extra-data section.
 func (c *Clique) Author(header *types.Header) (common.Address, error) {
 	return ecrecover(header, c.signatures)
 }
 
-// VerifyHeader checks whether a header conforms to the consensus rules.
+// VerifyHeader checks whprobeer a header conforms to the consensus rules.
 func (c *Clique) VerifyHeader(chain consensus.ChainHeaderReader, header *types.Header, seal bool) error {
 	return c.verifyHeader(chain, header, nil)
 }
@@ -241,7 +241,7 @@ func (c *Clique) VerifyHeaders(chain consensus.ChainHeaderReader, headers []*typ
 	return abort, results
 }
 
-// verifyHeader checks whether a header conforms to the consensus rules.The
+// verifyHeader checks whprobeer a header conforms to the consensus rules.The
 // caller may optionally pass in a batch of parents (ascending order) to avoid
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
@@ -459,7 +459,7 @@ func (c *Clique) VerifyUncles(chain consensus.ChainReader, block *types.Block) e
 	return nil
 }
 
-// verifySeal checks whether the signature contained in the header satisfies the
+// verifySeal checks whprobeer the signature contained in the header satisfies the
 // consensus protocol requirements. The method accepts an optional list of parent
 // headers that aren't yet part of the local blockchain to generate the snapshots
 // from.

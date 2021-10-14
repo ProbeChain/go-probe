@@ -1,27 +1,27 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	//uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
-	uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
+	"github.com/probeum/go-probeum/common"
+	//uint256 "github.com/probeum/go-probeum/core/vm/uint256"
+	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
 )
 
 // ContractRef is a reference to the contract's backing object
@@ -41,7 +41,7 @@ type AccountRef common.Address
 // Address casts AccountRef to a Address
 func (ar AccountRef) Address() common.Address { return (common.Address)(ar) }
 
-// Contract represents an ethereum contract in the state database. It contains
+// Contract represents an probeum contract in the state database. It contains
 // the contract code, calling arguments. Contract implements ContractRef
 type Contract struct {
 	// CallerAddress is the result of the caller which initialised this
@@ -134,7 +134,7 @@ func (c *Contract) isCode(udest uint64) bool {
 // contract (for chaining calls)
 func (c *Contract) AsDelegate() *Contract {
 	// NOTE: caller must, at all times be a contract. It should never happen
-	// that caller is something other than a Contract.
+	// that caller is somprobeing other than a Contract.
 	parent := c.caller.(*Contract)
 	c.CallerAddress = parent.CallerAddress
 	c.value = parent.value

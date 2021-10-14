@@ -1,45 +1,45 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains a miner stress test based on the Clique consensus engine.
 package main
 
 import (
 	"bytes"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"os"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/accounts/keystore"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/fdlimit"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probe"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/miner"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/params"
 )
 
 func main() {
@@ -59,13 +59,13 @@ func main() {
 	genesis := makeGenesis(faucets, sealers)
 
 	var (
-		nodes  []*eth.Ethereum
+		nodes  []*probe.Probeum
 		enodes []*enode.Node
 	)
 
 	for _, sealer := range sealers {
 		// Start the node and wait until it's up
-		stack, ethBackend, err := makeSealer(genesis)
+		stack, probeBackend, err := makeSealer(genesis)
 		if err != nil {
 			panic(err)
 		}
@@ -79,7 +79,7 @@ func main() {
 			stack.Server().AddPeer(n)
 		}
 		// Start tracking the node and its enode
-		nodes = append(nodes, ethBackend)
+		nodes = append(nodes, probeBackend)
 		enodes = append(enodes, stack.Server().Self())
 
 		// Inject the signer key and start sealing with it
@@ -163,12 +163,12 @@ func makeGenesis(faucets []*probe.PrivateKey, sealers []*probe.PrivateKey) *core
 	return genesis
 }
 
-func makeSealer(genesis *core.Genesis) (*node.Node, *eth.Ethereum, error) {
-	// Define the basic configurations for the Ethereum node
+func makeSealer(genesis *core.Genesis) (*node.Node, *probe.Probeum, error) {
+	// Define the basic configurations for the Probeum node
 	datadir, _ := ioutil.TempDir("", "")
 
 	config := &node.Config{
-		Name:    "geth",
+		Name:    "gprobe",
 		Version: params.Version,
 		DataDir: datadir,
 		P2P: p2p.Config{
@@ -177,20 +177,20 @@ func makeSealer(genesis *core.Genesis) (*node.Node, *eth.Ethereum, error) {
 			MaxPeers:    25,
 		},
 	}
-	// Start the node and configure a full Ethereum node on it
+	// Start the node and configure a full Probeum node on it
 	stack, err := node.New(config)
 	if err != nil {
 		return nil, nil, err
 	}
 	// Create and register the backend
-	ethBackend, err := eth.New(stack, &ethconfig.Config{
+	probeBackend, err := probe.New(stack, &probeconfig.Config{
 		Genesis:         genesis,
 		NetworkId:       genesis.Config.ChainID.Uint64(),
 		SyncMode:        downloader.FullSync,
 		DatabaseCache:   256,
 		DatabaseHandles: 256,
 		TxPool:          core.DefaultTxPoolConfig,
-		GPO:             ethconfig.Defaults.GPO,
+		GPO:             probeconfig.Defaults.GPO,
 		Miner: miner.Config{
 			GasFloor: genesis.GasLimit * 9 / 10,
 			GasCeil:  genesis.GasLimit * 11 / 10,
@@ -203,5 +203,5 @@ func makeSealer(genesis *core.Genesis) (*node.Node, *eth.Ethereum, error) {
 	}
 
 	err = stack.Start()
-	return stack, ethBackend, err
+	return stack, probeBackend, err
 }

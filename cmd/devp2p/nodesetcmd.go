@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2019 The go-probeum Authors
+// This file is part of go-probeum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-probeum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-probeum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+// along with go-probeum. If not, see <http://www.gnu.org/licenses/>.
 
 package main
 
@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/core/forkid"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/core/forkid"
+	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -137,7 +137,7 @@ var filterFlags = map[string]nodeFilterC{
 	"-limit":       {1, trueFilter}, // needed to skip over -limit
 	"-ip":          {1, ipFilter},
 	"-min-age":     {1, minAgeFilter},
-	"-eth-network": {1, ethFilter},
+	"-probe-network": {1, probeFilter},
 	"-les-server":  {0, lesFilter},
 	"-snap":        {0, snapFilter},
 }
@@ -224,7 +224,7 @@ func minAgeFilter(args []string) (nodeFilter, error) {
 	return f, nil
 }
 
-func ethFilter(args []string) (nodeFilter, error) {
+func probeFilter(args []string) (nodeFilter, error) {
 	var filter forkid.Filter
 	switch args[0] {
 	case "mainnet":
@@ -240,14 +240,14 @@ func ethFilter(args []string) (nodeFilter, error) {
 	}
 
 	f := func(n nodeJSON) bool {
-		var eth struct {
+		var probe struct {
 			ForkID forkid.ID
 			Tail   []rlp.RawValue `rlp:"tail"`
 		}
-		if n.N.Load(enr.WithEntry("eth", &eth)) != nil {
+		if n.N.Load(enr.WithEntry("probe", &probe)) != nil {
 			return false
 		}
-		return filter(eth.ForkID) == nil
+		return filter(probe.ForkID) == nil
 	}
 	return f, nil
 }

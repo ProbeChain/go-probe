@@ -1,20 +1,20 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// package web3ext contains geth specific web3.js extensions.
+// package web3ext contains gprobe specific web3.js extensions.
 package web3ext
 
 var Modules = map[string]string{
@@ -22,9 +22,9 @@ var Modules = map[string]string{
 	"admin":      AdminJs,
 	"chequebook": ChequebookJs,
 	"clique":     CliqueJs,
-	"ethash":     EthashJs,
+	"probeash":     ProbeashJs,
 	"debug":      DebugJs,
-	"eth":        EthJs,
+	"probe":        ProbeJs,
 	"miner":      MinerJs,
 	"net":        NetJs,
 	"personal":   PersonalJs,
@@ -118,28 +118,28 @@ web3._extend({
 });
 `
 
-const EthashJs = `
+const ProbeashJs = `
 web3._extend({
-	property: 'ethash',
+	property: 'probeash',
 	methods: [
 		new web3._extend.Method({
 			name: 'getWork',
-			call: 'ethash_getWork',
+			call: 'probeash_getWork',
 			params: 0
 		}),
 		new web3._extend.Method({
 			name: 'getHashrate',
-			call: 'ethash_getHashrate',
+			call: 'probeash_getHashrate',
 			params: 0
 		}),
 		new web3._extend.Method({
 			name: 'submitWork',
-			call: 'ethash_submitWork',
+			call: 'probeash_submitWork',
 			params: 3,
 		}),
 		new web3._extend.Method({
 			name: 'submitHashrate',
-			call: 'ethash_submitHashrate',
+			call: 'probeash_submitHashrate',
 			params: 2,
 		}),
 	]
@@ -487,115 +487,115 @@ web3._extend({
 });
 `
 
-const EthJs = `
+const ProbeJs = `
 web3._extend({
-	property: 'eth',
+	property: 'probe',
 	methods: [
 		new web3._extend.Method({
 			name: 'chainId',
-			call: 'eth_chainId',
+			call: 'probe_chainId',
 			params: 0
 		}),
 		new web3._extend.Method({
 			name: 'sign',
-			call: 'eth_sign',
+			call: 'probe_sign',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
 			name: 'resend',
-			call: 'eth_resend',
+			call: 'probe_resend',
 			params: 3,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, web3._extend.utils.fromDecimal, web3._extend.utils.fromDecimal]
 		}),
 		new web3._extend.Method({
 			name: 'signTransaction',
-			call: 'eth_signTransaction',
+			call: 'probe_signTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'estimateGas',
-			call: 'eth_estimateGas',
+			call: 'probe_estimateGas',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputCallFormatter, web3._extend.formatters.inputBlockNumberFormatter],
 			outputFormatter: web3._extend.utils.toDecimal
 		}),
 		new web3._extend.Method({
 			name: 'submitTransaction',
-			call: 'eth_submitTransaction',
+			call: 'probe_submitTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'fillTransaction',
-			call: 'eth_fillTransaction',
+			call: 'probe_fillTransaction',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getHeaderByNumber',
-			call: 'eth_getHeaderByNumber',
+			call: 'probe_getHeaderByNumber',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'getHeaderByHash',
-			call: 'eth_getHeaderByHash',
+			call: 'probe_getHeaderByHash',
 			params: 1
 		}),
 		new web3._extend.Method({
 			name: 'getBlockByNumber',
-			call: 'eth_getBlockByNumber',
+			call: 'probe_getBlockByNumber',
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, function (val) { return !!val; }]
 		}),
 		new web3._extend.Method({
 			name: 'getBlockByHash',
-			call: 'eth_getBlockByHash',
+			call: 'probe_getBlockByHash',
 			params: 2,
 			inputFormatter: [null, function (val) { return !!val; }]
 		}),
 		new web3._extend.Method({
 			name: 'getRawTransaction',
-			call: 'eth_getRawTransactionByHash',
+			call: 'probe_getRawTransactionByHash',
 			params: 1
 		}),
 		new web3._extend.Method({
 			name: 'getRawTransactionFromBlock',
 			call: function(args) {
-				return (web3._extend.utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'eth_getRawTransactionByBlockHashAndIndex' : 'eth_getRawTransactionByBlockNumberAndIndex';
+				return (web3._extend.utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? 'probe_getRawTransactionByBlockHashAndIndex' : 'probe_getRawTransactionByBlockNumberAndIndex';
 			},
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter, web3._extend.utils.toHex]
 		}),
 		new web3._extend.Method({
 			name: 'getProof',
-			call: 'eth_getProof',
+			call: 'probe_getProof',
 			params: 3,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null, web3._extend.formatters.inputBlockNumberFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'createAccessList',
-			call: 'eth_createAccessList',
+			call: 'probe_createAccessList',
 			params: 2,
 			inputFormatter: [null, web3._extend.formatters.inputBlockNumberFormatter],
 		}),
 		new web3._extend.Method({
 			name: 'feeHistory',
-			call: 'eth_feeHistory',
+			call: 'probe_feeHistory',
 			params: 3,
 			inputFormatter: [null, web3._extend.formatters.inputBlockNumberFormatter, null]
 		}),
         new web3._extend.Method({
 			name: 'getAccountInfo',
-			call: 'eth_getAccountInfo',
+			call: 'probe_getAccountInfo',
 			params: 2,
             inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
        new web3._extend.Method({
 			name: 'getDPOSList',
-			call: 'eth_getDPOSList',
+			call: 'probe_getDPOSList',
 			params: 1,
             inputFormatter: [null]
 		}),
@@ -603,7 +603,7 @@ web3._extend({
 	properties: [
 		new web3._extend.Property({
 			name: 'pendingTransactions',
-			getter: 'eth_pendingTransactions',
+			getter: 'probe_pendingTransactions',
 			outputFormatter: function(txs) {
 				var formatted = [];
 				for (var i = 0; i < txs.length; i++) {
@@ -615,7 +615,7 @@ web3._extend({
 		}),
 		new web3._extend.Property({
 			name: 'maxPriorityFeePerGas',
-			getter: 'eth_maxPriorityFeePerGas',
+			getter: 'probe_maxPriorityFeePerGas',
 			outputFormatter: web3._extend.utils.toBigNumber
 		}),
 	]
@@ -637,8 +637,8 @@ web3._extend({
 			call: 'miner_stop'
 		}),
 		new web3._extend.Method({
-			name: 'setEtherbase',
-			call: 'miner_setEtherbase',
+			name: 'setProbeerbase',
+			call: 'miner_setProbeerbase',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
 		}),

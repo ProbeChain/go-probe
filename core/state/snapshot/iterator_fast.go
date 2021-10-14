@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package snapshot
 
@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/probeum/go-probeum/common"
 )
 
 // weightedIterator is a iterator with an assigned weight. It is used to prioritise
@@ -193,7 +193,7 @@ func (fi *fastIterator) Next() bool {
 			return true
 		}
 		// Implicit else: we've hit a nil-account or nil-slot, and need to
-		// fall through to the loop below to land on something non-nil
+		// fall through to the loop below to land on somprobeing non-nil
 	}
 	// If an account or a slot is deleted in one of the layers, the key will
 	// still be there, but the actual value will be nil. However, the iterator
@@ -260,7 +260,7 @@ func (fi *fastIterator) next(idx int) bool {
 	clash := -1
 	index := sort.Search(len(fi.iterators), func(n int) bool {
 		// The iterator always advances forward, so anything before the old slot
-		// is known to be behind us, so just skip them altogether. This actually
+		// is known to be behind us, so just skip them altogprobeer. This actually
 		// is an important clause since the sort order got invalidated.
 		if n < idx {
 			return false

@@ -1,22 +1,22 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains the implementation for interacting with the Ledger hardware
 // wallets. The wire protocol spec can be found in the Ledger Blue GitHub repo:
-// https://raw.githubusercontent.com/LedgerHQ/blue-app-eth/master/doc/ethapp.asc
+// https://raw.githubusercontent.com/LedgerHQ/blue-app-probe/master/doc/probeapp.asc
 
 package usbwallet
 
@@ -28,13 +28,13 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 // ledgerOpcode is an enumeration encoding the supported Ledger opcodes.
@@ -49,10 +49,10 @@ type ledgerParam1 byte
 type ledgerParam2 byte
 
 const (
-	ledgerOpRetrieveAddress  ledgerOpcode = 0x02 // Returns the public key and Ethereum address for a given BIP 32 path
-	ledgerOpSignTransaction  ledgerOpcode = 0x04 // Signs an Ethereum transaction after having the user validate the parameters
+	ledgerOpRetrieveAddress  ledgerOpcode = 0x02 // Returns the public key and Probeum address for a given BIP 32 path
+	ledgerOpSignTransaction  ledgerOpcode = 0x04 // Signs an Probeum transaction after having the user validate the parameters
 	ledgerOpGetConfiguration ledgerOpcode = 0x06 // Returns specific wallet application configuration
-	ledgerOpSignTypedMessage ledgerOpcode = 0x0c // Signs an Ethereum message following the EIP 712 specification
+	ledgerOpSignTypedMessage ledgerOpcode = 0x0c // Signs an Probeum message following the EIP 712 specification
 
 	ledgerP1DirectlyFetchAddress    ledgerParam1 = 0x00 // Return address directly from the wallet
 	ledgerP1InitTypedMessageData    ledgerParam1 = 0x00 // First chunk of Typed Message data
@@ -74,7 +74,7 @@ var errLedgerInvalidVersionReply = errors.New("ledger: invalid version reply")
 type ledgerDriver struct {
 	device  io.ReadWriter // USB device connection to communicate through
 	version [3]byte       // Current version of the Ledger firmware (zero if app is offline)
-	browser bool          // Flag whether the Ledger is in browser mode (reply channel mismatch)
+	browser bool          // Flag whprobeer the Ledger is in browser mode (reply channel mismatch)
 	failure error         // Any failure that would make the device unusable
 	log     log.Logger    // Contextual logger to tag the ledger with its id
 }
@@ -93,15 +93,15 @@ func (w *ledgerDriver) Status() (string, error) {
 		return fmt.Sprintf("Failed: %v", w.failure), w.failure
 	}
 	if w.browser {
-		return "Ethereum app in browser mode", w.failure
+		return "Probeum app in browser mode", w.failure
 	}
 	if w.offline() {
-		return "Ethereum app offline", w.failure
+		return "Probeum app offline", w.failure
 	}
-	return fmt.Sprintf("Ethereum app v%d.%d.%d online", w.version[0], w.version[1], w.version[2]), w.failure
+	return fmt.Sprintf("Probeum app v%d.%d.%d online", w.version[0], w.version[1], w.version[2]), w.failure
 }
 
-// offline returns whether the wallet and the Ethereum app is offline or not.
+// offline returns whprobeer the wallet and the Probeum app is offline or not.
 //
 // The method assumes that the state lock is held!
 func (w *ledgerDriver) offline() bool {
@@ -116,13 +116,13 @@ func (w *ledgerDriver) Open(device io.ReadWriter, passphrase string) error {
 
 	_, err := w.ledgerDerive(accounts.DefaultBaseDerivationPath)
 	if err != nil {
-		// Ethereum app is not running or in browser mode, nothing more to do, return
+		// Probeum app is not running or in browser mode, nothing more to do, return
 		if err == errLedgerReplyInvalidHeader {
 			w.browser = true
 		}
 		return nil
 	}
-	// Try to resolve the Ethereum app's version, will fail prior to v1.0.2
+	// Try to resolve the Probeum app's version, will fail prior to v1.0.2
 	if w.version, err = w.ledgerVersion(); err != nil {
 		w.version = [3]byte{1, 0, 0} // Assume worst case, can't verify if v1.0.0 or v1.0.1
 	}
@@ -147,7 +147,7 @@ func (w *ledgerDriver) Heartbeat() error {
 }
 
 // Derive implements usbwallet.driver, sending a derivation request to the Ledger
-// and returning the Ethereum address located on that derivation path.
+// and returning the Probeum address located on that derivation path.
 func (w *ledgerDriver) Derive(path accounts.DerivationPath) (common.Address, error) {
 	return w.ledgerDerive(path)
 }
@@ -155,11 +155,11 @@ func (w *ledgerDriver) Derive(path accounts.DerivationPath) (common.Address, err
 // SignTx implements usbwallet.driver, sending the transaction to the Ledger and
 // waiting for the user to confirm or deny the transaction.
 //
-// Note, if the version of the Ethereum application running on the Ledger wallet is
-// too old to sign EIP-155 transactions, but such is requested nonetheless, an error
+// Note, if the version of the Probeum application running on the Ledger wallet is
+// too old to sign EIP-155 transactions, but such is requested nonprobeeless, an error
 // will be returned opposed to silently signing in Homestead mode.
 func (w *ledgerDriver) SignTx(path accounts.DerivationPath, tx *types.Transaction, chainID *big.Int) (common.Address, *types.Transaction, error) {
-	// If the Ethereum app doesn't run, abort
+	// If the Probeum app doesn't run, abort
 	if w.offline() {
 		return common.Address{}, nil, accounts.ErrWalletClosed
 	}
@@ -177,7 +177,7 @@ func (w *ledgerDriver) SignTx(path accounts.DerivationPath, tx *types.Transactio
 //
 // Note: this was introduced in the ledger 1.5.0 firmware
 func (w *ledgerDriver) SignTypedMessage(path accounts.DerivationPath, domainHash []byte, messageHash []byte) ([]byte, error) {
-	// If the Ethereum app doesn't run, abort
+	// If the Probeum app doesn't run, abort
 	if w.offline() {
 		return nil, accounts.ErrWalletClosed
 	}
@@ -190,7 +190,7 @@ func (w *ledgerDriver) SignTypedMessage(path accounts.DerivationPath, domainHash
 	return w.ledgerSignTypedMessage(path, domainHash, messageHash)
 }
 
-// ledgerVersion retrieves the current version of the Ethereum wallet app running
+// ledgerVersion retrieves the current version of the Probeum wallet app running
 // on the Ledger wallet.
 //
 // The version retrieval protocol is defined as follows:
@@ -222,7 +222,7 @@ func (w *ledgerDriver) ledgerVersion() ([3]byte, error) {
 	return version, nil
 }
 
-// ledgerDerive retrieves the currently active Ethereum address from a Ledger
+// ledgerDerive retrieves the currently active Probeum address from a Ledger
 // wallet at the specified derivation path.
 //
 // The address derivation protocol is defined as follows:
@@ -250,8 +250,8 @@ func (w *ledgerDriver) ledgerVersion() ([3]byte, error) {
 //   ------------------------+-------------------
 //   Public Key length       | 1 byte
 //   Uncompressed Public Key | arbitrary
-//   Ethereum address length | 1 byte
-//   Ethereum address        | 40 bytes hex ascii
+//   Probeum address length | 1 byte
+//   Probeum address        | 40 bytes hex ascii
 //   Chain code if requested | 32 bytes
 func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) (common.Address, error) {
 	// Flatten the derivation path into the Ledger request
@@ -271,13 +271,13 @@ func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) (common.Address, er
 	}
 	reply = reply[1+int(reply[0]):]
 
-	// Extract the Ethereum hex address string
+	// Extract the Probeum hex address string
 	if len(reply) < 1 || len(reply) < 1+int(reply[0]) {
 		return common.Address{}, errors.New("reply lacks address entry")
 	}
 	hexstr := reply[1 : 1+int(reply[0])]
 
-	// Decode the hex sting into an Ethereum address and return
+	// Decode the hex sting into an Probeum address and return
 	var address common.Address
 	if _, err = hex.Decode(address[:], hexstr); err != nil {
 		return common.Address{}, err
@@ -326,7 +326,7 @@ func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction
 	for i, component := range derivationPath {
 		binary.BigEndian.PutUint32(path[1+4*i:], component)
 	}
-	// Create the transaction RLP based on whether legacy or EIP155 signing was requested
+	// Create the transaction RLP based on whprobeer legacy or EIP155 signing was requested
 	var (
 		txrlp []byte
 		err   error
@@ -362,7 +362,7 @@ func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction
 		payload = payload[chunk:]
 		op = ledgerP1ContTransactionData
 	}
-	// Extract the Ethereum signature and do a sanity validation
+	// Extract the Probeum signature and do a sanity validation
 	if len(reply) != crypto.SignatureLength {
 		return common.Address{}, nil, errors.New("reply lacks signature")
 	}
@@ -441,7 +441,7 @@ func (w *ledgerDriver) ledgerSignTypedMessage(derivationPath []uint32, domainHas
 		return nil, err
 	}
 
-	// Extract the Ethereum signature and do a sanity validation
+	// Extract the Probeum signature and do a sanity validation
 	if len(reply) != crypto.SignatureLength {
 		return nil, errors.New("reply lacks signature")
 	}

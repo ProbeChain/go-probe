@@ -1,18 +1,18 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package les
 
@@ -21,20 +21,20 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/les/checkpointoracle"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probeclient"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/les/checkpointoracle"
+	"github.com/probeum/go-probeum/light"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/params"
 )
 
 func errResp(code errCode, format string, v ...interface{}) error {
@@ -48,10 +48,10 @@ type chainReader interface {
 // lesCommons contains fields needed by both server and client.
 type lesCommons struct {
 	genesis                      common.Hash
-	config                       *ethconfig.Config
+	config                       *probeconfig.Config
 	chainConfig                  *params.ChainConfig
 	iConfig                      *light.IndexerConfig
-	chainDb, lesDb               ethdb.Database
+	chainDb, lesDb               probedb.Database
 	chainReader                  chainReader
 	chtIndexer, bloomTrieIndexer *core.ChainIndexer
 	oracle                       *checkpointoracle.CheckpointOracle
@@ -60,10 +60,10 @@ type lesCommons struct {
 	wg      sync.WaitGroup
 }
 
-// NodeInfo represents a short summary of the Ethereum sub-protocol metadata
+// NodeInfo represents a short summary of the Probeum sub-protocol metadata
 // known about the host peer.
 type NodeInfo struct {
-	Network    uint64                   `json:"network"`    // Ethereum network ID (1=Frontier, 2=Morden, Ropsten=3, Rinkeby=4)
+	Network    uint64                   `json:"network"`    // Probeum network ID (1=Frontier, 2=Morden, Ropsten=3, Rinkeby=4)
 	Difficulty *big.Int                 `json:"difficulty"` // Total difficulty of the host's blockchain
 	Genesis    common.Hash              `json:"genesis"`    // SHA3 hash of the host's genesis block
 	Config     *params.ChainConfig      `json:"config"`     // Chain configuration for the fork rules
@@ -138,8 +138,8 @@ func (c *lesCommons) localCheckpoint(index uint64) params.TrustedCheckpoint {
 }
 
 // setupOracle sets up the checkpoint oracle contract client.
-func (c *lesCommons) setupOracle(node *node.Node, genesis common.Hash, ethconfig *ethconfig.Config) *checkpointoracle.CheckpointOracle {
-	config := ethconfig.CheckpointOracle
+func (c *lesCommons) setupOracle(node *node.Node, genesis common.Hash, probeconfig *probeconfig.Config) *checkpointoracle.CheckpointOracle {
+	config := probeconfig.CheckpointOracle
 	if config == nil {
 		// Try loading default config.
 		config = params.CheckpointOracles[genesis]
@@ -154,7 +154,7 @@ func (c *lesCommons) setupOracle(node *node.Node, genesis common.Hash, ethconfig
 	}
 	oracle := checkpointoracle.New(config, c.localCheckpoint)
 	rpcClient, _ := node.Attach()
-	client := ethclient.NewClient(rpcClient)
+	client := probeclient.NewClient(rpcClient)
 	oracle.Start(client)
 	log.Info("Configured checkpoint oracle", "address", config.Address, "signers", len(config.Signers), "threshold", config.Threshold)
 	return oracle

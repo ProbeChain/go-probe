@@ -1,21 +1,21 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package light implements on-demand retrieval capable state and chain objects
-// for the Ethereum Light Client.
+// for the Probeum Light Client.
 package light
 
 import (
@@ -26,17 +26,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -51,7 +51,7 @@ var (
 type LightChain struct {
 	hc            *core.HeaderChain
 	indexerConfig *IndexerConfig
-	chainDb       ethdb.Database
+	chainDb       probedb.Database
 	engine        consensus.Engine
 	odr           OdrBackend
 	chainFeed     event.Feed
@@ -69,13 +69,13 @@ type LightChain struct {
 	wg      sync.WaitGroup
 
 	// Atomic boolean switches:
-	running          int32 // whether LightChain is running or stopped
+	running          int32 // whprobeer LightChain is running or stopped
 	procInterrupt    int32 // interrupts chain insert
 	disableCheckFreq int32 // disables header verification
 }
 
 // NewLightChain returns a fully initialised light chain using information
-// available in the database. It initialises the default Ethereum header
+// available in the database. It initialises the default Probeum header
 // validator.
 func NewLightChain(odr OdrBackend, config *params.ChainConfig, engine consensus.Engine, checkpoint *params.TrustedCheckpoint) (*LightChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
@@ -373,7 +373,7 @@ func (lc *LightChain) postChainEvents(events []interface{}) {
 // chain, possibly creating a reorg. If an error is returned, it will return the
 // index number of the failing header as well an error describing what went wrong.
 //
-// The verify parameter can be used to fine tune whether nonce verification
+// The verify parameter can be used to fine tune whprobeer nonce verification
 // should be done or not. The reason behind the optional check is because some
 // of the header retrieval mechanisms already need to verfy nonces, as well as
 // because nonces can be verified sparsely, not needing to check each.

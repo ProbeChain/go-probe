@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package server
 
@@ -21,14 +21,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/les/utils"
-	"github.com/ethereum/go-ethereum/les/vflux"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/nodestate"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/les/utils"
+	"github.com/probeum/go-probeum/les/vflux"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/nodestate"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 var (
@@ -53,7 +53,7 @@ var (
 // each client can have several minutes of connection time.
 //
 // Balances of disconnected clients are stored in nodeDB including positive balance
-// and negative banalce. Boeth positive balance and negative balance will decrease
+// and negative banalce. Boprobe positive balance and negative balance will decrease
 // exponentially. If the balance is low enough, then the record will be dropped.
 type ClientPool struct {
 	*priorityPool
@@ -82,7 +82,7 @@ type clientPeer interface {
 }
 
 // NewClientPool creates a new client pool
-func NewClientPool(balanceDb ethdb.KeyValueStore, minCap uint64, connectedBias time.Duration, clock mclock.Clock, synced func() bool) *ClientPool {
+func NewClientPool(balanceDb probedb.KeyValueStore, minCap uint64, connectedBias time.Duration, clock mclock.Clock, synced func() bool) *ClientPool {
 	setup := newServerSetup()
 	ns := nodestate.NewNodeStateMachine(nil, nil, clock, setup.setup)
 	cp := &ClientPool{
@@ -219,7 +219,7 @@ func (cp *ClientPool) SetCapacity(node *enode.Node, reqCap uint64, bias time.Dur
 		}
 		if requested {
 			// mark the requested node so that the UpdateCapacity callback can signal
-			// whether the update is the direct result of a SetCapacity call on the given node
+			// whprobeer the update is the direct result of a SetCapacity call on the given node
 			cp.capReqNode = node
 			defer func() {
 				cp.capReqNode = nil

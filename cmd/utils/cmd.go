@@ -1,20 +1,20 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2014 The go-probeum Authors
+// This file is part of go-probeum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-probeum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-probeum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+// along with go-probeum. If not, see <http://www.gnu.org/licenses/>.
 
-// Package utils contains internal helper functions for go-ethereum commands.
+// Package utils contains internal helper functions for go-probeum commands.
 package utils
 
 import (
@@ -28,17 +28,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/internal/debug"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/rlp"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -75,7 +75,7 @@ func StartNode(ctx *cli.Context, stack *node.Node) {
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 		defer signal.Stop(sigc)
 
-		minFreeDiskSpace := ethconfig.Defaults.TrieDirtyCache
+		minFreeDiskSpace := probeconfig.Defaults.TrieDirtyCache
 		if ctx.GlobalIsSet(MinFreeDiskSpaceFlag.Name) {
 			minFreeDiskSpace = ctx.GlobalInt(MinFreeDiskSpaceFlag.Name)
 		} else if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheGCFlag.Name) {
@@ -107,11 +107,11 @@ func monitorFreeDiskSpace(sigc chan os.Signal, path string, freeDiskSpaceCritica
 			break
 		}
 		if freeSpace < freeDiskSpaceCritical {
-			log.Error("Low disk space. Gracefully shutting down Geth to prevent database corruption.", "available", common.StorageSize(freeSpace))
+			log.Error("Low disk space. Gracefully shutting down Gprobe to prevent database corruption.", "available", common.StorageSize(freeSpace))
 			sigc <- syscall.SIGTERM
 			break
 		} else if freeSpace < 2*freeDiskSpaceCritical {
-			log.Warn("Disk space is running low. Geth will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical))
+			log.Warn("Disk space is running low. Gprobe will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical))
 		}
 		time.Sleep(60 * time.Second)
 	}
@@ -270,7 +270,7 @@ func ExportAppendChain(blockchain *core.BlockChain, fn string, first uint64, las
 }
 
 // ImportPreimages imports a batch of exported hash preimages into the database.
-func ImportPreimages(db ethdb.Database, fn string) error {
+func ImportPreimages(db probedb.Database, fn string) error {
 	log.Info("Importing preimages", "file", fn)
 
 	// Open the file handle and potentially unwrap the gzip stream
@@ -317,7 +317,7 @@ func ImportPreimages(db ethdb.Database, fn string) error {
 
 // ExportPreimages exports all known hash preimages into the specified file,
 // truncating any data already present in the file.
-func ExportPreimages(db ethdb.Database, fn string) error {
+func ExportPreimages(db probedb.Database, fn string) error {
 	log.Info("Exporting preimages", "file", fn)
 
 	// Open the file handle and potentially wrap with a gzip stream

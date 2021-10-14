@@ -1,29 +1,29 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package keystore implements encrypted storage of secp256k1 private keys.
 //
 // Keys are stored as encrypted JSON files according to the Web3 Secret Storage specification.
-// See https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition for more information.
+// See https://github.com/probeum/wiki/wiki/Web3-Secret-Storage-Definition for more information.
 package keystore
 
 import (
 	crand "crypto/rand"
 	"errors"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -32,11 +32,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/event"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/event"
 )
 
 var (
@@ -68,7 +68,7 @@ type KeyStore struct {
 	wallets     []accounts.Wallet       // Wallet wrappers around the individual key files
 	updateFeed  event.Feed              // Event feed to notify wallet additions/removals
 	updateScope event.SubscriptionScope // Subscription scope tracking current live listeners
-	updating    bool                    // Whether the event notification loop is running
+	updating    bool                    // Whprobeer the event notification loop is running
 
 	mu       sync.RWMutex
 	importMu sync.Mutex // Import Mutex locks the import to prevent two insertions from racing
@@ -224,7 +224,7 @@ func (ks *KeyStore) updater() {
 	}
 }
 
-// HasAddress reports whether a key with the given address is present.
+// HasAddress reports whprobeer a key with the given address is present.
 func (ks *KeyStore) HasAddress(addr common.Address) bool {
 	return ks.cache.hasAddress(addr)
 }
@@ -486,7 +486,7 @@ func (ks *KeyStore) Update(a accounts.Account, passphrase, newPassphrase string)
 	return ks.storage.StoreKey(a.URL.Path, key, newPassphrase)
 }
 
-// ImportPreSaleKey decrypts the given Ethereum presale wallet and stores
+// ImportPreSaleKey decrypts the given Probeum presale wallet and stores
 // a key file in the key directory. The key file is encrypted with the same passphrase.
 func (ks *KeyStore) ImportPreSaleKey(keyJSON []byte, passphrase string) (accounts.Account, error) {
 	a, _, err := importPreSaleKey(ks.storage, keyJSON, passphrase)

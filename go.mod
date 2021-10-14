@@ -1,4 +1,4 @@
-module github.com/ethereum/go-ethereum
+module github.com/probeum/go-probeum
 
 go 1.15
 

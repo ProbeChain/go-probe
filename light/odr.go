@@ -1,18 +1,18 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package light
 
@@ -21,11 +21,11 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probedb"
 )
 
 // NoOdr is the default context passed to an ODR capable function when the ODR
@@ -37,7 +37,7 @@ var ErrNoPeers = errors.New("no suitable peers available")
 
 // OdrBackend is an interface to a backend service that handles ODR retrievals type
 type OdrBackend interface {
-	Database() ethdb.Database
+	Database() probedb.Database
 	ChtIndexer() *core.ChainIndexer
 	BloomTrieIndexer() *core.ChainIndexer
 	BloomIndexer() *core.ChainIndexer
@@ -48,7 +48,7 @@ type OdrBackend interface {
 
 // OdrRequest is an interface for retrieval requests
 type OdrRequest interface {
-	StoreResult(db ethdb.Database)
+	StoreResult(db probedb.Database)
 }
 
 // TrieID identifies a state or account storage trie
@@ -89,7 +89,7 @@ type TrieRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
-func (req *TrieRequest) StoreResult(db ethdb.Database) {
+func (req *TrieRequest) StoreResult(db probedb.Database) {
 	req.Proof.Store(db)
 }
 
@@ -101,7 +101,7 @@ type CodeRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
-func (req *CodeRequest) StoreResult(db ethdb.Database) {
+func (req *CodeRequest) StoreResult(db probedb.Database) {
 	rawdb.WriteCode(db, req.Hash, req.Data)
 }
 
@@ -114,13 +114,13 @@ type BlockRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
-func (req *BlockRequest) StoreResult(db ethdb.Database) {
+func (req *BlockRequest) StoreResult(db probedb.Database) {
 	rawdb.WriteBodyRLP(db, req.Hash, req.Number, req.Rlp)
 }
 
 // ReceiptsRequest is the ODR request type for retrieving receipts.
 type ReceiptsRequest struct {
-	Untrusted bool // Indicator whether the result retrieved is trusted or not
+	Untrusted bool // Indicator whprobeer the result retrieved is trusted or not
 	Hash      common.Hash
 	Number    uint64
 	Header    *types.Header
@@ -128,7 +128,7 @@ type ReceiptsRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
-func (req *ReceiptsRequest) StoreResult(db ethdb.Database) {
+func (req *ReceiptsRequest) StoreResult(db probedb.Database) {
 	if !req.Untrusted {
 		rawdb.WriteReceipts(db, req.Hash, req.Number, req.Receipts)
 	}
@@ -145,7 +145,7 @@ type ChtRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
-func (req *ChtRequest) StoreResult(db ethdb.Database) {
+func (req *ChtRequest) StoreResult(db probedb.Database) {
 	hash, num := req.Header.Hash(), req.Header.Number.Uint64()
 	rawdb.WriteHeader(db, req.Header)
 	rawdb.WriteTd(db, hash, num, req.Td)
@@ -165,7 +165,7 @@ type BloomRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
-func (req *BloomRequest) StoreResult(db ethdb.Database) {
+func (req *BloomRequest) StoreResult(db probedb.Database) {
 	for i, sectionIdx := range req.SectionIndexList {
 		sectionHead := rawdb.ReadCanonicalHash(db, (sectionIdx+1)*req.Config.BloomTrieSize-1)
 		// if we don't have the canonical hash stored for this section head number, we'll still store it under
@@ -190,4 +190,4 @@ type TxStatusRequest struct {
 }
 
 // StoreResult stores the retrieved data in local database
-func (req *TxStatusRequest) StoreResult(db ethdb.Database) {}
+func (req *TxStatusRequest) StoreResult(db probedb.Database) {}

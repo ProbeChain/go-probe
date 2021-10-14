@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -23,8 +23,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/types"
 )
 
 // nonceHeap is a heap.Interface implementation over 64bit unsigned integers for
@@ -163,7 +163,7 @@ func (m *txSortedMap) Cap(threshold int) types.Transactions {
 	return drops
 }
 
-// Remove deletes a transaction from the maintained map, returning whether the
+// Remove deletes a transaction from the maintained map, returning whprobeer the
 // transaction was found.
 func (m *txSortedMap) Remove(nonce uint64) bool {
 	// Short circuit if no transaction is present
@@ -189,7 +189,7 @@ func (m *txSortedMap) Remove(nonce uint64) bool {
 // removed from the list.
 //
 // Note, all transactions with nonces lower than start will also be returned to
-// prevent getting into and invalid state. This is not something that should ever
+// prevent getting into and invalid state. This is not somprobeing that should ever
 // happen but better to be self correcting than failing!
 func (m *txSortedMap) Ready(start uint64) types.Transactions {
 	// Short circuit if no transactions are available
@@ -248,7 +248,7 @@ func (m *txSortedMap) LastElement() *types.Transaction {
 // the executable/pending queue; and for storing gapped transactions for the non-
 // executable/future queue, with minor behavioral changes.
 type txList struct {
-	strict bool         // Whether nonces are strictly continuous or not
+	strict bool         // Whprobeer nonces are strictly continuous or not
 	txs    *txSortedMap // Heap indexed sorted hash map of the transactions
 
 	costcap *big.Int // Price of the highest costing transaction (reset only if exceeds balance)
@@ -265,13 +265,13 @@ func newTxList(strict bool) *txList {
 	}
 }
 
-// Overlaps returns whether the transaction specified has the same nonce as one
+// Overlaps returns whprobeer the transaction specified has the same nonce as one
 // already contained within the list.
 func (l *txList) Overlaps(tx *types.Transaction) bool {
 	return l.txs.Get(tx.Nonce()) != nil
 }
 
-// Add tries to insert a new transaction into the list, returning whether the
+// Add tries to insert a new transaction into the list, returning whprobeer the
 // transaction was accepted, and if yes, any previous transaction it replaced.
 //
 // If the new transaction is accepted into the list, the lists' cost and gas
@@ -364,7 +364,7 @@ func (l *txList) Cap(threshold int) types.Transactions {
 	return l.txs.Cap(threshold)
 }
 
-// Remove deletes a transaction from the maintained list, returning whether the
+// Remove deletes a transaction from the maintained list, returning whprobeer the
 // transaction was found, and also returning any transaction invalidated due to
 // the deletion (strict mode only).
 func (l *txList) Remove(tx *types.Transaction) (bool, types.Transactions) {
@@ -385,7 +385,7 @@ func (l *txList) Remove(tx *types.Transaction) (bool, types.Transactions) {
 // removed from the list.
 //
 // Note, all transactions with nonces lower than start will also be returned to
-// prevent getting into and invalid state. This is not something that should ever
+// prevent getting into and invalid state. This is not somprobeing that should ever
 // happen but better to be self correcting than failing!
 func (l *txList) Ready(start uint64) types.Transactions {
 	return l.txs.Ready(start)
@@ -396,7 +396,7 @@ func (l *txList) Len() int {
 	return l.txs.Len()
 }
 
-// Empty returns whether the list of transactions is empty or not.
+// Empty returns whprobeer the list of transactions is empty or not.
 func (l *txList) Empty() bool {
 	return l.Len() == 0
 }
@@ -518,7 +518,7 @@ func (l *txPricedList) Removed(count int) {
 	l.Reheap()
 }
 
-// Underpriced checks whether a transaction is cheaper than (or as cheap as) the
+// Underpriced checks whprobeer a transaction is cheaper than (or as cheap as) the
 // lowest priced (remote) transaction currently being tracked.
 func (l *txPricedList) Underpriced(tx *types.Transaction) bool {
 	// Note: with two queues, being underpriced is defined as being worse than the worst item
@@ -528,7 +528,7 @@ func (l *txPricedList) Underpriced(tx *types.Transaction) bool {
 		(len(l.urgent.list) != 0 || len(l.floating.list) != 0)
 }
 
-// underpricedFor checks whether a transaction is cheaper than (or as cheap as) the
+// underpricedFor checks whprobeer a transaction is cheaper than (or as cheap as) the
 // lowest priced (remote) transaction in the given heap.
 func (l *txPricedList) underpricedFor(h *priceHeap, tx *types.Transaction) bool {
 	// Discard stale price points if found at the heap start

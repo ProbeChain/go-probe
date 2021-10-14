@@ -15,9 +15,9 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/math"
+	"github.com/probeum/go-probeum/crypto/secp256k1"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -241,7 +241,7 @@ func checkKeyFileEnd(r *bufio.Reader) error {
 }
 
 // toECDSA creates a private key with the given D value. The strict parameter
-// controls whether the key's length should be enforced at the curve size or
+// controls whprobeer the key's length should be enforced at the curve size or
 // it can also accept legacy encodings (0 prefixes).
 func toECDSA(d []byte, strict bool) (*PrivateKey, error) {
 	priv := new(PrivateKey)
@@ -390,7 +390,7 @@ func CreatePNSAddress(address common.Address, pns []byte, K byte) (add common.Ad
 	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), pns)[12:], K), nil
 }
 
-// CreateAddress creates an ethereum address given the bytes and the nonce
+// CreateAddress creates an probeum address given the bytes and the nonce
 func CreateAddress(address common.Address, nonce uint64, K byte) common.Address {
 	//data, _ := rlp.EncodeToBytes([]interface{}{K, b, nonce})
 	//return PubkeyBytesToAddress(Keccak256(data)[12:], K)
@@ -399,7 +399,7 @@ func CreateAddress(address common.Address, nonce uint64, K byte) common.Address 
 	return PubkeyBytesToAddress(Keccak256([]byte{K}, address.Bytes(), n[:])[12:], K)
 }
 
-// CreateAddress2 creates an ethereum address given the address bytes, initial
+// CreateAddress2 creates an probeum address given the address bytes, initial
 // contract code hash and a salt.
 func CreateAddress2(b common.Address, salt [32]byte, inithash []byte, K byte) common.Address {
 	return PubkeyBytesToAddress(Keccak256([]byte{K}, b.Bytes(), salt[:], inithash)[12:], K)

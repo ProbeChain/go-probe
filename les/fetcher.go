@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package les
 
@@ -22,16 +22,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/fetcher"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probe/fetcher"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/light"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/p2p/enode"
 )
 
 const (
@@ -125,12 +125,12 @@ func (fp *fetcherPeer) forwardAnno(td *big.Int) []*announce {
 }
 
 // lightFetcher implements retrieval of newly announced headers. It reuses
-// the eth.BlockFetcher as the underlying fetcher but adding more additional
+// the probe.BlockFetcher as the underlying fetcher but adding more additional
 // rules: e.g. evict "timeout" peers.
 type lightFetcher struct {
 	// Various handlers
 	ulc     *ulc
-	chaindb ethdb.Database
+	chaindb probedb.Database
 	reqDist *requestDistributor
 	peerset *serverPeerSet        // The global peerset of light client which shared by all components
 	chain   *light.LightChain     // The local light chain which maintains the canonical header chain.
@@ -159,7 +159,7 @@ type lightFetcher struct {
 }
 
 // newLightFetcher creates a light fetcher instance.
-func newLightFetcher(chain *light.LightChain, engine consensus.Engine, peers *serverPeerSet, ulc *ulc, chaindb ethdb.Database, reqDist *requestDistributor, syncFn func(p *serverPeer)) *lightFetcher {
+func newLightFetcher(chain *light.LightChain, engine consensus.Engine, peers *serverPeerSet, ulc *ulc, chaindb probedb.Database, reqDist *requestDistributor, syncFn func(p *serverPeer)) *lightFetcher {
 	// Construct the fetcher by offering all necessary APIs
 	validator := func(header *types.Header) error {
 		// Disable seal verification explicitly if we are running in ulc mode.
@@ -261,7 +261,7 @@ func (f *lightFetcher) mainloop() {
 
 	var (
 		syncInterval = uint64(1) // Interval used to trigger a light resync.
-		syncing      bool        // Indicator whether the client is syncing
+		syncing      bool        // Indicator whprobeer the client is syncing
 
 		ulc          = f.ulc != nil
 		headCh       = make(chan core.ChainHeadEvent, 100)
@@ -280,7 +280,7 @@ func (f *lightFetcher) mainloop() {
 		localHead = header
 		localTd = f.chain.GetTd(header.Hash(), header.Number.Uint64())
 	}
-	// trustedHeader returns an indicator whether the header is regarded as
+	// trustedHeader returns an indicator whprobeer the header is regarded as
 	// trusted. If we are running in the ulc mode, only when we receive enough
 	// same announcement from trusted server, the header will be trusted.
 	trustedHeader := func(hash common.Hash, number uint64) (bool, []enode.ID) {
@@ -498,8 +498,8 @@ func (f *lightFetcher) trackRequest(peerid enode.ID, reqid uint64, hash common.H
 // requestHeaderByHash constructs a header retrieval request and sends it to
 // local request distributor.
 //
-// Note, we rely on the underlying eth/fetcher to retrieve and validate the
-// response, so that we have to obey the rule of eth/fetcher which only accepts
+// Note, we rely on the underlying probe/fetcher to retrieve and validate the
+// response, so that we have to obey the rule of probe/fetcher which only accepts
 // the response from given peer.
 func (f *lightFetcher) requestHeaderByHash(peerid enode.ID) func(common.Hash) error {
 	return func(hash common.Hash) error {

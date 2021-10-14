@@ -1,37 +1,37 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2020 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package miner implements Ethereum block creation and mining.
+// Package miner implements Probeum block creation and mining.
 package miner
 
 import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/clique"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus/clique"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probedb/memorydb"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/trie"
 )
 
 type mockBackend struct {
@@ -191,9 +191,9 @@ func TestCloseMiner(t *testing.T) {
 	waitForMiningState(t, miner, false)
 }
 
-// TestMinerSetEtherbase checks that etherbase becomes set even if mining isn't
+// TestMinerSetProbeerbase checks that probeerbase becomes set even if mining isn't
 // possible at the moment
-func TestMinerSetEtherbase(t *testing.T) {
+func TestMinerSetProbeerbase(t *testing.T) {
 	miner, mux := createMiner(t)
 	// Start with a 'bad' mining address
 	miner.Start(common.HexToAddress("0xdead"))
@@ -230,9 +230,9 @@ func waitForMiningState(t *testing.T, m *Miner, mining bool) {
 }
 
 func createMiner(t *testing.T) (*Miner, *event.TypeMux) {
-	// Create Ethash config
+	// Create Probeash config
 	config := Config{
-		Etherbase: common.HexToAddress("123456789"),
+		Probeerbase: common.HexToAddress("123456789"),
 	}
 	// Create chainConfig
 	memdb := memorydb.New()
@@ -244,7 +244,7 @@ func createMiner(t *testing.T) (*Miner, *event.TypeMux) {
 	}
 	// Create consensus engine
 	engine := clique.New(chainConfig.Clique, chainDB)
-	// Create Ethereum backend
+	// Create Probeum backend
 	bc, err := core.NewBlockChain(chainDB, nil, chainConfig, engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("can't create new chain %v", err)

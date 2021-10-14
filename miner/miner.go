@@ -1,20 +1,20 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package miner implements Ethereum block creation and mining.
+// Package miner implements Probeum block creation and mining.
 package miner
 
 import (
@@ -22,16 +22,16 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 )
 
 // Backend wraps all methods required for mining.
@@ -42,15 +42,15 @@ type Backend interface {
 
 // Config is the configuration parameters of mining.
 type Config struct {
-	Etherbase  common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
-	Notify     []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages (only useful in ethash).
+	Probeerbase  common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
+	Notify     []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages (only useful in probeash).
 	NotifyFull bool           `toml:",omitempty"` // Notify with pending block headers instead of work packages
 	ExtraData  hexutil.Bytes  `toml:",omitempty"` // Block extra data set by the miner
 	GasFloor   uint64         // Target gas floor for mined blocks.
 	GasCeil    uint64         // Target gas ceiling for mined blocks.
 	GasPrice   *big.Int       // Minimum gas price for mining a transaction
 	Recommit   time.Duration  // The time interval for miner to re-create mining work.
-	Noverify   bool           // Disable remote mining solution verification(only useful in ethash).
+	Noverify   bool           // Disable remote mining solution verification(only useful in probeash).
 }
 
 // Miner creates blocks and searches for proof-of-work values.
@@ -58,7 +58,7 @@ type Miner struct {
 	mux       *event.TypeMux
 	worker    *worker
 	coinbase  common.Address
-	eth       Backend
+	probe       Backend
 	engine    consensus.Engine
 	powEngine consensus.Engine
 	exitCh    chan struct{}
@@ -66,16 +66,16 @@ type Miner struct {
 	stopCh    chan struct{}
 }
 
-func New(eth Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, powEngine consensus.Engine, isLocalBlock func(block *types.Block) bool) *Miner {
+func New(probe Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, powEngine consensus.Engine, isLocalBlock func(block *types.Block) bool) *Miner {
 	miner := &Miner{
-		eth:       eth,
+		probe:       probe,
 		mux:       mux,
 		engine:    engine,
 		powEngine: powEngine,
 		exitCh:    make(chan struct{}),
 		startCh:   make(chan common.Address),
 		stopCh:    make(chan struct{}),
-		worker:    newWorker(config, chainConfig, engine, powEngine, eth, mux, isLocalBlock, true),
+		worker:    newWorker(config, chainConfig, engine, powEngine, probe, mux, isLocalBlock, true),
 	}
 	go miner.update()
 
@@ -118,20 +118,20 @@ func (miner *Miner) update() {
 			case downloader.FailedEvent:
 				canStart = true
 				if shouldStart {
-					miner.SetEtherbase(miner.coinbase)
+					miner.SetProbeerbase(miner.coinbase)
 					miner.worker.start()
 				}
 			case downloader.DoneEvent:
 				canStart = true
 				if shouldStart {
-					miner.SetEtherbase(miner.coinbase)
+					miner.SetProbeerbase(miner.coinbase)
 					miner.worker.start()
 				}
 				// Stop reacting to downloader events
 				events.Unsubscribe()
 			}
 		case addr := <-miner.startCh:
-			miner.SetEtherbase(addr)
+			miner.SetProbeerbase(addr)
 			if canStart {
 				miner.worker.start()
 			}
@@ -201,9 +201,9 @@ func (miner *Miner) PendingBlockAndReceipts() (*types.Block, types.Receipts) {
 	return miner.worker.pendingBlockAndReceipts()
 }
 
-func (miner *Miner) SetEtherbase(addr common.Address) {
+func (miner *Miner) SetProbeerbase(addr common.Address) {
 	miner.coinbase = addr
-	miner.worker.setEtherbase(addr)
+	miner.worker.setProbeerbase(addr)
 }
 
 // EnablePreseal turns on the preseal mining feature. It's enabled by default.

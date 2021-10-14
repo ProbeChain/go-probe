@@ -1,18 +1,18 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package rawdb
 
@@ -24,18 +24,18 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/leveldb"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/probedb/leveldb"
+	"github.com/probeum/go-probeum/probedb/memorydb"
+	"github.com/probeum/go-probeum/log"
 	"github.com/olekukonko/tablewriter"
 )
 
 // freezerdb is a database wrapper that enabled freezer data retrievals.
 type freezerdb struct {
-	ethdb.KeyValueStore
-	ethdb.AncientStore
+	probedb.KeyValueStore
+	probedb.AncientStore
 }
 
 // Close implements io.Closer, closing both the fast key-value store as well as
@@ -76,7 +76,7 @@ func (frdb *freezerdb) Freeze(threshold uint64) error {
 
 // nofreezedb is a database wrapper that disables freezer data retrievals.
 type nofreezedb struct {
-	ethdb.KeyValueStore
+	probedb.KeyValueStore
 }
 
 // HasAncient returns an error as we don't have a backing chain freezer.
@@ -116,7 +116,7 @@ func (db *nofreezedb) Sync() error {
 
 // NewDatabase creates a high level database on top of a given key-value data
 // store without a freezer moving immutable chain segments into cold storage.
-func NewDatabase(db ethdb.KeyValueStore) ethdb.Database {
+func NewDatabase(db probedb.KeyValueStore) probedb.Database {
 	return &nofreezedb{
 		KeyValueStore: db,
 	}
@@ -125,7 +125,7 @@ func NewDatabase(db ethdb.KeyValueStore) ethdb.Database {
 // NewDatabaseWithFreezer creates a high level database on top of a given key-
 // value data store with a freezer moving immutable chain segments into cold
 // storage.
-func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezer string, namespace string, readonly bool) (ethdb.Database, error) {
+func NewDatabaseWithFreezer(db probedb.KeyValueStore, freezer string, namespace string, readonly bool) (probedb.Database, error) {
 	// Create the idle freezer instance
 	frdb, err := newFreezer(freezer, namespace, readonly)
 	if err != nil {
@@ -155,7 +155,7 @@ func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezer string, namespace st
 	// it to the freezer content.
 	if kvgenesis, _ := db.Get(headerHashKey(0)); len(kvgenesis) > 0 {
 		if frozen, _ := frdb.Ancients(); frozen > 0 {
-			// If the freezer already contains something, ensure that the genesis blocks
+			// If the freezer already contains somprobeing, ensure that the genesis blocks
 			// match, otherwise we might mix up freezers across chains and destroy both
 			// the freezer and the key-value store.
 			frgenesis, err := frdb.Ancient(freezerHashTable, 0)
@@ -211,20 +211,20 @@ func NewDatabaseWithFreezer(db ethdb.KeyValueStore, freezer string, namespace st
 
 // NewMemoryDatabase creates an ephemeral in-memory key-value database without a
 // freezer moving immutable chain segments into cold storage.
-func NewMemoryDatabase() ethdb.Database {
+func NewMemoryDatabase() probedb.Database {
 	return NewDatabase(memorydb.New())
 }
 
 // NewMemoryDatabaseWithCap creates an ephemeral in-memory key-value database
 // with an initial starting capacity, but without a freezer moving immutable
 // chain segments into cold storage.
-func NewMemoryDatabaseWithCap(size int) ethdb.Database {
+func NewMemoryDatabaseWithCap(size int) probedb.Database {
 	return NewDatabase(memorydb.NewWithCap(size))
 }
 
 // NewLevelDBDatabase creates a persistent key-value database without a freezer
 // moving immutable chain segments into cold storage.
-func NewLevelDBDatabase(file string, cache int, handles int, namespace string, readonly bool) (ethdb.Database, error) {
+func NewLevelDBDatabase(file string, cache int, handles int, namespace string, readonly bool) (probedb.Database, error) {
 	db, err := leveldb.New(file, cache, handles, namespace, readonly)
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func NewLevelDBDatabase(file string, cache int, handles int, namespace string, r
 
 // NewLevelDBDatabaseWithFreezer creates a persistent key-value database with a
 // freezer moving immutable chain segments into cold storage.
-func NewLevelDBDatabaseWithFreezer(file string, cache int, handles int, freezer string, namespace string, readonly bool) (ethdb.Database, error) {
+func NewLevelDBDatabaseWithFreezer(file string, cache int, handles int, freezer string, namespace string, readonly bool) (probedb.Database, error) {
 	kvdb, err := leveldb.New(file, cache, handles, namespace, readonly)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func (s *stat) Count() string {
 
 // InspectDatabase traverses the entire database and checks the size
 // of all different categories of data.
-func InspectDatabase(db ethdb.Database, keyPrefix, keyStart []byte) error {
+func InspectDatabase(db probedb.Database, keyPrefix, keyStart []byte) error {
 	it := db.NewIterator(keyPrefix, keyStart)
 	defer it.Release()
 

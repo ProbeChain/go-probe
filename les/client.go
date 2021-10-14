@@ -1,55 +1,55 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package les implements the Light Ethereum Subprotocol.
+// Package les implements the Light Probeum Subprotocol.
 package les
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/bloombits"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/eth/gasprice"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/les/vflux"
-	vfc "github.com/ethereum/go-ethereum/les/vflux/client"
-	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/bloombits"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probe/filters"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/internal/probeapi"
+	"github.com/probeum/go-probeum/les/vflux"
+	vfc "github.com/probeum/go-probeum/les/vflux/client"
+	"github.com/probeum/go-probeum/light"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/rpc"
 )
 
-type LightEthereum struct {
+type LightProbeum struct {
 	lesCommons
 
 	peers              *serverPeerSet
@@ -71,7 +71,7 @@ type LightEthereum struct {
 	eventMux       *event.TypeMux
 	engine         consensus.Engine
 	accountManager *accounts.Manager
-	netRPCService  *ethapi.PublicNetAPI
+	netRPCService  *probeapi.PublicNetAPI
 
 	p2pServer  *p2p.Server
 	p2pConfig  *p2p.Config
@@ -79,12 +79,12 @@ type LightEthereum struct {
 }
 
 // New creates an instance of the light client.
-func New(stack *node.Node, config *ethconfig.Config) (*LightEthereum, error) {
-	chainDb, err := stack.OpenDatabase("lightchaindata", config.DatabaseCache, config.DatabaseHandles, "eth/db/chaindata/", false)
+func New(stack *node.Node, config *probeconfig.Config) (*LightProbeum, error) {
+	chainDb, err := stack.OpenDatabase("lightchaindata", config.DatabaseCache, config.DatabaseHandles, "probe/db/chaindata/", false)
 	if err != nil {
 		return nil, err
 	}
-	lesDb, err := stack.OpenDatabase("les.client", 0, 0, "eth/db/lesclient/", false)
+	lesDb, err := stack.OpenDatabase("les.client", 0, 0, "probe/db/lesclient/", false)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*LightEthereum, error) {
 	log.Info("Initialised chain configuration", "config", chainConfig)
 
 	peers := newServerPeerSet()
-	leth := &LightEthereum{
+	lprobe := &LightProbeum{
 		lesCommons: lesCommons{
 			genesis:     genesisHash,
 			config:      config,
@@ -109,7 +109,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*LightEthereum, error) {
 		eventMux:       stack.EventMux(),
 		reqDist:        newRequestDistributor(peers, &mclock.System{}),
 		accountManager: stack.AccountManager(),
-		engine:         ethconfig.CreateConsensusEngine(stack, chainConfig, &config.Ethash, nil, false, chainDb),
+		engine:         probeconfig.CreateConsensusEngine(stack, chainConfig, &config.Probeash, nil, false, chainDb),
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
 		bloomIndexer:   core.NewBloomIndexer(chainDb, params.BloomBitsBlocksClient, params.HelperTrieConfirmations),
 		p2pServer:      stack.Server(),
@@ -118,19 +118,19 @@ func New(stack *node.Node, config *ethconfig.Config) (*LightEthereum, error) {
 	}
 
 	var prenegQuery vfc.QueryFunc
-	if leth.udpEnabled {
-		prenegQuery = leth.prenegQuery
+	if lprobe.udpEnabled {
+		prenegQuery = lprobe.prenegQuery
 	}
-	leth.serverPool, leth.serverPoolIterator = vfc.NewServerPool(lesDb, []byte("serverpool:"), time.Second, prenegQuery, &mclock.System{}, config.UltraLightServers, requestList)
-	leth.serverPool.AddMetrics(suggestedTimeoutGauge, totalValueGauge, serverSelectableGauge, serverConnectedGauge, sessionValueMeter, serverDialedMeter)
+	lprobe.serverPool, lprobe.serverPoolIterator = vfc.NewServerPool(lesDb, []byte("serverpool:"), time.Second, prenegQuery, &mclock.System{}, config.UltraLightServers, requestList)
+	lprobe.serverPool.AddMetrics(suggestedTimeoutGauge, totalValueGauge, serverSelectableGauge, serverConnectedGauge, sessionValueMeter, serverDialedMeter)
 
-	leth.retriever = newRetrieveManager(peers, leth.reqDist, leth.serverPool.GetTimeout)
-	leth.relay = newLesTxRelay(peers, leth.retriever)
+	lprobe.retriever = newRetrieveManager(peers, lprobe.reqDist, lprobe.serverPool.GetTimeout)
+	lprobe.relay = newLesTxRelay(peers, lprobe.retriever)
 
-	leth.odr = NewLesOdr(chainDb, light.DefaultClientIndexerConfig, leth.peers, leth.retriever)
-	leth.chtIndexer = light.NewChtIndexer(chainDb, leth.odr, params.CHTFrequency, params.HelperTrieConfirmations, config.LightNoPrune)
-	leth.bloomTrieIndexer = light.NewBloomTrieIndexer(chainDb, leth.odr, params.BloomBitsBlocksClient, params.BloomTrieFrequency, config.LightNoPrune)
-	leth.odr.SetIndexers(leth.chtIndexer, leth.bloomTrieIndexer, leth.bloomIndexer)
+	lprobe.odr = NewLesOdr(chainDb, light.DefaultClientIndexerConfig, lprobe.peers, lprobe.retriever)
+	lprobe.chtIndexer = light.NewChtIndexer(chainDb, lprobe.odr, params.CHTFrequency, params.HelperTrieConfirmations, config.LightNoPrune)
+	lprobe.bloomTrieIndexer = light.NewBloomTrieIndexer(chainDb, lprobe.odr, params.BloomBitsBlocksClient, params.BloomTrieFrequency, config.LightNoPrune)
+	lprobe.odr.SetIndexers(lprobe.chtIndexer, lprobe.bloomTrieIndexer, lprobe.bloomIndexer)
 
 	checkpoint := config.Checkpoint
 	if checkpoint == nil {
@@ -138,49 +138,49 @@ func New(stack *node.Node, config *ethconfig.Config) (*LightEthereum, error) {
 	}
 	// Note: NewLightChain adds the trusted checkpoint so it needs an ODR with
 	// indexers already set but not started yet
-	if leth.blockchain, err = light.NewLightChain(leth.odr, leth.chainConfig, leth.engine, checkpoint); err != nil {
+	if lprobe.blockchain, err = light.NewLightChain(lprobe.odr, lprobe.chainConfig, lprobe.engine, checkpoint); err != nil {
 		return nil, err
 	}
-	leth.chainReader = leth.blockchain
-	leth.txPool = light.NewTxPool(leth.chainConfig, leth.blockchain, leth.relay)
+	lprobe.chainReader = lprobe.blockchain
+	lprobe.txPool = light.NewTxPool(lprobe.chainConfig, lprobe.blockchain, lprobe.relay)
 
 	// Set up checkpoint oracle.
-	leth.oracle = leth.setupOracle(stack, genesisHash, config)
+	lprobe.oracle = lprobe.setupOracle(stack, genesisHash, config)
 
 	// Note: AddChildIndexer starts the update process for the child
-	leth.bloomIndexer.AddChildIndexer(leth.bloomTrieIndexer)
-	leth.chtIndexer.Start(leth.blockchain)
-	leth.bloomIndexer.Start(leth.blockchain)
+	lprobe.bloomIndexer.AddChildIndexer(lprobe.bloomTrieIndexer)
+	lprobe.chtIndexer.Start(lprobe.blockchain)
+	lprobe.bloomIndexer.Start(lprobe.blockchain)
 
 	// Start a light chain pruner to delete useless historical data.
-	leth.pruner = newPruner(chainDb, leth.chtIndexer, leth.bloomTrieIndexer)
+	lprobe.pruner = newPruner(chainDb, lprobe.chtIndexer, lprobe.bloomTrieIndexer)
 
 	// Rewind the chain in case of an incompatible config upgrade.
 	if compat, ok := genesisErr.(*params.ConfigCompatError); ok {
 		log.Warn("Rewinding chain to upgrade configuration", "err", compat)
-		leth.blockchain.SetHead(compat.RewindTo)
+		lprobe.blockchain.SetHead(compat.RewindTo)
 		rawdb.WriteChainConfig(chainDb, genesisHash, chainConfig)
 	}
 
-	leth.ApiBackend = &LesApiBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, leth, nil}
+	lprobe.ApiBackend = &LesApiBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, lprobe, nil}
 	gpoParams := config.GPO
 	if gpoParams.Default == nil {
 		gpoParams.Default = config.Miner.GasPrice
 	}
-	leth.ApiBackend.gpo = gasprice.NewOracle(leth.ApiBackend, gpoParams)
+	lprobe.ApiBackend.gpo = gasprice.NewOracle(lprobe.ApiBackend, gpoParams)
 
-	leth.handler = newClientHandler(config.UltraLightServers, config.UltraLightFraction, checkpoint, leth)
-	if leth.handler.ulc != nil {
-		log.Warn("Ultra light client is enabled", "trustedNodes", len(leth.handler.ulc.keys), "minTrustedFraction", leth.handler.ulc.fraction)
-		leth.blockchain.DisableCheckFreq()
+	lprobe.handler = newClientHandler(config.UltraLightServers, config.UltraLightFraction, checkpoint, lprobe)
+	if lprobe.handler.ulc != nil {
+		log.Warn("Ultra light client is enabled", "trustedNodes", len(lprobe.handler.ulc.keys), "minTrustedFraction", lprobe.handler.ulc.fraction)
+		lprobe.blockchain.DisableCheckFreq()
 	}
 
-	leth.netRPCService = ethapi.NewPublicNetAPI(leth.p2pServer, leth.config.NetworkId)
+	lprobe.netRPCService = probeapi.NewPublicNetAPI(lprobe.p2pServer, lprobe.config.NetworkId)
 
 	// Register the backend on the node
-	stack.RegisterAPIs(leth.APIs())
-	stack.RegisterProtocols(leth.Protocols())
-	stack.RegisterLifecycle(leth)
+	stack.RegisterAPIs(lprobe.APIs())
+	stack.RegisterProtocols(lprobe.Protocols())
+	stack.RegisterLifecycle(lprobe)
 
 	// Check for unclean shutdown
 	if uncleanShutdowns, discards, err := rawdb.PushUncleanShutdownMarker(chainDb); err != nil {
@@ -195,11 +195,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*LightEthereum, error) {
 				"age", common.PrettyAge(t))
 		}
 	}
-	return leth, nil
+	return lprobe, nil
 }
 
 // VfluxRequest sends a batch of requests to the given node through discv5 UDP TalkRequest and returns the responses
-func (s *LightEthereum) VfluxRequest(n *enode.Node, reqs vflux.Requests) vflux.Replies {
+func (s *LightProbeum) VfluxRequest(n *enode.Node, reqs vflux.Requests) vflux.Replies {
 	if !s.udpEnabled {
 		return nil
 	}
@@ -214,7 +214,7 @@ func (s *LightEthereum) VfluxRequest(n *enode.Node, reqs vflux.Requests) vflux.R
 
 // vfxVersion returns the version number of the "les" service subdomain of the vflux UDP
 // service, as advertised in the ENR record
-func (s *LightEthereum) vfxVersion(n *enode.Node) uint {
+func (s *LightProbeum) vfxVersion(n *enode.Node) uint {
 	if n.Seq() == 0 {
 		var err error
 		if !s.udpEnabled {
@@ -236,9 +236,9 @@ func (s *LightEthereum) vfxVersion(n *enode.Node) uint {
 	return version
 }
 
-// prenegQuery sends a capacity query to the given server node to determine whether
+// prenegQuery sends a capacity query to the given server node to determine whprobeer
 // a connection slot is immediately available
-func (s *LightEthereum) prenegQuery(n *enode.Node) int {
+func (s *LightProbeum) prenegQuery(n *enode.Node) int {
 	if s.vfxVersion(n) < 1 {
 		// UDP query not supported, always try TCP connection
 		return 1
@@ -262,12 +262,12 @@ func (s *LightEthereum) prenegQuery(n *enode.Node) int {
 
 type LightDummyAPI struct{}
 
-// Etherbase is the address that mining rewards will be send to
-func (s *LightDummyAPI) Etherbase() (common.Address, error) {
+// Probeerbase is the address that mining rewards will be send to
+func (s *LightDummyAPI) Probeerbase() (common.Address, error) {
 	return common.Address{}, fmt.Errorf("mining is not supported in light mode")
 }
 
-// Coinbase is the address that mining rewards will be send to (alias for Etherbase)
+// Coinbase is the address that mining rewards will be send to (alias for Probeerbase)
 func (s *LightDummyAPI) Coinbase() (common.Address, error) {
 	return common.Address{}, fmt.Errorf("mining is not supported in light mode")
 }
@@ -282,24 +282,24 @@ func (s *LightDummyAPI) Mining() bool {
 	return false
 }
 
-// APIs returns the collection of RPC services the ethereum package offers.
+// APIs returns the collection of RPC services the probeum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
-func (s *LightEthereum) APIs() []rpc.API {
-	apis := ethapi.GetAPIs(s.ApiBackend)
+func (s *LightProbeum) APIs() []rpc.API {
+	apis := probeapi.GetAPIs(s.ApiBackend)
 	apis = append(apis, s.engine.APIs(s.BlockChain().HeaderChain())...)
 	return append(apis, []rpc.API{
 		{
-			Namespace: "eth",
+			Namespace: "probe",
 			Version:   "1.0",
 			Service:   &LightDummyAPI{},
 			Public:    true,
 		}, {
-			Namespace: "eth",
+			Namespace: "probe",
 			Version:   "1.0",
 			Service:   downloader.NewPublicDownloaderAPI(s.handler.downloader, s.eventMux),
 			Public:    true,
 		}, {
-			Namespace: "eth",
+			Namespace: "probe",
 			Version:   "1.0",
 			Service:   filters.NewPublicFilterAPI(s.ApiBackend, true, 5*time.Minute),
 			Public:    true,
@@ -322,19 +322,19 @@ func (s *LightEthereum) APIs() []rpc.API {
 	}...)
 }
 
-func (s *LightEthereum) ResetWithGenesisBlock(gb *types.Block) {
+func (s *LightProbeum) ResetWithGenesisBlock(gb *types.Block) {
 	s.blockchain.ResetWithGenesisBlock(gb)
 }
 
-func (s *LightEthereum) BlockChain() *light.LightChain      { return s.blockchain }
-func (s *LightEthereum) TxPool() *light.TxPool              { return s.txPool }
-func (s *LightEthereum) Engine() consensus.Engine           { return s.engine }
-func (s *LightEthereum) LesVersion() int                    { return int(ClientProtocolVersions[0]) }
-func (s *LightEthereum) Downloader() *downloader.Downloader { return s.handler.downloader }
-func (s *LightEthereum) EventMux() *event.TypeMux           { return s.eventMux }
+func (s *LightProbeum) BlockChain() *light.LightChain      { return s.blockchain }
+func (s *LightProbeum) TxPool() *light.TxPool              { return s.txPool }
+func (s *LightProbeum) Engine() consensus.Engine           { return s.engine }
+func (s *LightProbeum) LesVersion() int                    { return int(ClientProtocolVersions[0]) }
+func (s *LightProbeum) Downloader() *downloader.Downloader { return s.handler.downloader }
+func (s *LightProbeum) EventMux() *event.TypeMux           { return s.eventMux }
 
 // Protocols returns all the currently configured network protocols to start.
-func (s *LightEthereum) Protocols() []p2p.Protocol {
+func (s *LightProbeum) Protocols() []p2p.Protocol {
 	return s.makeProtocols(ClientProtocolVersions, s.handler.runPeer, func(id enode.ID) interface{} {
 		if p := s.peers.peer(id.String()); p != nil {
 			return p.Info()
@@ -344,8 +344,8 @@ func (s *LightEthereum) Protocols() []p2p.Protocol {
 }
 
 // Start implements node.Lifecycle, starting all internal goroutines needed by the
-// light ethereum protocol implementation.
-func (s *LightEthereum) Start() error {
+// light probeum protocol implementation.
+func (s *LightProbeum) Start() error {
 	log.Warn("Light client mode is an experimental feature")
 
 	if s.udpEnabled && s.p2pServer.DiscV5 == nil {
@@ -367,8 +367,8 @@ func (s *LightEthereum) Start() error {
 }
 
 // Stop implements node.Lifecycle, terminating all internal goroutines used by the
-// Ethereum protocol.
-func (s *LightEthereum) Stop() error {
+// Probeum protocol.
+func (s *LightProbeum) Stop() error {
 	close(s.closeCh)
 	s.serverPool.Stop()
 	s.peers.close()
@@ -387,6 +387,6 @@ func (s *LightEthereum) Stop() error {
 	s.chainDb.Close()
 	s.lesDb.Close()
 	s.wg.Wait()
-	log.Info("Light ethereum stopped")
+	log.Info("Light probeum stopped")
 	return nil
 }

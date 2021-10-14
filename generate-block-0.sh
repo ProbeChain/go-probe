@@ -1,1 +1,1 @@
-./build/bin/geth --datadir ./data init ./genesis-greatri.json
+./build/bin/gprobe --datadir ./data init ./genesis-greatri.json

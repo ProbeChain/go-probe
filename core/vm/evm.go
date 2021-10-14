@@ -1,35 +1,35 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
 import (
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/probe"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/log"
 	"math/big"
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	uint256 "github.com/ethereum/go-ethereum/core/vm/uint256"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/params"
 )
 
 // emptyCodeHash is used by create to ensure deployment is disallowed to already
@@ -87,12 +87,12 @@ func run(evm *EVM, contract *Contract, input []byte, readOnly bool) ([]byte, err
 // BlockContext provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
 type BlockContext struct {
-	// CanTransfer returns whether the account contains
-	// sufficient ether to transfer the value
+	// CanTransfer returns whprobeer the account contains
+	// sufficient probeer to transfer the value
 	CanTransfer CanTransferFunc
 	// GetHash returns the hash corresponding to n
 	GetHash GetHashFunc
-	//ContractTransfer transfers ether from one account to the other
+	//ContractTransfer transfers probeer from one account to the other
 	ContractTransfer ContractTransferFunc
 	//CallDB call database for update operation
 	CallDB CallDBFunc
@@ -133,7 +133,7 @@ type TxContext struct {
 	PnsType  *hexutil.Uint8
 }
 
-// EVM is the Ethereum Virtual Machine base object and provides
+// EVM is the Probeum Virtual Machine base object and provides
 // the necessary tools to run a contract on the given state with
 // the provided context. It should be noted that any error
 // generated through any of the calls should be considered a
@@ -158,7 +158,7 @@ type EVM struct {
 	// virtual machine configuration options used to initialise the
 	// evm.
 	Config Config
-	// global (to this context) ethereum virtual machine
+	// global (to this context) probeum virtual machine
 	// used throughout the execution of the tx.
 	interpreters []Interpreter
 	interpreter  Interpreter
@@ -327,7 +327,7 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
-	// Note although it's noop to transfer X ether to caller itself. But
+	// Note although it's noop to transfer X probeer to caller itself. But
 	// if caller doesn't have enough balance, it would be an error to allow
 	// over-charging itself. So the check here is necessary.
 	if !evm.Context.CanTransfer(evm.StateDB, caller.Address(), value) {
@@ -508,7 +508,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	}
 	start := time.Now()
 	ret, err := run(evm, contract, nil, false)
-	// Check whether the max code size has been exceeded, assign err if the case.
+	// Check whprobeer the max code size has been exceeded, assign err if the case.
 	if err == nil && evm.chainRules.IsEIP158 && len(ret) > params.MaxCodeSize {
 		err = ErrMaxCodeSizeExceeded
 	}

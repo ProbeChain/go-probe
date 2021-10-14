@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package console
 
@@ -29,11 +29,11 @@ import (
 	"syscall"
 
 	"github.com/dop251/goja"
-	"github.com/ethereum/go-ethereum/console/prompt"
-	"github.com/ethereum/go-ethereum/internal/jsre"
-	"github.com/ethereum/go-ethereum/internal/jsre/deps"
-	"github.com/ethereum/go-ethereum/internal/web3ext"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/probeum/go-probeum/console/prompt"
+	"github.com/probeum/go-probeum/internal/jsre"
+	"github.com/probeum/go-probeum/internal/jsre/deps"
+	"github.com/probeum/go-probeum/internal/web3ext"
+	"github.com/probeum/go-probeum/rpc"
 	"github.com/mattn/go-colorable"
 	"github.com/peterh/liner"
 )
@@ -56,7 +56,7 @@ const DefaultPrompt = "> "
 type Config struct {
 	DataDir  string              // Data directory to store the console history at
 	DocRoot  string              // Filesystem path from where to load JavaScript files from
-	Client   *rpc.Client         // RPC client to execute Ethereum requests through
+	Client   *rpc.Client         // RPC client to execute Probeum requests through
 	Prompt   string              // Input prompt prefix string (defaults to DefaultPrompt)
 	Prompter prompt.UserPrompter // Input prompter to allow interactive user feedback (defaults to TerminalPrompter)
 	Printer  io.Writer           // Output writer to serialize any display strings to (defaults to os.Stdout)
@@ -67,7 +67,7 @@ type Config struct {
 // JavaScript console attached to a running node via an external or in-process RPC
 // client.
 type Console struct {
-	client   *rpc.Client         // RPC client to execute Ethereum requests through
+	client   *rpc.Client         // RPC client to execute Probeum requests through
 	jsre     *jsre.JSRE          // JavaScript runtime environment running the interpreter
 	prompt   string              // Input prompt prefix string
 	prompter prompt.UserPrompter // Input prompter to allow interactive user feedback
@@ -191,7 +191,7 @@ func (c *Console) initExtensions() error {
 	if err != nil {
 		return fmt.Errorf("api modules: %v", err)
 	}
-	aliases := map[string]struct{}{"eth": {}, "personal": {}}
+	aliases := map[string]struct{}{"probe": {}, "personal": {}}
 	for api := range apis {
 		if api == "web3" {
 			continue
@@ -229,19 +229,19 @@ func (c *Console) initAdmin(vm *goja.Runtime, bridge *bridge) {
 //
 // If the console is in interactive mode and the 'personal' API is available, override
 // the openWallet, unlockAccount, newAccount and sign methods since these require user
-// interaction. The original web3 callbacks are stored in 'jeth'. These will be called
+// interaction. The original web3 callbacks are stored in 'jprobe'. These will be called
 // by the bridge after the prompt and send the original web3 request to the backend.
 func (c *Console) initPersonal(vm *goja.Runtime, bridge *bridge) {
 	personal := getObject(vm, "personal")
 	if personal == nil || c.prompter == nil {
 		return
 	}
-	jeth := vm.NewObject()
-	vm.Set("jeth", jeth)
-	jeth.Set("openWallet", personal.Get("openWallet"))
-	jeth.Set("unlockAccount", personal.Get("unlockAccount"))
-	jeth.Set("newAccount", personal.Get("newAccount"))
-	jeth.Set("sign", personal.Get("sign"))
+	jprobe := vm.NewObject()
+	vm.Set("jprobe", jprobe)
+	jprobe.Set("openWallet", personal.Get("openWallet"))
+	jprobe.Set("unlockAccount", personal.Get("unlockAccount"))
+	jprobe.Set("newAccount", personal.Get("newAccount"))
+	jprobe.Set("sign", personal.Get("sign"))
 	personal.Set("openWallet", jsre.MakeCallback(vm, bridge.OpenWallet))
 	personal.Set("unlockAccount", jsre.MakeCallback(vm, bridge.UnlockAccount))
 	personal.Set("newAccount", jsre.MakeCallback(vm, bridge.NewAccount))
@@ -277,7 +277,7 @@ func (c *Console) AutoCompleteInput(line string, pos int) (string, []string, str
 		return "", nil, ""
 	}
 	// Chunck data to relevant part for autocompletion
-	// E.g. in case of nested lines eth.getBalance(eth.coinb<tab><tab>
+	// E.g. in case of nested lines probe.getBalance(probe.coinb<tab><tab>
 	start := pos - 1
 	for ; start > 0; start-- {
 		// Skip all methods and namespaces (i.e. including the dot)
@@ -296,18 +296,18 @@ func (c *Console) AutoCompleteInput(line string, pos int) (string, []string, str
 	return line[:start], c.jsre.CompleteKeywords(line[start:pos]), line[pos:]
 }
 
-// Welcome show summary of current Geth instance and some metadata about the
+// Welcome show summary of current Gprobe instance and some metadata about the
 // console's available modules.
 func (c *Console) Welcome() {
-	message := "Welcome to the Geth JavaScript console!\n\n"
+	message := "Welcome to the Gprobe JavaScript console!\n\n"
 
-	// Print some generic Geth metadata
+	// Print some generic Gprobe metadata
 	if res, err := c.jsre.Run(`
 		var message = "instance: " + web3.version.node + "\n";
 		try {
-			message += "coinbase: " + eth.coinbase + "\n";
+			message += "coinbase: " + probe.coinbase + "\n";
 		} catch (err) {}
-		message += "at block: " + eth.blockNumber + " (" + new Date(1000 * eth.getBlock(eth.blockNumber).timestamp) + ")\n";
+		message += "at block: " + probe.blockNumber + " (" + new Date(1000 * probe.getBlock(probe.blockNumber).timestamp) + ")\n";
 		try {
 			message += " datadir: " + admin.datadir + "\n";
 		} catch (err) {}

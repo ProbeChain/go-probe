@@ -1,18 +1,18 @@
-// Copyright 2018 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package rawdb
 
@@ -20,15 +20,15 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.
-func ReadDatabaseVersion(db ethdb.KeyValueReader) *uint64 {
+func ReadDatabaseVersion(db probedb.KeyValueReader) *uint64 {
 	var version uint64
 
 	enc, _ := db.Get(databaseVersionKey)
@@ -43,7 +43,7 @@ func ReadDatabaseVersion(db ethdb.KeyValueReader) *uint64 {
 }
 
 // WriteDatabaseVersion stores the version number of the database
-func WriteDatabaseVersion(db ethdb.KeyValueWriter, version uint64) {
+func WriteDatabaseVersion(db probedb.KeyValueWriter, version uint64) {
 	enc, err := rlp.EncodeToBytes(version)
 	if err != nil {
 		log.Crit("Failed to encode database version", "err", err)
@@ -54,7 +54,7 @@ func WriteDatabaseVersion(db ethdb.KeyValueWriter, version uint64) {
 }
 
 // ReadChainConfig retrieves the consensus settings based on the given genesis hash.
-func ReadChainConfig(db ethdb.KeyValueReader, hash common.Hash) *params.ChainConfig {
+func ReadChainConfig(db probedb.KeyValueReader, hash common.Hash) *params.ChainConfig {
 	data, _ := db.Get(configKey(hash))
 	if len(data) == 0 {
 		return nil
@@ -68,7 +68,7 @@ func ReadChainConfig(db ethdb.KeyValueReader, hash common.Hash) *params.ChainCon
 }
 
 // WriteChainConfig writes the chain config settings to the database.
-func WriteChainConfig(db ethdb.KeyValueWriter, hash common.Hash, cfg *params.ChainConfig) {
+func WriteChainConfig(db probedb.KeyValueWriter, hash common.Hash, cfg *params.ChainConfig) {
 	if cfg == nil {
 		return
 	}
@@ -94,7 +94,7 @@ const crashesToKeep = 10
 // the previous data
 // - a list of timestamps
 // - a count of how many old unclean-shutdowns have been discarded
-func PushUncleanShutdownMarker(db ethdb.KeyValueStore) ([]uint64, uint64, error) {
+func PushUncleanShutdownMarker(db probedb.KeyValueStore) ([]uint64, uint64, error) {
 	var uncleanShutdowns crashList
 	// Read old data
 	if data, err := db.Get(uncleanShutdownKey); err != nil {
@@ -122,7 +122,7 @@ func PushUncleanShutdownMarker(db ethdb.KeyValueStore) ([]uint64, uint64, error)
 }
 
 // PopUncleanShutdownMarker removes the last unclean shutdown marker
-func PopUncleanShutdownMarker(db ethdb.KeyValueStore) {
+func PopUncleanShutdownMarker(db probedb.KeyValueStore) {
 	var uncleanShutdowns crashList
 	// Read old data
 	if data, err := db.Get(uncleanShutdownKey); err != nil {

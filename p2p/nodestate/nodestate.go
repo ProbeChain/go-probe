@@ -1,18 +1,18 @@
-// Copyright 2020 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2020 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package nodestate
 
@@ -23,13 +23,13 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probeum/go-probeum/rlp"
 )
 
 var (
@@ -60,12 +60,12 @@ type (
 	// Note: in order to avoid mutex deadlocks the callbacks should never lock a mutex that
 	// might be locked when the top level SetState/SetField functions are called. If a function
 	// potentially performs state/field changes then it is recommended to mention this fact in the
-	// function description, along with whether it should run inside an operation callback.
+	// function description, along with whprobeer it should run inside an operation callback.
 	NodeStateMachine struct {
 		started, closed     bool
 		lock                sync.Mutex
 		clock               mclock.Clock
-		db                  ethdb.KeyValueStore
+		db                  probedb.KeyValueStore
 		dbNodeKey           []byte
 		nodes               map[enode.ID]*nodeInfo
 		offlineCallbackList []offlineCallback
@@ -228,7 +228,7 @@ func (s *Setup) NewPersistentField(name string, ftype reflect.Type, encode func(
 	return f
 }
 
-// flagOp implements binary flag operations and also checks whether the operands belong to the same setup
+// flagOp implements binary flag operations and also checks whprobeer the operands belong to the same setup
 func flagOp(a, b Flags, trueIfA, trueIfB, trueIfBoth bool) Flags {
 	if a.setup == nil {
 		if a.mask != 0 {
@@ -317,7 +317,7 @@ func (f Flags) String() string {
 // NewNodeStateMachine creates a new node state machine.
 // If db is not nil then the node states, fields and active timeouts are persisted.
 // Persistence can be enabled or disabled for each state flag and field.
-func NewNodeStateMachine(db ethdb.KeyValueStore, dbKey []byte, clock mclock.Clock, setup *Setup) *NodeStateMachine {
+func NewNodeStateMachine(db probedb.KeyValueStore, dbKey []byte, clock mclock.Clock, setup *Setup) *NodeStateMachine {
 	if setup.flags == nil {
 		panic("No state flags defined")
 	}
@@ -354,7 +354,7 @@ func NewNodeStateMachine(db ethdb.KeyValueStore, dbKey []byte, clock mclock.Cloc
 	return ns
 }
 
-// stateMask checks whether the set of flags belongs to the same setup and returns its internal bit mask
+// stateMask checks whprobeer the set of flags belongs to the same setup and returns its internal bit mask
 func (ns *NodeStateMachine) stateMask(flags Flags) bitMask {
 	if flags.setup != ns.setup && flags.mask != 0 {
 		panic("Node state flags belong to a different setup")
@@ -362,7 +362,7 @@ func (ns *NodeStateMachine) stateMask(flags Flags) bitMask {
 	return flags.mask
 }
 
-// fieldIndex checks whether the field belongs to the same setup and returns its internal index
+// fieldIndex checks whprobeer the field belongs to the same setup and returns its internal index
 func (ns *NodeStateMachine) fieldIndex(field Field) int {
 	if field.setup != ns.setup {
 		panic("Node field belongs to a different setup")
@@ -406,7 +406,7 @@ func (ns *NodeStateMachine) newNode(n *enode.Node) *nodeInfo {
 	return &nodeInfo{node: n, fields: make([]interface{}, len(ns.fields))}
 }
 
-// checkStarted checks whether the state machine has already been started and panics otherwise.
+// checkStarted checks whprobeer the state machine has already been started and panics otherwise.
 func (ns *NodeStateMachine) checkStarted() {
 	if !ns.started {
 		panic("state machine not started yet")
@@ -691,7 +691,7 @@ func (ns *NodeStateMachine) setState(n *enode.Node, setFlags, resetFlags Flags, 
 	ns.opPending = append(ns.opPending, callback)
 }
 
-// opCheck checks whether an operation is active
+// opCheck checks whprobeer an operation is active
 func (ns *NodeStateMachine) opCheck() {
 	if !ns.opFlag {
 		panic("Operation has not started")

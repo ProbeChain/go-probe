@@ -1,18 +1,18 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package bloombits
 
@@ -26,8 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/bitutil"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/probeum/go-probeum/common/bitutil"
+	"github.com/probeum/go-probeum/crypto"
 )
 
 // bloomIndexes represents the bit indexes inside the bloom filter that belong
@@ -83,7 +83,7 @@ type Matcher struct {
 	retrievals chan chan *Retrieval // Retriever processes waiting for task allocations
 	deliveries chan *Retrieval      // Retriever processes waiting for task response deliveries
 
-	running uint32 // Atomic flag whether a session is live or not
+	running uint32 // Atomic flag whprobeer a session is live or not
 }
 
 // NewMatcher creates a new pipeline for retrieving bloom bit streams and doing
@@ -255,7 +255,7 @@ func (m *Matcher) run(begin, end uint64, buffer int, session *MatcherSession) ch
 // subMatch creates a sub-matcher that filters for a set of addresses or topics, binary OR-s those matches, then
 // binary AND-s the result to the daisy-chain input (source) and forwards it to the daisy-chain output.
 // The matches of each address/topic are calculated by fetching the given sections of the three bloom bit indexes belonging to
-// that address/topic, and binary AND-ing those vectors together.
+// that address/topic, and binary AND-ing those vectors togprobeer.
 func (m *Matcher) subMatch(source chan *partialMatches, dist chan *request, bloom []bloomIndexes, session *MatcherSession) chan *partialMatches {
 	// Start the concurrent schedulers for each bit required by the bloom filter
 	sectionSources := make([][3]chan uint64, len(bloom))
@@ -332,7 +332,7 @@ func (m *Matcher) subMatch(source chan *partialMatches, dist chan *request, bloo
 				if !ok {
 					return
 				}
-				// Gather all the sub-results and merge them together
+				// Gather all the sub-results and merge them togprobeer
 				var orVector []byte
 				for _, bloomSinks := range sectionSinks {
 					var andVector []byte
@@ -589,7 +589,7 @@ func (s *MatcherSession) deliverSections(bit uint, sections []uint64, bitsets []
 }
 
 // Multiplex polls the matcher session for retrieval tasks and multiplexes it into
-// the requested retrieval queue to be serviced together with other sessions.
+// the requested retrieval queue to be serviced togprobeer with other sessions.
 //
 // This method will block for the lifetime of the session. Even after termination
 // of the session, any request in-flight need to be responded to! Empty responses
@@ -625,7 +625,7 @@ func (s *MatcherSession) Multiplex(batch int, wait time.Duration, mux chan chan 
 			return
 
 		case mux <- request:
-			// Retrieval accepted, something must arrive before we're aborting
+			// Retrieval accepted, somprobeing must arrive before we're aborting
 			request <- &Retrieval{Bit: bit, Sections: sections, Context: s.ctx}
 
 			result := <-request

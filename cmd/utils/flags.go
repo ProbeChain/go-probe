@@ -1,25 +1,25 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of go-ethereum.
+// Copyright 2015 The go-probeum Authors
+// This file is part of go-probeum.
 //
-// go-ethereum is free software: you can redistribute it and/or modify
+// go-probeum is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// go-ethereum is distributed in the hope that it will be useful,
+// go-probeum is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+// along with go-probeum. If not, see <http://www.gnu.org/licenses/>.
 
-// Package utils contains internal helper functions for go-ethereum commands.
+// Package utils contains internal helper functions for go-probeum commands.
 package utils
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/probe"
+cryptoprobe	"github.com/probeum/go-probeum/crypto/probe"
 	"io"
 	"io/ioutil"
 	"math"
@@ -33,38 +33,38 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/consensus/clique"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/downloader"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/eth/gasprice"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethstats"
-	"github.com/ethereum/go-ethereum/graphql"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/les"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/metrics/exp"
-	"github.com/ethereum/go-ethereum/metrics/influxdb"
-	"github.com/ethereum/go-ethereum/miner"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/nat"
-	"github.com/ethereum/go-ethereum/p2p/netutil"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/accounts/keystore"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/fdlimit"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/consensus/clique"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/probe"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/probe/tracers"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/probestats"
+	"github.com/probeum/go-probeum/graphql"
+	"github.com/probeum/go-probeum/internal/probeapi"
+	"github.com/probeum/go-probeum/internal/flags"
+	"github.com/probeum/go-probeum/les"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/metrics/exp"
+	"github.com/probeum/go-probeum/metrics/influxdb"
+	"github.com/probeum/go-probeum/miner"
+	"github.com/probeum/go-probeum/node"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/nat"
+	"github.com/probeum/go-probeum/p2p/netutil"
+	"github.com/probeum/go-probeum/params"
 	pcsclite "github.com/gballet/go-libpcsclite"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"gopkg.in/urfave/cli.v1"
@@ -140,11 +140,11 @@ var (
 	NetworkIdFlag = cli.Uint64Flag{
 		Name:  "networkid",
 		Usage: "Explicitly set network id (integer)(For testnets: use --ropsten, --rinkeby, --goerli instead)",
-		Value: ethconfig.Defaults.NetworkId,
+		Value: probeconfig.Defaults.NetworkId,
 	}
 	MainnetFlag = cli.BoolFlag{
 		Name:  "mainnet",
-		Usage: "Ethereum mainnet",
+		Usage: "Probeum mainnet",
 	}
 	GoerliFlag = cli.BoolFlag{
 		Name:  "goerli",
@@ -209,7 +209,7 @@ var (
 		Usage: "Max number of elements (0 = no limit)",
 		Value: 0,
 	}
-	defaultSyncMode = ethconfig.Defaults.SyncMode
+	defaultSyncMode = probeconfig.Defaults.SyncMode
 	SyncModeFlag    = TextMarshalerFlag{
 		Name:  "syncmode",
 		Usage: `Blockchain sync mode ("fast", "full", "snap" or "light")`,
@@ -227,7 +227,7 @@ var (
 	TxLookupLimitFlag = cli.Uint64Flag{
 		Name:  "txlookuplimit",
 		Usage: "Number of recent blocks to maintain transactions index for (default = about one year, 0 = entire chain)",
-		Value: ethconfig.Defaults.TxLookupLimit,
+		Value: probeconfig.Defaults.TxLookupLimit,
 	}
 	LightKDFFlag = cli.BoolFlag{
 		Name:  "lightkdf",
@@ -249,38 +249,38 @@ var (
 	ConsensusFlag = cli.StringFlag{
 		Name:  "consensus",
 		Usage: "Choose the miner type is pow or dpos",
-		Value: ethconfig.Defaults.Consensus,
+		Value: probeconfig.Defaults.Consensus,
 	}
 	// Light server and client settings
 	LightServeFlag = cli.IntFlag{
 		Name:  "light.serve",
 		Usage: "Maximum percentage of time allowed for serving LES requests (multi-threaded processing allows values over 100)",
-		Value: ethconfig.Defaults.LightServ,
+		Value: probeconfig.Defaults.LightServ,
 	}
 	LightIngressFlag = cli.IntFlag{
 		Name:  "light.ingress",
 		Usage: "Incoming bandwidth limit for serving light clients (kilobytes/sec, 0 = unlimited)",
-		Value: ethconfig.Defaults.LightIngress,
+		Value: probeconfig.Defaults.LightIngress,
 	}
 	LightEgressFlag = cli.IntFlag{
 		Name:  "light.egress",
 		Usage: "Outgoing bandwidth limit for serving light clients (kilobytes/sec, 0 = unlimited)",
-		Value: ethconfig.Defaults.LightEgress,
+		Value: probeconfig.Defaults.LightEgress,
 	}
 	LightMaxPeersFlag = cli.IntFlag{
 		Name:  "light.maxpeers",
 		Usage: "Maximum number of light clients to serve, or light servers to attach to",
-		Value: ethconfig.Defaults.LightPeers,
+		Value: probeconfig.Defaults.LightPeers,
 	}
 	UltraLightServersFlag = cli.StringFlag{
 		Name:  "ulc.servers",
 		Usage: "List of trusted ultra-light servers",
-		Value: strings.Join(ethconfig.Defaults.UltraLightServers, ","),
+		Value: strings.Join(probeconfig.Defaults.UltraLightServers, ","),
 	}
 	UltraLightFractionFlag = cli.IntFlag{
 		Name:  "ulc.fraction",
 		Usage: "Minimum % of trusted ultra-light servers required to announce a new head",
-		Value: ethconfig.Defaults.UltraLightFraction,
+		Value: probeconfig.Defaults.UltraLightFraction,
 	}
 	UltraLightOnlyAnnounceFlag = cli.BoolFlag{
 		Name:  "ulc.onlyannounce",
@@ -294,43 +294,43 @@ var (
 		Name:  "light.nosyncserve",
 		Usage: "Enables serving light clients before syncing",
 	}
-	// Ethash settings
-	EthashCacheDirFlag = DirectoryFlag{
-		Name:  "ethash.cachedir",
-		Usage: "Directory to store the ethash verification caches (default = inside the datadir)",
+	// Probeash settings
+	ProbeashCacheDirFlag = DirectoryFlag{
+		Name:  "probeash.cachedir",
+		Usage: "Directory to store the probeash verification caches (default = inside the datadir)",
 	}
-	EthashCachesInMemoryFlag = cli.IntFlag{
-		Name:  "ethash.cachesinmem",
-		Usage: "Number of recent ethash caches to keep in memory (16MB each)",
-		Value: ethconfig.Defaults.Ethash.CachesInMem,
+	ProbeashCachesInMemoryFlag = cli.IntFlag{
+		Name:  "probeash.cachesinmem",
+		Usage: "Number of recent probeash caches to keep in memory (16MB each)",
+		Value: probeconfig.Defaults.Probeash.CachesInMem,
 	}
-	EthashCachesOnDiskFlag = cli.IntFlag{
-		Name:  "ethash.cachesondisk",
-		Usage: "Number of recent ethash caches to keep on disk (16MB each)",
-		Value: ethconfig.Defaults.Ethash.CachesOnDisk,
+	ProbeashCachesOnDiskFlag = cli.IntFlag{
+		Name:  "probeash.cachesondisk",
+		Usage: "Number of recent probeash caches to keep on disk (16MB each)",
+		Value: probeconfig.Defaults.Probeash.CachesOnDisk,
 	}
-	EthashCachesLockMmapFlag = cli.BoolFlag{
-		Name:  "ethash.cacheslockmmap",
-		Usage: "Lock memory maps of recent ethash caches",
+	ProbeashCachesLockMmapFlag = cli.BoolFlag{
+		Name:  "probeash.cacheslockmmap",
+		Usage: "Lock memory maps of recent probeash caches",
 	}
-	EthashDatasetDirFlag = DirectoryFlag{
-		Name:  "ethash.dagdir",
-		Usage: "Directory to store the ethash mining DAGs",
-		Value: DirectoryString(ethconfig.Defaults.Ethash.DatasetDir),
+	ProbeashDatasetDirFlag = DirectoryFlag{
+		Name:  "probeash.dagdir",
+		Usage: "Directory to store the probeash mining DAGs",
+		Value: DirectoryString(probeconfig.Defaults.Probeash.DatasetDir),
 	}
-	EthashDatasetsInMemoryFlag = cli.IntFlag{
-		Name:  "ethash.dagsinmem",
-		Usage: "Number of recent ethash mining DAGs to keep in memory (1+GB each)",
-		Value: ethconfig.Defaults.Ethash.DatasetsInMem,
+	ProbeashDatasetsInMemoryFlag = cli.IntFlag{
+		Name:  "probeash.dagsinmem",
+		Usage: "Number of recent probeash mining DAGs to keep in memory (1+GB each)",
+		Value: probeconfig.Defaults.Probeash.DatasetsInMem,
 	}
-	EthashDatasetsOnDiskFlag = cli.IntFlag{
-		Name:  "ethash.dagsondisk",
-		Usage: "Number of recent ethash mining DAGs to keep on disk (1+GB each)",
-		Value: ethconfig.Defaults.Ethash.DatasetsOnDisk,
+	ProbeashDatasetsOnDiskFlag = cli.IntFlag{
+		Name:  "probeash.dagsondisk",
+		Usage: "Number of recent probeash mining DAGs to keep on disk (1+GB each)",
+		Value: probeconfig.Defaults.Probeash.DatasetsOnDisk,
 	}
-	EthashDatasetsLockMmapFlag = cli.BoolFlag{
-		Name:  "ethash.dagslockmmap",
-		Usage: "Lock memory maps for recent ethash mining DAGs",
+	ProbeashDatasetsLockMmapFlag = cli.BoolFlag{
+		Name:  "probeash.dagslockmmap",
+		Usage: "Lock memory maps for recent probeash mining DAGs",
 	}
 	// Transaction pool settings
 	TxPoolLocalsFlag = cli.StringFlag{
@@ -354,37 +354,37 @@ var (
 	TxPoolPriceLimitFlag = cli.Uint64Flag{
 		Name:  "txpool.pricelimit",
 		Usage: "Minimum gas price limit to enforce for acceptance into the pool",
-		Value: ethconfig.Defaults.TxPool.PriceLimit,
+		Value: probeconfig.Defaults.TxPool.PriceLimit,
 	}
 	TxPoolPriceBumpFlag = cli.Uint64Flag{
 		Name:  "txpool.pricebump",
 		Usage: "Price bump percentage to replace an already existing transaction",
-		Value: ethconfig.Defaults.TxPool.PriceBump,
+		Value: probeconfig.Defaults.TxPool.PriceBump,
 	}
 	TxPoolAccountSlotsFlag = cli.Uint64Flag{
 		Name:  "txpool.accountslots",
 		Usage: "Minimum number of executable transaction slots guaranteed per account",
-		Value: ethconfig.Defaults.TxPool.AccountSlots,
+		Value: probeconfig.Defaults.TxPool.AccountSlots,
 	}
 	TxPoolGlobalSlotsFlag = cli.Uint64Flag{
 		Name:  "txpool.globalslots",
 		Usage: "Maximum number of executable transaction slots for all accounts",
-		Value: ethconfig.Defaults.TxPool.GlobalSlots,
+		Value: probeconfig.Defaults.TxPool.GlobalSlots,
 	}
 	TxPoolAccountQueueFlag = cli.Uint64Flag{
 		Name:  "txpool.accountqueue",
 		Usage: "Maximum number of non-executable transaction slots permitted per account",
-		Value: ethconfig.Defaults.TxPool.AccountQueue,
+		Value: probeconfig.Defaults.TxPool.AccountQueue,
 	}
 	TxPoolGlobalQueueFlag = cli.Uint64Flag{
 		Name:  "txpool.globalqueue",
 		Usage: "Maximum number of non-executable transaction slots for all accounts",
-		Value: ethconfig.Defaults.TxPool.GlobalQueue,
+		Value: probeconfig.Defaults.TxPool.GlobalQueue,
 	}
 	TxPoolLifetimeFlag = cli.DurationFlag{
 		Name:  "txpool.lifetime",
 		Usage: "Maximum amount of time non-executable transaction are queued",
-		Value: ethconfig.Defaults.TxPool.Lifetime,
+		Value: probeconfig.Defaults.TxPool.Lifetime,
 	}
 	// Performance tuning settings
 	CacheFlag = cli.IntFlag{
@@ -405,12 +405,12 @@ var (
 	CacheTrieJournalFlag = cli.StringFlag{
 		Name:  "cache.trie.journal",
 		Usage: "Disk journal directory for trie cache to survive node restarts",
-		Value: ethconfig.Defaults.TrieCleanCacheJournal,
+		Value: probeconfig.Defaults.TrieCleanCacheJournal,
 	}
 	CacheTrieRejournalFlag = cli.DurationFlag{
 		Name:  "cache.trie.rejournal",
 		Usage: "Time interval to regenerate the trie cache journal",
-		Value: ethconfig.Defaults.TrieCleanCacheRejournal,
+		Value: probeconfig.Defaults.TrieCleanCacheRejournal,
 	}
 	CacheGCFlag = cli.IntFlag{
 		Name:  "cache.gc",
@@ -451,20 +451,20 @@ var (
 	MinerGasTargetFlag = cli.Uint64Flag{
 		Name:  "miner.gastarget",
 		Usage: "Target gas floor for mined blocks",
-		Value: ethconfig.Defaults.Miner.GasFloor,
+		Value: probeconfig.Defaults.Miner.GasFloor,
 	}
 	MinerGasLimitFlag = cli.Uint64Flag{
 		Name:  "miner.gaslimit",
 		Usage: "Target gas ceiling for mined blocks",
-		Value: ethconfig.Defaults.Miner.GasCeil,
+		Value: probeconfig.Defaults.Miner.GasCeil,
 	}
 	MinerGasPriceFlag = BigFlag{
 		Name:  "miner.gasprice",
 		Usage: "Minimum gas price for mining a transaction",
-		Value: ethconfig.Defaults.Miner.GasPrice,
+		Value: probeconfig.Defaults.Miner.GasPrice,
 	}
-	MinerEtherbaseFlag = cli.StringFlag{
-		Name:  "miner.etherbase",
+	MinerProbeerbaseFlag = cli.StringFlag{
+		Name:  "miner.probeerbase",
 		Usage: "Public address for block mining rewards (default = first account)",
 		Value: "0",
 	}
@@ -475,7 +475,7 @@ var (
 	MinerRecommitIntervalFlag = cli.DurationFlag{
 		Name:  "miner.recommit",
 		Usage: "Time interval to recreate the block being mined",
-		Value: ethconfig.Defaults.Miner.Recommit,
+		Value: probeconfig.Defaults.Miner.Recommit,
 	}
 	MinerNoVerfiyFlag = cli.BoolFlag{
 		Name:  "miner.noverify",
@@ -507,18 +507,18 @@ var (
 	}
 	RPCGlobalGasCapFlag = cli.Uint64Flag{
 		Name:  "rpc.gascap",
-		Usage: "Sets a cap on gas that can be used in eth_call/estimateGas (0=infinite)",
-		Value: ethconfig.Defaults.RPCGasCap,
+		Usage: "Sets a cap on gas that can be used in probe_call/estimateGas (0=infinite)",
+		Value: probeconfig.Defaults.RPCGasCap,
 	}
 	RPCGlobalTxFeeCapFlag = cli.Float64Flag{
 		Name:  "rpc.txfeecap",
-		Usage: "Sets a cap on transaction fee (in ether) that can be sent via the RPC APIs (0 = no cap)",
-		Value: ethconfig.Defaults.RPCTxFeeCap,
+		Usage: "Sets a cap on transaction fee (in probeer) that can be sent via the RPC APIs (0 = no cap)",
+		Value: probeconfig.Defaults.RPCTxFeeCap,
 	}
 	// Logging and debug settings
-	EthStatsURLFlag = cli.StringFlag{
-		Name:  "ethstats",
-		Usage: "Reporting URL of a ethstats service (nodename:secret@host:port)",
+	ProbeStatsURLFlag = cli.StringFlag{
+		Name:  "probestats",
+		Usage: "Reporting URL of a probestats service (nodename:secret@host:port)",
 	}
 	FakePoWFlag = cli.BoolFlag{
 		Name:  "fakepow",
@@ -689,22 +689,22 @@ var (
 	GpoBlocksFlag = cli.IntFlag{
 		Name:  "gpo.blocks",
 		Usage: "Number of recent blocks to check for gas prices",
-		Value: ethconfig.Defaults.GPO.Blocks,
+		Value: probeconfig.Defaults.GPO.Blocks,
 	}
 	GpoPercentileFlag = cli.IntFlag{
 		Name:  "gpo.percentile",
 		Usage: "Suggested gas price is the given percentile of a set of recent transaction gas prices",
-		Value: ethconfig.Defaults.GPO.Percentile,
+		Value: probeconfig.Defaults.GPO.Percentile,
 	}
 	GpoMaxGasPriceFlag = cli.Int64Flag{
 		Name:  "gpo.maxprice",
 		Usage: "Maximum gas price will be recommended by gpo",
-		Value: ethconfig.Defaults.GPO.MaxPrice.Int64(),
+		Value: probeconfig.Defaults.GPO.MaxPrice.Int64(),
 	}
 	GpoIgnoreGasPriceFlag = cli.Int64Flag{
 		Name:  "gpo.ignoreprice",
 		Usage: "Gas price below which gpo will ignore transactions",
-		Value: ethconfig.Defaults.GPO.IgnorePrice.Int64(),
+		Value: probeconfig.Defaults.GPO.IgnorePrice.Int64(),
 	}
 
 	// Metrics flags
@@ -777,7 +777,7 @@ var (
 
 	CatalystFlag = cli.BoolFlag{
 		Name:  "catalyst",
-		Usage: "Catalyst mode (eth2 integration testing)",
+		Usage: "Catalyst mode (probe2 integration testing)",
 	}
 )
 
@@ -787,7 +787,7 @@ var (
 func MakeDataDir(ctx *cli.Context) string {
 	if path := ctx.GlobalString(DataDirFlag.Name); path != "" {
 		if ctx.GlobalBool(RopstenFlag.Name) {
-			// Maintain compatibility with older Geth configurations storing the
+			// Maintain compatibility with older Gprobe configurations storing the
 			// Ropsten database in `testnet` instead of `ropsten`.
 			return filepath.Join(path, "ropsten")
 		}
@@ -813,19 +813,19 @@ func setNodeKey(ctx *cli.Context, cfg *p2p.Config) {
 	var (
 		hex  = ctx.GlobalString(NodeKeyHexFlag.Name)
 		file = ctx.GlobalString(NodeKeyFileFlag.Name)
-		key  *probe.PrivateKey
+		key  *cryptoprobe.PrivateKey
 		err  error
 	)
 	switch {
 	case file != "" && hex != "":
 		Fatalf("Options %q and %q are mutually exclusive", NodeKeyFileFlag.Name, NodeKeyHexFlag.Name)
 	case file != "":
-		if key, err = probe.LoadECDSA(file); err != nil {
+		if key, err = cryptoprobe.LoadECDSA(file); err != nil {
 			Fatalf("Option %q: %v", NodeKeyFileFlag.Name, err)
 		}
 		cfg.PrivateKey = key
 	case hex != "":
-		if key, err = probe.HexToECDSA(hex); err != nil {
+		if key, err = cryptoprobe.HexToECDSA(hex); err != nil {
 			Fatalf("Option %q: %v", NodeKeyHexFlag.Name, err)
 		}
 		cfg.PrivateKey = key
@@ -1034,7 +1034,7 @@ func setIPC(ctx *cli.Context, cfg *node.Config) {
 }
 
 // setLes configures the les server and ultra light client settings from the command line flags.
-func setLes(ctx *cli.Context, cfg *ethconfig.Config) {
+func setLes(ctx *cli.Context, cfg *probeconfig.Config) {
 	if ctx.GlobalIsSet(LightServeFlag.Name) {
 		cfg.LightServ = ctx.GlobalInt(LightServeFlag.Name)
 	}
@@ -1054,8 +1054,8 @@ func setLes(ctx *cli.Context, cfg *ethconfig.Config) {
 		cfg.UltraLightFraction = ctx.GlobalInt(UltraLightFractionFlag.Name)
 	}
 	if cfg.UltraLightFraction <= 0 && cfg.UltraLightFraction > 100 {
-		log.Error("Ultra light fraction is invalid", "had", cfg.UltraLightFraction, "updated", ethconfig.Defaults.UltraLightFraction)
-		cfg.UltraLightFraction = ethconfig.Defaults.UltraLightFraction
+		log.Error("Ultra light fraction is invalid", "had", cfg.UltraLightFraction, "updated", probeconfig.Defaults.UltraLightFraction)
+		cfg.UltraLightFraction = probeconfig.Defaults.UltraLightFraction
 	}
 	if ctx.GlobalIsSet(UltraLightOnlyAnnounceFlag.Name) {
 		cfg.UltraLightOnlyAnnounce = ctx.GlobalBool(UltraLightOnlyAnnounceFlag.Name)
@@ -1069,7 +1069,7 @@ func setLes(ctx *cli.Context, cfg *ethconfig.Config) {
 }
 
 // MakeDatabaseHandles raises out the number of allowed file handles per process
-// for Geth and returns half of the allowance to assign to the database.
+// for Gprobe and returns half of the allowance to assign to the database.
 func MakeDatabaseHandles() int {
 	limit, err := fdlimit.Maximum()
 	if err != nil {
@@ -1097,7 +1097,7 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	log.Warn("-------------------------------------------------------------------")
 	log.Warn("Referring to accounts by order in the keystore folder is dangerous!")
 	log.Warn("This functionality is deprecated and will be removed in the future!")
-	log.Warn("Please use explicit addresses! (can search via `geth account list`)")
+	log.Warn("Please use explicit addresses! (can search via `gprobe account list`)")
 	log.Warn("-------------------------------------------------------------------")
 
 	accs := ks.Accounts()
@@ -1107,24 +1107,24 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	return accs[index], nil
 }
 
-// setEtherbase retrieves the etherbase either from the directly specified
+// setProbeerbase retrieves the probeerbase either from the directly specified
 // command line flags or from the keystore if CLI indexed.
-func setEtherbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *ethconfig.Config) {
-	// Extract the current etherbase
-	var etherbase string
-	if ctx.GlobalIsSet(MinerEtherbaseFlag.Name) {
-		etherbase = ctx.GlobalString(MinerEtherbaseFlag.Name)
+func setProbeerbase(ctx *cli.Context, ks *keystore.KeyStore, cfg *probeconfig.Config) {
+	// Extract the current probeerbase
+	var probeerbase string
+	if ctx.GlobalIsSet(MinerProbeerbaseFlag.Name) {
+		probeerbase = ctx.GlobalString(MinerProbeerbaseFlag.Name)
 	}
-	// Convert the etherbase into an address and configure it
-	if etherbase != "" {
+	// Convert the probeerbase into an address and configure it
+	if probeerbase != "" {
 		if ks != nil {
-			account, err := MakeAddress(ks, etherbase)
+			account, err := MakeAddress(ks, probeerbase)
 			if err != nil {
-				Fatalf("Invalid miner etherbase: %v", err)
+				Fatalf("Invalid miner probeerbase: %v", err)
 			}
-			cfg.Miner.Etherbase = account.Address
+			cfg.Miner.Probeerbase = account.Address
 		} else {
-			Fatalf("No etherbase configured")
+			Fatalf("No probeerbase configured")
 		}
 	}
 }
@@ -1179,11 +1179,11 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 	if !(lightClient || lightServer) {
 		lightPeers = 0
 	}
-	ethPeers := cfg.MaxPeers - lightPeers
+	probePeers := cfg.MaxPeers - lightPeers
 	if lightClient {
-		ethPeers = 0
+		probePeers = 0
 	}
-	log.Info("Maximum peer count", "ETH", ethPeers, "LES", lightPeers, "total", cfg.MaxPeers)
+	log.Info("Maximum peer count", "ETH", probePeers, "LES", lightPeers, "total", cfg.MaxPeers)
 
 	if ctx.GlobalIsSet(MaxPendingPeersFlag.Name) {
 		cfg.MaxPendingPeers = ctx.GlobalInt(MaxPendingPeersFlag.Name)
@@ -1282,7 +1282,7 @@ func setDataDir(ctx *cli.Context, cfg *node.Config) {
 	case ctx.GlobalBool(DeveloperFlag.Name):
 		cfg.DataDir = "" // unless explicitly requested, use memory databases
 	case ctx.GlobalBool(RopstenFlag.Name) && cfg.DataDir == node.DefaultDataDir():
-		// Maintain compatibility with older Geth configurations storing the
+		// Maintain compatibility with older Gprobe configurations storing the
 		// Ropsten database in `testnet` instead of `ropsten`.
 		legacyPath := filepath.Join(node.DefaultDataDir(), "testnet")
 		if _, err := os.Stat(legacyPath); !os.IsNotExist(err) {
@@ -1306,7 +1306,7 @@ func setGPO(ctx *cli.Context, cfg *gasprice.Config, light bool) {
 	// If we are running the light client, apply another group
 	// settings for gas oracle.
 	if light {
-		*cfg = ethconfig.LightClientGPO
+		*cfg = probeconfig.LightClientGPO
 	}
 	if ctx.GlobalIsSet(GpoBlocksFlag.Name) {
 		cfg.Blocks = ctx.GlobalInt(GpoBlocksFlag.Name)
@@ -1365,30 +1365,30 @@ func setTxPool(ctx *cli.Context, cfg *core.TxPoolConfig) {
 	}
 }
 
-func setEthash(ctx *cli.Context, cfg *ethconfig.Config) {
-	if ctx.GlobalIsSet(EthashCacheDirFlag.Name) {
-		cfg.Ethash.CacheDir = ctx.GlobalString(EthashCacheDirFlag.Name)
+func setProbeash(ctx *cli.Context, cfg *probeconfig.Config) {
+	if ctx.GlobalIsSet(ProbeashCacheDirFlag.Name) {
+		cfg.Probeash.CacheDir = ctx.GlobalString(ProbeashCacheDirFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashDatasetDirFlag.Name) {
-		cfg.Ethash.DatasetDir = ctx.GlobalString(EthashDatasetDirFlag.Name)
+	if ctx.GlobalIsSet(ProbeashDatasetDirFlag.Name) {
+		cfg.Probeash.DatasetDir = ctx.GlobalString(ProbeashDatasetDirFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashCachesInMemoryFlag.Name) {
-		cfg.Ethash.CachesInMem = ctx.GlobalInt(EthashCachesInMemoryFlag.Name)
+	if ctx.GlobalIsSet(ProbeashCachesInMemoryFlag.Name) {
+		cfg.Probeash.CachesInMem = ctx.GlobalInt(ProbeashCachesInMemoryFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashCachesOnDiskFlag.Name) {
-		cfg.Ethash.CachesOnDisk = ctx.GlobalInt(EthashCachesOnDiskFlag.Name)
+	if ctx.GlobalIsSet(ProbeashCachesOnDiskFlag.Name) {
+		cfg.Probeash.CachesOnDisk = ctx.GlobalInt(ProbeashCachesOnDiskFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashCachesLockMmapFlag.Name) {
-		cfg.Ethash.CachesLockMmap = ctx.GlobalBool(EthashCachesLockMmapFlag.Name)
+	if ctx.GlobalIsSet(ProbeashCachesLockMmapFlag.Name) {
+		cfg.Probeash.CachesLockMmap = ctx.GlobalBool(ProbeashCachesLockMmapFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashDatasetsInMemoryFlag.Name) {
-		cfg.Ethash.DatasetsInMem = ctx.GlobalInt(EthashDatasetsInMemoryFlag.Name)
+	if ctx.GlobalIsSet(ProbeashDatasetsInMemoryFlag.Name) {
+		cfg.Probeash.DatasetsInMem = ctx.GlobalInt(ProbeashDatasetsInMemoryFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashDatasetsOnDiskFlag.Name) {
-		cfg.Ethash.DatasetsOnDisk = ctx.GlobalInt(EthashDatasetsOnDiskFlag.Name)
+	if ctx.GlobalIsSet(ProbeashDatasetsOnDiskFlag.Name) {
+		cfg.Probeash.DatasetsOnDisk = ctx.GlobalInt(ProbeashDatasetsOnDiskFlag.Name)
 	}
-	if ctx.GlobalIsSet(EthashDatasetsLockMmapFlag.Name) {
-		cfg.Ethash.DatasetsLockMmap = ctx.GlobalBool(EthashDatasetsLockMmapFlag.Name)
+	if ctx.GlobalIsSet(ProbeashDatasetsLockMmapFlag.Name) {
+		cfg.Probeash.DatasetsLockMmap = ctx.GlobalBool(ProbeashDatasetsLockMmapFlag.Name)
 	}
 }
 
@@ -1417,7 +1417,7 @@ func setMiner(ctx *cli.Context, cfg *miner.Config) {
 	}
 }
 
-func setWhitelist(ctx *cli.Context, cfg *ethconfig.Config) {
+func setWhitelist(ctx *cli.Context, cfg *probeconfig.Config) {
 	whitelist := ctx.GlobalString(WhitelistFlag.Name)
 	if whitelist == "" {
 		return
@@ -1481,8 +1481,8 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 	}
 }
 
-// SetEthConfig applies eth-related command line flags to the config.
-func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
+// SetProbeConfig applies probe-related command line flags to the config.
+func SetProbeConfig(ctx *cli.Context, stack *node.Node, cfg *probeconfig.Config) {
 	// Avoid conflicting network flags
 	CheckExclusive(ctx, MainnetFlag, DeveloperFlag, RopstenFlag, RinkebyFlag, GoerliFlag, CalaverasFlag)
 	CheckExclusive(ctx, LightServeFlag, SyncModeFlag, "light")
@@ -1498,10 +1498,10 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	if keystores := stack.AccountManager().Backends(keystore.KeyStoreType); len(keystores) > 0 {
 		ks = keystores[0].(*keystore.KeyStore)
 	}
-	setEtherbase(ctx, ks, cfg)
+	setProbeerbase(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO, ctx.GlobalString(SyncModeFlag.Name) == "light")
 	setTxPool(ctx, &cfg.TxPool)
-	setEthash(ctx, cfg)
+	setProbeash(ctx, cfg)
 	setMiner(ctx, &cfg.Miner)
 	setWhitelist(ctx, cfg)
 	setLes(ctx, cfg)
@@ -1613,13 +1613,13 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.RPCTxFeeCap = ctx.GlobalFloat64(RPCGlobalTxFeeCapFlag.Name)
 	}
 	if ctx.GlobalIsSet(NoDiscoverFlag.Name) {
-		cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
+		cfg.ProbeDiscoveryURLs, cfg.SnapDiscoveryURLs = []string{}, []string{}
 	} else if ctx.GlobalIsSet(DNSDiscoveryFlag.Name) {
 		urls := ctx.GlobalString(DNSDiscoveryFlag.Name)
 		if urls == "" {
-			cfg.EthDiscoveryURLs = []string{}
+			cfg.ProbeDiscoveryURLs = []string{}
 		} else {
-			cfg.EthDiscoveryURLs = SplitAndTrim(urls)
+			cfg.ProbeDiscoveryURLs = SplitAndTrim(urls)
 		}
 	}
 	// Override any default configs for hard coded networks.
@@ -1670,9 +1670,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 			// when we're definitely concerned with only one account.
 			passphrase = list[0]
 		}
-		// setEtherbase has been called above, configuring the miner address from command line flags.
-		if cfg.Miner.Etherbase != (common.Address{}) {
-			developer = accounts.Account{Address: cfg.Miner.Etherbase}
+		// setProbeerbase has been called above, configuring the miner address from command line flags.
+		if cfg.Miner.Probeerbase != (common.Address{}) {
+			developer = accounts.Account{Address: cfg.Miner.Probeerbase}
 		} else if accs := ks.Accounts(); len(accs) > 0 {
 			developer = ks.Accounts()[0]
 		} else {
@@ -1709,8 +1709,8 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 
 // SetDNSDiscoveryDefaults configures DNS discovery with the given URL if
 // no URLs are set.
-func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
-	if cfg.EthDiscoveryURLs != nil {
+func SetDNSDiscoveryDefaults(cfg *probeconfig.Config, genesis common.Hash) {
+	if cfg.ProbeDiscoveryURLs != nil {
 		return // already set through flags/config
 	}
 	protocol := "all"
@@ -1718,26 +1718,26 @@ func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
 		protocol = "les"
 	}
 	if url := params.KnownDNSNetwork(genesis, protocol); url != "" {
-		cfg.EthDiscoveryURLs = []string{url}
-		cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
+		cfg.ProbeDiscoveryURLs = []string{url}
+		cfg.SnapDiscoveryURLs = cfg.ProbeDiscoveryURLs
 	}
 }
 
-// RegisterEthService adds an Ethereum client to the stack.
+// RegisterProbeService adds an Probeum client to the stack.
 // The second return value is the full node instance, which may be nil if the
 // node is running as a light client.
-func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (ethapi.Backend, *eth.Ethereum) {
+func RegisterProbeService(stack *node.Node, cfg *probeconfig.Config) (probeapi.Backend, *probe.Probeum) {
 	if cfg.SyncMode == downloader.LightSync {
 		backend, err := les.New(stack, cfg)
 		if err != nil {
-			Fatalf("Failed to register the Ethereum service: %v", err)
+			Fatalf("Failed to register the Probeum service: %v", err)
 		}
 		stack.RegisterAPIs(tracers.APIs(backend.ApiBackend))
 		return backend.ApiBackend, nil
 	}
-	backend, err := eth.New(stack, cfg)
+	backend, err := probe.New(stack, cfg)
 	if err != nil {
-		Fatalf("Failed to register the Ethereum service: %v", err)
+		Fatalf("Failed to register the Probeum service: %v", err)
 	}
 	if cfg.LightServ > 0 {
 		_, err := les.NewLesServer(stack, backend, cfg)
@@ -1749,16 +1749,16 @@ func RegisterEthService(stack *node.Node, cfg *ethconfig.Config) (ethapi.Backend
 	return backend.APIBackend, backend
 }
 
-// RegisterEthStatsService configures the Ethereum Stats daemon and adds it to
+// RegisterProbeStatsService configures the Probeum Stats daemon and adds it to
 // the given node.
-func RegisterEthStatsService(stack *node.Node, backend ethapi.Backend, url string) {
-	if err := ethstats.New(stack, backend, backend.Engine(), url); err != nil {
-		Fatalf("Failed to register the Ethereum Stats service: %v", err)
+func RegisterProbeStatsService(stack *node.Node, backend probeapi.Backend, url string) {
+	if err := probestats.New(stack, backend, backend.Engine(), url); err != nil {
+		Fatalf("Failed to register the Probeum Stats service: %v", err)
 	}
 }
 
 // RegisterGraphQLService is a utility function to construct a new service and register it against a node.
-func RegisterGraphQLService(stack *node.Node, backend ethapi.Backend, cfg node.Config) {
+func RegisterGraphQLService(stack *node.Node, backend probeapi.Backend, cfg node.Config) {
 	if err := graphql.New(stack, backend, cfg.GraphQLCors, cfg.GraphQLVirtualHosts); err != nil {
 		Fatalf("Failed to register the GraphQL service: %v", err)
 	}
@@ -1781,7 +1781,7 @@ func SetupMetrics(ctx *cli.Context) {
 
 			log.Info("Enabling metrics export to InfluxDB")
 
-			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "geth.", tagsMap)
+			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "gprobe.", tagsMap)
 		}
 
 		if ctx.GlobalIsSet(MetricsHTTPFlag.Name) {
@@ -1810,13 +1810,13 @@ func SplitTagsFlag(tagsFlag string) map[string]string {
 }
 
 // MakeChainDatabase open an LevelDB using the flags passed to the client and will hard crash if it fails.
-func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) ethdb.Database {
+func MakeChainDatabase(ctx *cli.Context, stack *node.Node, readonly bool) probedb.Database {
 	var (
 		cache   = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheDatabaseFlag.Name) / 100
 		handles = MakeDatabaseHandles()
 
 		err     error
-		chainDb ethdb.Database
+		chainDb probedb.Database
 	)
 	if ctx.GlobalString(SyncModeFlag.Name) == "light" {
 		name := "lightchaindata"
@@ -1851,7 +1851,7 @@ func MakeGenesis(ctx *cli.Context) *core.Genesis {
 }
 
 // MakeChain creates a chain manager from set command line flags.
-func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chainDb ethdb.Database) {
+func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chainDb probedb.Database) {
 	var err error
 	chainDb = MakeChainDatabase(ctx, stack, false) // TODO(rjl493456442) support read-only database
 	config, _, err := core.SetupGenesisBlock(chainDb, MakeGenesis(ctx), stack.InstanceDir())
@@ -1862,17 +1862,17 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 	if config.Clique != nil {
 		engine = clique.New(config.Clique, chainDb)
 	} else {
-		engine = ethash.NewFaker()
+		engine = probeash.NewFaker()
 		if !ctx.GlobalBool(FakePoWFlag.Name) {
-			engine = ethash.New(ethash.Config{
-				CacheDir:         stack.ResolvePath(ethconfig.Defaults.Ethash.CacheDir),
-				CachesInMem:      ethconfig.Defaults.Ethash.CachesInMem,
-				CachesOnDisk:     ethconfig.Defaults.Ethash.CachesOnDisk,
-				CachesLockMmap:   ethconfig.Defaults.Ethash.CachesLockMmap,
-				DatasetDir:       stack.ResolvePath(ethconfig.Defaults.Ethash.DatasetDir),
-				DatasetsInMem:    ethconfig.Defaults.Ethash.DatasetsInMem,
-				DatasetsOnDisk:   ethconfig.Defaults.Ethash.DatasetsOnDisk,
-				DatasetsLockMmap: ethconfig.Defaults.Ethash.DatasetsLockMmap,
+			engine = probeash.New(probeash.Config{
+				CacheDir:         stack.ResolvePath(probeconfig.Defaults.Probeash.CacheDir),
+				CachesInMem:      probeconfig.Defaults.Probeash.CachesInMem,
+				CachesOnDisk:     probeconfig.Defaults.Probeash.CachesOnDisk,
+				CachesLockMmap:   probeconfig.Defaults.Probeash.CachesLockMmap,
+				DatasetDir:       stack.ResolvePath(probeconfig.Defaults.Probeash.DatasetDir),
+				DatasetsInMem:    probeconfig.Defaults.Probeash.DatasetsInMem,
+				DatasetsOnDisk:   probeconfig.Defaults.Probeash.DatasetsOnDisk,
+				DatasetsLockMmap: probeconfig.Defaults.Probeash.DatasetsLockMmap,
 			}, nil, false)
 		}
 	}
@@ -1880,12 +1880,12 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
 	}
 	cache := &core.CacheConfig{
-		TrieCleanLimit:      ethconfig.Defaults.TrieCleanCache,
+		TrieCleanLimit:      probeconfig.Defaults.TrieCleanCache,
 		TrieCleanNoPrefetch: ctx.GlobalBool(CacheNoPrefetchFlag.Name),
-		TrieDirtyLimit:      ethconfig.Defaults.TrieDirtyCache,
+		TrieDirtyLimit:      probeconfig.Defaults.TrieDirtyCache,
 		TrieDirtyDisabled:   ctx.GlobalString(GCModeFlag.Name) == "archive",
-		TrieTimeLimit:       ethconfig.Defaults.TrieTimeout,
-		SnapshotLimit:       ethconfig.Defaults.SnapshotCache,
+		TrieTimeLimit:       probeconfig.Defaults.TrieTimeout,
+		SnapshotLimit:       probeconfig.Defaults.SnapshotCache,
 		Preimages:           ctx.GlobalBool(CachePreimagesFlag.Name),
 	}
 	if cache.TrieDirtyDisabled && !cache.Preimages {
@@ -1932,11 +1932,11 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 // This is a temporary function used for migrating old command/flags to the
 // new format.
 //
-// e.g. geth account new --keystore /tmp/mykeystore --lightkdf
+// e.g. gprobe account new --keystore /tmp/mykeystore --lightkdf
 //
 // is equivalent after calling this method with:
 //
-// geth --keystore /tmp/mykeystore --lightkdf account new
+// gprobe --keystore /tmp/mykeystore --lightkdf account new
 //
 // This allows the use of the existing configuration functionality.
 // When all flags are migrated this function can be removed and the existing

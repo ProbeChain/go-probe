@@ -1,20 +1,20 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package graphql provides a GraphQL interface to Ethereum node data.
+// Package graphql provides a GraphQL interface to Probeum node data.
 package graphql
 
 import (
@@ -25,15 +25,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/probeum/go-probeum"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probeum/go-probeum/common/math"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/probe/filters"
+	"github.com/probeum/go-probeum/internal/probeapi"
+	"github.com/probeum/go-probeum/rpc"
 )
 
 var (
@@ -71,9 +71,9 @@ func (b *Long) UnmarshalGraphQL(input interface{}) error {
 	return err
 }
 
-// Account represents an Ethereum account at a particular block.
+// Account represents an Probeum account at a particular block.
 type Account struct {
-	backend       ethapi.Backend
+	backend       probeapi.Backend
 	address       common.Address
 	blockNrOrHash rpc.BlockNumberOrHash
 }
@@ -126,7 +126,7 @@ func (a *Account) Storage(ctx context.Context, args struct{ Slot common.Hash }) 
 
 // Log represents an individual log message. All arguments are mandatory.
 type Log struct {
-	backend     ethapi.Backend
+	backend     probeapi.Backend
 	transaction *Transaction
 	log         *types.Log
 }
@@ -169,10 +169,10 @@ func (at *AccessTuple) StorageKeys(ctx context.Context) *[]common.Hash {
 	return at.storageKeys
 }
 
-// Transaction represents an Ethereum transaction.
+// Transaction represents an Probeum transaction.
 // backend and hash are mandatory; all others will be fetched when required.
 type Transaction struct {
-	backend ethapi.Backend
+	backend probeapi.Backend
 	hash    common.Hash
 	tx      *types.Transaction
 	block   *Block
@@ -477,11 +477,11 @@ func (t *Transaction) V(ctx context.Context) (hexutil.Big, error) {
 
 type BlockType int
 
-// Block represents an Ethereum block.
+// Block represents an Probeum block.
 // backend, and numberOrHash are mandatory. All other fields are lazily fetched
 // when required.
 type Block struct {
-	backend      ethapi.Backend
+	backend      probeapi.Backend
 	numberOrHash *rpc.BlockNumberOrHash
 	hash         common.Hash
 	header       *types.Header
@@ -857,7 +857,7 @@ type BlockFilterCriteria struct {
 
 // runFilter accepts a filter and executes it, returning all its results as
 // `Log` objects.
-func runFilter(ctx context.Context, be ethapi.Backend, filter *filters.Filter) ([]*Log, error) {
+func runFilter(ctx context.Context, be probeapi.Backend, filter *filters.Filter) ([]*Log, error) {
 	logs, err := filter.Logs(ctx)
 	if err != nil || logs == nil {
 		return nil, err
@@ -916,8 +916,8 @@ func (b *Block) Account(ctx context.Context, args struct {
 // CallData encapsulates arguments to `call` or `estimateGas`.
 // All arguments are optional.
 type CallData struct {
-	From                 *common.Address // The Ethereum address the call is from.
-	To                   *common.Address // The Ethereum address the call is to.
+	From                 *common.Address // The Probeum address the call is from.
+	To                   *common.Address // The Probeum address the call is to.
 	Gas                  *hexutil.Uint64 // The amount of gas provided for the call.
 	GasPrice             *hexutil.Big    // The price of each unit of gas, in wei.
 	MaxFeePerGas         *hexutil.Big    // The max price of each unit of gas, in wei (1559).
@@ -946,7 +946,7 @@ func (c *CallResult) Status() Long {
 }
 
 func (b *Block) Call(ctx context.Context, args struct {
-	Data ethapi.TransactionArgs
+	Data probeapi.TransactionArgs
 }) (*CallResult, error) {
 	if b.numberOrHash == nil {
 		_, err := b.resolve(ctx)
@@ -954,7 +954,7 @@ func (b *Block) Call(ctx context.Context, args struct {
 			return nil, err
 		}
 	}
-	result, err := ethapi.DoCall(ctx, b.backend, args.Data, *b.numberOrHash, nil, 5*time.Second, b.backend.RPCGasCap())
+	result, err := probeapi.DoCall(ctx, b.backend, args.Data, *b.numberOrHash, nil, 5*time.Second, b.backend.RPCGasCap())
 	if err != nil {
 		return nil, err
 	}
@@ -971,7 +971,7 @@ func (b *Block) Call(ctx context.Context, args struct {
 }
 
 func (b *Block) EstimateGas(ctx context.Context, args struct {
-	Data ethapi.TransactionArgs
+	Data probeapi.TransactionArgs
 }) (Long, error) {
 	if b.numberOrHash == nil {
 		_, err := b.resolveHeader(ctx)
@@ -979,12 +979,12 @@ func (b *Block) EstimateGas(ctx context.Context, args struct {
 			return 0, err
 		}
 	}
-	gas, err := ethapi.DoEstimateGas(ctx, b.backend, args.Data, *b.numberOrHash, b.backend.RPCGasCap())
+	gas, err := probeapi.DoEstimateGas(ctx, b.backend, args.Data, *b.numberOrHash, b.backend.RPCGasCap())
 	return Long(gas), err
 }
 
 type Pending struct {
-	backend ethapi.Backend
+	backend probeapi.Backend
 }
 
 func (p *Pending) TransactionCount(ctx context.Context) (int32, error) {
@@ -1021,10 +1021,10 @@ func (p *Pending) Account(ctx context.Context, args struct {
 }
 
 func (p *Pending) Call(ctx context.Context, args struct {
-	Data ethapi.TransactionArgs
+	Data probeapi.TransactionArgs
 }) (*CallResult, error) {
 	pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	result, err := ethapi.DoCall(ctx, p.backend, args.Data, pendingBlockNr, nil, 5*time.Second, p.backend.RPCGasCap())
+	result, err := probeapi.DoCall(ctx, p.backend, args.Data, pendingBlockNr, nil, 5*time.Second, p.backend.RPCGasCap())
 	if err != nil {
 		return nil, err
 	}
@@ -1041,16 +1041,16 @@ func (p *Pending) Call(ctx context.Context, args struct {
 }
 
 func (p *Pending) EstimateGas(ctx context.Context, args struct {
-	Data ethapi.TransactionArgs
+	Data probeapi.TransactionArgs
 }) (Long, error) {
 	pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
-	gas, err := ethapi.DoEstimateGas(ctx, p.backend, args.Data, pendingBlockNr, p.backend.RPCGasCap())
+	gas, err := probeapi.DoEstimateGas(ctx, p.backend, args.Data, pendingBlockNr, p.backend.RPCGasCap())
 	return Long(gas), err
 }
 
 // Resolver is the top-level object in the GraphQL hierarchy.
 type Resolver struct {
-	backend ethapi.Backend
+	backend probeapi.Backend
 }
 
 func (r *Resolver) Block(ctx context.Context, args struct {
@@ -1143,7 +1143,7 @@ func (r *Resolver) SendRawTransaction(ctx context.Context, args struct{ Data hex
 	if err := tx.UnmarshalBinary(args.Data); err != nil {
 		return common.Hash{}, err
 	}
-	hash, err := ethapi.SubmitTransaction(ctx, r.backend, tx)
+	hash, err := probeapi.SubmitTransaction(ctx, r.backend, tx)
 	return hash, err
 }
 
@@ -1215,7 +1215,7 @@ func (r *Resolver) ChainID(ctx context.Context) (hexutil.Big, error) {
 
 // SyncState represents the synchronisation status returned from the `syncing` accessor.
 type SyncState struct {
-	progress ethereum.SyncProgress
+	progress probeum.SyncProgress
 }
 
 func (s *SyncState) StartingBlock() hexutil.Uint64 {

@@ -1,28 +1,28 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2017 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package keystore
 
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/probeum/go-probeum"
+	"github.com/probeum/go-probeum/accounts"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/crypto"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original
@@ -37,7 +37,7 @@ func (w *keystoreWallet) URL() accounts.URL {
 	return w.account.URL
 }
 
-// Status implements accounts.Wallet, returning whether the account held by the
+// Status implements accounts.Wallet, returning whprobeer the account held by the
 // keystore wallet is unlocked or not.
 func (w *keystoreWallet) Status() (string, error) {
 	w.keystore.mu.RLock()
@@ -63,7 +63,7 @@ func (w *keystoreWallet) Accounts() []accounts.Account {
 	return []accounts.Account{w.account}
 }
 
-// Contains implements accounts.Wallet, returning whether a particular account is
+// Contains implements accounts.Wallet, returning whprobeer a particular account is
 // or is not wrapped by this wallet instance.
 func (w *keystoreWallet) Contains(account accounts.Account) bool {
 	return account.Address == w.account.Address && (account.URL == (accounts.URL{}) || account.URL == w.account.URL)
@@ -77,7 +77,7 @@ func (w *keystoreWallet) Derive(path accounts.DerivationPath, pin bool) (account
 
 // SelfDerive implements accounts.Wallet, but is a noop for plain wallets since
 // there is no notion of hierarchical account derivation for plain keystore accounts.
-func (w *keystoreWallet) SelfDerive(bases []accounts.DerivationPath, chain ethereum.ChainStateReader) {
+func (w *keystoreWallet) SelfDerive(bases []accounts.DerivationPath, chain probeum.ChainStateReader) {
 }
 
 // signHash attempts to sign the given hash with

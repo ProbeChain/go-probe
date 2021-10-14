@@ -1,27 +1,27 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2014 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package core implements the Ethereum consensus protocol.
+// Package core implements the Probeum consensus protocol.
 package core
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/p2p/enode"
+	"github.com/probeum/go-probeum/p2p/enode"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -30,24 +30,24 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/p2p"
+	"github.com/probeum/go-probeum/p2p"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/state/snapshot"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/common/prque"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/state/snapshot"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 	lru "github.com/hashicorp/golang-lru"
 )
 
@@ -130,12 +130,12 @@ type CacheConfig struct {
 	TrieCleanLimit      int           // Memory allowance (MB) to use for caching trie nodes in memory
 	TrieCleanJournal    string        // Disk journal for saving clean cache entries.
 	TrieCleanRejournal  time.Duration // Time interval to dump clean cache to disk periodically
-	TrieCleanNoPrefetch bool          // Whether to disable heuristic state prefetching for followup blocks
+	TrieCleanNoPrefetch bool          // Whprobeer to disable heuristic state prefetching for followup blocks
 	TrieDirtyLimit      int           // Memory limit (MB) at which to start flushing dirty trie nodes to disk
-	TrieDirtyDisabled   bool          // Whether to disable trie write caching and GC altogether (archive node)
+	TrieDirtyDisabled   bool          // Whprobeer to disable trie write caching and GC altogprobeer (archive node)
 	TrieTimeLimit       time.Duration // Time limit after which to flush the current in-memory trie to disk
 	SnapshotLimit       int           // Memory allowance (MB) to use for caching snapshot entries in memory
-	Preimages           bool          // Whether to store preimage of trie key to the disk
+	Preimages           bool          // Whprobeer to store preimage of trie key to the disk
 
 	SnapshotWait bool // Wait for snapshot construction on startup. TODO(karalabe): This is a dirty hack for testing, nuke it
 
@@ -207,7 +207,7 @@ func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
 	powAnswers := pool.powAnswerMap[number.Uint64()]
 	powAnswers = append(powAnswers, powAnswer)
 
-	// Check whether a deletion operation is required
+	// Check whprobeer a deletion operation is required
 	size := len(pool.powAnswerMap)
 	if size >= 2*maxChainPowAnswers {
 		// first sort the number
@@ -285,7 +285,7 @@ func (pool *DposAckPool) Add(dposAck *types.DposAck) {
 	dposAcks := pool.dposAckMap[number.Uint64()]
 	dposAcks = append(dposAcks, dposAck)
 
-	// Check whether a deletion operation is required
+	// Check whprobeer a deletion operation is required
 	size := len(pool.dposAckMap)
 	if size >= 2*maxChainDposAcks {
 		// first sort the number
@@ -324,7 +324,7 @@ type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
 	cacheConfig *CacheConfig        // Cache configuration for pruning
 
-	db        ethdb.Database // Low level persistent database to store final content in
+	db        probedb.Database // Low level persistent database to store final content in
 	snaps     *snapshot.Tree // Snapshot tree for fast trie leaf access
 	triegc    *prque.Prque   // Priority queue mapping block numbers to tries to gc
 	gcproc    time.Duration  // Accumulates canonical block processing for trie dumping
@@ -377,14 +377,14 @@ type BlockChain struct {
 	processor  Processor // Block transaction processor interface
 	vmConfig   vm.Config
 
-	shouldPreserve  func(*types.Block) bool        // Function used to determine whether should preserve the given block.
+	shouldPreserve  func(*types.Block) bool        // Function used to determine whprobeer should preserve the given block.
 	terminateInsert func(common.Hash, uint64) bool // Testing hook used to terminate ancient receipt chain insertion.
 }
 
 // NewBlockChain returns a fully initialised block chain using information
-// available in the database. It initialises the default Ethereum Validator and
+// available in the database. It initialises the default Probeum Validator and
 // Processor.
-func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server) (*BlockChain, error) {
+func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -542,7 +542,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 		}
 	}
 	// The first thing the node will do is reconstruct the verification data for
-	// the head block (ethash cache or clique voting snapshot). Might as well do
+	// the head block (probeash cache or clique voting snapshot). Might as well do
 	// it in advance.
 	bc.engine.VerifyHeader(bc, bc.CurrentHeader(), true)
 
@@ -605,7 +605,7 @@ func (bc *BlockChain) GetVMConfig() *vm.Config {
 	return &bc.vmConfig
 }
 
-// empty returns an indicator whether the blockchain is empty.
+// empty returns an indicator whprobeer the blockchain is empty.
 // Note, it's a special case that we connect a non-empty ancient
 // database with an empty node, so that we can plugin the ancient
 // into node seamlessly.
@@ -675,7 +675,7 @@ func (bc *BlockChain) loadLastState() error {
 	return nil
 }
 
-// SetHead rewinds the local chain to a new head. Depending on whether the node
+// SetHead rewinds the local chain to a new head. Depending on whprobeer the node
 // was fast synced or full synced and in which state, the method will try to
 // delete minimal data from disk whilst retaining chain consistency.
 func (bc *BlockChain) SetHead(head uint64) error {
@@ -686,7 +686,7 @@ func (bc *BlockChain) SetHead(head uint64) error {
 // SetHeadBeyondRoot rewinds the local chain to a new head with the extra condition
 // that the rewind must pass the specified state root. This method is meant to be
 // used when rewinding with snapshots enabled to ensure that we go back further than
-// persistent disk layer. Depending on whether the node was fast synced or full, and
+// persistent disk layer. Depending on whprobeer the node was fast synced or full, and
 // in which state, the method will try to delete minimal data from disk whilst
 // retaining chain consistency.
 //
@@ -703,7 +703,7 @@ func (bc *BlockChain) SetHeadBeyondRoot(head uint64, root common.Hash) (uint64, 
 	pivot := rawdb.ReadLastPivotNumber(bc.db)
 	frozen, _ := bc.db.Ancients()
 
-	updateFn := func(db ethdb.KeyValueWriter, header *types.Header) (uint64, bool) {
+	updateFn := func(db probedb.KeyValueWriter, header *types.Header) (uint64, bool) {
 		// Rewind the block chain, ensuring we don't end up with a stateless head
 		// block. Note, depth equality is permitted to allow using SetHead as a
 		// chain reparation mechanism without deleting any data!
@@ -716,7 +716,7 @@ func (bc *BlockChain) SetHeadBeyondRoot(head uint64, root common.Hash) (uint64, 
 				// Block exists, keep rewinding until we find one with state,
 				// keeping rewinding until we exceed the optional threshold
 				// root hash
-				beyondRoot := (root == common.Hash{}) // Flag whether we're beyond the requested root (no root, always true)
+				beyondRoot := (root == common.Hash{}) // Flag whprobeer we're beyond the requested root (no root, always true)
 
 				for {
 					// If a root threshold was requested but not yet crossed, check
@@ -775,7 +775,7 @@ func (bc *BlockChain) SetHeadBeyondRoot(head uint64, root common.Hash) (uint64, 
 
 		// If setHead underflown the freezer threshold and the block processing
 		// intent afterwards is full block importing, delete the chain segment
-		// between the stateful-block and the sethead target.
+		// between the stateful-block and the sprobeead target.
 		var wipe bool
 		if head+1 < frozen {
 			wipe = pivot == nil || head >= *pivot
@@ -783,7 +783,7 @@ func (bc *BlockChain) SetHeadBeyondRoot(head uint64, root common.Hash) (uint64, 
 		return head, wipe // Only force wipe if full synced
 	}
 	// Rewind the header chain, deleting all block bodies until then
-	delFn := func(db ethdb.KeyValueWriter, hash common.Hash, num uint64) {
+	delFn := func(db probedb.KeyValueWriter, hash common.Hash, num uint64) {
 		// Ignore the error here since light client won't hit this path
 		frozen, _ := bc.db.Ancients()
 		if num+1 <= frozen {
@@ -804,7 +804,7 @@ func (bc *BlockChain) SetHeadBeyondRoot(head uint64, root common.Hash) (uint64, 
 		// Todo(rjl493456442) txlookup, bloombits, etc
 	}
 	// If SetHead was only called as a chain reparation method, try to skip
-	// touching the header chain altogether, unless the freezer is broken
+	// touching the header chain altogprobeer, unless the freezer is broken
 	if block := bc.CurrentBlock(); block.NumberU64() == head {
 		if target, force := updateFn(bc.db, block.Header()); force {
 			bc.hc.SetHead(target, updateFn, delFn)
@@ -1137,7 +1137,7 @@ func (bc *BlockChain) GetReceiptsByHash(hash common.Hash) types.Receipts {
 }
 
 // GetBlocksFromHash returns the block corresponding to hash and up to n-1 ancestors.
-// [deprecated by eth/62]
+// [deprecated by probe/62]
 func (bc *BlockChain) GetBlocksFromHash(hash common.Hash, n int) (blocks []*types.Block) {
 	number := bc.hc.GetBlockNumber(hash)
 	if number == nil {
@@ -1362,7 +1362,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		size  = 0
 	)
 	// updateHead updates the head fast sync block if the inserted blocks are better
-	// and returns an indicator whether the inserted blocks are canonical.
+	// and returns an indicator whprobeer the inserted blocks are canonical.
 	updateHead := func(head *types.Block) bool {
 		bc.chainmu.Lock()
 
@@ -1430,7 +1430,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 			// * If block number is large enough to be regarded as a recent block
 			// It means blocks below the ancientLimit-txlookupLimit won't be indexed.
 			//
-			// But if the `TxIndexTail` is not nil, e.g. Geth is initialized with
+			// But if the `TxIndexTail` is not nil, e.g. Gprobe is initialized with
 			// an external ancient database, during the setup, blockchain will start
 			// a background routine to re-indexed all indices in [ancients - txlookupLimit, ancients)
 			// range. In this case, all tx indices of newly imported blocks should be
@@ -1527,7 +1527,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 			// Write everything belongs to the blocks into the database. So that
 			// we can ensure all components of body is completed(body, receipts,
 			// tx indexes)
-			if batch.ValueSize() >= ethdb.IdealBatchSize {
+			if batch.ValueSize() >= probedb.IdealBatchSize {
 				if err := batch.Write(); err != nil {
 					return 0, err
 				}
@@ -1708,7 +1708,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 				limit       = common.StorageSize(bc.cacheConfig.TrieDirtyLimit) * 1024 * 1024
 			)
 			if nodes > limit || imgs > 4*1024*1024 {
-				triedb.Cap(limit - ethdb.IdealBatchSize)
+				triedb.Cap(limit - probedb.IdealBatchSize)
 			}
 			// Find the next state trie we need to commit
 			chosen := current - TriesInMemory
@@ -1818,7 +1818,7 @@ func (bc *BlockChain) addFutureBlock(block *types.Block) error {
 //
 // After insertion is done, all accumulated events will be fired.
 func (bc *BlockChain) InsertChain(blocks types.Blocks) (int, error) {
-	// Sanity check that we have something meaningful to import
+	// Sanity check that we have somprobeing meaningful to import
 	if len(blocks) == 0 {
 		return 0, nil
 	}
@@ -2490,13 +2490,13 @@ func (bc *BlockChain) update() {
 // all tx indices will be reserved.
 //
 // The user can adjust the txlookuplimit value for each launch after fast
-// sync, Geth will automatically construct the missing indices and delete
+// sync, Gprobe will automatically construct the missing indices and delete
 // the extra indices.
 func (bc *BlockChain) maintainTxIndex(ancients uint64) {
 	defer bc.wg.Done()
 
 	// Before starting the actual maintenance, we need to handle a special case,
-	// where user might init Geth with an external ancient database. If so, we
+	// where user might init Gprobe with an external ancient database. If so, we
 	// need to reindex all necessary transactions before starting to process any
 	// pruning requests.
 	if ancients > 0 {
@@ -2510,7 +2510,7 @@ func (bc *BlockChain) maintainTxIndex(ancients uint64) {
 	indexBlocks := func(tail *uint64, head uint64, done chan struct{}) {
 		defer func() { done <- struct{}{} }()
 
-		// If the user just upgraded Geth to a new version which supports transaction
+		// If the user just upgraded Gprobe to a new version which supports transaction
 		// index pruning, write the new tail and remove anything older.
 		if tail == nil {
 			if bc.txLookupLimit == 0 || head < bc.txLookupLimit {
@@ -2595,7 +2595,7 @@ Error: %v
 // chain, possibly creating a reorg. If an error is returned, it will return the
 // index number of the failing header as well an error describing what went wrong.
 //
-// The verify parameter can be used to fine tune whether nonce verification
+// The verify parameter can be used to fine tune whprobeer nonce verification
 // should be done or not. The reason behind the optional check is because some
 // of the header retrieval mechanisms already need to verify nonces, as well as
 // because nonces can be verified sparsely, not needing to check each.

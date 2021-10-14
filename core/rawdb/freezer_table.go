@@ -1,18 +1,18 @@
-// Copyright 2019 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2019 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package rawdb
 
@@ -26,9 +26,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/metrics"
 	"github.com/golang/snappy"
 )
 
@@ -344,7 +344,7 @@ func (t *freezerTable) truncate(items uint64) error {
 	if err != nil {
 		return err
 	}
-	// Something's out of sync, truncate the table's offset index
+	// Somprobeing's out of sync, truncate the table's offset index
 	log := t.logger.Debug
 	if existing > items+1 {
 		log = t.logger.Warn // Only loud warn if we delete multiple items
@@ -626,7 +626,7 @@ func (t *freezerTable) retrieve(item uint64) ([]byte, error) {
 	return blob, nil
 }
 
-// has returns an indicator whether the specified number data
+// has returns an indicator whprobeer the specified number data
 // exists in the freezer table.
 func (t *freezerTable) has(number uint64) bool {
 	return atomic.LoadUint64(&t.items) > number

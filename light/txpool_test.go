@@ -1,18 +1,18 @@
-// Copyright 2016 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2016 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package light
 
@@ -23,13 +23,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/core"
+	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probeum/go-probeum/params"
 )
 
 type testTxRelay struct {
@@ -91,8 +91,8 @@ func TestTxPool(t *testing.T) {
 	)
 	gspec.MustCommit(ldb)
 	// Assemble the test environment
-	blockchain, _ := core.NewBlockChain(sdb, nil, params.TestChainConfig, ethash.NewFullFaker(), vm.Config{}, nil, nil)
-	gchain, _ := core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), sdb, poolTestBlocks, txPoolTestChainGen)
+	blockchain, _ := core.NewBlockChain(sdb, nil, params.TestChainConfig, probeash.NewFullFaker(), vm.Config{}, nil, nil)
+	gchain, _ := core.GenerateChain(params.TestChainConfig, genesis, probeash.NewFaker(), sdb, poolTestBlocks, txPoolTestChainGen)
 	if _, err := blockchain.InsertChain(gchain); err != nil {
 		panic(err)
 	}
@@ -103,7 +103,7 @@ func TestTxPool(t *testing.T) {
 		discard: make(chan int, 1),
 		mined:   make(chan int, 1),
 	}
-	lightchain, _ := NewLightChain(odr, params.TestChainConfig, ethash.NewFullFaker(), nil)
+	lightchain, _ := NewLightChain(odr, params.TestChainConfig, probeash.NewFullFaker(), nil)
 	txPermanent = 50
 	pool := NewTxPool(params.TestChainConfig, lightchain, relay)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)

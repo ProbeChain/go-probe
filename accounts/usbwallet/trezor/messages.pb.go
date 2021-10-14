@@ -96,17 +96,17 @@ const (
 	MessageType_MessageType_DebugLinkMemory      MessageType = 111
 	MessageType_MessageType_DebugLinkMemoryWrite MessageType = 112
 	MessageType_MessageType_DebugLinkFlashErase  MessageType = 113
-	// Ethereum
-	MessageType_MessageType_EthereumGetPublicKey     MessageType = 450
-	MessageType_MessageType_EthereumPublicKey        MessageType = 451
-	MessageType_MessageType_EthereumGetAddress       MessageType = 56
-	MessageType_MessageType_EthereumAddress          MessageType = 57
-	MessageType_MessageType_EthereumSignTx           MessageType = 58
-	MessageType_MessageType_EthereumTxRequest        MessageType = 59
-	MessageType_MessageType_EthereumTxAck            MessageType = 60
-	MessageType_MessageType_EthereumSignMessage      MessageType = 64
-	MessageType_MessageType_EthereumVerifyMessage    MessageType = 65
-	MessageType_MessageType_EthereumMessageSignature MessageType = 66
+	// Probeum
+	MessageType_MessageType_ProbeumGetPublicKey     MessageType = 450
+	MessageType_MessageType_ProbeumPublicKey        MessageType = 451
+	MessageType_MessageType_ProbeumGetAddress       MessageType = 56
+	MessageType_MessageType_ProbeumAddress          MessageType = 57
+	MessageType_MessageType_ProbeumSignTx           MessageType = 58
+	MessageType_MessageType_ProbeumTxRequest        MessageType = 59
+	MessageType_MessageType_ProbeumTxAck            MessageType = 60
+	MessageType_MessageType_ProbeumSignMessage      MessageType = 64
+	MessageType_MessageType_ProbeumVerifyMessage    MessageType = 65
+	MessageType_MessageType_ProbeumMessageSignature MessageType = 66
 	// NEM
 	MessageType_MessageType_NEMGetAddress       MessageType = 67
 	MessageType_MessageType_NEMAddress          MessageType = 68
@@ -306,16 +306,16 @@ var MessageType_name = map[int32]string{
 	111: "MessageType_DebugLinkMemory",
 	112: "MessageType_DebugLinkMemoryWrite",
 	113: "MessageType_DebugLinkFlashErase",
-	450: "MessageType_EthereumGetPublicKey",
-	451: "MessageType_EthereumPublicKey",
-	56:  "MessageType_EthereumGetAddress",
-	57:  "MessageType_EthereumAddress",
-	58:  "MessageType_EthereumSignTx",
-	59:  "MessageType_EthereumTxRequest",
-	60:  "MessageType_EthereumTxAck",
-	64:  "MessageType_EthereumSignMessage",
-	65:  "MessageType_EthereumVerifyMessage",
-	66:  "MessageType_EthereumMessageSignature",
+	450: "MessageType_ProbeumGetPublicKey",
+	451: "MessageType_ProbeumPublicKey",
+	56:  "MessageType_ProbeumGetAddress",
+	57:  "MessageType_ProbeumAddress",
+	58:  "MessageType_ProbeumSignTx",
+	59:  "MessageType_ProbeumTxRequest",
+	60:  "MessageType_ProbeumTxAck",
+	64:  "MessageType_ProbeumSignMessage",
+	65:  "MessageType_ProbeumVerifyMessage",
+	66:  "MessageType_ProbeumMessageSignature",
 	67:  "MessageType_NEMGetAddress",
 	68:  "MessageType_NEMAddress",
 	69:  "MessageType_NEMSignTx",
@@ -502,16 +502,16 @@ var MessageType_value = map[string]int32{
 	"MessageType_DebugLinkMemory":                           111,
 	"MessageType_DebugLinkMemoryWrite":                      112,
 	"MessageType_DebugLinkFlashErase":                       113,
-	"MessageType_EthereumGetPublicKey":                      450,
-	"MessageType_EthereumPublicKey":                         451,
-	"MessageType_EthereumGetAddress":                        56,
-	"MessageType_EthereumAddress":                           57,
-	"MessageType_EthereumSignTx":                            58,
-	"MessageType_EthereumTxRequest":                         59,
-	"MessageType_EthereumTxAck":                             60,
-	"MessageType_EthereumSignMessage":                       64,
-	"MessageType_EthereumVerifyMessage":                     65,
-	"MessageType_EthereumMessageSignature":                  66,
+	"MessageType_ProbeumGetPublicKey":                      450,
+	"MessageType_ProbeumPublicKey":                         451,
+	"MessageType_ProbeumGetAddress":                        56,
+	"MessageType_ProbeumAddress":                           57,
+	"MessageType_ProbeumSignTx":                            58,
+	"MessageType_ProbeumTxRequest":                         59,
+	"MessageType_ProbeumTxAck":                             60,
+	"MessageType_ProbeumSignMessage":                       64,
+	"MessageType_ProbeumVerifyMessage":                     65,
+	"MessageType_ProbeumMessageSignature":                  66,
 	"MessageType_NEMGetAddress":                             67,
 	"MessageType_NEMAddress":                                68,
 	"MessageType_NEMSignTx":                                 69,

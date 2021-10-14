@@ -1,29 +1,29 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2015 The go-probeum Authors
+// This file is part of the go-probeum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
+// The go-probeum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// The go-probeum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/probeum/go-probeum/consensus"
+	"github.com/probeum/go-probeum/core/state"
+	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/trie"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and
@@ -50,7 +50,7 @@ func NewBlockValidator(config *params.ChainConfig, blockchain *BlockChain, engin
 // header's transaction and uncle roots. The headers are assumed to be already
 // validated at this point.
 func (v *BlockValidator) ValidateBody(block *types.Block) error {
-	// Check whether the block's known, and if not, that it's linkable
+	// Check whprobeer the block's known, and if not, that it's linkable
 	if v.bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
 		return ErrKnownBlock
 	}
