@@ -93,14 +93,15 @@ var (
 	// DposWitnessNumber is the total number of dpos witness nodes.
 	//@todo just for oneNode test
 	DposWitnessNumber uint = 5
-	//DposWitnessNumber = 64
-	// number of witness to product stabilizing block
-	MostDposWitness uint = DposWitnessNumber*2/3 + 1
-	// the least number of witness to product block
-	LeastDposWitness uint = DposWitnessNumber*1/3 + 1
+
+	// MostDposWitness number of witness to product stabilizing block
+	MostDposWitness = DposWitnessNumber*2/3 + 1
+
+	// LeastDposWitness the least number of witness to product block
+	LeastDposWitness = DposWitnessNumber*1/3 + 1
 
 	// dposAckChanSize is the size of channel listening to DposAckEvent.
-	dposAckChanSize uint = DposWitnessNumber * 10
+	dposAckChanSize = DposWitnessNumber * 10
 )
 
 // environment is the worker's current environment and holds all of the current state information.
@@ -229,12 +230,11 @@ type worker struct {
 
 func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, powEngine consensus.Engine, eth Backend, mux *event.TypeMux,
 	isLocalBlock func(*types.Block) bool, init bool) *worker {
-	if 0 < chainConfig.Greatri.DposNodeNumber {
-		DposWitnessNumber = chainConfig.Greatri.DposNodeNumber
-		MostDposWitness = DposWitnessNumber*2/3 + 1
-		LeastDposWitness = DposWitnessNumber*1/3 + 1
-		dposAckChanSize = DposWitnessNumber * 10
-	}
+	chain := eth.BlockChain()
+	number := chain.CurrentHeader().Number.Uint64()
+	size := chain.GetDposAccountSize(number)
+	log.Info("UpdateDposParams newWorker", "blockNumber", number, "size", size)
+	updateDposParams(size)
 
 	worker := &worker{
 		config:             config,
@@ -244,7 +244,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		powEngine:          powEngine,
 		eth:                eth,
 		mux:                mux,
-		chain:              eth.BlockChain(),
+		chain:              chain,
 		isLocalBlock:       isLocalBlock,
 		localUncles:        make(map[common.Hash]*types.Block),
 		remoteUncles:       make(map[common.Hash]*types.Block),
@@ -1195,4 +1195,12 @@ func calcDifficulty(time uint64, parent *types.Header) *big.Int {
 		x.Set(big.NewInt(minDifficulty))
 	}
 	return x
+}
+
+// updateDposParams
+func updateDposParams(dposSize int) {
+	DposWitnessNumber = uint(dposSize)
+	MostDposWitness = DposWitnessNumber*2/3 + 1
+	LeastDposWitness = DposWitnessNumber*1/3 + 1
+	dposAckChanSize = DposWitnessNumber * 10
 }

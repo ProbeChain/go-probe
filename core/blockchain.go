@@ -2752,6 +2752,11 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
 	return accounts
 }
 
+// GetDposAccountSize get dpos nodes size
+func (bc *BlockChain) GetDposAccountSize(number uint64) int {
+	return len(bc.GetDposAccounts(number))
+}
+
 // GetNextDposAccounts get next dpos nodes
 func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 	index := (number + confirmDpos) / bc.chainConfig.DposConfig.Epoch
@@ -2771,6 +2776,11 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 	}
 
 	return accounts
+}
+
+// GetNextDposAccountSize get next dpos nodes size
+func (bc *BlockChain) GetNextDposAccountSize(number uint64) int {
+	return len(bc.GetNextDposAccounts(number))
 }
 
 // GetSealDposAccount get seal dpos account
