@@ -3,6 +3,7 @@ package state
 import (
 	"container/list"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"strings"
 	"sync"
 )
@@ -61,6 +62,21 @@ func (this SortedLinkedList) remove(value interface{}) {
 	for e := this.List.Front(); e != nil; e = next {
 		next = e.Next()
 		if strings.EqualFold(e.Value.(DPoSCandidateAccount).Owner.Hex(), value.(DPoSCandidateAccount).Owner.Hex()) {
+			this.Remove(e)
+		}
+	}
+}
+
+func (this SortedLinkedList) removeByHeigh(heigh *big.Int) {
+	defer this.lock.Unlock()
+	this.lock.Lock()
+	if this.List.Len() == 0 {
+		return
+	}
+	var next *list.Element
+	for e := this.List.Front(); e != nil; e = next {
+		next = e.Next()
+		if e.Value.(DPoSCandidateAccount).Height.Cmp(heigh) < 0 {
 			this.Remove(e)
 		}
 	}

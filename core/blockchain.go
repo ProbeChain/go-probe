@@ -445,7 +445,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, chainConfig *par
 	dposHash := stateDB.GetStateDbTrie().GetTallHash()[6]
 	log.Info("NewBlockChain dPosHash", "dPosHash", dposHash.Hex())
 	epoch := chainConfig.DposConfig.Epoch
-	dposNo := number + 1 - (number + 1%epoch)
+	dposNo := number + 1 - (number+1)%epoch
 	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	data, _ := db.Get(dposNodesKey)
 	//if nil != data {
@@ -2626,7 +2626,7 @@ func (bc *BlockChain) writeDposNodes() {
 	} else {
 		epoch = bc.chainConfig.DposConfig.Epoch
 	}
-	dposNo := number + 1 - (number + 1%epoch)
+	dposNo := number + 1 - (number+1)%epoch
 	if number == 0 || (number+1)%epoch == 0 {
 		db := bc.stateCache.TrieDB().DiskDB()
 		stateDB, _ := bc.StateAt(block.Root())
@@ -2659,7 +2659,7 @@ func (bc *BlockChain) GetDposNodes(dposHash common.Hash) ([]common.DPoSAccount, 
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
 	epoch := bc.chainConfig.DposConfig.Epoch
-	dposNo := number + 1 - (number + 1%epoch)
+	dposNo := number + 1 - (number+1)%epoch
 	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	data, err := bc.stateCache.TrieDB().GetDposNodes(dposNodesKey)
 	if err != nil {

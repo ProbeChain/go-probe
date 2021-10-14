@@ -168,6 +168,7 @@ type LossAccount struct {
 type DPoSCandidateAccount struct {
 	Enode         common.DposEnode
 	Owner         common.Address
+	Height        *big.Int
 	Weight        *big.Int
 	DelegateValue *big.Int
 }

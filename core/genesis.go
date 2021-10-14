@@ -219,6 +219,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, genesis *Genesis, override
 		return newcfg, common.Hash{}, err
 	}
 	storedcfg := rawdb.ReadChainConfig(db, stored)
+	globalconfig.Epoch = storedcfg.DposConfig.Epoch
 	if storedcfg == nil {
 		// 读取失败，说明创世区块写入被中断
 		log.Warn("Found genesis block without chain config")
@@ -278,7 +279,7 @@ func (g *Genesis) ToBlock(db ethdb.Database) *types.Block {
 	if g.DposConfig != nil {
 		number := g.Number
 		epoch := g.DposConfig.Epoch
-		dposNo := number + 1 - (number + 1%epoch)
+		dposNo := number + 1 - (number+1)%epoch
 		if number == 0 || (number+1)%epoch == 0 {
 			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
 				log.Info("ToBlock roothash ", "hash", s.Hex())

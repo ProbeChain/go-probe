@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/probe"
 	"github.com/ethereum/go-ethereum/p2p/enode"
+	"math/big"
 	"net"
 	"testing"
 )
@@ -270,14 +271,14 @@ func TestStrToHex(*testing.T) {
 
 	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str)))
 
-	str2 := "{\"endNode\":\"192.169.1.3\",\"ip\":\"192.169.1.3\",\"port\":\"1307\"}"
+	str2 := "{\"enode\":\"04b25a8fea2237b65596130a6a3e8b32ca512ddb3525ba127f20e7a4f87c367e3719745a3e741fa76e3e5c7d15280e5df531bb552166fae6a7641d3f320bbecda9\",\"ip\":\"192.169.1.3\",\"port\":\"1307\"}"
 	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str2)))
 
-	var emptyCodeHash = crypto.Keccak256(nil)
+	/*var emptyCodeHash = crypto.Keccak256(nil)
 	fmt.Println("address ", hexutil.Encode(emptyCodeHash))
 
 	var emptyCodeHash2 = probe.Keccak256(nil)
-	fmt.Println("address ", hexutil.Encode(emptyCodeHash2))
+	fmt.Println("address ", hexutil.Encode(emptyCodeHash2))*/
 }
 
 func TestPrivateKey(*testing.T) {
@@ -324,4 +325,11 @@ func TestPrintDposNode(*testing.T) {
 	n := enode.NewV4(&privateKey.PublicKey, addr.IP, netPort, addr.Port)
 	fmt.Println("address-nodeKey:", n.URLv4())
 
+}
+
+func TestBigIntAdd(*testing.T) {
+	a := big.NewInt(1)
+	b := big.NewInt(2)
+	a.Add(a, b)
+	fmt.Printf("a = %v    b = %v   a = %v\n", a, b, a)
 }

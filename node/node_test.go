@@ -17,8 +17,12 @@
 package node
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/probe"
+	"github.com/ethereum/go-ethereum/log"
 	"io"
 	"io/ioutil"
 	"net"
@@ -28,7 +32,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -37,7 +40,7 @@ import (
 )
 
 var (
-	testNodeKey, _ = crypto.GenerateKey()
+	testNodeKey, _ = probe.GenerateKey()
 )
 
 func testNodeConfig() *Config {
@@ -641,4 +644,25 @@ func containsAPI(stackAPIs []rpc.API, api rpc.API) bool {
 		}
 	}
 	return false
+}
+
+func TestCloseTrackingDB_Close(t *testing.T) {
+	data := "0x7b22656e6f6465223a2230346632616434373465373338323934373332653562336463376630383137396461363865313864373264666162663464633731333638663865643238653066666164613931646464653763303237633438643264326438376636383833663032626464313831636230636338373438363438633566313134616231326264653037222c226970223a223132372e302e302e31222c22706f7274223a223330303031227d"
+	voteData, err := hexutil.Decode(data)
+	if err != nil {
+		fmt.Printf("voteAccount parameter data error")
+	}
+	var dposMap map[string]interface{}
+	err = json.Unmarshal(voteData, &dposMap)
+	if err != nil {
+		fmt.Printf("voteAccount parameter data error")
+	}
+	if nil == dposMap["enode"] || nil == dposMap["ip"] || nil == dposMap["port"] {
+		fmt.Printf("voteAccount parameter data error")
+	}
+	remoteEnode := dposMap["enode"].(string)
+	log.Info("verification_args", "setDefaultsOfApplyToBeDPoSNode remoteEnode lengt error ", len(remoteEnode))
+	if len(remoteEnode) != 130 {
+		fmt.Printf("voteAccount parameter data error")
+	}
 }

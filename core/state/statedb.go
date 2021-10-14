@@ -702,7 +702,7 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 // GetDposAccounts retrieves a dpos list
 func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
 	dposHash := GetHash(root, s.Database())[6]
-	dposNo := number + 1 - (number + 1%epoch)
+	dposNo := number + 1 - (number+1)%epoch
 	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	nodes, _ := s.Database().TrieDB().GetDposNodes(dposNodesKey)
 	length := len(nodes)
@@ -1871,6 +1871,11 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = context.From
 	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
+	number := context.Height
+	epoch := new(big.Int).SetUint64(globalconfig.Epoch)
+	dposNo := number.Add(number, epoch)
+	stateObject.dposCandidateAccount.Height = dposNo
+	s.dposList.dPoSCandidateAccounts.removeByHeigh(context.Height)
 	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
 }
 
