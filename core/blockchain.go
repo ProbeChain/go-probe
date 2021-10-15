@@ -32,6 +32,7 @@ import (
 
 	"github.com/probeum/go-probeum/p2p"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/mclock"
 	"github.com/probeum/go-probeum/common/prque"
@@ -41,14 +42,13 @@ import (
 	"github.com/probeum/go-probeum/core/state/snapshot"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/metrics"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 var (
@@ -325,9 +325,9 @@ type BlockChain struct {
 	cacheConfig *CacheConfig        // Cache configuration for pruning
 
 	db        probedb.Database // Low level persistent database to store final content in
-	snaps     *snapshot.Tree // Snapshot tree for fast trie leaf access
-	triegc    *prque.Prque   // Priority queue mapping block numbers to tries to gc
-	gcproc    time.Duration  // Accumulates canonical block processing for trie dumping
+	snaps     *snapshot.Tree   // Snapshot tree for fast trie leaf access
+	triegc    *prque.Prque     // Priority queue mapping block numbers to tries to gc
+	gcproc    time.Duration    // Accumulates canonical block processing for trie dumping
 	p2pServer *p2p.Server
 
 	// txLookupLimit is the maximum number of blocks from head whose tx indices
@@ -2792,7 +2792,7 @@ func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
 		num = number - 1
 	}
 	accounts := bc.GetDposAccounts(num)
-	if accounts != nil {
+	if len(accounts) != 0 {
 		size := uint64(len(accounts))
 		return accounts[num%bc.chainConfig.DposConfig.Epoch%size]
 	}
