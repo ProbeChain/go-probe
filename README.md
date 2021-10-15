@@ -49,7 +49,8 @@ make all
 | :-----------: | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |  **`gprobe`**   | Our main Probeum CLI client.    |
 |   [ProbeBrowser](https://scan.probechain.org/home)    | A BlockChain Browser, which can be used  for `gprobe`. [how to use ProbeBrowser](https://scan.probechain.org/help.html) |
-|  **`web3.js`**   |  Interact with probe  [download]()   |
+|  **`web3.js`**   |  Interact with probe  [download](https://doc.probechain.org/file/web3.min_1.0.js)   |
 
 ### Resources
 [Documentation](https://doc.probechain.org/)  probe's official technical documentation website.
+[GitHub](https://github.com/ProbeChain/go-probe)
