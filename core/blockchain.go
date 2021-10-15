@@ -32,6 +32,7 @@ import (
 
 	"github.com/probeum/go-probeum/p2p"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/mclock"
 	"github.com/probeum/go-probeum/common/prque"
@@ -41,14 +42,13 @@ import (
 	"github.com/probeum/go-probeum/core/state/snapshot"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/metrics"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 var (
@@ -325,9 +325,9 @@ type BlockChain struct {
 	cacheConfig *CacheConfig        // Cache configuration for pruning
 
 	db        probedb.Database // Low level persistent database to store final content in
-	snaps     *snapshot.Tree // Snapshot tree for fast trie leaf access
-	triegc    *prque.Prque   // Priority queue mapping block numbers to tries to gc
-	gcproc    time.Duration  // Accumulates canonical block processing for trie dumping
+	snaps     *snapshot.Tree   // Snapshot tree for fast trie leaf access
+	triegc    *prque.Prque     // Priority queue mapping block numbers to tries to gc
+	gcproc    time.Duration    // Accumulates canonical block processing for trie dumping
 	p2pServer *p2p.Server
 
 	// txLookupLimit is the maximum number of blocks from head whose tx indices
@@ -1675,17 +1675,19 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	if err := blockBatch.Write(); err != nil {
 		log.Crit("Failed to write block into disk", "err", err)
 	}
+
+	bc.writeDposNodes(state)
+
 	// Commit all cached state changes into underlying memory database.
 	root, err := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
 	if err != nil {
 		return NonStatTy, err
 	}
-	// 更新root映射
+
 	hashes := state.GetStateDbTrie().GetTallHash()
 	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
 	log.Info(" Writing dpos nodes with block")
-	bc.writeDposNodes()
 
 	bc.updateP2pDposNodes()
 
@@ -2615,7 +2617,7 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 	return 0, err
 }
 
-func (bc *BlockChain) writeDposNodes() {
+func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
 	//epoch := common.If(bc.dposConfig == nil, uint64(5), bc.dposConfig.Epoch).(uint64)
@@ -2628,13 +2630,13 @@ func (bc *BlockChain) writeDposNodes() {
 	}
 	dposNo := number + 1 - (number+1)%epoch
 	if number == 0 || (number+1)%epoch == 0 {
-		db := bc.stateCache.TrieDB().DiskDB()
-		stateDB, _ := bc.StateAt(block.Root())
-
+		db := stateDB.Database().TrieDB().DiskDB()
 		dPosList := stateDB.GetCurrentDpostList()
 		stateDB.ChangDpostAccount(dPosList)
+		log.Info("writeDposNodes preDPosHash", "block_number", number, "preDPosHash", state.BuildHashForDPos(stateDB.GetOldDpostList()))
+		log.Info("writeDposNodes newDPosHash", "newDPosHash", state.BuildHashForDPos(dPosList))
 		dPosHash := state.BuildHashForDPos(dPosList)
-		log.Info("writeDposNodes dPosHash", "dPosHash", dPosHash.Hex())
+		log.Info("writeDposNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
 		for _, s := range stateDB.GetStateDbTrie().GetTallHash() {
 			log.Info("NewBlockChain roothash ", "hash", s.Hex())
 		}

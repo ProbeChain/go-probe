@@ -24,9 +24,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/log"
-	"github.com/google/go-cmp/cmp"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
@@ -46,7 +46,7 @@ const (
 	AddressChecksumLen = 4
 	//DposEnodeLength is the cheche length of dpos node
 	DposEnodeLength = 256
-	DposNodeLength  = 16
+	DposNodeLength  = 7
 )
 
 var (

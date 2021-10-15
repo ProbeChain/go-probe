@@ -27,6 +27,7 @@ import (
 	"github.com/probeum/go-probeum/probedb"
 	"math/big"
 	"net"
+	"regexp"
 	"sort"
 	"time"
 
@@ -1147,6 +1148,7 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 func (s *StateDB) Copy() *StateDB {
 	// Copy all the basic fields, initialize the memory ones
 	var regularTrie, pnsTrie, digitalTrie, contractTrie, authorizeTrie, lossTrie Trie
+	var dbDposList dposList
 	if s.trie.regularTrie != nil {
 		regularTrie = s.db.CopyTrie(s.trie.regularTrie)
 	}
@@ -1165,6 +1167,9 @@ func (s *StateDB) Copy() *StateDB {
 	if s.trie.lossTrie != nil {
 		lossTrie = s.db.CopyTrie(s.trie.lossTrie)
 	}
+	if s.dposList != nil {
+		dbDposList = s.copyDposList()
+	}
 	state := &StateDB{
 		db: s.db,
 		//trie:                s.db.CopyTrie(s.trie),
@@ -1181,6 +1186,7 @@ func (s *StateDB) Copy() *StateDB {
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
+		dposList:            &dbDposList,
 		markLossAccounts:    make(map[common.Hash][]common.Address, len(s.markLossAccounts)),
 		refund:              s.refund,
 		logs:                make(map[common.Hash][]*types.Log, len(s.logs)),
@@ -1961,6 +1967,26 @@ func (s *StateDB) GetStateDbTrie() *TotalTrie {
 	return &s.trie
 }
 
+func (s *StateDB) InitDpostList(dposList []common.DPoSAccount) {
+	for _, dposAccount := range dposList {
+		var dposCandidateAccount DPoSCandidateAccount
+		dposCandidateAccount.Enode = dposAccount.Enode
+		dposCandidateAccount.Owner = dposAccount.Owner
+		dposEnode := bytes.Trim(dposAccount.Enode[:], "\x00")
+		dposStr := string(dposEnode[:])
+		reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
+		remoteIp := reg.FindAllString(string(dposStr), -1)[0]
+		dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
+		number := new(big.Int).SetUint64(0)
+		epoch := new(big.Int).SetUint64(globalconfig.Epoch)
+		dposNo := number.Add(number, epoch)
+		dposCandidateAccount.Height = dposNo
+		dposCandidateAccount.DelegateValue = number
+		s.dposList.dPoSCandidateAccounts.PutOnTop(dposCandidateAccount)
+	}
+
+}
+
 func (s *StateDB) GetCurrentDpostList() []common.DPoSAccount {
 	/*var dPoSAccounts = make([]common.DPoSAccount, s.dPoSCandidateList.Limit)
 	i := 0
@@ -2010,4 +2036,9 @@ func (s *StateDB) IntermediateRootForDPosCandidate(dPosCandidateHash common.Hash
 
 func (s *StateDB) PrintTrie() {
 	//s.trie.Print()
+}
+
+func (s *StateDB) copyDposList() dposList {
+	cpy := *s.dposList
+	return cpy
 }
