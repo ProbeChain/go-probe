@@ -623,7 +623,7 @@ func (f *BlockFetcher) loop() {
 							continue
 						}
 						if uncleHash == (common.Hash{}) {
-							uncleHash = types.CalcUncleHash(task.uncles[i])
+							uncleHash = types.CalcPowAnswerUncleHash(task.powAnswerUncles[i])
 						}
 						if uncleHash != announce.header.UncleHash {
 							continue
