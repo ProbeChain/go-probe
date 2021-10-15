@@ -77,9 +77,9 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 		}
 	}
 	// If were post-byzantium, pre-load trie nodes for the final root hash
-	if byzantium {
-		statedb.IntermediateRoot(true)
-	}
+	//if byzantium {
+	//	statedb.IntermediateRoot(true)
+	//}
 }
 
 // precacheTransaction attempts to apply a transaction to the given state database
