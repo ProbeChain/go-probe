@@ -52,4 +52,4 @@ make all
 |  **`web3.js`**   |  Interact with probe  [download]()   |
 
 ### Resources
-[Documentation](doc.probechain.com.)  probe's official technical documentation website.
+[Documentation](http://doc.probechain.org)  probe's official technical documentation website.
