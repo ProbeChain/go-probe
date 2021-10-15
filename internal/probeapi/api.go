@@ -34,8 +34,8 @@ import (
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/common/math"
 	"github.com/probeum/go-probeum/consensus/clique"
-	"github.com/probeum/go-probeum/consensus/probeash"
 	"github.com/probeum/go-probeum/consensus/misc"
+	"github.com/probeum/go-probeum/consensus/probeash"
 	"github.com/probeum/go-probeum/core"
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
@@ -1785,24 +1785,6 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // SendTransaction creates a transaction for the given argument, sign it and submit it to the
 // transaction pool.
 func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args TransactionArgs) (common.Hash, error) {
-
-	fmt.Printf("current blockNumber:%s\n", s.b.CurrentBlock().Number())
-	// Look up the wallet containing the requested signer
-	switch uint8(*args.BizType) {
-	case common.Register:
-		if args.New != nil {
-			fmt.Printf("from:%s,new:%s\n", args.From.String(), args.New.String())
-		}
-		if args.AccType != nil {
-			fmt.Printf("from:%s,accType:%s\n", args.From.String(), args.AccType.String())
-		}
-
-	case common.Transfer:
-		fmt.Printf("from:%s,to:%s\n", args.From.String(), args.To.String())
-	}
-	if args.To != nil {
-		fmt.Printf("SendTransaction from: %s, to:%s\n", args.From.String(), args.To.String())
-	}
 	from := accounts.Account{Address: args.from()}
 	wallet, err := s.b.AccountManager().Find(from)
 	if err != nil {
@@ -1814,10 +1796,6 @@ func (s *PublicTransactionPoolAPI) SendTransaction(ctx context.Context, args Tra
 		// the same nonce to multiple accounts.
 		s.nonceLock.LockAddr(args.from())
 		defer s.nonceLock.UnlockAddr(args.from())
-	}
-
-	if args.Data != nil {
-		fmt.Printf("args data：%s\n", args.Data.String())
 	}
 
 	// Set some sanity defaults and terminate on failure

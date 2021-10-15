@@ -135,7 +135,6 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	receipt.BlockHash = blockHash
 	receipt.BlockNumber = blockNumber
 	receipt.TransactionIndex = uint(statedb.TxIndex())
-	fmt.Printf("txHash: %s\n", receipt.TxHash.String())
 	return receipt, err
 }
 
