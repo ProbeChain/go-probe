@@ -33,9 +33,9 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
 )
@@ -187,7 +187,8 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	// but the corresponding state is missing.
 	// 获取创世块的头部信息
 	header := rawdb.ReadHeader(db, stored, 0)
-	if _, err := state.New(header.Root, state.NewDatabaseWithConfig(db, nil), nil); err != nil {
+	stateDB, err := state.New(header.Root, state.NewDatabaseWithConfig(db, nil), nil)
+	if err != nil {
 		if genesis == nil {
 			genesis = DefaultGenesisBlock()
 		}
@@ -220,6 +221,8 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	}
 	storedcfg := rawdb.ReadChainConfig(db, stored)
 	globalconfig.Epoch = storedcfg.DposConfig.Epoch
+
+	stateDB.InitDpostList(storedcfg.DposConfig.DposList)
 	if storedcfg == nil {
 		// 读取失败，说明创世区块写入被中断
 		log.Warn("Found genesis block without chain config")
