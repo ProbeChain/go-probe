@@ -86,7 +86,7 @@ const (
 	staleThreshold = 7
 
 	// min diffcult
-	minDifficulty = 1000000
+	minDifficulty = 2000000
 )
 
 var (
