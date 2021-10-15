@@ -34,13 +34,13 @@ make gprobe
 make all
 ```
 
-[Detailed installation instructions]()
+[Detailed installation instructions](https://doc.probechain.org/deploy.html#private_chain_build)
 
 ### How to run gprobe
 
 > Before run `gprobe`,you have to read the command line flags, and use command to run the `gprobe`.
 
-> Because there are too many command line flags, you can read command line flags in [command line flags]().
+> Because there are too many command line flags, you can read command line flags in [command line flags(3.Starting up your member nodes)](https://doc.probechain.org/deploy.html).
 
 
 ### Auxiliary tools
