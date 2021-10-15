@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
 	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
+	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -86,7 +86,7 @@ const (
 	staleThreshold = 7
 
 	// min diffcult
-	minDifficulty = 5000000
+	minDifficulty = 1000000
 )
 
 var (

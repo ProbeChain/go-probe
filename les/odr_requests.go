@@ -25,9 +25,9 @@ import (
 	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/light"
 	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
 )
@@ -119,7 +119,7 @@ func (r *BlockRequest) Validate(db probedb.Database, msg *Msg) error {
 	if r.Header.TxHash != types.DeriveSha(types.Transactions(body.Transactions), trie.NewStackTrie(nil)) {
 		return errTxHashMismatch
 	}
-	if r.Header.UncleHash != types.CalcUncleHash(body.Uncles) {
+	if r.Header.UncleHash != types.CalcPowAnswerUncleHash(body.PowAnswerUncles) {
 		return errUncleHashMismatch
 	}
 	// Validations passed, encode and store RLP
