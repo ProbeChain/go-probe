@@ -698,7 +698,6 @@ func (s *stateObject) SubBalance(amount *big.Int) {
 	if amount.Sign() == 0 {
 		return
 	}
-	fmt.Printf("SubBalance: %s, %s\n", s.address, amount)
 	s.SetBalance(new(big.Int).Sub(s.Balance(), amount))
 }
 
