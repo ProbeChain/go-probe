@@ -4,7 +4,7 @@
 >***three characteristics about Probe***
 
 >>**Efficiency and fairness**
->>+ High TPS
+>>+ <font color=blue>High TPS<font>
 >>+ Fast confirmation
 >>+ Fairness
 >
