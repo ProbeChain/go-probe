@@ -52,12 +52,12 @@ var (
 )
 
 const (
-	GENERAL_TRIE_DEPTH    = 10
-	PNS_TRIE_DEPTH        = 10
-	ASSET_TRIE_DEPTH      = 10
-	CONTRACT_TRIE_DEPTH   = 10
-	AUTHORIZES_TRIE_DEPTH = 10
-	LOSE_TRIE_DEPTH       = 10
+	GENERAL_TRIE_DEPTH    = 20
+	PNS_TRIE_DEPTH        = 15
+	ASSET_TRIE_DEPTH      = 15
+	CONTRACT_TRIE_DEPTH   = 15
+	AUTHORIZES_TRIE_DEPTH = 15
+	LOSE_TRIE_DEPTH       = 15
 	GENERAL_TRIE_PATH     = "/trie/generalStateTrie"
 	PNS_TRIE_PATH         = "/trie/pnsStateTrie"
 	ASSET_TRIE_PATH       = "/trie/assetStateTrie"
