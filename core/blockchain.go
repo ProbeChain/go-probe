@@ -3023,12 +3023,39 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 	uncles := maxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
-	for uncles >= 1 {
-		ans = append(ans, bc.powAnswers.List(big.NewInt(0).Sub(number, big.NewInt(int64(uncles))))...)
+	chainAns := make([]*types.PowAnswer, 0, uncles*2)
+	ret := make([]*types.PowAnswer, 0, uncles*2)
+
+	for uncles >= 0 {
+		curNumber := big.NewInt(0).Sub(number, big.NewInt(int64(uncles)))
 		uncles -= 1
+		if curNumber.Int64() <= 0 {
+			continue
+		}
+		curBlock := bc.GetBlockByNumber(curNumber.Uint64())
+		curAns := curBlock.PowAnswers()
+		curUncleAns := curBlock.PowAnswerUncles()
+		chainAns = append(chainAns, curAns...)
+		chainAns = append(chainAns, curUncleAns...)
+		chainAns = append(chainAns, bc.GetLatestPowAnswer(number))
+
+		ans = append(ans, bc.powAnswers.List(curNumber)...)
 	}
-	// @todo 叔块答案应该排除已上链的答案
-	return ans
+
+	for _, ans1 := range ans {
+		find := false
+		for _, ans2 := range chainAns {
+			if ans1.MixDigest == ans2.MixDigest {
+				find = true
+				break
+			}
+		}
+		if !find {
+			ret = append(ret, ans1)
+		}
+	}
+
+	return ret
 }
 
 // GetDposAck get a dpos ack list

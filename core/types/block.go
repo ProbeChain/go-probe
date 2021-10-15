@@ -402,6 +402,7 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 func (b *Block) Uncles() []*Header             { return b.uncles }
 func (b *Block) Transactions() Transactions    { return b.transactions }
 func (b *Block) PowAnswerUncles() []*PowAnswer { return b.powAnswerUncles }
+func (b *Block) PowAnswers() []*PowAnswer      { return b.header.PowAnswers }
 func (b *Block) DposAcks() []*DposAck          { return b.dposAcks }
 
 func (b *Block) Transaction(hash common.Hash) *Transaction {

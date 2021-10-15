@@ -123,10 +123,11 @@ type BinaryTree struct {
 }
 
 type Account struct {
-	Nonce    uint64
-	Balance  *big.Int
-	Root     common.Hash // merkle root of the storage trie
-	CodeHash []byte
+	VoteAccount common.Address
+	VoteValue   *big.Int
+	LossType    uint8
+	Nonce       uint64
+	Value       *big.Int
 }
 
 // Trie is a Merkle Patricia Trie.
@@ -596,7 +597,7 @@ func (t *Trie) TryUpdate(key, value []byte) error {
 		}
 		data, err := toAccount(value)
 		if err == nil {
-			log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Balance.String(), "trieRoot", t.trieRoot().String(), "binaryRoot", t.binaryRoot().String())
+			log.Info("trie TryUpdate", "key", hexutils.BytesToHex(key), "nonce", data.Nonce, "balance", data.Value.String(), "trieRoot", t.trieRoot().String(), "binaryRoot", t.binaryRoot().String())
 		} else {
 			log.Warn("trie TryUpdate", "err", err)
 		}
@@ -1218,7 +1219,7 @@ func (bt *BinaryTree) print() {
 		for j, n := range node {
 			data, err := toAccount(n.Val)
 			if err == nil {
-				log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "nonce", data.Nonce, "balance", data.Balance.String())
+				log.Info("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "nonce", data.Nonce, "balance", data.Value.String())
 			} else {
 				log.Warn("BinaryPrint leafs", "i", i, "j", j, "Key", common.Bytes2Hex(n.Key), "Val", common.Bytes2Hex(n.Val))
 			}
