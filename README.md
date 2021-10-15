@@ -28,7 +28,7 @@
 make gprobe
 ```
 
-> r, to build the full suite of utilities:
+> or, to build the full suite of utilities:
 
 ```shell
 make all
