@@ -2630,30 +2630,26 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	}
 	dposNo := number + 1 - (number+1)%epoch
 	if number == 0 || (number+1)%epoch == 0 {
-		db := stateDB.Database().TrieDB().DiskDB()
+
 		dPosList := stateDB.GetCurrentDpostList()
 		stateDB.ChangDpostAccount(dPosList)
 		log.Info("writeDposNodes preDPosHash", "block_number", number, "preDPosHash", state.BuildHashForDPos(stateDB.GetOldDpostList()))
 		log.Info("writeDposNodes newDPosHash", "newDPosHash", state.BuildHashForDPos(dPosList))
 		dPosHash := state.BuildHashForDPos(dPosList)
 		log.Info("writeDposNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
-		for _, s := range stateDB.GetStateDbTrie().GetTallHash() {
-			log.Info("NewBlockChain roothash ", "hash", s.Hex())
-		}
+
 		rootHash := stateDB.IntermediateRootForDPos(dPosHash)
 		log.Info("writeDposNodes rootHash", "rootHash", rootHash.Hex())
-		//data, _ := json.Marshal(dPosList)
+
 		data, err := rlp.EncodeToBytes(dPosList)
 		if err != nil {
 			log.Error("dpos Should not error: %v", err)
 		}
-		batch := bc.db.NewBatch()
 
 		dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
-		if err := db.Put(dposNodesKey, data); err != nil {
+		if err := bc.db.Put(dposNodesKey, data); err != nil {
 			log.Crit("Failed to store dposNodesList", "err", err)
 		}
-		batch.Write()
 	}
 }
 
