@@ -1695,7 +1695,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"logs":              receipt.Logs,
 		"logsBloom":         receipt.Bloom,
 		"type":              hexutil.Uint(tx.Type()),
-		"data":              string(tx.Data()),
+		"data":              hexutil.Bytes(tx.Data()),
 	}
 
 	//不同业务类型展示不同字段
@@ -1707,7 +1707,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	case common.Transfer:
 	case common.ContractCall:
 	case common.SendLossReport:
-		fields["mark"] = string(tx.Mark())
+		fields["mark"] = hexutil.Bytes(tx.Mark())
 	case common.ModifyLossType:
 		fields["lossType"] = tx.LossType()
 	}
