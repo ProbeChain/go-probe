@@ -38,9 +38,9 @@ make all
 
 ### How to run gprobe
 
-> Before run `gprobe`,you have to read the command line flags, and use commend to run the `gprobe`.
+> Before run `gprobe`,you have to read the command line flags, and use command to run the `gprobe`.
 
-> Because there are too many commend command line flags, you can read commend line flags in [commend line flags]().(此处需要添加gprobe启动命令参数的存放网页) 
+> Because there are too many command line flags, you can read command line flags in [command line flags]().
 
 
 ### Auxiliary tools
