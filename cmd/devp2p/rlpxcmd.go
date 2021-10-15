@@ -18,10 +18,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"net"
 
 	"github.com/probeum/go-probeum/cmd/devp2p/internal/probetest"
-	"github.com/probeum/go-probeum/crypto"
 	"github.com/probeum/go-probeum/internal/utesting"
 	"github.com/probeum/go-probeum/p2p"
 	"github.com/probeum/go-probeum/p2p/rlpx"
@@ -62,7 +62,7 @@ func rlpxPing(ctx *cli.Context) error {
 		return err
 	}
 	conn := rlpx.NewConn(fd, n.Pubkey())
-	ourKey, _ := crypto.GenerateKey()
+	ourKey, _ := probe.GenerateKey()
 	_, err = conn.Handshake(ourKey)
 	if err != nil {
 		return err
