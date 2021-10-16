@@ -652,7 +652,7 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc
 		epoch = s.b.ChainConfig().DposConfig.Epoch
 	}
 	dposHash := state.GetStateDbTrie().GetTallHash()[6]
-	dposNo := number + 1 - (number+1)%epoch
+	dposNo := number - (number)%epoch
 	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	return state.Database().TrieDB().GetDposNodes(dposNodesKey)
 }
