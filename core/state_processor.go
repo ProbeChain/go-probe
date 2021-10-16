@@ -20,7 +20,6 @@ import (
 	"fmt"
 	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
 	"github.com/probeum/go-probeum/crypto/probecrypto"
-	"github.com/probeum/go-probeum/log"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
