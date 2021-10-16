@@ -25,14 +25,15 @@
 >Then building `gprobe` requires both a Go (version 1.14 or later) and a C compiler.Once the dependencies are installed, run
 
 ```shell
-make gprobe
+sudo make gprobe
 ```
-
-> or, to build the full suite of utilities:
+<!--
+ > or, to build the full suite of utilities:
 
 ```shell
 make all
-```
+``` 
+-->
 
 [Detailed installation instructions](https://doc.probechain.org/deploy.html#private_chain_build)
 
