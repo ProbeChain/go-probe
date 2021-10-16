@@ -46,7 +46,7 @@ const (
 	AddressChecksumLen = 4
 	//DposEnodeLength is the cheche length of dpos node
 	DposEnodeLength = 256
-	DposNodeLength  = 3
+	DposNodeLength  = 7
 )
 
 var (
