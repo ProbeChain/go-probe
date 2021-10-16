@@ -84,9 +84,6 @@ const (
 
 	// staleThreshold is the maximum depth of the acceptable stale block.
 	staleThreshold = 7
-
-	// min diffcult
-	minDifficulty = 2000000
 )
 
 var (
@@ -102,6 +99,9 @@ var (
 
 	// dposAckChanSize is the size of channel listening to DposAckEvent.
 	dposAckChanSize = DposWitnessNumber * 10
+
+	// min diffcult
+	minDifficulty int64 = 5000000
 )
 
 // environment is the worker's current environment and holds all of the current state information.
@@ -157,7 +157,7 @@ type worker struct {
 	chainConfig *params.ChainConfig
 	engine      consensus.Engine
 	powEngine   consensus.Engine
-	probe         Backend
+	probe       Backend
 	chain       *core.BlockChain
 
 	// Feeds
@@ -242,7 +242,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		coinbase:           config.Probeerbase,
 		engine:             engine,
 		powEngine:          powEngine,
-		probe:                probe,
+		probe:              probe,
 		mux:                mux,
 		chain:              chain,
 		isLocalBlock:       isLocalBlock,
@@ -721,7 +721,7 @@ func (w *worker) taskLoop() {
 			}
 			var out bytes.Buffer
 			json.Indent(&out, bs, "", "\t")
-			log.Info("new block header in step 3:", out.String(), nil)
+			//log.Info("new block header in step 3:", out.String(), nil)
 
 			bs2, err2 := json.Marshal(block.Body())
 			if err2 != nil {
@@ -729,7 +729,7 @@ func (w *worker) taskLoop() {
 			}
 			var out2 bytes.Buffer
 			json.Indent(&out2, bs2, "", "\t")
-			log.Info("new block body in step 3:", out2.String(), nil)
+			//log.Info("new block body in step 3:", out2.String(), nil)
 
 			// Different block could share same sealhash, deep copy here to prevent write-write conflict.
 			var (
@@ -1162,6 +1162,16 @@ func totalFees(block *types.Block, receipts []*types.Receipt) *big.Float {
 		feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
 	}
 	return new(big.Float).Quo(new(big.Float).SetInt(feesWei), new(big.Float).SetInt(big.NewInt(params.Probeer)))
+}
+
+// SetMinDifficulty
+func (w *worker) SetMinDifficulty(difficulty int64) {
+	minDifficulty = difficulty
+}
+
+// GetMinDifficulty
+func (w *worker) GetMinDifficulty() int64 {
+	return minDifficulty
 }
 
 // calcDifficulty

@@ -28,10 +28,10 @@ import (
 	"github.com/probeum/go-probeum/core"
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/downloader"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
 )
 
 // Backend wraps all methods required for mining.
@@ -42,15 +42,15 @@ type Backend interface {
 
 // Config is the configuration parameters of mining.
 type Config struct {
-	Probeerbase  common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
-	Notify     []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages (only useful in probeash).
-	NotifyFull bool           `toml:",omitempty"` // Notify with pending block headers instead of work packages
-	ExtraData  hexutil.Bytes  `toml:",omitempty"` // Block extra data set by the miner
-	GasFloor   uint64         // Target gas floor for mined blocks.
-	GasCeil    uint64         // Target gas ceiling for mined blocks.
-	GasPrice   *big.Int       // Minimum gas price for mining a transaction
-	Recommit   time.Duration  // The time interval for miner to re-create mining work.
-	Noverify   bool           // Disable remote mining solution verification(only useful in probeash).
+	Probeerbase common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
+	Notify      []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages (only useful in probeash).
+	NotifyFull  bool           `toml:",omitempty"` // Notify with pending block headers instead of work packages
+	ExtraData   hexutil.Bytes  `toml:",omitempty"` // Block extra data set by the miner
+	GasFloor    uint64         // Target gas floor for mined blocks.
+	GasCeil     uint64         // Target gas ceiling for mined blocks.
+	GasPrice    *big.Int       // Minimum gas price for mining a transaction
+	Recommit    time.Duration  // The time interval for miner to re-create mining work.
+	Noverify    bool           // Disable remote mining solution verification(only useful in probeash).
 }
 
 // Miner creates blocks and searches for proof-of-work values.
@@ -58,7 +58,7 @@ type Miner struct {
 	mux       *event.TypeMux
 	worker    *worker
 	coinbase  common.Address
-	probe       Backend
+	probe     Backend
 	engine    consensus.Engine
 	powEngine consensus.Engine
 	exitCh    chan struct{}
@@ -68,7 +68,7 @@ type Miner struct {
 
 func New(probe Backend, config *Config, chainConfig *params.ChainConfig, mux *event.TypeMux, engine consensus.Engine, powEngine consensus.Engine, isLocalBlock func(block *types.Block) bool) *Miner {
 	miner := &Miner{
-		probe:       probe,
+		probe:     probe,
 		mux:       mux,
 		engine:    engine,
 		powEngine: powEngine,
@@ -227,4 +227,9 @@ func (miner *Miner) DisablePreseal() {
 // to the given channel.
 func (miner *Miner) SubscribePendingLogs(ch chan<- []*types.Log) event.Subscription {
 	return miner.worker.pendingLogsFeed.Subscribe(ch)
+}
+
+// SetMinDifficulty
+func (miner *Miner) SetMinDifficulty(difficulty int64) {
+	miner.worker.SetMinDifficulty(difficulty)
 }

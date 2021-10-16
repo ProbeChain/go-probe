@@ -44,6 +44,8 @@ const (
 var (
 	errNoMiningWork      = errors.New("no mining work available yet")
 	errInvalidSealResult = errors.New("invalid or stale proof-of-work solution")
+	// min diffcult
+	minDifficulty int64 = 5000000
 )
 
 // Seal implements consensus.Engine, attempting to find a nonce that satisfies
@@ -248,8 +250,9 @@ search:
 			// Compute the PoW value of this nonce
 			digest, result := hashimotoFull(dataset.dataset, hash, nonce)
 			if new(big.Int).SetBytes(result).Cmp(target) <= 0 {
-				//todo remove sleep before public
-				time.Sleep(time.Second * 2)
+				if minDifficulty <= 600 {
+					time.Sleep(time.Second * time.Duration(minDifficulty))
+				}
 
 				answer := types.PowAnswer{
 					Number:    header.Number,
@@ -273,6 +276,11 @@ search:
 	runtime.KeepAlive(dataset)
 }
 
+// SetMinDifficulty
+func (probeash *Probeash) SetMinDifficulty(difficulty int64) {
+	minDifficulty = difficulty
+}
+
 // This is the timeout for HTTP requests to notify external miners.
 const remoteSealerTimeout = 1 * time.Second
 
@@ -285,7 +293,7 @@ type remoteSealer struct {
 	cancelNotify context.CancelFunc // cancels all notification requests
 	reqWG        sync.WaitGroup     // tracks notification request goroutines
 
-	probeash       *Probeash
+	probeash     *Probeash
 	noverify     bool
 	notifyURLs   []string
 	results      chan<- *types.Block
@@ -331,7 +339,7 @@ type sealWork struct {
 func startRemoteSealer(probeash *Probeash, urls []string, noverify bool) *remoteSealer {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &remoteSealer{
-		probeash:       probeash,
+		probeash:     probeash,
 		noverify:     noverify,
 		notifyURLs:   urls,
 		notifyCtx:    ctx,
