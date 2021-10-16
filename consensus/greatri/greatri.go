@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/log"
 	"io"
 	"math/big"
 	"sync"
@@ -53,6 +54,10 @@ const (
 
 // Greatri proof-of-authority protocol constants.
 var (
+	BlockRewardPowMiner      = big.NewInt(3e+18)
+	BlockRewardDposSigner    = big.NewInt(1e+18)
+	BlockRewardPowMinerUncle = big.NewInt(5e+17)
+
 	epochLength = uint64(30000) // Default number of blocks after which to checkpoint and reset the pending votes
 
 	extraVanity = 32                     // Fixed number of extra-data prefix bytes reserved for signer vanity
@@ -169,7 +174,7 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Probeum testnet following the Ropsten attacks.
 type Greatri struct {
 	config *params.GreatriConfig // Consensus engine configuration parameters
-	db     probedb.Database        // Database to store and retrieve snapshot checkpoints
+	db     probedb.Database      // Database to store and retrieve snapshot checkpoints
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -508,8 +513,23 @@ func (c *Greatri) Prepare(chain consensus.ChainHeaderReader, header *types.Heade
 	return nil
 }
 
+func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, powUncles []*types.PowAnswer) {
+	log.Debug("enter accumulateRewards")
+	state.AddBalance(header.DposSigAddr, new(big.Int).Set(BlockRewardDposSigner))
+	for _, answer := range header.PowAnswers {
+		state.AddBalance(answer.Miner, new(big.Int).Set(BlockRewardPowMiner))
+	}
+	for _, answer := range powUncles {
+		state.AddBalance(answer.Miner, new(big.Int).Set(BlockRewardPowMinerUncle))
+	}
+}
+
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given.
+func (c *Greatri) DposFinalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, powUncles []*types.PowAnswer) {
+	accumulateRewards(chain.Config(), state, header, powUncles)
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+}
 func (c *Greatri) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))

@@ -18,7 +18,9 @@ package core
 
 import (
 	"fmt"
+	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
 	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/log"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -86,8 +88,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		receipts = append(receipts, receipt)
 		allLogs = append(allLogs, receipt.Logs...)
 	}
-	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles())
+
+	greatri, _ := p.engine.(*greatri2.Greatri)
+	greatri.DposFinalize(p.bc, header, statedb, block.Transactions(), block.PowAnswerUncles())
 
 	return receipts, allLogs, *usedGas, nil
 }
