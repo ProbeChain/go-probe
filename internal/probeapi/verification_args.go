@@ -219,9 +219,7 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
-	}
+	args.Value = new(hexutil.Big)
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
