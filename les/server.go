@@ -17,13 +17,11 @@
 package les
 
 import (
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"time"
 
 	"github.com/probeum/go-probeum/common/mclock"
 	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/les/flowcontrol"
 	vfs "github.com/probeum/go-probeum/les/vflux/server"
 	"github.com/probeum/go-probeum/light"
@@ -33,6 +31,8 @@ import (
 	"github.com/probeum/go-probeum/p2p/enode"
 	"github.com/probeum/go-probeum/p2p/enr"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rpc"
 )
 
@@ -60,7 +60,7 @@ type LesServer struct {
 	peers       *clientPeerSet
 	serverset   *serverSet
 	vfluxServer *vfs.Server
-	privateKey  *probe.PrivateKey
+	privateKey  *probecrypto.PrivateKey
 
 	// Flow control and capacity management
 	fcManager    *flowcontrol.ClientManager

@@ -19,7 +19,7 @@ package les
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"math/rand"
 	"net"
@@ -1286,7 +1286,7 @@ type clientPeerSet struct {
 	lock   sync.RWMutex
 	closed bool
 
-	privateKey                   *probe.PrivateKey
+	privateKey                   *probecrypto.PrivateKey
 	lastAnnounce, signedAnnounce announceData
 }
 
@@ -1358,7 +1358,7 @@ func (ps *clientPeerSet) len() int {
 
 // setSignerKey sets the signer key for signed announcements. Should be called before
 // starting the protocol handler.
-func (ps *clientPeerSet) setSignerKey(privateKey *probe.PrivateKey) {
+func (ps *clientPeerSet) setSignerKey(privateKey *probecrypto.PrivateKey) {
 	ps.privateKey = privateKey
 }
 

@@ -18,7 +18,7 @@ package bind
 
 import (
 	"errors"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -81,9 +81,9 @@ func NewKeyStoreTransactor(keystore *keystore.KeyStore, account accounts.Account
 // from a single private key.
 //
 // Deprecated: Use NewKeyedTransactorWithChainID instead.
-func NewKeyedTransactor(key *probe.PrivateKey) *TransactOpts {
+func NewKeyedTransactor(key *probecrypto.PrivateKey) *TransactOpts {
 	log.Warn("WARNING: NewKeyedTransactor has been deprecated in favour of NewKeyedTransactorWithChainID")
-	keyAddr := probe.PubkeyToAddress(key.PublicKey)
+	keyAddr := probecrypto.PubkeyToAddress(key.PublicKey)
 	signer := types.HomesteadSigner{}
 	return &TransactOpts{
 		From: keyAddr,
@@ -138,8 +138,8 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 
 // NewKeyedTransactorWithChainID is a utility method to easily create a transaction signer
 // from a single private key.
-func NewKeyedTransactorWithChainID(key *probe.PrivateKey, chainID *big.Int) (*TransactOpts, error) {
-	keyAddr := probe.PubkeyToAddress(key.PublicKey)
+func NewKeyedTransactorWithChainID(key *probecrypto.PrivateKey, chainID *big.Int) (*TransactOpts, error) {
+	keyAddr := probecrypto.PubkeyToAddress(key.PublicKey)
 	if chainID == nil {
 		return nil, ErrNoChainID
 	}

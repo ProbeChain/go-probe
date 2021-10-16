@@ -19,12 +19,12 @@ package v5wire
 import (
 	crand "crypto/rand"
 	"encoding/binary"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"time"
 
+	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/probeum/go-probeum/common/mclock"
 	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/hashicorp/golang-lru/simplelru"
 )
 
 const handshakeTimeout = time.Second
@@ -39,7 +39,7 @@ type SessionCache struct {
 	// hooks for overriding randomness.
 	nonceGen        func(uint32) (Nonce, error)
 	maskingIVGen    func([]byte) error
-	ephemeralKeyGen func() (*probe.PrivateKey, error)
+	ephemeralKeyGen func() (*probecrypto.PrivateKey, error)
 }
 
 // sessionID identifies a session or handshake.
@@ -71,7 +71,7 @@ func NewSessionCache(maxItems int, clock mclock.Clock) *SessionCache {
 		clock:           clock,
 		nonceGen:        generateNonce,
 		maskingIVGen:    generateMaskingIV,
-		ephemeralKeyGen: probe.GenerateKey,
+		ephemeralKeyGen: probecrypto.GenerateKey,
 	}
 }
 

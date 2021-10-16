@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"strings"
 	"time"
@@ -347,7 +347,7 @@ func fetchKeystore(am *accounts.Manager) (*keystore.KeyStore, error) {
 // ImportRawKey stores the given hex encoded ECDSA key into the key directory,
 // encrypting it with the passphrase.
 func (s *PrivateAccountAPI) ImportRawKey(privkey string, password string) (common.Address, error) {
-	key, err := probe.HexToECDSA(privkey)
+	key, err := probecrypto.HexToECDSA(privkey)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -521,7 +521,7 @@ func (s *PrivateAccountAPI) EcRecover(ctx context.Context, data, sig hexutil.Byt
 	if err != nil {
 		return common.Address{}, err
 	}
-	return probe.PubkeyToAddress(*rpk), nil
+	return probecrypto.PubkeyToAddress(*rpk), nil
 }
 
 // SignAndSendTransaction was renamed to SendTransaction. This method is deprecated
@@ -557,7 +557,7 @@ func (s *PrivateAccountAPI) InitializeWallet(ctx context.Context, url string) (s
 	}
 }
 
-// Unpair deletes a pairing between wallet and gprobe.
+// Unpair deletes a pairing between wallet and gprobecrypto.
 func (s *PrivateAccountAPI) Unpair(ctx context.Context, url string, pin string) error {
 	wallet, err := s.am.Wallet(url)
 	if err != nil {
@@ -1480,7 +1480,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 	if args.To != nil {
 		to = *args.To
 	} else {
-		to, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType))
+		to, err = probecrypto.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType))
 		if err != nil {
 			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", args.toTransaction().Hash(), err)
 		}
@@ -1774,7 +1774,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 	}
 
 	if tx.To() == nil && tx.BizType() == common.ContractCall {
-		addr, _ := probe.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
+		addr, _ := probecrypto.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
 		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())

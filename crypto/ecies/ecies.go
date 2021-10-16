@@ -36,7 +36,7 @@ import (
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"hash"
 	"io"
 	"math/big"
@@ -59,12 +59,12 @@ type PublicKey struct {
 }
 
 // Export an ECIES public key as an ECDSA public key.
-func (pub *PublicKey) ExportECDSA() *probe.PublicKey {
-	return &probe.PublicKey{Curve: pub.Curve, X: pub.X, Y: pub.Y}
+func (pub *PublicKey) ExportECDSA() *probecrypto.PublicKey {
+	return &probecrypto.PublicKey{Curve: pub.Curve, X: pub.X, Y: pub.Y}
 }
 
 // Import an ECDSA public key as an ECIES public key.
-func ImportECDSAPublic(pub *probe.PublicKey) *PublicKey {
+func ImportECDSAPublic(pub *probecrypto.PublicKey) *PublicKey {
 	return &PublicKey{
 		X:      pub.X,
 		Y:      pub.Y,
@@ -80,14 +80,14 @@ type PrivateKey struct {
 }
 
 // Export an ECIES private key as an ECDSA private key.
-func (prv *PrivateKey) ExportECDSA() *probe.PrivateKey {
+func (prv *PrivateKey) ExportECDSA() *probecrypto.PrivateKey {
 	pub := &prv.PublicKey
 	pubECDSA := pub.ExportECDSA()
-	return &probe.PrivateKey{PublicKey: *pubECDSA, D: prv.D}
+	return &probecrypto.PrivateKey{PublicKey: *pubECDSA, D: prv.D}
 }
 
 // Import an ECDSA private key as an ECIES private key.
-func ImportECDSA(prv *probe.PrivateKey) *PrivateKey {
+func ImportECDSA(prv *probecrypto.PrivateKey) *PrivateKey {
 	pub := ImportECDSAPublic(&prv.PublicKey)
 	return &PrivateKey{*pub, prv.D}
 }

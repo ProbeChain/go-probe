@@ -23,9 +23,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
-
 	"github.com/probeum/go-probeum/common/math"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"github.com/probeum/go-probeum/crypto/secp256k1"
 )
 
@@ -35,7 +34,7 @@ func Ecrecover(hash, sig []byte) ([]byte, error) {
 }
 
 // SigToPub returns the public key that created the given signature.
-func SigToPub(hash, sig []byte) (*probe.PublicKey, error) {
+func SigToPub(hash, sig []byte) (*probecrypto.PublicKey, error) {
 	k := sig[65]
 	s, err := Ecrecover(hash, sig)
 	if err != nil {
@@ -43,7 +42,7 @@ func SigToPub(hash, sig []byte) (*probe.PublicKey, error) {
 	}
 
 	x, y := elliptic.Unmarshal(S256ByType(k), s[:65])
-	return &probe.PublicKey{Curve: S256(), X: x, Y: y, K: k}, nil
+	return &probecrypto.PublicKey{Curve: S256(), X: x, Y: y, K: k}, nil
 }
 
 func SigToPubForType(hash, sig []byte, k byte) (*ecdsa.PublicKey, error) {
@@ -64,7 +63,7 @@ func SigToPubForType(hash, sig []byte, k byte) (*ecdsa.PublicKey, error) {
 // solution is to hash any input before calculating the signature.
 //
 // The produced signature is in the [R || S || V] format where V is 0 or 1.
-func Sign(digestHash []byte, prv *probe.PrivateKey) (sig []byte, err error) {
+func Sign(digestHash []byte, prv *probecrypto.PrivateKey) (sig []byte, err error) {
 	if len(digestHash) != DigestLength {
 		return nil, fmt.Errorf("hash is required to be exactly %d bytes (%d)", DigestLength, len(digestHash))
 	}
@@ -83,16 +82,16 @@ func VerifySignature(pubkey, digestHash, signature []byte) bool {
 }
 
 // DecompressPubkey parses a public key in the 33-byte compressed format.
-func DecompressPubkey(pubkey []byte) (*probe.PublicKey, error) {
+func DecompressPubkey(pubkey []byte) (*probecrypto.PublicKey, error) {
 	x, y := secp256k1.DecompressPubkey(pubkey)
 	if x == nil {
 		return nil, fmt.Errorf("invalid public key")
 	}
-	return &probe.PublicKey{X: x, Y: y, Curve: S256()}, nil
+	return &probecrypto.PublicKey{X: x, Y: y, Curve: S256()}, nil
 }
 
 // CompressPubkey encodes a public key to the 33-byte compressed format.
-func CompressPubkey(pubkey *probe.PublicKey) []byte {
+func CompressPubkey(pubkey *probecrypto.PublicKey) []byte {
 	return secp256k1.CompressPubkey(pubkey.X, pubkey.Y, pubkey.K)
 }
 

@@ -19,7 +19,7 @@ package main
 
 import (
 	"bytes"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -31,15 +31,15 @@ import (
 	"github.com/probeum/go-probeum/common/fdlimit"
 	"github.com/probeum/go-probeum/core"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/miner"
 	"github.com/probeum/go-probeum/node"
 	"github.com/probeum/go-probeum/p2p"
 	"github.com/probeum/go-probeum/p2p/enode"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
 )
 
 func main() {
@@ -47,13 +47,13 @@ func main() {
 	fdlimit.Raise(2048)
 
 	// Generate a batch of accounts to seal and fund with
-	faucets := make([]*probe.PrivateKey, 128)
+	faucets := make([]*probecrypto.PrivateKey, 128)
 	for i := 0; i < len(faucets); i++ {
-		faucets[i], _ = probe.GenerateKey()
+		faucets[i], _ = probecrypto.GenerateKey()
 	}
-	sealers := make([]*probe.PrivateKey, 4)
+	sealers := make([]*probecrypto.PrivateKey, 4)
 	for i := 0; i < len(sealers); i++ {
-		sealers[i], _ = probe.GenerateKey()
+		sealers[i], _ = probecrypto.GenerateKey()
 	}
 	// Create a Clique network based off of the Rinkeby config
 	genesis := makeGenesis(faucets, sealers)
@@ -110,7 +110,7 @@ func main() {
 		backend := nodes[index%len(nodes)]
 
 		// Create a self transaction and inject into the pool
-		tx, err := types.SignTx(types.NewTransaction(nonces[index], probe.PubkeyToAddress(faucets[index].PublicKey), new(big.Int), 21000, big.NewInt(100000000000), nil), types.HomesteadSigner{}, faucets[index])
+		tx, err := types.SignTx(types.NewTransaction(nonces[index], probecrypto.PubkeyToAddress(faucets[index].PublicKey), new(big.Int), 21000, big.NewInt(100000000000), nil), types.HomesteadSigner{}, faucets[index])
 		if err != nil {
 			panic(err)
 		}
@@ -128,7 +128,7 @@ func main() {
 
 // makeGenesis creates a custom Clique genesis block based on some pre-defined
 // signer and faucet accounts.
-func makeGenesis(faucets []*probe.PrivateKey, sealers []*probe.PrivateKey) *core.Genesis {
+func makeGenesis(faucets []*probecrypto.PrivateKey, sealers []*probecrypto.PrivateKey) *core.Genesis {
 	// Create a Clique network based off of the Rinkeby config
 	genesis := core.DefaultRinkebyGenesisBlock()
 	genesis.GasLimit = 25000000
@@ -139,14 +139,14 @@ func makeGenesis(faucets []*probe.PrivateKey, sealers []*probe.PrivateKey) *core
 
 	genesis.Alloc = core.GenesisAlloc{}
 	for _, faucet := range faucets {
-		genesis.Alloc[probe.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
+		genesis.Alloc[probecrypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 		}
 	}
 	// Sort the signers and embed into the extra-data section
 	signers := make([]common.Address, len(sealers))
 	for i, sealer := range sealers {
-		signers[i] = probe.PubkeyToAddress(sealer.PublicKey)
+		signers[i] = probecrypto.PubkeyToAddress(sealer.PublicKey)
 	}
 	for i := 0; i < len(signers); i++ {
 		for j := i + 1; j < len(signers); j++ {

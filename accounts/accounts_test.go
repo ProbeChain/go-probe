@@ -23,7 +23,7 @@ import (
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/probe"
+	probe "github.com/probeum/go-probeum/crypto/probecrypto"
 	"github.com/probeum/go-probeum/p2p/enode"
 	"math/big"
 	"net"
@@ -271,7 +271,7 @@ func TestStrToHex(*testing.T) {
 
 	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str)))
 
-	str2 := "{\"enode\":\"04b25a8fea2237b65596130a6a3e8b32ca512ddb3525ba127f20e7a4f87c367e3719745a3e741fa76e3e5c7d15280e5df531bb552166fae6a7641d3f320bbecda9\",\"ip\":\"192.169.1.3\",\"port\":\"1307\"}"
+	str2 := "{\"enode\":\"047523f0ce89c28d562c507a3e0f88e53edb23cc0a505dc140e65082bf0414cba7a7fb1bd952f71ef00eeeeffff69b72eeff3454a376db3e78734f0e2244f2bf90\",\"ip\":\"127.0.0.1\",\"port\":\"30003\"}"
 	fmt.Println("public key have 0x   \n", hexutil.Encode([]byte(str2)))
 
 	/*var emptyCodeHash = crypto.Keccak256(nil)

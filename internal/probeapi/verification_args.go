@@ -8,7 +8,7 @@ import (
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/rpc"
 	"math/big"
@@ -60,9 +60,9 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 			//pnsData = append(pnsData, byte(*args.PnsType))
 			defaultPnsType := uint8(0)
 			args.PnsType = (*hexutil.Uint8)(&defaultPnsType)
-			newAccount, err = probe.CreatePNSAddress(args.from(), *args.Data, accType)
+			newAccount, err = probecrypto.CreatePNSAddress(args.from(), *args.Data, accType)
 		} else {
-			newAccount, err = probe.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accType)
+			newAccount, err = probecrypto.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), accType)
 		}
 		if err != nil {
 			return err

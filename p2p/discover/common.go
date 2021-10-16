@@ -17,7 +17,7 @@
 package discover
 
 import (
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"net"
 
 	"github.com/probeum/go-probeum/common/mclock"
@@ -38,7 +38,7 @@ type UDPConn interface {
 // Config holds settings for the discovery listener.
 type Config struct {
 	// These settings are required and configure the UDP listener:
-	PrivateKey *probe.PrivateKey
+	PrivateKey *probecrypto.PrivateKey
 
 	// These settings are optional:
 	NetRestrict  *netutil.Netlist   // network whitelist

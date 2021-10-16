@@ -18,7 +18,7 @@ package node
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -188,9 +188,9 @@ type Config struct {
 	// Logger is a custom logger to use with the p2p.Server.
 	Logger log.Logger `toml:",omitempty"`
 
-	staticNodesWarning     bool
-	trustedNodesWarning    bool
-	dposNodesWarning       bool
+	staticNodesWarning       bool
+	trustedNodesWarning      bool
+	dposNodesWarning         bool
 	oldGprobeResourceWarning bool
 
 	// AllowUnprotectedTxs allows non EIP-155 protected transactions to be send over RPC.
@@ -352,14 +352,14 @@ func (c *Config) instanceDir() string {
 // NodeKey retrieves the currently configured private key of the node, checking
 // first any manually set key, falling back to the one found in the configured
 // data folder. If no key can be found, a new one is generated.
-func (c *Config) NodeKey() *probe.PrivateKey {
+func (c *Config) NodeKey() *probecrypto.PrivateKey {
 	// Use any specifically configured key.
 	if c.P2P.PrivateKey != nil {
 		return c.P2P.PrivateKey
 	}
 	// Generate ephemeral key if no datadir is being used.
 	if c.DataDir == "" {
-		key, err := probe.GenerateKey()
+		key, err := probecrypto.GenerateKey()
 		if err != nil {
 			log.Crit(fmt.Sprintf("Failed to generate ephemeral node key: %v", err))
 		}
@@ -367,11 +367,11 @@ func (c *Config) NodeKey() *probe.PrivateKey {
 	}
 
 	keyfile := c.ResolvePath(datadirPrivateKey)
-	if key, err := probe.LoadECDSA(keyfile); err == nil {
+	if key, err := probecrypto.LoadECDSA(keyfile); err == nil {
 		return key
 	}
 	// No persistent key found, generate and store a new one.
-	key, err := probe.GenerateKey()
+	key, err := probecrypto.GenerateKey()
 	if err != nil {
 		log.Crit(fmt.Sprintf("Failed to generate node key: %v", err))
 	}
@@ -381,7 +381,7 @@ func (c *Config) NodeKey() *probe.PrivateKey {
 		return key
 	}
 	keyfile = filepath.Join(instanceDir, datadirPrivateKey)
-	if err := probe.SaveECDSA(keyfile, key); err != nil {
+	if err := probecrypto.SaveECDSA(keyfile, key); err != nil {
 		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
 	}
 	return key

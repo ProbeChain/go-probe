@@ -23,7 +23,7 @@ package keystore
 import (
 	crand "crypto/rand"
 	"errors"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -454,7 +454,7 @@ func (ks *KeyStore) Import(keyJSON []byte, passphrase, newPassphrase string) (ac
 }
 
 // ImportECDSA stores the given key into the key directory, encrypting it with the passphrase.
-func (ks *KeyStore) ImportECDSA(priv *probe.PrivateKey, passphrase string) (accounts.Account, error) {
+func (ks *KeyStore) ImportECDSA(priv *probecrypto.PrivateKey, passphrase string) (accounts.Account, error) {
 	ks.importMu.Lock()
 	defer ks.importMu.Unlock()
 
@@ -499,7 +499,7 @@ func (ks *KeyStore) ImportPreSaleKey(keyJSON []byte, passphrase string) (account
 }
 
 // zeroKey zeroes a private key in memory.
-func zeroKey(k *probe.PrivateKey) {
+func zeroKey(k *probecrypto.PrivateKey) {
 	b := k.D.Bits()
 	for i := range b {
 		b[i] = 0

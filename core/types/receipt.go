@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	probecrypto "github.com/probeum/go-probeum/crypto"
 	"io"
 	"math/big"
 	"unsafe"
@@ -297,7 +297,7 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 		if txs[i].To() == nil && txs[i].BizType() == common.ContractCall {
 			// Deriving the signer is expensive, only do if it's actually needed
 			from, _ := Sender(signer, txs[i])
-			r[i].ContractAddress, _ = probe.CreateAddressForAccountType(from, txs[i].Nonce(), common.ACC_TYPE_OF_CONTRACT)
+			r[i].ContractAddress = probecrypto.CreateAddressForAccountType(from, txs[i].Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		}
 		// The used gas can be calculated based on previous r
 		if i == 0 {

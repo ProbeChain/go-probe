@@ -18,7 +18,7 @@ package enode
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"net"
 	"reflect"
 	"strconv"
@@ -44,7 +44,7 @@ const (
 type LocalNode struct {
 	cur atomic.Value // holds a non-nil node pointer while the record is up-to-date.
 	id  ID
-	key *probe.PrivateKey
+	key *probecrypto.PrivateKey
 	db  *DB
 
 	// everything below is protected by a lock
@@ -62,7 +62,7 @@ type lnEndpoint struct {
 }
 
 // NewLocalNode creates a local node.
-func NewLocalNode(db *DB, key *probe.PrivateKey) *LocalNode {
+func NewLocalNode(db *DB, key *probecrypto.PrivateKey) *LocalNode {
 	ln := &LocalNode{
 		id:      PubkeyToIDV4(&key.PublicKey),
 		db:      db,

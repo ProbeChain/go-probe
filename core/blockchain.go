@@ -2695,6 +2695,7 @@ func (bc *BlockChain) updateP2pDposNodes() {
 						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
 						continue
 					}
+					log.Info("updateP2pDposNodes", "number", number, "dposEnode", dposEnode)
 					bc.p2pServer.AddDposPeer(dposEnode)
 				}
 			}

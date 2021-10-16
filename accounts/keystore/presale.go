@@ -24,11 +24,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 
+	"github.com/google/uuid"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -55,10 +55,10 @@ func importPreSaleKey(keyStore keyStore, keyJSON []byte, password string) (accou
 
 func decryptPreSaleKey(fileContent []byte, password string) (key *Key, err error) {
 	preSaleKeyStruct := struct {
-		EncSeed string
+		EncSeed   string
 		ProbeAddr string
-		Email   string
-		BtcAddr string
+		Email     string
+		BtcAddr   string
 	}{}
 	err = json.Unmarshal(fileContent, &preSaleKeyStruct)
 	if err != nil {
@@ -87,11 +87,11 @@ func decryptPreSaleKey(fileContent []byte, password string) (key *Key, err error
 		return nil, err
 	}
 	probePriv := crypto.Keccak256(plainText)
-	ecKey := probe.ToECDSAUnsafe(probePriv)
+	ecKey := probecrypto.ToECDSAUnsafe(probePriv)
 
 	key = &Key{
 		Id:         uuid.UUID{},
-		Address:    probe.PubkeyToAddress(ecKey.PublicKey),
+		Address:    probecrypto.PubkeyToAddress(ecKey.PublicKey),
 		PrivateKey: ecKey,
 	}
 	derivedAddr := hex.EncodeToString(key.Address.Bytes()) // needed because .Hex() gives leading "0x"

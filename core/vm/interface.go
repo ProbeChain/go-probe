@@ -105,7 +105,7 @@ type StateDB interface {
 
 	ModifyPnsContent(context TxContext)
 
-	ApplyToBeDPoSNode(context TxContext)
+	ApplyToBeDPoSNode(blockNumber *big.Int, context TxContext)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM

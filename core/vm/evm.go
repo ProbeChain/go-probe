@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"github.com/probeum/go-probeum/log"
 	"math/big"
 	"sync/atomic"
@@ -550,7 +550,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	contractAddr, _ = probe.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()), common.ACC_TYPE_OF_CONTRACT)
+	contractAddr, _ = probecrypto.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()), common.ACC_TYPE_OF_CONTRACT)
 	if evm.StateDB.Exist(contractAddr) {
 		log.Error("Failed to create contract address", "err", ErrContractAddressCollision)
 		return nil, common.Address{}, gas, ErrContractAddressCollision
@@ -564,7 +564,7 @@ func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.I
 // instead of the usual sender-and-nonce-hash as the address where the contract is initialized at.
 func (evm *EVM) Create2(caller ContractRef, code []byte, gas uint64, endowment *big.Int, salt *uint256.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	codeAndHash := &codeAndHash{code: code}
-	contractAddr = probe.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes(), common.ACC_TYPE_OF_CONTRACT)
+	contractAddr = probecrypto.CreateAddress2(caller.Address(), salt.Bytes32(), codeAndHash.Hash().Bytes(), common.ACC_TYPE_OF_CONTRACT)
 	return evm.create(caller, codeAndHash, gas, endowment, contractAddr)
 }
 

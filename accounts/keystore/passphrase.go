@@ -33,17 +33,17 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/math"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/google/uuid"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )
@@ -232,14 +232,14 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := probe.ToECDSAUnsafe(keyBytes)
+	key := probecrypto.ToECDSAUnsafe(keyBytes)
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
 		return nil, err
 	}
 	return &Key{
 		Id:         id,
-		Address:    probe.PubkeyToAddress(key.PublicKey),
+		Address:    probecrypto.PubkeyToAddress(key.PublicKey),
 		PrivateKey: key,
 	}, nil
 }

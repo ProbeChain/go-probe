@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io"
 	"io/ioutil"
 	"os"
@@ -29,9 +29,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
-	"github.com/google/uuid"
 )
 
 const (
@@ -44,7 +44,7 @@ type Key struct {
 	Address common.Address
 	// we only store privkey as pubkey/address can be derived from it
 	// privkey in this struct is always in plaintext
-	PrivateKey *probe.PrivateKey
+	PrivateKey *probecrypto.PrivateKey
 }
 
 type keyStore interface {
@@ -93,7 +93,7 @@ type cipherparamsJSON struct {
 func (k *Key) MarshalJSON() (j []byte, err error) {
 	jStruct := plainKeyJSON{
 		hex.EncodeToString(k.Address[:]),
-		hex.EncodeToString(probe.FromECDSA(k.PrivateKey)),
+		hex.EncodeToString(probecrypto.FromECDSA(k.PrivateKey)),
 		k.Id.String(),
 		version,
 	}
@@ -118,7 +118,7 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	privkey, err := probe.HexToECDSA(keyJSON.PrivateKey)
+	privkey, err := probecrypto.HexToECDSA(keyJSON.PrivateKey)
 	if err != nil {
 		return err
 	}
@@ -129,14 +129,14 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	return nil
 }
 
-func newKeyFromECDSA(privateKeyECDSA *probe.PrivateKey) *Key {
+func newKeyFromECDSA(privateKeyECDSA *probecrypto.PrivateKey) *Key {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(fmt.Sprintf("Could not create random uuid: %v", err))
 	}
 	key := &Key{
 		Id:         id,
-		Address:    probe.PubkeyToAddress(privateKeyECDSA.PublicKey),
+		Address:    probecrypto.PubkeyToAddress(privateKeyECDSA.PublicKey),
 		PrivateKey: privateKeyECDSA,
 	}
 	return key
@@ -153,7 +153,7 @@ func NewKeyForDirectICAP(rand io.Reader) *Key {
 	}
 	reader := bytes.NewReader(randBytes)
 	//privateKeyECDSA, err := ecdsa.GenerateKey(crypto.S256(), reader)
-	privateKeyECDSA, err := probe.GenerateKeyForRand(reader)
+	privateKeyECDSA, err := probecrypto.GenerateKeyForRand(reader)
 	if err != nil {
 		panic("key generation: ecdsa.GenerateKey failed: " + err.Error())
 	}
@@ -166,7 +166,7 @@ func NewKeyForDirectICAP(rand io.Reader) *Key {
 
 func newKey(rand io.Reader) (*Key, error) {
 	//privateKeyECDSA, err := ecdsa.GenerateKey(crypto.S256(), rand)
-	privateKeyECDSA, err := probe.GenerateKeyForRand(rand)
+	privateKeyECDSA, err := probecrypto.GenerateKeyForRand(rand)
 	if err != nil {
 		return nil, err
 	}

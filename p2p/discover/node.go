@@ -20,7 +20,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"errors"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"net"
 	"time"
@@ -40,7 +40,7 @@ type node struct {
 
 type encPubkey [64]byte
 
-func encodePubkey(key *probe.PublicKey) encPubkey {
+func encodePubkey(key *probecrypto.PublicKey) encPubkey {
 	var e encPubkey
 	math.ReadBits(key.X, e[:len(e)/2])
 	math.ReadBits(key.Y, e[len(e)/2:])

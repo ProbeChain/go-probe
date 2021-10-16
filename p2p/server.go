@@ -22,7 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"net"
 	"sort"
 	"sync"
@@ -68,7 +68,7 @@ var errServerStopped = errors.New("server stopped")
 // Config holds Server options.
 type Config struct {
 	// This field must be set to a valid secp256k1 private key.
-	PrivateKey *probe.PrivateKey `toml:"-"`
+	PrivateKey *probecrypto.PrivateKey `toml:"-"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
@@ -164,7 +164,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn, *probe.PublicKey) transport
+	newTransport func(net.Conn, *probecrypto.PublicKey) transport
 	newPeerHook  func(*Peer)
 	listenFunc   func(network, addr string) (net.Listener, error)
 
@@ -229,7 +229,7 @@ type conn struct {
 
 type transport interface {
 	// The two handshakes.
-	doEncHandshake(prv *probe.PrivateKey) (*probe.PublicKey, error)
+	doEncHandshake(prv *probecrypto.PrivateKey) (*probecrypto.PublicKey, error)
 	doProtoHandshake(our *protoHandshake) (*protoHandshake, error)
 	// The MsgReadWriter can only be used after the encryption
 	// handshake has completed. The code uses conn.id to track this
@@ -511,7 +511,7 @@ func (srv *Server) Start() (err error) {
 
 func (srv *Server) setupLocalNode() error {
 	// Create the devp2p handshake.
-	pubkey := probe.FromECDSAPub(&srv.PrivateKey.PublicKey)
+	pubkey := probecrypto.FromECDSAPub(&srv.PrivateKey.PublicKey)
 	srv.ourHandshake = &protoHandshake{Version: baseProtocolVersion, Name: srv.Name, ID: pubkey[1:]}
 	for _, p := range srv.Protocols {
 		srv.ourHandshake.Caps = append(srv.ourHandshake.Caps, p.cap())
@@ -965,9 +965,9 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 	}
 
 	// If dialing, figure out the remote public key.
-	var dialPubkey *probe.PublicKey
+	var dialPubkey *probecrypto.PublicKey
 	if dialDest != nil {
-		dialPubkey = new(probe.PublicKey)
+		dialPubkey = new(probecrypto.PublicKey)
 		if err := dialDest.Load((*enode.Secp256k1)(dialPubkey)); err != nil {
 			err = errors.New("dial destination doesn't have a secp256k1 public key")
 			srv.log.Trace("Setting up connection failed", "addr", c.fd.RemoteAddr(), "conn", c.flags, "err", err)
@@ -1001,7 +1001,7 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 	}
 	//secp256k1 public key
 	//if id := c.node.ID(); !bytes.Equal(crypto.Keccak256(phs.ID), id[:]) {
-	if id := c.node.ID(); !bytes.Equal(probe.Keccak256(phs.ID), id[:]) {
+	if id := c.node.ID(); !bytes.Equal(probecrypto.Keccak256(phs.ID), id[:]) {
 		clog.Trace("Wrong devp2p handshake identity", "phsid", hex.EncodeToString(phs.ID))
 		return DiscUnexpectedIdentity
 	}
@@ -1015,7 +1015,7 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 	return nil
 }
 
-func nodeFromConn(pubkey *probe.PublicKey, conn net.Conn) *enode.Node {
+func nodeFromConn(pubkey *probecrypto.PublicKey, conn net.Conn) *enode.Node {
 	var ip net.IP
 	var port int
 	if tcp, ok := conn.RemoteAddr().(*net.TCPAddr); ok {

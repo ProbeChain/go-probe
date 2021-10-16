@@ -19,7 +19,7 @@ package enode
 import (
 	"fmt"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io"
 
 	"github.com/probeum/go-probeum/common/math"
@@ -42,7 +42,7 @@ var ValidSchemesForTesting = enr.SchemeMap{
 type V4ID struct{}
 
 // SignV4 signs a record using the v4 scheme.
-func SignV4(r *enr.Record, privkey *probe.PrivateKey) error {
+func SignV4(r *enr.Record, privkey *probecrypto.PrivateKey) error {
 	// Copy r to avoid modifying it if signing fails.
 	cpy := *r
 	cpy.Set(enr.ID("v4"))
@@ -91,13 +91,13 @@ func (V4ID) NodeAddr(r *enr.Record) []byte {
 }
 
 // Secp256k1 is the "secp256k1" key, which holds a public key.
-type Secp256k1 probe.PublicKey
+type Secp256k1 probecrypto.PublicKey
 
 func (v Secp256k1) ENRKey() string { return "secp256k1" }
 
 // EncodeRLP implements rlp.Encoder.
 func (v Secp256k1) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, crypto.CompressPubkey((*probe.PublicKey)(&v)))
+	return rlp.Encode(w, crypto.CompressPubkey((*probecrypto.PublicKey)(&v)))
 }
 
 // DecodeRLP implements rlp.Decoder.
@@ -130,7 +130,7 @@ func (v4CompatID) Verify(r *enr.Record, sig []byte) error {
 	return r.Load(&pubkey)
 }
 
-func signV4Compat(r *enr.Record, pubkey *probe.PublicKey) {
+func signV4Compat(r *enr.Record, pubkey *probecrypto.PublicKey) {
 	r.Set((*Secp256k1)(pubkey))
 	if err := r.SetSig(v4CompatID{}, []byte{}); err != nil {
 		panic(err)

@@ -18,7 +18,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io/ioutil"
 
 	"github.com/probeum/go-probeum/accounts"
@@ -337,7 +337,7 @@ func accountImport(ctx *cli.Context) error {
 	if len(keyfile) == 0 {
 		utils.Fatalf("keyfile must be given as argument")
 	}
-	key, err := probe.LoadECDSA(keyfile)
+	key, err := probecrypto.LoadECDSA(keyfile)
 	if err != nil {
 		utils.Fatalf("Failed to load the private key: %v", err)
 	}

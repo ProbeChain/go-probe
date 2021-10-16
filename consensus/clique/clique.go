@@ -21,13 +21,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io"
 	"math/big"
 	"math/rand"
 	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/hexutil"
@@ -36,13 +37,12 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/rpc"
 	"github.com/probeum/go-probeum/trie"
-	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -160,8 +160,8 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 	if err != nil {
 		return common.Address{}, err
 	}
-	pubKey, _ := probe.UnmarshalPubkey(pubkey[:len(pubkey)-1])
-	signer := probe.PubkeyToAddress(*pubKey)
+	pubKey, _ := probecrypto.UnmarshalPubkey(pubkey[:len(pubkey)-1])
+	signer := probecrypto.PubkeyToAddress(*pubKey)
 	// signer common.Address
 	//copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
 
@@ -173,7 +173,7 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Probeum testnet following the Ropsten attacks.
 type Clique struct {
 	config *params.CliqueConfig // Consensus engine configuration parameters
-	db     probedb.Database       // Database to store and retrieve snapshot checkpoints
+	db     probedb.Database     // Database to store and retrieve snapshot checkpoints
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining

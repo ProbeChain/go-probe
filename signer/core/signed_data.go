@@ -21,7 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"mime"
 	"reflect"
@@ -184,7 +184,7 @@ func (api *SignerAPI) SignData(ctx context.Context, contentType string, addr com
 // This method returns the mimetype for signing along with the request
 func (api *SignerAPI) determineSignatureFormat(ctx context.Context, contentType string, addr common.MixedcaseAddress, data interface{}) (*SignDataRequest, bool, error) {
 	var (
-		req          *SignDataRequest
+		req         *SignDataRequest
 		useProbeumV = true // Default to use V = 27 or 28, the legacy Probeum format
 	)
 	mediaType, _, err := mime.ParseMediaType(contentType)
@@ -665,7 +665,7 @@ func (api *SignerAPI) EcRecover(ctx context.Context, data hexutil.Bytes, sig hex
 	if err != nil {
 		return common.Address{}, err
 	}
-	return probe.PubkeyToAddress(*rpk), nil
+	return probecrypto.PubkeyToAddress(*rpk), nil
 }
 
 // UnmarshalValidatorData converts the bytes input to typed data

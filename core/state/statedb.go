@@ -1853,7 +1853,7 @@ func (s *StateDB) Redemption(context vm.TxContext) {
 	}
 }
 
-func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
+func (s *StateDB) ApplyToBeDPoSNode(blockNumber *big.Int, context vm.TxContext) {
 	stateObject := s.getStateObject(*context.To)
 	if nil == stateObject {
 		return
@@ -1877,7 +1877,7 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = context.From
 	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	number := context.Height
+	number := blockNumber
 	epoch := new(big.Int).SetUint64(globalconfig.Epoch)
 	dposNo := number.Add(number, epoch)
 	stateObject.dposCandidateAccount.Height = dposNo

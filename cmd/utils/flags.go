@@ -19,7 +19,7 @@ package utils
 
 import (
 	"fmt"
-cryptoprobe	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io"
 	"io/ioutil"
 	"math"
@@ -33,6 +33,7 @@ cryptoprobe	"github.com/probeum/go-probeum/crypto/probe"
 	"text/template"
 	"time"
 
+	pcsclite "github.com/gballet/go-libpcsclite"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/accounts/keystore"
 	"github.com/probeum/go-probeum/common"
@@ -43,16 +44,9 @@ cryptoprobe	"github.com/probeum/go-probeum/crypto/probe"
 	"github.com/probeum/go-probeum/core"
 	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probe/tracers"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/probestats"
 	"github.com/probeum/go-probeum/graphql"
-	"github.com/probeum/go-probeum/internal/probeapi"
 	"github.com/probeum/go-probeum/internal/flags"
+	"github.com/probeum/go-probeum/internal/probeapi"
 	"github.com/probeum/go-probeum/les"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/metrics"
@@ -65,7 +59,13 @@ cryptoprobe	"github.com/probeum/go-probeum/crypto/probe"
 	"github.com/probeum/go-probeum/p2p/nat"
 	"github.com/probeum/go-probeum/p2p/netutil"
 	"github.com/probeum/go-probeum/params"
-	pcsclite "github.com/gballet/go-libpcsclite"
+	"github.com/probeum/go-probeum/probe"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probe/tracers"
+	"github.com/probeum/go-probeum/probedb"
+	"github.com/probeum/go-probeum/probestats"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -813,19 +813,19 @@ func setNodeKey(ctx *cli.Context, cfg *p2p.Config) {
 	var (
 		hex  = ctx.GlobalString(NodeKeyHexFlag.Name)
 		file = ctx.GlobalString(NodeKeyFileFlag.Name)
-		key  *cryptoprobe.PrivateKey
+		key  *probecrypto.PrivateKey
 		err  error
 	)
 	switch {
 	case file != "" && hex != "":
 		Fatalf("Options %q and %q are mutually exclusive", NodeKeyFileFlag.Name, NodeKeyHexFlag.Name)
 	case file != "":
-		if key, err = cryptoprobe.LoadECDSA(file); err != nil {
+		if key, err = probecrypto.LoadECDSA(file); err != nil {
 			Fatalf("Option %q: %v", NodeKeyFileFlag.Name, err)
 		}
 		cfg.PrivateKey = key
 	case hex != "":
-		if key, err = cryptoprobe.HexToECDSA(hex); err != nil {
+		if key, err = probecrypto.HexToECDSA(hex); err != nil {
 			Fatalf("Option %q: %v", NodeKeyHexFlag.Name, err)
 		}
 		cfg.PrivateKey = key

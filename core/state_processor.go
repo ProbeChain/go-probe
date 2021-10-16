@@ -18,7 +18,7 @@ package core
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -125,7 +125,7 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	receipt.BizType = msg.BizType()
 	// If the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil && msg.BizType() == common.ContractCall {
-		receipt.ContractAddress, _ = probe.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
+		receipt.ContractAddress, _ = probecrypto.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
 	}
 
 	// Set the receipt logs and create the bloom filter.

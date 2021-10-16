@@ -168,7 +168,7 @@ func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
 	case common.Vote:
 		db.Vote(txContext)
 	case common.ApplyToBeDPoSNode:
-		db.ApplyToBeDPoSNode(txContext)
+		db.ApplyToBeDPoSNode(blockNumber, txContext)
 	case common.UpdatingVotesOrData:
 		db.UpdateDposAccount(txContext.From, *txContext.To, txContext.Data)
 	case common.Redemption:

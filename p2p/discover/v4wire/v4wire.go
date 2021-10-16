@@ -22,7 +22,7 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"net"
 	"time"
@@ -243,7 +243,7 @@ func Decode(input []byte) (Packet, Pubkey, []byte, error) {
 }
 
 // Encode encodes a discovery packet.
-func Encode(priv *probe.PrivateKey, req Packet) (packet, hash []byte, err error) {
+func Encode(priv *probecrypto.PrivateKey, req Packet) (packet, hash []byte, err error) {
 	b := new(bytes.Buffer)
 	b.Write(headSpace)
 	b.WriteByte(req.Kind())
@@ -273,7 +273,7 @@ func recoverNodeKey(hash, sig []byte) (key Pubkey, err error) {
 }
 
 // EncodePubkey encodes a secp256k1 public key.
-func EncodePubkey(key *probe.PublicKey) Pubkey {
+func EncodePubkey(key *probecrypto.PublicKey) Pubkey {
 	var e Pubkey
 	math.ReadBits(key.X, e[:len(e)/2])
 	math.ReadBits(key.Y, e[len(e)/2:])
@@ -281,8 +281,8 @@ func EncodePubkey(key *probe.PublicKey) Pubkey {
 }
 
 // DecodePubkey reads an encoded secp256k1 public key.
-func DecodePubkey(curve elliptic.Curve, e Pubkey) (*probe.PublicKey, error) {
-	p := &probe.PublicKey{Curve: curve, X: new(big.Int), Y: new(big.Int)}
+func DecodePubkey(curve elliptic.Curve, e Pubkey) (*probecrypto.PublicKey, error) {
+	p := &probecrypto.PublicKey{Curve: curve, X: new(big.Int), Y: new(big.Int)}
 	half := len(e) / 2
 	p.X.SetBytes(e[:half])
 	p.Y.SetBytes(e[half:])

@@ -24,7 +24,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"sync/atomic"
 	"testing"
@@ -41,8 +41,6 @@ import (
 	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/les/checkpointoracle"
 	"github.com/probeum/go-probeum/les/flowcontrol"
@@ -51,17 +49,19 @@ import (
 	"github.com/probeum/go-probeum/p2p"
 	"github.com/probeum/go-probeum/p2p/enode"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probedb"
 )
 
 var (
-	bankKey, _ = probe.GenerateKey()
-	bankAddr   = probe.PubkeyToAddress(bankKey.PublicKey)
+	bankKey, _ = probecrypto.GenerateKey()
+	bankAddr   = probecrypto.PubkeyToAddress(bankKey.PublicKey)
 	bankFunds  = big.NewInt(1_000_000_000_000_000_000)
 
-	userKey1, _ = probe.GenerateKey()
-	userKey2, _ = probe.GenerateKey()
-	userAddr1   = probe.PubkeyToAddress(userKey1.PublicKey)
-	userAddr2   = probe.PubkeyToAddress(userKey2.PublicKey)
+	userKey1, _ = probecrypto.GenerateKey()
+	userKey2, _ = probecrypto.GenerateKey()
+	userAddr1   = probecrypto.PubkeyToAddress(userKey1.PublicKey)
+	userAddr2   = probecrypto.PubkeyToAddress(userKey2.PublicKey)
 
 	testContractAddr         common.Address
 	testContractCode         = common.Hex2Bytes("606060405260cc8060106000396000f360606040526000357c01000000000000000000000000000000000000000000000000000000009004806360cd2685146041578063c16431b914606b57603f565b005b6055600480803590602001909190505060a9565b6040518082815260200191505060405180910390f35b60886004808035906020019091908035906020019091905050608a565b005b80600060005083606481101560025790900160005b50819055505b5050565b6000600060005082606481101560025790900160005b5054905060c7565b91905056")
@@ -72,8 +72,8 @@ var (
 
 	// Checkpoint oracle relative fields
 	oracleAddr   common.Address
-	signerKey, _ = probe.GenerateKey()
-	signerAddr   = probe.PubkeyToAddress(signerKey.PublicKey)
+	signerKey, _ = probecrypto.GenerateKey()
+	signerAddr   = probecrypto.PubkeyToAddress(signerKey.PublicKey)
 )
 
 var (

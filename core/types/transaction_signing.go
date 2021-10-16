@@ -19,7 +19,7 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -91,7 +91,7 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 }
 
 // SignTx signs the transaction using the given signer and private key.
-func SignTx(tx *Transaction, s Signer, prv *probe.PrivateKey) (*Transaction, error) {
+func SignTx(tx *Transaction, s Signer, prv *probecrypto.PrivateKey) (*Transaction, error) {
 	h := s.Hash(tx)
 	sig, err := crypto.Sign(h[:], prv)
 	if err != nil {
@@ -101,7 +101,7 @@ func SignTx(tx *Transaction, s Signer, prv *probe.PrivateKey) (*Transaction, err
 }
 
 // SignNewTx creates a transaction and signs it.
-func SignNewTx(prv *probe.PrivateKey, s Signer, txdata TxData) (*Transaction, error) {
+func SignNewTx(prv *probecrypto.PrivateKey, s Signer, txdata TxData) (*Transaction, error) {
 	tx := NewTx(txdata)
 	h := s.Hash(tx)
 	sig, err := crypto.Sign(h[:], prv)
@@ -113,7 +113,7 @@ func SignNewTx(prv *probe.PrivateKey, s Signer, txdata TxData) (*Transaction, er
 
 // MustSignNewTx creates a transaction and signs it.
 // This panics if the transaction cannot be signed.
-func MustSignNewTx(prv *probe.PrivateKey, s Signer, txdata TxData) *Transaction {
+func MustSignNewTx(prv *probecrypto.PrivateKey, s Signer, txdata TxData) *Transaction {
 	tx, err := SignNewTx(prv, s, txdata)
 	if err != nil {
 		panic(err)
@@ -513,8 +513,8 @@ func recoverPlain(K byte, sighash common.Hash, R, S, Vb *big.Int, homestead bool
 		copy(addr[:], crypto.Keccak256(pub[1:])[12:])
 		return addr, nil
 	*/
-	pubKey, _ := probe.UnmarshalPubkey(pub)
-	return probe.PubkeyToAddress(*pubKey), nil
+	pubKey, _ := probecrypto.UnmarshalPubkey(pub)
+	return probecrypto.PubkeyToAddress(*pubKey), nil
 }
 
 // deriveChainId derives the chain id from the given v parameter
