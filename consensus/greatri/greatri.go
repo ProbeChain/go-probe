@@ -530,6 +530,7 @@ func (c *Greatri) DposFinalize(chain consensus.ChainHeaderReader, header *types.
 	accumulateRewards(chain.Config(), state, header, powUncles)
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 }
+
 func (c *Greatri) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
 	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))

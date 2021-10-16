@@ -1123,6 +1123,9 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 	s := w.current.state.Copy()
 	w.current.header.Root = s.IntermediateRoot(w.chain.Config().IsEIP158(header.Number))
 
+	greatri, _ := w.engine.(*greatri2.Greatri)
+	greatri.DposFinalize(w.chain, header, s, w.current.txs, w.current.powAnswerUncles)
+
 	block := types.DposNewBlock(w.current.header, w.current.txs, w.current.powAnswerUncles, w.current.dposAcks, receipts, trie.NewStackTrie(nil))
 
 	select {
