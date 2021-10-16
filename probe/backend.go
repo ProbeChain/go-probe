@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/consensus/greatri"
+	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
 	"math/big"
 	"runtime"
 	"sync"
@@ -38,13 +39,6 @@ import (
 	"github.com/probeum/go-probeum/core/state/pruner"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probe/filters"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/probe/protocols/snap"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/internal/probeapi"
 	"github.com/probeum/go-probeum/log"
@@ -54,6 +48,13 @@ import (
 	"github.com/probeum/go-probeum/p2p/dnsdisc"
 	"github.com/probeum/go-probeum/p2p/enode"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/filters"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probe/protocols/probe"
+	"github.com/probeum/go-probeum/probe/protocols/snap"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/rpc"
 )
@@ -67,11 +68,11 @@ type Probeum struct {
 	config *probeconfig.Config
 
 	// Handlers
-	txPool             *core.TxPool
-	blockchain         *core.BlockChain
-	handler            *handler
-	probeDialCandidates  enode.Iterator
-	snapDialCandidates enode.Iterator
+	txPool              *core.TxPool
+	blockchain          *core.BlockChain
+	handler             *handler
+	probeDialCandidates enode.Iterator
+	snapDialCandidates  enode.Iterator
 
 	// DB interfaces
 	chainDb probedb.Database // Block chain database
@@ -87,8 +88,8 @@ type Probeum struct {
 
 	APIBackend *ProbeAPIBackend
 
-	miner     *miner.Miner
-	gasPrice  *big.Int
+	miner       *miner.Miner
+	gasPrice    *big.Int
 	probeerbase common.Address
 
 	networkID     uint64
@@ -151,7 +152,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
 		gasPrice:          config.Miner.GasPrice,
-		probeerbase:         config.Miner.Probeerbase,
+		probeerbase:       config.Miner.Probeerbase,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		p2pServer:         stack.Server(),
@@ -198,6 +199,10 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		}
 	)
 	probe.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, probe.engine, vmConfig, probe.shouldPreserve, &config.TxLookupLimit, probe.p2pServer)
+	originDifficulty := probe.blockchain.GetBlockByNumber(0).Difficulty().Int64()
+	if probeash, ok := probe.powEngine.(*probehash2.Probeash); ok {
+		probeash.SetMinDifficulty(originDifficulty)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -236,6 +241,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 	}
 
 	probe.miner = miner.New(probe, &config.Miner, chainConfig, probe.EventMux(), probe.engine, probe.powEngine, probe.isLocalBlock)
+	probe.miner.SetMinDifficulty(originDifficulty)
 	probe.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
 	probe.APIBackend = &ProbeAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, probe, nil}
@@ -538,7 +544,7 @@ func (s *Probeum) BlockChain() *core.BlockChain       { return s.blockchain }
 func (s *Probeum) TxPool() *core.TxPool               { return s.txPool }
 func (s *Probeum) EventMux() *event.TypeMux           { return s.eventMux }
 func (s *Probeum) Engine() consensus.Engine           { return s.engine }
-func (s *Probeum) ChainDb() probedb.Database            { return s.chainDb }
+func (s *Probeum) ChainDb() probedb.Database          { return s.chainDb }
 func (s *Probeum) IsListening() bool                  { return true } // Always listening
 func (s *Probeum) Downloader() *downloader.Downloader { return s.handler.downloader }
 func (s *Probeum) Synced() bool                       { return atomic.LoadUint32(&s.handler.acceptTxs) == 1 }
