@@ -2628,8 +2628,12 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		epoch = bc.chainConfig.DposConfig.Epoch
 	}
 	dposNo := number + 1 - (number+1)%epoch
-	if number == 0 || (number+1)%epoch == 0 {
 
+	confirmBlockNum := epoch / 2
+	if epoch > confirmDpos {
+		confirmBlockNum = epoch - confirmDpos
+	}
+	if number == 0 || (number+confirmBlockNum)%epoch == 0 {
 		dPosList := stateDB.GetCurrentDpostList()
 		stateDB.ChangDpostAccount(dPosList)
 		log.Info("writeDposNodes preDPosHash", "block_number", number, "preDPosHash", state.BuildHashForDPos(stateDB.GetOldDpostList()))

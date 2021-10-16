@@ -283,7 +283,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 		number := g.Number
 		epoch := g.DposConfig.Epoch
 		dposNo := number + 1 - (number+1)%epoch
-		if number == 0 || (number+1)%epoch == 0 {
+		if number == 0 {
 			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
 				log.Info("ToBlock roothash ", "hash", s.Hex())
 			}*/
