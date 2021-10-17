@@ -2736,7 +2736,7 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
 	index := number / bc.chainConfig.DposConfig.Epoch
 
 	accounts := bc.dposAccounts[index]
-	if accounts != nil {
+	if len(accounts) != 0 {
 		return accounts
 	}
 
