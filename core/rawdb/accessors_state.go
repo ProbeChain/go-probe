@@ -18,8 +18,8 @@ package rawdb
 
 import (
 	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 )
 
@@ -163,5 +163,29 @@ func ReadRootHashForNew(db probedb.KeyValueReader, hash common.Hash) []common.Ha
 	//	fmt.Printf("ReadRootHashForNew-key：%v \n", key)
 	data, _ := db.Get(key)
 	rlp.DecodeBytes(data, &intarray)
+	return intarray
+}
+
+func WriteDPos(db probedb.KeyValueWriter, dPosNo uint64, list []common.DPoSAccount) {
+	// add trie root
+	arrdata, err := rlp.EncodeToBytes(list)
+	if err != nil {
+		log.Crit("Failed to EncodeToBytes dpos", "err", err)
+	}
+	key := DposKey(dPosNo)
+	if err := db.Put(key, arrdata); err != nil {
+		log.Crit("Failed to store dpos", "err", err)
+	}
+}
+
+func ReadDPos(db probedb.KeyValueReader, dkey uint64) []common.DPoSAccount {
+	var intarray []common.DPoSAccount
+	key := DposKey(dkey)
+	data, _ := db.Get(key)
+	err := rlp.DecodeBytes(data, &intarray)
+	if err != nil {
+		log.Error("Failed to get dpos", "err", err)
+	}
+
 	return intarray
 }

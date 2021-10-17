@@ -26,13 +26,11 @@ import (
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/log"
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
 	"net"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -550,14 +548,4 @@ func ReBuildAddress(addr []byte) []byte {
 		return addr[1:]
 	}
 	return addr
-}
-
-func GetDposNodesKey(dposNo uint64, dposHash Hash) []byte {
-	var buf bytes.Buffer
-	buf.WriteString("DPOS_NODES:")
-	buf.WriteString(strconv.FormatUint(dposNo, 10))
-	//buf.WriteString(":")
-	//buf.WriteString(dposHash.Hex())
-	log.Info("DPOSKey", "DPOSNodesKey", string(buf.Bytes()))
-	return buf.Bytes()
 }

@@ -352,8 +352,7 @@ type BlockChain struct {
 	dposAcks     *DposAckPool
 	powAnswers   *PowAnswerPool
 	dposAccounts map[uint64][]*common.DPoSAccount
-
-	chainmu sync.RWMutex // blockchain insertion lock
+	chainmu      sync.RWMutex // blockchain insertion lock
 
 	currentBlock     atomic.Value // Current head of the block chain
 	currentFastBlock atomic.Value // Current head of the fast-sync chain (may be above the block chain!)
@@ -423,7 +422,6 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
 	bc.prefetcher = newStatePrefetcher(chainConfig, bc, engine)
 	bc.processor = NewStateProcessor(chainConfig, bc, engine)
-
 	var err error
 	bc.hc, err = NewHeaderChain(db, chainConfig, engine, bc.insertStopped)
 	if err != nil {
@@ -446,15 +444,15 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	log.Info("NewBlockChain dPosHash", "dPosHash", dposHash.Hex())
 	epoch := chainConfig.DposConfig.Epoch
 	dposNo := number + 1 - (number+1)%epoch
-	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
-	data, _ := db.Get(dposNodesKey)
+	//dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
+	dposAccountList := rawdb.ReadDPos(db, dposNo)
 	//if nil != data {
-	var dposAccountList []common.DPoSAccount
+	/*	var dposAccountList []common.DPoSAccount
 
-	//json.Unmarshal(data, &dposAccountList)
-	if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
-		log.Crit("Invalid dposList for block number in database", "err", err)
-	}
+		//json.Unmarshal(data, &dposAccountList)
+		if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
+			log.Crit("Invalid dposList for block number in database", "err", err)
+		}*/
 
 	chainConfig.DposConfig = new(params.DposConfig)
 	chainConfig.DposConfig.DposList = dposAccountList
@@ -2619,54 +2617,35 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	//epoch := common.If(bc.dposConfig == nil, uint64(5), bc.dposConfig.Epoch).(uint64)
-
+	if number == 0 {
+		return
+	}
 	var epoch uint64
 	if bc.chainConfig.DposConfig == nil {
 		log.Crit("Failed to writ dpos on write block", "err", bc.chainConfig.DposConfig)
 	} else {
 		epoch = bc.chainConfig.DposConfig.Epoch
 	}
-	dposNo := number + 1 - (number+1)%epoch
-
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
 		confirmBlockNum = epoch - confirmDpos
 	}
-	if number == 0 || (number+confirmBlockNum)%epoch == 0 {
-		dPosList := stateDB.GetCurrentDpostList()
-		stateDB.ChangDpostAccount(dPosList)
-		log.Info("writeDposNodes preDPosHash", "block_number", number, "preDPosHash", state.BuildHashForDPos(stateDB.GetOldDpostList()))
-		log.Info("writeDposNodes newDPosHash", "newDPosHash", state.BuildHashForDPos(dPosList))
-		dPosHash := state.BuildHashForDPos(dPosList)
-		log.Info("writeDposNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
 
-		rootHash := stateDB.IntermediateRootForDPos(dPosHash)
-		log.Info("writeDposNodes rootHash", "rootHash", rootHash.Hex())
-
-		data, err := rlp.EncodeToBytes(dPosList)
-		if err != nil {
-			log.Error("dpos Should not error: %v", err)
-		}
-
-		dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
-		if err := bc.db.Put(dposNodesKey, data); err != nil {
-			log.Crit("Failed to store dposNodesList", "err", err)
-		}
+	del := (number+confirmBlockNum)%epoch == 0
+	presetDPosAccounts := state.GetDPosList().GetPresetDPosAccounts(del)
+	if presetDPosAccounts == nil {
+		log.Info("current preset DPos account is null")
+		return
 	}
-}
-
-func (bc *BlockChain) GetDposNodes(dposHash common.Hash) ([]common.DPoSAccount, error) {
-	block := bc.CurrentBlock()
-	number := block.NumberU64()
-	epoch := bc.chainConfig.DposConfig.Epoch
-	dposNo := number + 1 - (number+1)%epoch
-	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
-	data, err := bc.stateCache.TrieDB().GetDposNodes(dposNodesKey)
-	if err != nil {
-		log.Crit("Invalid dposList for block number in database", "err", err)
-	}
-	return data, err
+	/*	for _, dposCandidate := range presetDPosAccounts {
+		fmt.Printf("Owner:%s, Enode:%s\n", dposCandidate.Owner, dposCandidate.Enode)
+	}*/
+	dPosHash := state.BuildHashForDPos(presetDPosAccounts)
+	//log.Info("writeDPosNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
+	stateDB.IntermediateRootForDPosHash(dPosHash)
+	//log.Info("writeDPosNodes rootHash", "rootHash", rootHash.Hex())
+	dposNo := number + epoch - 1 - (number+epoch-1)%epoch
+	rawdb.WriteDPos(bc.db, dposNo, presetDPosAccounts)
 }
 
 func (bc *BlockChain) updateP2pDposNodes() {
@@ -2681,6 +2660,8 @@ func (bc *BlockChain) updateP2pDposNodes() {
 
 	if number > 0 {
 		// next dpos if not find in the pre dpos list, add it
+		//mod := (number + confirmBlockNum) % epoch
+		//fmt.Printf("number:%d, confirmBlockNum:%d, epoch:%d, mod:%d\n", number, confirmBlockNum, epoch, mod)
 		if (number+confirmBlockNum)%epoch == 0 {
 			curDposAccounts := bc.GetDposAccounts(number)
 			nextDposAccounts := bc.GetNextDposAccounts(number)
@@ -2776,7 +2757,6 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
 	}
-
 	return accounts
 }
 

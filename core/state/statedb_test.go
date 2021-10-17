@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	probe "github.com/probeum/go-probeum/crypto/probecrypto"
 	"math"
 	"math/big"
 	"math/rand"

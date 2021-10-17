@@ -27,7 +27,6 @@ import (
 	"github.com/probeum/go-probeum/probedb"
 	"math/big"
 	"net"
-	"regexp"
 	"sort"
 	"time"
 
@@ -337,7 +336,7 @@ type StateDB struct {
 	stateObjectsPending map[common.Address]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
 
-	dposList         *dposList
+	//dposList         *DPosList
 	markLossAccounts map[common.Hash][]common.Address
 
 	// DB error.
@@ -412,10 +411,10 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		stateObjectsDirty:   make(map[common.Address]struct{}),
 		logs:                make(map[common.Hash][]*types.Log),
 		preimages:           make(map[common.Hash][]byte),
-		dposList:            newDposList(),
-		journal:             newJournal(),
-		accessList:          newAccessList(),
-		hasher:              crypto.NewKeccakState(),
+		//dposList:            GetDPosList(),
+		journal:    newJournal(),
+		accessList: newAccessList(),
+		hasher:     crypto.NewKeccakState(),
 	}
 	//if sdb.snaps != nil {
 	//	if sdb.snap = sdb.snaps.Snapshot(root); sdb.snap != nil {
@@ -702,25 +701,20 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 
 // GetDposAccounts retrieves a dpos list
 func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
-	dposHash := GetHash(root, s.Database())[6]
+	//dposHash := GetHash(root, s.Database())[6]
 	dposNo := number + 1 - (number+1)%epoch
-	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
-	nodes, _ := s.Database().TrieDB().GetDposNodes(dposNodesKey)
-	length := len(nodes)
-	data := make([]*common.DPoSAccount, 0, length)
+	//fmt.Printf("------>  number:%d, epoch:%d, dposNo:%d\n", number, epoch, dposNo)
+	nodes := rawdb.ReadDPos(s.db.TrieDB().DiskDB(), dposNo)
+	data := make([]*common.DPoSAccount, 0, len(nodes))
 	for index, _ := range nodes {
 		data = append(data, &nodes[index])
 	}
-	log.Debug("GetDposAccounts", "DPoSAccount", nodes, "data", data)
 	return data
 }
 
 // GetNextDposAccounts retrieves a dpos list todo
 func (s *StateDB) GetNextDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
-	log.Info("GetNextDposAccounts", "root", root, "number", number, "epoch", epoch)
-
 	return s.GetDposAccounts(root, number+epoch, epoch)
-	//return s.GetDposAccounts(root, number, epoch)
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.
@@ -1097,7 +1091,7 @@ func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, js
 	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = ower
 	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	s.dposList.dPoSCandidateAccounts.Update(stateObject.dposCandidateAccount)
+	GetDPosList().AddDPosCandidate(stateObject.dposCandidateAccount)
 }
 
 func InetAtoN(ip string) *big.Int {
@@ -1148,7 +1142,6 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 func (s *StateDB) Copy() *StateDB {
 	// Copy all the basic fields, initialize the memory ones
 	var regularTrie, pnsTrie, digitalTrie, contractTrie, authorizeTrie, lossTrie Trie
-	var dbDposList dposList
 	if s.trie.regularTrie != nil {
 		regularTrie = s.db.CopyTrie(s.trie.regularTrie)
 	}
@@ -1167,9 +1160,9 @@ func (s *StateDB) Copy() *StateDB {
 	if s.trie.lossTrie != nil {
 		lossTrie = s.db.CopyTrie(s.trie.lossTrie)
 	}
-	if s.dposList != nil {
+	/*	if s.dposList != nil {
 		dbDposList = s.copyDposList()
-	}
+	}*/
 	state := &StateDB{
 		db: s.db,
 		//trie:                s.db.CopyTrie(s.trie),
@@ -1186,14 +1179,14 @@ func (s *StateDB) Copy() *StateDB {
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
-		dposList:            &dbDposList,
-		markLossAccounts:    make(map[common.Hash][]common.Address, len(s.markLossAccounts)),
-		refund:              s.refund,
-		logs:                make(map[common.Hash][]*types.Log, len(s.logs)),
-		logSize:             s.logSize,
-		preimages:           make(map[common.Hash][]byte, len(s.preimages)),
-		journal:             newJournal(),
-		hasher:              crypto.NewKeccakState(),
+		//dposList:            GetDPosList(),
+		markLossAccounts: make(map[common.Hash][]common.Address, len(s.markLossAccounts)),
+		refund:           s.refund,
+		logs:             make(map[common.Hash][]*types.Log, len(s.logs)),
+		logSize:          s.logSize,
+		preimages:        make(map[common.Hash][]byte, len(s.preimages)),
+		journal:          newJournal(),
+		hasher:           crypto.NewKeccakState(),
 	}
 	// Copy the dirty states, logs, and preimages
 	for addr := range s.journal.dirties {
@@ -1841,7 +1834,7 @@ func (s *StateDB) Redemption(context vm.TxContext) {
 		regularAccount := s1.regularAccount
 		s2 := s.getStateObject(*context.To)
 		if s2 != nil {
-			authorizeAccount := s1.authorizeAccount
+			authorizeAccount := s2.authorizeAccount
 			if context.From == authorizeAccount.Owner {
 				s.RedemptionForAuthorize(*context.To, nil)
 			}
@@ -1881,8 +1874,7 @@ func (s *StateDB) ApplyToBeDPoSNode(blockNumber *big.Int, context vm.TxContext) 
 	epoch := new(big.Int).SetUint64(globalconfig.Epoch)
 	dposNo := number.Add(number, epoch)
 	stateObject.dposCandidateAccount.Height = dposNo
-	s.dposList.dPoSCandidateAccounts.removeByHeigh(context.Height)
-	s.dposList.dPoSCandidateAccounts.PutOnTop(stateObject.dposCandidateAccount)
+	GetDPosList().AddDPosCandidate(stateObject.dposCandidateAccount)
 }
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
@@ -1960,85 +1952,14 @@ func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
 	default:
 		return nil
 	}
-	//return &s.trie
 }
 
 func (s *StateDB) GetStateDbTrie() *TotalTrie {
 	return &s.trie
 }
 
-func (s *StateDB) InitDpostList(dposList []common.DPoSAccount) {
-	for _, dposAccount := range dposList {
-		var dposCandidateAccount DPoSCandidateAccount
-		dposCandidateAccount.Enode = dposAccount.Enode
-		dposCandidateAccount.Owner = dposAccount.Owner
-		dposEnode := bytes.Trim(dposAccount.Enode[:], "\x00")
-		dposStr := string(dposEnode[:])
-		reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
-		remoteIp := reg.FindAllString(string(dposStr), -1)[0]
-		dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-		number := new(big.Int).SetUint64(0)
-		epoch := new(big.Int).SetUint64(globalconfig.Epoch)
-		dposNo := number.Add(number, epoch)
-		dposCandidateAccount.Height = dposNo
-		dposCandidateAccount.DelegateValue = number
-		s.dposList.dPoSCandidateAccounts.PutOnTop(dposCandidateAccount)
-	}
-
-}
-
-func (s *StateDB) GetCurrentDpostList() []common.DPoSAccount {
-	/*var dPoSAccounts = make([]common.DPoSAccount, s.dPoSCandidateList.Limit)
-	i := 0
-	for element := s.dPoSCandidateList.List.Front(); element != nil; element = element.Next() {
-		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
-		dPoSAccount := &common.DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
-		dPoSAccounts[i] = *dPoSAccount
-		i++
-	}
-	return dPoSAccounts*/
-	return s.dposList.dPoSCandidateAccounts.GetDpostList()
-}
-
-func (s *StateDB) GetOldDpostList() []common.DPoSAccount {
-	return s.dposList.oldDPoSAccounts
-}
-
-func (s *StateDB) ChangDpostAccount(dposAccounts []common.DPoSAccount) {
-	for i, dposAccount := range dposAccounts {
-		s.dposList.oldDPoSAccounts[i] = s.dposList.dPoSAccounts[i]
-		s.dposList.dPoSAccounts[i] = dposAccount
-	}
-}
-
-func (s *StateDB) GetDPosHashByRoot(root common.Hash, db Database) common.Hash {
-	hashes := GetHash(root, db)
-
-	return hashes[6]
-}
-
-func (s *StateDB) GetDPosCandidateHashByRoot(root common.Hash, db Database) common.Hash {
-	hashes := GetHash(root, db)
-
-	return hashes[7]
-}
-
-func (s *StateDB) IntermediateRootForDPos(dPosHash common.Hash) common.Hash {
+func (s *StateDB) IntermediateRootForDPosHash(dPosHash common.Hash) common.Hash {
 	//  dPosHash
 	s.trie.dPosHash = dPosHash
 	return s.trie.Hash()
-}
-
-func (s *StateDB) IntermediateRootForDPosCandidate(dPosCandidateHash common.Hash) common.Hash {
-	s.trie.dPosCandidateHash = dPosCandidateHash
-	return s.trie.Hash()
-}
-
-func (s *StateDB) PrintTrie() {
-	//s.trie.Print()
-}
-
-func (s *StateDB) copyDposList() dposList {
-	cpy := *s.dposList
-	return cpy
 }

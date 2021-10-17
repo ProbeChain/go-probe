@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"strings"
@@ -640,21 +641,17 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc
 	if state == nil || err != nil {
 		return nil, err
 	}
-
 	block := s.b.CurrentBlock()
 	number := block.NumberU64()
-	//epoch := common.If(bc.dposConfig == nil, uint64(5), bc.dposConfig.Epoch).(uint64)
-
 	var epoch uint64
 	if s.b.ChainConfig().DposConfig == nil {
 		log.Crit("Failed to writ dpos on write block", "err", s.b.ChainConfig().DposConfig)
 	} else {
 		epoch = s.b.ChainConfig().DposConfig.Epoch
 	}
-	dposHash := state.GetStateDbTrie().GetTallHash()[6]
+	//dposHash := state.GetStateDbTrie().GetTallHash()[6]
 	dposNo := number - (number)%epoch
-	dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
-	return state.Database().TrieDB().GetDposNodes(dposNodesKey)
+	return rawdb.ReadDPos(state.Database().TrieDB().DiskDB(), dposNo), nil
 }
 
 // Result structs for GetProof

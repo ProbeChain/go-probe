@@ -1,155 +1,108 @@
 package state
 
 import (
+	"bytes"
 	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/core/globalconfig"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/log"
 	"math/big"
-	"sync"
+	"regexp"
+	"sort"
 )
 
-type dposList struct {
-	// DPoSAccount DPoS账户 64
-	dPoSAccounts []common.DPoSAccount
-
+type DPosList struct {
 	// DPoSCandidateAccount DPoS候选账户 64
-	dPoSCandidateAccounts *SortedLinkedList
-
-	// DPoSAccount DPoS账户 64
-	oldDPoSAccounts []common.DPoSAccount
-	lock            sync.RWMutex
+	dPosCandidateAccounts dPosCandidateAccountList
 }
 
-func newDposList() *dposList {
-	return &dposList{
-		dPoSAccounts:          make([]common.DPoSAccount, common.DposNodeLength),
-		dPoSCandidateAccounts: NewSortedLinkedList(common.DposNodeLength, compareValue),
-		oldDPoSAccounts:       make([]common.DPoSAccount, common.DposNodeLength),
+type dPosCandidateAccountList []DPoSCandidateAccount
+
+var dPosList *DPosList
+
+func init() {
+	log.Info("DPosList init")
+	dPosList = &DPosList{
+		dPosCandidateAccounts: make([]DPoSCandidateAccount, 0),
 	}
 }
 
-func (s *dposList) GetAllDPos() []common.DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	return s.dPoSAccounts
+func GetDPosList() *DPosList {
+	return dPosList
 }
 
-func (s *dposList) AddDPos(dDoSAccount common.DPoSAccount) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (d dPosCandidateAccountList) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
 
-	s.dPoSAccounts = append(s.dPoSAccounts, dDoSAccount)
-	//sort.Sort(accountsByURL(liveList))
-}
+func (d dPosCandidateAccountList) Len() int { return len(d) }
 
-func (s *dposList) DeleteDPosByAddr(addr common.Address) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var i int
-	for j, d := range s.dPoSAccounts {
-		if d.Owner == addr {
-			i = j
-		}
+func (d dPosCandidateAccountList) Less(i, j int) bool {
+	if d[i].DelegateValue == nil && d[j].DelegateValue != nil {
+		return false
 	}
-	s.dPoSAccounts = append(s.dPoSAccounts[:i], s.dPoSAccounts[i+1:]...)
-}
-
-func (s *dposList) GetAllDPoSCandidate() []DPoSCandidateAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	var dPoSCandidateAccounts = make([]DPoSCandidateAccount, s.dPoSCandidateAccounts.Limit)
-	i := 0
-	for element := s.dPoSCandidateAccounts.List.Front(); element != nil; element = element.Next() {
-		dPoSCandidateAccounts[i] = element.Value.(DPoSCandidateAccount)
-		i++
+	if d[i].DelegateValue != nil && d[j].DelegateValue == nil {
+		return true
 	}
-	return dPoSCandidateAccounts
-}
-
-func (s *StateDB) getNextDPOSList() []common.DPoSAccount {
-	var dPoSAccounts = make([]common.DPoSAccount, s.dposList.dPoSCandidateAccounts.Limit)
-	i := 0
-	for element := s.dposList.dPoSCandidateAccounts.List.Front(); element != nil; element = element.Next() {
-		dPoSCandidateAccount := element.Value.(DPoSCandidateAccount)
-		dPoSAccount := &common.DPoSAccount{dPoSCandidateAccount.Enode, dPoSCandidateAccount.Owner}
-		dPoSAccounts[i] = *dPoSAccount
-		i++
+	cmpRet := d[i].DelegateValue.Cmp(d[j].DelegateValue)
+	if cmpRet == 0 {
+		cmpRet = d[i].Weight.Cmp(d[j].Weight)
 	}
-	return dPoSAccounts
+	return cmpRet > 0
 }
 
-func (s *dposList) AddDPoSCandidate(account DPoSCandidateAccount) {
-	s.dPoSCandidateAccounts.PutOnTop(account)
+func (d *DPosList) GetDPosCandidateAccounts() *dPosCandidateAccountList {
+	return &d.dPosCandidateAccounts
 }
 
-/*
-func (s *dposList) DeleteDPoSCandidateByAddr(addr common.Address) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var i int
-	for j, d := range s.dPoSCandidateAccounts {
-		if d.Owner == addr {
-			i = j
-		}
+func (d *DPosList) GetPresetDPosAccounts(del bool) []common.DPoSAccount {
+	presetLen := d.dPosCandidateAccounts.Len()
+	if presetLen > common.DposNodeLength {
+		presetLen = common.DposNodeLength
 	}
-	s.dPoSCandidateAccounts = append(s.dPoSCandidateAccounts[:i], s.dPoSCandidateAccounts[i+1:]...)
-}
 
-func (s *dposList) GetAllOldDPoSCandidate() []DPoSCandidateAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	return s.oldDPoSCandidateAccounts
-}
-
-func (s *dposList) AddOldDPoSCandidate(account DPoSCandidateAccount) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	s.oldDPoSCandidateAccounts = append(s.oldDPoSCandidateAccounts, account)
-	//sort.Sort(accountsByURL(liveList))
-}
-
-func (s *dposList) DeleteOldDPoSCandidateByAddr(addr common.Address) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var i int
-	for j, d := range s.oldDPoSCandidateAccounts {
-		if d.Owner == addr {
-			i = j
-		}
+	presetCandidate := d.dPosCandidateAccounts[0:presetLen]
+	if del {
+		d.dPosCandidateAccounts = d.dPosCandidateAccounts[presetLen:]
 	}
-	s.oldDPoSCandidateAccounts = append(s.oldDPoSCandidateAccounts[:i], s.oldDPoSCandidateAccounts[i+1:]...)
-}*/
 
-func (s *dposList) GetAllOldDPoS() []common.DPoSAccount {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	return s.oldDPoSAccounts
-}
-
-func (s *dposList) AddOldDPoS(account common.DPoSAccount) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	s.oldDPoSAccounts = append(s.oldDPoSAccounts, account)
-	//sort.Sort(accountsByURL(liveList))
-}
-
-func (s *dposList) DeleteOldDPoSByAddr(addr common.Address) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
-	var i int
-	for j, d := range s.oldDPoSAccounts {
-		if d.Owner == addr {
-			i = j
-		}
+	presetDPoSAccounts := make([]common.DPoSAccount, presetLen)
+	for i, dPosCandidate := range presetCandidate {
+		presetDPoSAccounts[i] = common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner}
 	}
-	s.oldDPoSAccounts = append(s.oldDPoSAccounts[:i], s.oldDPoSAccounts[i+1:]...)
+	if len(presetDPoSAccounts) == 0 {
+		presetDPoSAccounts = nil
+	}
+	return presetDPoSAccounts
+}
+
+func (d *DPosList) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
+	if len(dposList) == 0 {
+		return
+	}
+	dPosCandidateAccounts := make([]DPoSCandidateAccount, len(dposList))
+	for i, dposAccount := range dposList {
+		var dposCandidateAccount DPoSCandidateAccount
+		dposCandidateAccount.Enode = dposAccount.Enode
+		dposCandidateAccount.Owner = dposAccount.Owner
+		dposEnode := bytes.Trim(dposAccount.Enode[:], "\x00")
+		dposStr := string(dposEnode[:])
+		reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
+		remoteIp := reg.FindAllString(string(dposStr), -1)[0]
+		dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
+		number := new(big.Int).SetUint64(0)
+		epoch := new(big.Int).SetUint64(globalconfig.Epoch)
+		dposNo := number.Add(number, epoch)
+		dposCandidateAccount.Height = dposNo
+		dposCandidateAccount.DelegateValue = number
+
+		dPosCandidateAccounts[i] = dposCandidateAccount
+	}
+	d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, dPosCandidateAccounts...)
+	sort.Stable(d.dPosCandidateAccounts)
+}
+
+func (d *DPosList) AddDPosCandidate(dPosCandidate DPoSCandidateAccount) {
+	d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, dPosCandidate)
+	sort.Stable(d.dPosCandidateAccounts)
 }
 
 func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
@@ -158,12 +111,6 @@ func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
 		curNum := new(big.Int).SetBytes(crypto.Keccak512(append(account.Enode[:], account.Owner.Bytes()...)))
 		num = new(big.Int).Xor(curNum, num)
 	}
-	//hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
-	//hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
-	//
-	//var ret [32]byte
-	//copy(ret[:], hash[32:64])
-
 	return crypto.Keccak256Hash(num.Bytes())
 }
 

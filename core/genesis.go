@@ -187,7 +187,7 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	// but the corresponding state is missing.
 	// 获取创世块的头部信息
 	header := rawdb.ReadHeader(db, stored, 0)
-	stateDB, err := state.New(header.Root, state.NewDatabaseWithConfig(db, nil), nil)
+	_, err := state.New(header.Root, state.NewDatabaseWithConfig(db, nil), nil)
 	if err != nil {
 		if genesis == nil {
 			genesis = DefaultGenesisBlock()
@@ -221,8 +221,7 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	}
 	storedcfg := rawdb.ReadChainConfig(db, stored)
 	globalconfig.Epoch = storedcfg.DposConfig.Epoch
-
-	stateDB.InitDpostList(storedcfg.DposConfig.DposList)
+	//state.GetDPosList().ConvertToDPosCandidate(storedcfg.DposConfig.DposList)
 	if storedcfg == nil {
 		// 读取失败，说明创世区块写入被中断
 		log.Warn("Found genesis block without chain config")
@@ -289,19 +288,21 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			}*/
 			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
 			log.Info("ToBlock dPosHash", "dPosHash", dPosHash.Hex())
-			rootHash := statedb.IntermediateRootForDPos(dPosHash)
+			rootHash := statedb.IntermediateRootForDPosHash(dPosHash)
 			log.Info("ToBlock rootHash", "rootHash", rootHash.Hex())
+
+			rawdb.WriteDPos(db, dposNo, g.DposConfig.DposList)
 			//data, _ := json.Marshal(g.DposConfig.DposList)
-			data, err := rlp.EncodeToBytes(g.DposConfig.DposList)
-			if err != nil {
-				log.Error("ToBlock", "dpos Should not error: %v", err)
-			}
-			batch := db.NewBatch()
-			dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
-			if err := db.Put(dposNodesKey, data); err != nil {
-				log.Crit("Failed to store dposNodesList", "err", err)
-			}
-			batch.Write()
+			/*			data, err := rlp.EncodeToBytes(g.DposConfig.DposList)
+						if err != nil {
+							log.Error("ToBlock", "dpos Should not error: %v", err)
+						}
+						batch := db.NewBatch()
+						dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
+						if err := db.Put(dposNodesKey, data); err != nil {
+							log.Crit("Failed to store dposNodesList", "err", err)
+						}
+						batch.Write()*/
 		}
 	}
 	for addr, account := range g.Alloc {

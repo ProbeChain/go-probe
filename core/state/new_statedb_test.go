@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"math/big"
 	"testing"
@@ -76,7 +76,7 @@ func TestDeleteData(t *testing.T) {
 	obj1.setValueForRegular(big.NewInt(20))
 	fmt.Printf(" before DeleteStateObjectByAddr：%v \n", s.state.GetRegular(address))
 	s.state.updateStateObject(obj1)
-	s.state.DeleteStateObjectByAddr(address)
+	//s.state.DeleteStateObjectByAddr(address)
 	fmt.Printf(" after DeleteStateObjectByAddr：%v \n", s.state.GetRegular(address))
 }
 

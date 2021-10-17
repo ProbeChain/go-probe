@@ -9,53 +9,38 @@ import (
 
 func TestDpospool(t *testing.T) {
 	candidateDPOSAccounts := []DPoSCandidateAccount{
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000000@192.168.0.3:80")), [25]byte{0}, big.NewInt(3), big.NewInt(300)},
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000001@192.168.0.4:80")), [25]byte{1}, big.NewInt(3), big.NewInt(200)},
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000002@192.168.1.3:80")), [25]byte{2}, big.NewInt(3), big.NewInt(400)},
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000003@192.168.1.4:80")), [25]byte{3}, big.NewInt(3), big.NewInt(500)},
+		{common.BytesToDposEnode([]byte("enode://000000000000000000000000@192.168.0.3:80")), [25]byte{0}, big.NewInt(3), big.NewInt(1), big.NewInt(100)},
+		//{common.BytesToDposEnode([]byte("enode://000000000000000000000001@192.168.0.4:80")), [25]byte{1}, big.NewInt(3), big.NewInt(2), big.NewInt(500)},
+		//{common.BytesToDposEnode([]byte("enode://000000000000000000000002@192.168.1.3:80")), [25]byte{2}, big.NewInt(3), big.NewInt(3), big.NewInt(400)},
+		//{common.BytesToDposEnode([]byte("enode://000000000000000000000003@192.168.1.4:80")), [25]byte{3}, big.NewInt(3), big.NewInt(4), big.NewInt(400)},
 	}
-	var aSortedLinkedList = NewSortedLinkedList(4, compareValue)
-	for _, candidateDPOS := range candidateDPOSAccounts {
-		aSortedLinkedList.PutOnTop(candidateDPOS)
+
+	for _, dd := range candidateDPOSAccounts {
+		GetDPosList().AddDPosCandidate(dd)
 	}
-	for element := aSortedLinkedList.List.Front(); element != nil; element = element.Next() {
-		fmt.Println(element.Value.(DPoSCandidateAccount))
+	dPosCandidateAccounts := GetDPosList().GetDPosCandidateAccounts()
+	for _, aa := range *dPosCandidateAccounts {
+		fmt.Printf("Owner:%s,Height:%d,Weight:%d,DelegateValue:%d,Enode:%s\n", aa.Owner, aa.Height, aa.Weight, aa.DelegateValue, aa.Enode)
 	}
-	dposCandidateAccount := DPoSCandidateAccount{common.BytesToDposEnode([]byte("0@192.168.2.3:80")), [25]byte{0}, big.NewInt(5), big.NewInt(400)}
-	aSortedLinkedList.PutOnTop(dposCandidateAccount)
-	fmt.Println("****************************")
-	for element := aSortedLinkedList.List.Front(); element != nil; element = element.Next() {
-		fmt.Println(element.Value.(DPoSCandidateAccount))
+
+	fmt.Println("---------presetDPosAccounts-----------")
+	presetDPosAccounts := GetDPosList().GetPresetDPosAccounts(false)
+	for _, bb := range presetDPosAccounts {
+		fmt.Printf("Owner:%s,Enode:%s\n", bb.Owner, bb.Enode)
+	}
+
+	fmt.Println("---------presetDPosAccounts2-----------")
+	presetDPosAccounts2 := GetDPosList().GetDPosCandidateAccounts()
+	for _, aa := range *presetDPosAccounts2 {
+		fmt.Printf("Owner:%s,Height:%d,Weight:%d,DelegateValue:%d,Enode:%s\n", aa.Owner, aa.Height, aa.Weight, aa.DelegateValue, aa.Enode)
 	}
 
 }
 
-func TestRemoveDpospool(t *testing.T) {
-	candidateDPOSAccounts := []DPoSCandidateAccount{
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000000@192.168.0.3:80")), [25]byte{0}, big.NewInt(3), big.NewInt(300)},
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000001@192.168.0.4:80")), [25]byte{1}, big.NewInt(3), big.NewInt(200)},
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000002@192.168.1.3:80")), [25]byte{2}, big.NewInt(3), big.NewInt(400)},
-		{common.BytesToDposEnode([]byte("enode://000000000000000000000003@192.168.1.4:80")), [25]byte{3}, big.NewInt(3), big.NewInt(500)},
-	}
-	var aSortedLinkedList = NewSortedLinkedList(4, compareValue)
-	for _, candidateDPOS := range candidateDPOSAccounts {
-		aSortedLinkedList.PutOnTop(candidateDPOS)
-	}
-	for element := aSortedLinkedList.List.Front(); element != nil; element = element.Next() {
-		fmt.Println(element.Value.(DPoSCandidateAccount))
-	}
-	fmt.Println("****************************")
-	dposCandidateAccount := DPoSCandidateAccount{common.BytesToDposEnode([]byte("enode://000000000000000000000000@192.168.1.3:80")), [25]byte{0}, big.NewInt(5), big.NewInt(400)}
-	aSortedLinkedList.remove(dposCandidateAccount)
-	for element := aSortedLinkedList.List.Front(); element != nil; element = element.Next() {
-		fmt.Println(element.Value.(DPoSCandidateAccount))
-	}
+func TestDpospool2(t *testing.T) {
+	epoch := 100
+	number := 101 + epoch - 1
 
-	fmt.Println("****************************")
-}
-
-func TestMul(t *testing.T) {
-	limitMaxValue := big.NewInt(1)
-	limitMaxValue.Mul(big.NewInt(20), big.NewInt(10))
-	fmt.Printf("Big Int: %v\n", limitMaxValue)
+	dposNo := number - (number)%epoch
+	fmt.Println(dposNo)
 }

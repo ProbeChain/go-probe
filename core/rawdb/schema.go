@@ -90,7 +90,7 @@ var (
 	SnapshotStoragePrefix = []byte("o") // SnapshotStoragePrefix + account hash + storage hash -> storage trie value
 	CodePrefix            = []byte("c") // CodePrefix + code hash -> account code
 
-	preimagePrefix = []byte("secure-key-")      // preimagePrefix + hash -> preimage
+	preimagePrefix = []byte("secure-key-")     // preimagePrefix + hash -> preimage
 	configPrefix   = []byte("probeum-config-") // config prefix for the db
 
 	// Chain index prefixes (use `i` + single byte to avoid mixing data types).
@@ -99,6 +99,8 @@ var (
 	AlterPrefix = []byte("alt") // 修改前缀
 
 	StateRootPrefix = []byte("state-root-") // 修改前缀
+
+	DPosPrefix = []byte("DPos-")
 
 	preimageCounter    = metrics.NewRegisteredCounter("db/preimage/total", nil)
 	preimageHitCounter = metrics.NewRegisteredCounter("db/preimage/hits", nil)
@@ -242,4 +244,14 @@ func AlterKey(hash common.Hash) []byte {
 
 func StateRootKey(hash common.Hash) []byte {
 	return append(StateRootPrefix, hash.Bytes()...)
+}
+
+func DposKey(key uint64) []byte {
+	return append(DPosPrefix, IntToBytes(key)...)
+}
+
+func IntToBytes(n uint64) []byte {
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	binary.Write(bytesBuffer, binary.BigEndian, n)
+	return bytesBuffer.Bytes()
 }
