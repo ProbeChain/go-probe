@@ -168,7 +168,7 @@ type LossAccount struct {
 type DPoSCandidateAccount struct {
 	Enode         common.DposEnode
 	Owner         common.Address
-	Height        *big.Int
+	Mark          byte
 	Weight        *big.Int
 	DelegateValue *big.Int
 }
@@ -190,13 +190,13 @@ type RPCAccountInfo struct {
 	NewAccount    *common.Address   `json:"newAccount,omitempty"`
 	VoteAccount   *common.Address   `json:"voteAccount,omitempty"`
 	Enode         *common.DposEnode `json:"enode,omitempty"`
-	VoteValue     *big.Int          `json:"voteValue,omitempty"`
-	PledgeValue   *big.Int          `json:"pledgeValue,omitempty"`
-	Value         *big.Int          `json:"value,omitempty"`
+	VoteValue     string            `json:"voteValue,omitempty"`
+	PledgeValue   string            `json:"pledgeValue,omitempty"`
+	Value         string            `json:"value,omitempty"`
 	ValidPeriod   *big.Int          `json:"validPeriod,omitempty"`
 	Height        *big.Int          `json:"height,omitempty"`
 	Weight        *big.Int          `json:"weight,omitempty"`
-	DelegateValue *big.Int          `json:"delegateValue,omitempty"`
+	DelegateValue string            `json:"delegateValue,omitempty"`
 	LossType      *hexutil.Uint8    `json:"lossType,omitempty"`
 	Nonce         *hexutil.Uint64   `json:"nonce,omitempty"`
 	Type          *hexutil.Uint8    `json:"type,omitempty"`
@@ -871,10 +871,10 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
 		accountInfo.VoteAccount = &s.regularAccount.VoteAccount
-		accountInfo.VoteValue = s.regularAccount.VoteValue
+		accountInfo.VoteValue = s.regularAccount.VoteValue.String()
 		accountInfo.LossType = (*hexutil.Uint8)(&s.regularAccount.LossType)
 		accountInfo.Nonce = (*hexutil.Uint64)(&s.regularAccount.Nonce)
-		accountInfo.Value = s.regularAccount.Value
+		accountInfo.Value = s.regularAccount.Value.String()
 	case common.ACC_TYPE_OF_PNS:
 		accountInfo.Type = (*hexutil.Uint8)(&s.pnsAccount.Type)
 		accountInfo.Owner = &s.pnsAccount.Owner
@@ -884,14 +884,14 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		accountInfo.Type = (*hexutil.Uint8)(&s.assetAccount.Type)
 		codeHash := hexutil.Bytes(s.assetAccount.CodeHash)
 		accountInfo.CodeHash = &codeHash
-		accountInfo.Value = s.assetAccount.Value
+		accountInfo.Value = s.assetAccount.Value.String()
 		accountInfo.VoteAccount = &s.assetAccount.VoteAccount
-		accountInfo.VoteValue = s.assetAccount.VoteValue
+		accountInfo.VoteValue = s.assetAccount.VoteValue.String()
 		accountInfo.Nonce = (*hexutil.Uint64)(&s.assetAccount.Nonce)
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		accountInfo.Owner = &s.authorizeAccount.Owner
-		accountInfo.PledgeValue = s.authorizeAccount.PledgeValue
-		accountInfo.VoteValue = s.authorizeAccount.VoteValue
+		accountInfo.PledgeValue = s.authorizeAccount.PledgeValue.String()
+		accountInfo.VoteValue = s.authorizeAccount.VoteValue.String()
 		info := hexutil.Bytes(s.authorizeAccount.Info)
 		accountInfo.Info = &info
 		accountInfo.ValidPeriod = s.authorizeAccount.ValidPeriod

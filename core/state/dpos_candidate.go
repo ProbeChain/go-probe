@@ -3,7 +3,6 @@ package state
 import (
 	"bytes"
 	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/globalconfig"
 	"github.com/probeum/go-probeum/crypto"
 	"github.com/probeum/go-probeum/log"
 	"math/big"
@@ -53,25 +52,28 @@ func (d *DPosCandidate) GetDPosCandidateAccounts() *dPosCandidateAccountList {
 	return &d.dPosCandidateAccounts
 }
 
-func (d *DPosCandidate) GetPresetDPosAccounts(del bool) []common.DPoSAccount {
+func (d *DPosCandidate) GetPresetDPosAccounts(del bool) ([]common.DPoSAccount, bool) {
 	presetLen := d.dPosCandidateAccounts.Len()
 	if presetLen > common.DposNodeLength {
 		presetLen = common.DposNodeLength
 	}
-
-	presetCandidate := d.dPosCandidateAccounts[0:presetLen]
+	hasNew := false
+	presetDPoSAccounts := make([]common.DPoSAccount, presetLen)
+	for i := 0; i < presetLen; i++ {
+		dPosCandidate := d.dPosCandidateAccounts[i]
+		if dPosCandidate.Mark == byte(0) {
+			hasNew = true
+			d.dPosCandidateAccounts[i].Mark = byte(1)
+		}
+		presetDPoSAccounts[i] = common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner}
+	}
 	if del {
 		d.dPosCandidateAccounts = d.dPosCandidateAccounts[presetLen:]
 	}
-
-	presetDPoSAccounts := make([]common.DPoSAccount, presetLen)
-	for i, dPosCandidate := range presetCandidate {
-		presetDPoSAccounts[i] = common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner}
-	}
-	if len(presetDPoSAccounts) == 0 {
+	if presetLen == 0 {
 		presetDPoSAccounts = nil
 	}
-	return presetDPoSAccounts
+	return presetDPoSAccounts, hasNew
 }
 
 func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
@@ -88,11 +90,8 @@ func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
 		reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
 		remoteIp := reg.FindAllString(string(dposStr), -1)[0]
 		dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-		number := new(big.Int).SetUint64(0)
-		epoch := new(big.Int).SetUint64(globalconfig.Epoch)
-		dposNo := number.Add(number, epoch)
-		dposCandidateAccount.Height = dposNo
-		dposCandidateAccount.DelegateValue = number
+		dposCandidateAccount.Mark = byte(0)
+		dposCandidateAccount.DelegateValue = new(big.Int).SetUint64(0)
 
 		dPosCandidateAccounts[i] = dposCandidateAccount
 	}

@@ -1870,10 +1870,7 @@ func (s *StateDB) ApplyToBeDPoSNode(blockNumber *big.Int, context vm.TxContext) 
 	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = context.From
 	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	number := blockNumber
-	epoch := new(big.Int).SetUint64(globalconfig.Epoch)
-	dposNo := number.Add(number, epoch)
-	stateObject.dposCandidateAccount.Height = dposNo
+	stateObject.dposCandidateAccount.Mark = byte(0)
 	GetDPosCandidates().AddDPosCandidate(stateObject.dposCandidateAccount)
 }
 
