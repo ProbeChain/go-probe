@@ -2637,7 +2637,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		return
 	}
 	/*	for _, dposCandidate := range presetDPosAccounts {
-		fmt.Printf("Owner:%s, Enode:%s\n", dposCandidate.Owner, dposCandidate.Enode)
+		fmt.Printf("hasNew:%t, Owner:%s, Enode:%s\n", hasNew, dposCandidate.Owner, dposCandidate.Enode)
 	}*/
 	dPosHash := state.BuildHashForDPos(presetDPosAccounts)
 	//log.Info("writeDPosNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
@@ -2647,6 +2647,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		factor := number + confirmBlockNum + epoch - 1
 		dposNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dposNo, presetDPosAccounts)
+		//fmt.Printf("WriteDPos:%d\n", dposNo)
 	}
 }
 

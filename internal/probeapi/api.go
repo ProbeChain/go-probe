@@ -636,7 +636,7 @@ func (s *PublicBlockChainAPI) GetAccountInfo(ctx context.Context, address common
 	return stateDB.GetAccountInfo(address), stateDB.Error()
 }
 
-func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (interface{}, error) {
+func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*DPoSRpcData, error) {
 	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
 		return nil, err
@@ -650,7 +650,17 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc
 		epoch = s.b.ChainConfig().DposConfig.Epoch
 	}
 	dposNo := number - 1 - (number-1)%epoch
-	return rawdb.ReadDPos(state.Database().TrieDB().DiskDB(), dposNo), nil
+	dposAccounts := rawdb.ReadDPos(state.Database().TrieDB().DiskDB(), dposNo)
+	data := make([]*DPoSRpcData, 0, len(dposAccounts))
+	for _, account := range dposAccounts {
+		s := string(account.Enode[:])
+		i := strings.Index(s, "enode://")
+		data = append(data, &DPoSRpcData{
+			Enode: string([]byte(s)[i:]),
+			Owner: account.Owner,
+		})
+	}
+	return data, nil
 }
 
 // Result structs for GetProof
