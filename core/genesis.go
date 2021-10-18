@@ -221,7 +221,7 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	}
 	storedcfg := rawdb.ReadChainConfig(db, stored)
 	globalconfig.Epoch = storedcfg.DposConfig.Epoch
-	//state.GetDPosList().ConvertToDPosCandidate(storedcfg.DposConfig.DposList)
+	//state.GetDPosCandidates().ConvertToDPosCandidate(storedcfg.DposConfig.DposList)
 	if storedcfg == nil {
 		// 读取失败，说明创世区块写入被中断
 		log.Warn("Found genesis block without chain config")

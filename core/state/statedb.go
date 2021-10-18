@@ -336,7 +336,7 @@ type StateDB struct {
 	stateObjectsPending map[common.Address]struct{} // State objects finalized but not yet written to the trie
 	stateObjectsDirty   map[common.Address]struct{} // State objects modified in the current execution
 
-	//dposList         *DPosList
+	//dposList         *DPosCandidate
 	markLossAccounts map[common.Hash][]common.Address
 
 	// DB error.
@@ -411,7 +411,7 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		stateObjectsDirty:   make(map[common.Address]struct{}),
 		logs:                make(map[common.Hash][]*types.Log),
 		preimages:           make(map[common.Hash][]byte),
-		//dposList:            GetDPosList(),
+		//dposList:            GetDPosCandidates(),
 		journal:    newJournal(),
 		accessList: newAccessList(),
 		hasher:     crypto.NewKeccakState(),
@@ -1091,7 +1091,7 @@ func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, js
 	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
 	stateObject.dposCandidateAccount.Owner = ower
 	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	GetDPosList().AddDPosCandidate(stateObject.dposCandidateAccount)
+	GetDPosCandidates().AddDPosCandidate(stateObject.dposCandidateAccount)
 }
 
 func InetAtoN(ip string) *big.Int {
@@ -1179,7 +1179,7 @@ func (s *StateDB) Copy() *StateDB {
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
-		//dposList:            GetDPosList(),
+		//dposList:            GetDPosCandidates(),
 		markLossAccounts: make(map[common.Hash][]common.Address, len(s.markLossAccounts)),
 		refund:           s.refund,
 		logs:             make(map[common.Hash][]*types.Log, len(s.logs)),
@@ -1874,7 +1874,7 @@ func (s *StateDB) ApplyToBeDPoSNode(blockNumber *big.Int, context vm.TxContext) 
 	epoch := new(big.Int).SetUint64(globalconfig.Epoch)
 	dposNo := number.Add(number, epoch)
 	stateObject.dposCandidateAccount.Height = dposNo
-	GetDPosList().AddDPosCandidate(stateObject.dposCandidateAccount)
+	GetDPosCandidates().AddDPosCandidate(stateObject.dposCandidateAccount)
 }
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {

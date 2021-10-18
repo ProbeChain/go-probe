@@ -2626,13 +2626,13 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	} else {
 		epoch = bc.chainConfig.DposConfig.Epoch
 	}
-	confirmBlockNum := epoch / 2
-	if epoch > confirmDpos {
-		confirmBlockNum = epoch - confirmDpos
-	}
+	/*	confirmBlockNum := epoch / 2
+		if epoch > confirmDpos {
+			confirmBlockNum = epoch - confirmDpos
+		}*/
 
-	del := (number+confirmBlockNum)%epoch == 0
-	presetDPosAccounts := state.GetDPosList().GetPresetDPosAccounts(del)
+	del := (number)%epoch == 0
+	presetDPosAccounts := state.GetDPosCandidates().GetPresetDPosAccounts(del)
 	if presetDPosAccounts == nil {
 		log.Info("current preset DPos account is null")
 		return

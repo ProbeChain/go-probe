@@ -11,24 +11,24 @@ import (
 	"sort"
 )
 
-type DPosList struct {
+type DPosCandidate struct {
 	// DPoSCandidateAccount DPoS候选账户 64
 	dPosCandidateAccounts dPosCandidateAccountList
 }
 
 type dPosCandidateAccountList []DPoSCandidateAccount
 
-var dPosList *DPosList
+var dPosCandidate *DPosCandidate
 
 func init() {
-	log.Info("DPosList init")
-	dPosList = &DPosList{
+	log.Info("DPosCandidate init")
+	dPosCandidate = &DPosCandidate{
 		dPosCandidateAccounts: make([]DPoSCandidateAccount, 0),
 	}
 }
 
-func GetDPosList() *DPosList {
-	return dPosList
+func GetDPosCandidates() *DPosCandidate {
+	return dPosCandidate
 }
 
 func (d dPosCandidateAccountList) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
@@ -49,11 +49,11 @@ func (d dPosCandidateAccountList) Less(i, j int) bool {
 	return cmpRet > 0
 }
 
-func (d *DPosList) GetDPosCandidateAccounts() *dPosCandidateAccountList {
+func (d *DPosCandidate) GetDPosCandidateAccounts() *dPosCandidateAccountList {
 	return &d.dPosCandidateAccounts
 }
 
-func (d *DPosList) GetPresetDPosAccounts(del bool) []common.DPoSAccount {
+func (d *DPosCandidate) GetPresetDPosAccounts(del bool) []common.DPoSAccount {
 	presetLen := d.dPosCandidateAccounts.Len()
 	if presetLen > common.DposNodeLength {
 		presetLen = common.DposNodeLength
@@ -74,7 +74,7 @@ func (d *DPosList) GetPresetDPosAccounts(del bool) []common.DPoSAccount {
 	return presetDPoSAccounts
 }
 
-func (d *DPosList) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
+func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
 	if len(dposList) == 0 {
 		return
 	}
@@ -100,7 +100,7 @@ func (d *DPosList) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
 	sort.Stable(d.dPosCandidateAccounts)
 }
 
-func (d *DPosList) AddDPosCandidate(dPosCandidate DPoSCandidateAccount) {
+func (d *DPosCandidate) AddDPosCandidate(dPosCandidate DPoSCandidateAccount) {
 	d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, dPosCandidate)
 	sort.Stable(d.dPosCandidateAccounts)
 }
