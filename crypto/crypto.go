@@ -112,16 +112,6 @@ func CreateAddress(b common.Address, nonce uint64) common.Address {
 	return common.BytesToAddress(Keccak256(data)[12:])
 }
 
-func CreateAddressForAccountType(b common.Address, nonce uint64, t byte) common.Address {
-	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
-	k := Keccak256(data[1:])[12:]
-	c := make([]byte, len(k)+1)
-	c[0] = t
-	copy(c[1:], k)
-	checkSumBytes := common.CheckSum(c)
-	return common.BytesToAddress(append(c, checkSumBytes...))
-}
-
 /*func CreateAddressForPNSString(b common.Address, pns string) common.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, pns})
 	k := Keccak256(data[1:])[12:]
