@@ -17,10 +17,10 @@
 package t8ntool
 
 import (
-	"crypto/ecdsa"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -32,7 +32,6 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
 	"github.com/probeum/go-probeum/rlp"
@@ -232,7 +231,7 @@ func Main(ctx *cli.Context) error {
 // txWithKey is a helper-struct, to allow us to use the types.Transaction along with
 // a `secretKey`-field, for input
 type txWithKey struct {
-	key *ecdsa.PrivateKey
+	key *probecrypto.PrivateKey
 	tx  *types.Transaction
 }
 
@@ -247,7 +246,7 @@ func (t *txWithKey) UnmarshalJSON(input []byte) error {
 	}
 	if key.Key != nil {
 		k := key.Key.Hex()[2:]
-		if ecdsaKey, err := crypto.HexToECDSA(k); err != nil {
+		if ecdsaKey, err := probecrypto.HexToECDSA(k); err != nil {
 			return err
 		} else {
 			t.key = ecdsaKey
@@ -278,7 +277,7 @@ func signUnsignedTransactions(txs []*txWithKey, signer types.Signer) (types.Tran
 	for i, txWithKey := range txs {
 		tx := txWithKey.tx
 		key := txWithKey.key
-		v, r, s := tx.RawSignatureValues()
+		_, v, r, s := tx.RawSignatureValues()
 		if key != nil && v.BitLen()+r.BitLen()+s.BitLen() == 0 {
 			// This transaction needs to be signed
 			signed, err := types.SignTx(tx, signer, key)

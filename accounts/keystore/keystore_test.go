@@ -20,7 +20,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"github.com/probeum/go-probeum/p2p/enode"
 	"io/ioutil"
 	"math/rand"
@@ -355,7 +355,7 @@ func TestWalletNotifications(t *testing.T) {
 func TestImportECDSA(t *testing.T) {
 	dir, ks := tmpKeyStore(t, true)
 	defer os.RemoveAll(dir)
-	key, err := probe.GenerateKey()
+	key, err := probecrypto.GenerateKey()
 	if err != nil {
 		t.Fatalf("failed to generate key: %v", key)
 	}
@@ -506,10 +506,10 @@ func TestNewAccountsExport(t *testing.T) {
 
 	address1 := accKey.Address.Hex()
 	fmt.Println("address ", address1)
-	privateKey := probe.FromECDSA(accKey.PrivateKey)
+	privateKey := probecrypto.FromECDSA(accKey.PrivateKey)
 	fmt.Println("private key have 0x   \n", hex.EncodeToString(privateKey))
-	fmt.Println("private key have 0x   \n", hexutil.Encode(probe.FromECDSA(accKey.PrivateKey)))
-	address2 := probe.PubkeyToAddress(accKey.PrivateKey.PublicKey)
+	fmt.Println("private key have 0x   \n", hexutil.Encode(probecrypto.FromECDSA(accKey.PrivateKey)))
+	address2 := probecrypto.PubkeyToAddress(accKey.PrivateKey.PublicKey)
 	fmt.Println("address ", address2.String())
 	port := 30301
 	addr := &net.UDPAddr{
