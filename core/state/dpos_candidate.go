@@ -99,9 +99,48 @@ func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
 	sort.Stable(d.dPosCandidateAccounts)
 }
 
-func (d *DPosCandidate) AddDPosCandidate(dPosCandidate DPoSCandidateAccount) {
-	d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, dPosCandidate)
+func (d *DPosCandidate) AddDPosCandidate(preNode DPoSCandidateAccount) {
+	isAdd := true
+	if d.dPosCandidateAccounts.Len() > 0 {
+		for i, node := range d.dPosCandidateAccounts {
+			cmpRet := d.compare(&node, &preNode)
+			if cmpRet == -1 {
+				isAdd = false
+				break
+			}
+			if cmpRet == 1 {
+				preNode.Mark = node.Mark
+				d.dPosCandidateAccounts[i] = preNode
+				isAdd = false
+				break
+			}
+		}
+	}
+	if isAdd {
+		d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, preNode)
+	}
 	sort.Stable(d.dPosCandidateAccounts)
+}
+
+func (d *DPosCandidate) compare(node1, node2 *DPoSCandidateAccount) int {
+	if node1.Owner == node2.Owner && node1.Enode == node2.Enode {
+		if node1.DelegateValue == nil && node2.DelegateValue != nil {
+			return 1
+		}
+		if node1.DelegateValue != nil && node2.DelegateValue == nil {
+			return -1
+		}
+		cmpRet := node1.DelegateValue.Cmp(node2.DelegateValue)
+		if cmpRet == 0 {
+			cmpRet = node1.Weight.Cmp(node2.Weight)
+		}
+		if cmpRet > 0 || cmpRet == 0 {
+			return -1
+		} else {
+			return 1
+		}
+	}
+	return 0
 }
 
 func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
