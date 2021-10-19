@@ -20,15 +20,15 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"io"
-	"math/big"
-	"time"
-
 	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/crypto"
 	"github.com/probeum/go-probeum/metrics"
 	"github.com/probeum/go-probeum/rlp"
+	"io"
+	"math/big"
+	"strconv"
+	"time"
 )
 
 var emptyCodeHash = crypto.Keccak256(nil)
@@ -185,25 +185,24 @@ type Wrapper struct {
 }
 
 type RPCAccountInfo struct {
-	Owner         *common.Address   `json:"owner,omitempty"`
-	LossAccount   *common.Address   `json:"lossAccount,omitempty"`
-	NewAccount    *common.Address   `json:"newAccount,omitempty"`
-	VoteAccount   *common.Address   `json:"voteAccount,omitempty"`
-	Enode         *common.DposEnode `json:"enode,omitempty"`
-	VoteValue     string            `json:"voteValue,omitempty"`
-	PledgeValue   string            `json:"pledgeValue,omitempty"`
-	Value         string            `json:"value,omitempty"`
-	ValidPeriod   *big.Int          `json:"validPeriod,omitempty"`
-	Height        *big.Int          `json:"height,omitempty"`
-	Weight        *big.Int          `json:"weight,omitempty"`
-	DelegateValue string            `json:"delegateValue,omitempty"`
-	LossType      *hexutil.Uint8    `json:"lossType,omitempty"`
-	Nonce         *hexutil.Uint64   `json:"nonce,omitempty"`
-	Type          *hexutil.Uint8    `json:"type,omitempty"`
-	State         *hexutil.Uint8    `json:"state,omitempty"`
-	Data          *hexutil.Bytes    `json:"data,omitempty"`
-	CodeHash      *hexutil.Bytes    `json:"codeHash,omitempty"`
-	Info          *hexutil.Bytes    `json:"info,omitempty"`
+	Owner         *common.Address `json:"owner,omitempty"`
+	LossAccount   *common.Address `json:"lossAccount,omitempty"`
+	NewAccount    *common.Address `json:"newAccount,omitempty"`
+	VoteAccount   *common.Address `json:"voteAccount,omitempty"`
+	VoteValue     string          `json:"voteValue,omitempty"`
+	PledgeValue   string          `json:"pledgeValue,omitempty"`
+	Value         string          `json:"value,omitempty"`
+	ValidPeriod   string          `json:"validPeriod,omitempty"`
+	Height        string          `json:"height,omitempty"`
+	Weight        string          `json:"weight,omitempty"`
+	DelegateValue string          `json:"delegateValue,omitempty"`
+	LossType      string          `json:"lossType,omitempty"`
+	Nonce         string          `json:"nonce,omitempty"`
+	Type          string          `json:"type,omitempty"`
+	State         string          `json:"state,omitempty"`
+	Data          string          `json:"data,omitempty"`
+	CodeHash      string          `json:"codeHash,omitempty"`
+	Info          string          `json:"info,omitempty"`
 }
 
 // DecodeRLP decode bytes to account
@@ -872,37 +871,37 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 	case common.ACC_TYPE_OF_GENERAL:
 		accountInfo.VoteAccount = &s.regularAccount.VoteAccount
 		accountInfo.VoteValue = s.regularAccount.VoteValue.String()
-		accountInfo.LossType = (*hexutil.Uint8)(&s.regularAccount.LossType)
-		accountInfo.Nonce = (*hexutil.Uint64)(&s.regularAccount.Nonce)
+		accountInfo.LossType = strconv.Itoa(int(s.regularAccount.LossType))
+		accountInfo.Nonce = strconv.Itoa(int(s.regularAccount.Nonce))
 		accountInfo.Value = s.regularAccount.Value.String()
 	case common.ACC_TYPE_OF_PNS:
-		accountInfo.Type = (*hexutil.Uint8)(&s.pnsAccount.Type)
+		accountInfo.Type = strconv.Itoa(int(s.pnsAccount.Type))
 		accountInfo.Owner = &s.pnsAccount.Owner
-		data := hexutil.Bytes(s.pnsAccount.Data)
-		accountInfo.Data = &data
+		//data := hexutil.Bytes(s.pnsAccount.Data)
+		accountInfo.Data = string(s.pnsAccount.Data)
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		accountInfo.Type = (*hexutil.Uint8)(&s.assetAccount.Type)
+		accountInfo.Type = strconv.Itoa(int(s.assetAccount.Type))
 		codeHash := hexutil.Bytes(s.assetAccount.CodeHash)
-		accountInfo.CodeHash = &codeHash
+		accountInfo.CodeHash = codeHash.String()
 		accountInfo.Value = s.assetAccount.Value.String()
 		accountInfo.VoteAccount = &s.assetAccount.VoteAccount
 		accountInfo.VoteValue = s.assetAccount.VoteValue.String()
-		accountInfo.Nonce = (*hexutil.Uint64)(&s.assetAccount.Nonce)
+		accountInfo.Nonce = strconv.Itoa(int(s.assetAccount.Nonce))
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		accountInfo.Owner = &s.authorizeAccount.Owner
 		accountInfo.PledgeValue = s.authorizeAccount.PledgeValue.String()
 		accountInfo.VoteValue = s.authorizeAccount.VoteValue.String()
-		info := hexutil.Bytes(s.authorizeAccount.Info)
-		accountInfo.Info = &info
-		accountInfo.ValidPeriod = s.authorizeAccount.ValidPeriod
-		accountInfo.State = (*hexutil.Uint8)(&s.authorizeAccount.State)
+		//info := hexutil.Bytes(s.authorizeAccount.Info)
+		accountInfo.Info = string(s.authorizeAccount.Info)
+		accountInfo.ValidPeriod = s.authorizeAccount.ValidPeriod.String()
+		accountInfo.State = strconv.Itoa(int(s.authorizeAccount.State))
 	case common.ACC_TYPE_OF_LOSE:
-		accountInfo.State = (*hexutil.Uint8)(&s.lossAccount.State)
+		accountInfo.State = strconv.Itoa(int(s.lossAccount.State))
 		accountInfo.LossAccount = &s.lossAccount.LossAccount
 		accountInfo.NewAccount = &s.lossAccount.NewAccount
-		accountInfo.Height = s.lossAccount.Height
-		infoDigest := hexutil.Bytes(s.lossAccount.InfoDigest)
-		accountInfo.Data = &infoDigest
+		accountInfo.Height = s.lossAccount.Height.String()
+		//infoDigest := hexutil.Bytes(s.lossAccount.InfoDigest)
+		accountInfo.Data = string(s.lossAccount.InfoDigest)
 	}
 	return accountInfo
 }
