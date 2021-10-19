@@ -520,10 +520,9 @@ func (b *Block) DposWithSeal(header *Header) *Block {
 // WithBody returns a new block with the given transaction and uncle contents.
 func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 	block := &Block{
-		header:          CopyHeader(b.header),
-		transactions:    make([]*Transaction, len(transactions)),
-		uncles:          make([]*Header, len(uncles)),
-		powAnswerUncles: make([]*PowAnswer, len(b.powAnswerUncles)),
+		header:       CopyHeader(b.header),
+		transactions: make([]*Transaction, len(transactions)),
+		uncles:       make([]*Header, len(uncles)),
 	}
 	copy(block.transactions, transactions)
 
