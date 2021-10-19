@@ -520,11 +520,13 @@ func (b *Block) DposWithSeal(header *Header) *Block {
 // WithBody returns a new block with the given transaction and uncle contents.
 func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 	block := &Block{
-		header:       CopyHeader(b.header),
-		transactions: make([]*Transaction, len(transactions)),
-		uncles:       make([]*Header, len(uncles)),
+		header:          CopyHeader(b.header),
+		transactions:    make([]*Transaction, len(transactions)),
+		uncles:          make([]*Header, len(uncles)),
+		powAnswerUncles: make([]*PowAnswer, len(b.powAnswerUncles)),
 	}
 	copy(block.transactions, transactions)
+
 	for i := range uncles {
 		block.uncles[i] = CopyHeader(uncles[i])
 	}
@@ -558,6 +560,11 @@ func (b *Block) Hash() common.Hash {
 	v := b.header.Hash()
 	b.hash.Store(v)
 	return v
+}
+
+func (b *Block) CopyPowAnswerUncles(PowAnswerUncles []*PowAnswer) {
+	b.powAnswerUncles = make([]*PowAnswer, len(PowAnswerUncles))
+	copy(b.powAnswerUncles, PowAnswerUncles)
 }
 
 type Blocks []*Block

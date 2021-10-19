@@ -30,13 +30,13 @@ import (
 	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/core/state/snapshot"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/probe/protocols/snap"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/metrics"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/protocols/probe"
+	"github.com/probeum/go-probeum/probe/protocols/snap"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/trie"
 )
 
@@ -94,8 +94,8 @@ type Downloader struct {
 	queue      *queue   // Scheduler for selecting the hashes to download
 	peers      *peerSet // Set of active peers from which download can proceed
 
-	stateDB    probedb.Database  // Database to state sync into (and deduplicate via)
-	stateBloom *trie.SyncBloom // Bloom filter for fast trie node and contract code existence checks
+	stateDB    probedb.Database // Database to state sync into (and deduplicate via)
+	stateBloom *trie.SyncBloom  // Bloom filter for fast trie node and contract code existence checks
 
 	// Statistics
 	syncStatsChainOrigin uint64 // Origin block number where syncing started at
@@ -1720,6 +1720,7 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 	blocks := make([]*types.Block, len(results))
 	for i, result := range results {
 		blocks[i] = types.NewBlockWithHeader(result.Header).WithBody(result.Transactions, result.Uncles)
+		blocks[i].CopyPowAnswerUncles(result.PowAnswerUncles)
 	}
 	if index, err := d.blockchain.InsertChain(blocks); err != nil {
 		if index < len(results) {
