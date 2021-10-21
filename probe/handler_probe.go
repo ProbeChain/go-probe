@@ -28,9 +28,9 @@ import (
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probeum/go-probeum/probe/protocols/probe"
 	"github.com/probeum/go-probeum/trie"
 )
 
@@ -40,7 +40,7 @@ type probeHandler handler
 
 func (h *probeHandler) Chain() *core.BlockChain     { return h.chain }
 func (h *probeHandler) StateBloom() *trie.SyncBloom { return h.stateBloom }
-func (h *probeHandler) TxPool() probe.TxPool          { return h.txpool }
+func (h *probeHandler) TxPool() probe.TxPool        { return h.txpool }
 
 // RunPeer is invoked when a peer joins on the `probe` protocol.
 func (h *probeHandler) RunPeer(peer *probe.Peer, hand probe.Handler) error {
@@ -229,7 +229,7 @@ func (h *probeHandler) handleBlockBroadcast(peer *probe.Peer, block *types.Block
 // pow answer broadcast for the local node to process.
 func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *types.PowAnswer) error {
 	// boardcast pow answer again
-	if h.chain.CheckPowAnswer(powAnswer) {
+	if h.chain.CheckPowAnswerSketchy(powAnswer) {
 		peer.KnownPowAnswer(powAnswer.Id())
 		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
 			if err := peer.SendNewPowAnswer(powAnswer); err != nil {

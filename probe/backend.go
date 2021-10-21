@@ -198,7 +198,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 			DataDir:             stack.DataDir(),
 		}
 	)
-	probe.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, probe.engine, vmConfig, probe.shouldPreserve, &config.TxLookupLimit, probe.p2pServer)
+	probe.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, probe.engine, vmConfig, probe.shouldPreserve, &config.TxLookupLimit, probe.p2pServer, probe.powEngine)
 	originDifficulty := probe.blockchain.GetBlockByNumber(0).Difficulty().Int64()
 	if probeash, ok := probe.powEngine.(*probehash2.Probeash); ok {
 		probeash.SetMinDifficulty(originDifficulty)

@@ -30,15 +30,15 @@ import (
 	"github.com/probeum/go-probeum/core"
 	"github.com/probeum/go-probeum/core/forkid"
 	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/event"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/params"
 	"github.com/probeum/go-probeum/probe/downloader"
 	"github.com/probeum/go-probeum/probe/fetcher"
 	"github.com/probeum/go-probeum/probe/protocols/probe"
 	"github.com/probeum/go-probeum/probe/protocols/snap"
 	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/params"
 	"github.com/probeum/go-probeum/trie"
 )
 
@@ -78,7 +78,7 @@ type txPool interface {
 // handlerConfig is the collection of initialization parameters to create a full
 // node network handler.
 type handlerConfig struct {
-	Database   probedb.Database            // Database for direct sync insertions
+	Database   probedb.Database          // Database for direct sync insertions
 	Chain      *core.BlockChain          // Blockchain to serve data from
 	TxPool     txPool                    // Transaction pool to propagate from
 	Network    uint64                    // Network identifier to adfvertise
@@ -527,7 +527,7 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 
 // BroadcastPowAnswer broadcast PowAnswer to all peers
 func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
-	if h.chain.CheckPowAnswer(powAnswer) {
+	if h.chain.CheckPowAnswerSketchy(powAnswer) {
 		h.chain.HandlePowAnswer(powAnswer)
 		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
 			if err := peer.SendNewPowAnswer(powAnswer); err != nil {

@@ -34,6 +34,7 @@ import (
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/consensus"
 	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/log"
 )
 
 const (
@@ -217,13 +218,17 @@ func (probeash *Probeash) PowSeal(chain consensus.ChainHeaderReader, block *type
 // seed that results in correct final block difficulty.
 func (probeash *Probeash) mine(block *types.Block, id int, seed uint64, abort chan struct{}, found chan *types.PowAnswer, coinbase common.Address) {
 	// Extract some data from the header
+	header := block.Header()
+	tmp := header.Coinbase
+	header.Coinbase = coinbase
+
 	var (
-		header  = block.Header()
 		hash    = probeash.SealHash(header).Bytes()
 		target  = new(big.Int).Div(two256, header.Difficulty)
 		number  = header.Number.Uint64()
 		dataset = probeash.dataset(number, false)
 	)
+	header.Coinbase = tmp
 	// Start generating random nonces until we abort or find a good one
 	var (
 		attempts = int64(0)
