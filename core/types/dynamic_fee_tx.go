@@ -125,20 +125,21 @@ func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
 func (tx *DynamicFeeTx) bizType() uint8         { return tx.BizType }
 
-func (tx *DynamicFeeTx) from() *common.Address      { return tx.From }
-func (tx *DynamicFeeTx) owner() *common.Address     { return tx.Owner }
-func (tx *DynamicFeeTx) loss() *common.Address      { return tx.Loss }
-func (tx *DynamicFeeTx) asset() *common.Address     { return tx.Asset }
-func (tx *DynamicFeeTx) old() *common.Address       { return tx.Old }
-func (tx *DynamicFeeTx) new() *common.Address       { return tx.New }
-func (tx *DynamicFeeTx) initiator() *common.Address { return tx.Initiator }
-func (tx *DynamicFeeTx) receiver() *common.Address  { return tx.Receiver }
-func (tx *DynamicFeeTx) value2() *big.Int           { return tx.Value2 }
-func (tx *DynamicFeeTx) height() *big.Int           { return tx.Height }
-func (tx *DynamicFeeTx) mark() []byte               { return tx.Mark }
-func (tx *DynamicFeeTx) accType() *hexutil.Uint8    { return tx.AccType }
-func (tx *DynamicFeeTx) lossType() *hexutil.Uint8   { return tx.LossType }
-func (tx *DynamicFeeTx) pnsType() *hexutil.Uint8    { return tx.PnsType }
+func (tx *DynamicFeeTx) from() *common.Address        { return tx.From }
+func (tx *DynamicFeeTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *DynamicFeeTx) owner() *common.Address       { return tx.Owner }
+func (tx *DynamicFeeTx) loss() *common.Address        { return tx.Loss }
+func (tx *DynamicFeeTx) asset() *common.Address       { return tx.Asset }
+func (tx *DynamicFeeTx) old() *common.Address         { return tx.Old }
+func (tx *DynamicFeeTx) new() *common.Address         { return tx.New }
+func (tx *DynamicFeeTx) initiator() *common.Address   { return tx.Initiator }
+func (tx *DynamicFeeTx) receiver() *common.Address    { return tx.Receiver }
+func (tx *DynamicFeeTx) value2() *big.Int             { return tx.Value2 }
+func (tx *DynamicFeeTx) height() *big.Int             { return tx.Height }
+func (tx *DynamicFeeTx) mark() []byte                 { return tx.Mark }
+func (tx *DynamicFeeTx) accType() *hexutil.Uint8      { return tx.AccType }
+func (tx *DynamicFeeTx) lossType() *hexutil.Uint8     { return tx.LossType }
+func (tx *DynamicFeeTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
 func (tx *DynamicFeeTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S
 }

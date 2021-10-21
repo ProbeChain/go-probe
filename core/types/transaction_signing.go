@@ -144,6 +144,7 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	}
 	//fmt.Printf("Sender.addr:%s\n", addr.String())
 	tx.from.Store(sigCache{signer: signer, from: addr})
+	tx.inner.setFrom(&addr)
 	return addr, nil
 }
 

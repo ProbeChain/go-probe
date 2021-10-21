@@ -138,21 +138,22 @@ func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) bizType() uint8         { return tx.BizType }
 
-func (tx *AccessListTx) from() *common.Address      { return tx.From }
-func (tx *AccessListTx) owner() *common.Address     { return tx.Owner }
-func (tx *AccessListTx) vote() *common.Address      { return tx.Vote }
-func (tx *AccessListTx) loss() *common.Address      { return tx.Loss }
-func (tx *AccessListTx) asset() *common.Address     { return tx.Asset }
-func (tx *AccessListTx) old() *common.Address       { return tx.Old }
-func (tx *AccessListTx) new() *common.Address       { return tx.New }
-func (tx *AccessListTx) initiator() *common.Address { return tx.Initiator }
-func (tx *AccessListTx) receiver() *common.Address  { return tx.Receiver }
-func (tx *AccessListTx) value2() *big.Int           { return tx.Value2 }
-func (tx *AccessListTx) height() *big.Int           { return tx.Height }
-func (tx *AccessListTx) mark() []byte               { return tx.Mark }
-func (tx *AccessListTx) accType() *hexutil.Uint8    { return tx.AccType }
-func (tx *AccessListTx) lossType() *hexutil.Uint8   { return tx.LossType }
-func (tx *AccessListTx) pnsType() *hexutil.Uint8    { return tx.PnsType }
+func (tx *AccessListTx) from() *common.Address        { return tx.From }
+func (tx *AccessListTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *AccessListTx) owner() *common.Address       { return tx.Owner }
+func (tx *AccessListTx) vote() *common.Address        { return tx.Vote }
+func (tx *AccessListTx) loss() *common.Address        { return tx.Loss }
+func (tx *AccessListTx) asset() *common.Address       { return tx.Asset }
+func (tx *AccessListTx) old() *common.Address         { return tx.Old }
+func (tx *AccessListTx) new() *common.Address         { return tx.New }
+func (tx *AccessListTx) initiator() *common.Address   { return tx.Initiator }
+func (tx *AccessListTx) receiver() *common.Address    { return tx.Receiver }
+func (tx *AccessListTx) value2() *big.Int             { return tx.Value2 }
+func (tx *AccessListTx) height() *big.Int             { return tx.Height }
+func (tx *AccessListTx) mark() []byte                 { return tx.Mark }
+func (tx *AccessListTx) accType() *hexutil.Uint8      { return tx.AccType }
+func (tx *AccessListTx) lossType() *hexutil.Uint8     { return tx.LossType }
+func (tx *AccessListTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
 
 func (tx *AccessListTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S

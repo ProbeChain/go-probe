@@ -89,6 +89,7 @@ type TxData interface {
 	setSignatureValues(k byte, chainID, v, r, s *big.Int)
 
 	from() *common.Address
+	setFrom(from *common.Address)
 	owner() *common.Address
 	loss() *common.Address
 	asset() *common.Address

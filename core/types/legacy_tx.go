@@ -35,21 +35,21 @@ type LegacyTx struct {
 	K        byte
 	V, R, S  *big.Int // signature values
 
-	From      *common.Address `rlp:"nil"`
-	Owner     *common.Address `rlp:"nil"`
-	Vote      *common.Address `rlp:"nil"`
-	Loss      *common.Address `rlp:"nil"`
-	Asset     *common.Address `rlp:"nil"`
-	Old       *common.Address `rlp:"nil"`
-	New       *common.Address `rlp:"nil"`
-	Initiator *common.Address `rlp:"nil"`
-	Receiver  *common.Address `rlp:"nil"`
-	Value2    *big.Int
-	Mark      []byte
-	Height    *big.Int
-	AccType   *hexutil.Uint8
-	LossType  *hexutil.Uint8
-	PnsType   *hexutil.Uint8
+	From      *common.Address `rlp:"optional"`
+	Owner     *common.Address `rlp:"optional"`
+	Vote      *common.Address `rlp:"optional"`
+	Loss      *common.Address `rlp:"optional"`
+	Asset     *common.Address `rlp:"optional"`
+	Old       *common.Address `rlp:"optional"`
+	New       *common.Address `rlp:"optional"`
+	Initiator *common.Address `rlp:"optional"`
+	Receiver  *common.Address `rlp:"optional"`
+	Value2    *big.Int        `rlp:"optional"`
+	Mark      []byte          `rlp:"optional"`
+	Height    *big.Int        `rlp:"optional"`
+	AccType   *hexutil.Uint8  `rlp:"optional"`
+	LossType  *hexutil.Uint8  `rlp:"optional"`
+	PnsType   *hexutil.Uint8  `rlp:"optional"`
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -135,21 +135,22 @@ func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
 func (tx *LegacyTx) bizType() uint8         { return tx.BizType }
 
-func (tx *LegacyTx) from() *common.Address      { return tx.From }
-func (tx *LegacyTx) owner() *common.Address     { return tx.Owner }
-func (tx *LegacyTx) vote() *common.Address      { return tx.Vote }
-func (tx *LegacyTx) loss() *common.Address      { return tx.Loss }
-func (tx *LegacyTx) asset() *common.Address     { return tx.Asset }
-func (tx *LegacyTx) old() *common.Address       { return tx.Old }
-func (tx *LegacyTx) new() *common.Address       { return tx.New }
-func (tx *LegacyTx) initiator() *common.Address { return tx.Initiator }
-func (tx *LegacyTx) receiver() *common.Address  { return tx.Receiver }
-func (tx *LegacyTx) value2() *big.Int           { return tx.Value2 }
-func (tx *LegacyTx) height() *big.Int           { return tx.Height }
-func (tx *LegacyTx) mark() []byte               { return tx.Mark }
-func (tx *LegacyTx) accType() *hexutil.Uint8    { return tx.AccType }
-func (tx *LegacyTx) lossType() *hexutil.Uint8   { return tx.LossType }
-func (tx *LegacyTx) pnsType() *hexutil.Uint8    { return tx.PnsType }
+func (tx *LegacyTx) from() *common.Address        { return tx.From }
+func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *LegacyTx) owner() *common.Address       { return tx.Owner }
+func (tx *LegacyTx) vote() *common.Address        { return tx.Vote }
+func (tx *LegacyTx) loss() *common.Address        { return tx.Loss }
+func (tx *LegacyTx) asset() *common.Address       { return tx.Asset }
+func (tx *LegacyTx) old() *common.Address         { return tx.Old }
+func (tx *LegacyTx) new() *common.Address         { return tx.New }
+func (tx *LegacyTx) initiator() *common.Address   { return tx.Initiator }
+func (tx *LegacyTx) receiver() *common.Address    { return tx.Receiver }
+func (tx *LegacyTx) value2() *big.Int             { return tx.Value2 }
+func (tx *LegacyTx) height() *big.Int             { return tx.Height }
+func (tx *LegacyTx) mark() []byte                 { return tx.Mark }
+func (tx *LegacyTx) accType() *hexutil.Uint8      { return tx.AccType }
+func (tx *LegacyTx) lossType() *hexutil.Uint8     { return tx.LossType }
+func (tx *LegacyTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
 
 func (tx *LegacyTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
 	return tx.K, tx.V, tx.R, tx.S
