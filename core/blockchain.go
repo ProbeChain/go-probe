@@ -1713,6 +1713,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	}
 
 	bc.writeDposNodes(state)
+	bc.updateDPosHash(state)
 	hashes := state.GetStateDbTrie().GetTallHash()
 	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
@@ -2654,12 +2655,8 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	if number == 0 {
 		return
 	}
-	var epoch uint64
-	if bc.chainConfig.DposConfig == nil {
-		log.Crit("Failed to writ dpos on write block", "err", bc.chainConfig.DposConfig)
-	} else {
-		epoch = bc.chainConfig.DposConfig.Epoch
-	}
+	epoch := bc.chainConfig.DposConfig.Epoch
+
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
 		confirmBlockNum = epoch - confirmDpos
@@ -2673,15 +2670,29 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	/*	for _, dposCandidate := range presetDPosAccounts {
 		fmt.Printf("hasNew:%t, Owner:%s, Enode:%s\n", hasNew, dposCandidate.Owner, dposCandidate.Enode)
 	}*/
-	dPosHash := state.BuildHashForDPos(presetDPosAccounts)
-	//log.Info("writeDPosNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
-	stateDB.IntermediateRootForDPosHash(dPosHash)
-	//log.Info("writeDPosNodes rootHash", "rootHash", rootHash.Hex())
+	//arrivedRound := number%epoch == 0
 	if hasNew {
 		factor := number + confirmBlockNum + epoch - 1
 		dposNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dposNo, presetDPosAccounts)
 		//fmt.Printf("WriteDPos:%d\n", dposNo)
+	}
+}
+func (bc *BlockChain) updateDPosHash(stateDB *state.StateDB) {
+	block := bc.CurrentBlock()
+	number := block.NumberU64()
+	epoch := bc.chainConfig.DposConfig.Epoch
+	// update dPos hash when first block of per round
+	if number > epoch && (number-1)%epoch == 0 {
+		accounts := bc.GetDposAccounts(number)
+		curDPosAccounts := make([]common.DPoSAccount, len(accounts))
+		for i, account := range accounts {
+			curDPosAccounts[i] = *account
+		}
+		dPosHash := state.BuildHashForDPos(curDPosAccounts)
+		//log.Info("writeDPosNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
+		stateDB.IntermediateRootForDPosHash(dPosHash)
+		//log.Info("writeDPosNodes rootHash", "rootHash", rootHash.Hex())
 	}
 }
 
