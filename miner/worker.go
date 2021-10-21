@@ -373,13 +373,10 @@ func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 		log.Error("somprobeing wrong in get dpos account, neeQd to check", "blockNumber", blockNumber)
 		return false
 	}
-	if account.Owner == w.coinbase {
-		log.Debug("I'm producer on current block", "blockNumber", blockNumber, "my addr", w.coinbase)
-		return true
-	} else {
-		log.Debug("I'm not producer on current block", "blockNumber", blockNumber, "my addr", w.coinbase)
-		return false
-	}
+
+	log.Debug(" producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " current:", account.Owner, " re:", account.Owner == w.coinbase)
+
+	return account.Owner == w.coinbase
 }
 
 func (w *worker) imProducer(blockNumber uint64) bool {
