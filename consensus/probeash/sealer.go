@@ -34,7 +34,6 @@ import (
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/consensus"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
 )
 
 const (
