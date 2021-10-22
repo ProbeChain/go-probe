@@ -1955,8 +1955,6 @@ func (s *StateDB) GetStateDbTrie() *TotalTrie {
 	return &s.trie
 }
 
-func (s *StateDB) IntermediateRootForDPosHash(dPosHash common.Hash) common.Hash {
-	//  dPosHash
+func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
 	s.trie.dPosHash = dPosHash
-	return s.trie.Hash()
 }
