@@ -178,6 +178,16 @@ func WriteDPos(db probedb.KeyValueWriter, dPosNo uint64, list []common.DPoSAccou
 	}
 }
 
+func WriteDPosCandidate(db probedb.KeyValueWriter, list []common.DPoSCandidateAccount) {
+	arrdata, err := rlp.EncodeToBytes(list)
+	if err != nil {
+		log.Crit("Failed to EncodeToBytes dPos candidate", "err", err)
+	}
+	if err := db.Put(DPosCandidateKey(), arrdata); err != nil {
+		log.Crit("Failed to store dPos candidate", "err", err)
+	}
+}
+
 func ReadDPos(db probedb.KeyValueReader, dkey uint64) []common.DPoSAccount {
 	var intarray []common.DPoSAccount
 	key := DposKey(dkey)
@@ -188,4 +198,15 @@ func ReadDPos(db probedb.KeyValueReader, dkey uint64) []common.DPoSAccount {
 	}
 
 	return intarray
+}
+
+func ReadDPosCandidate(db probedb.KeyValueReader) []common.DPoSCandidateAccount {
+	var arr []common.DPoSCandidateAccount
+	data, _ := db.Get(DPosCandidateKey())
+	err := rlp.DecodeBytes(data, &arr)
+	if err != nil {
+		log.Error("Failed to get dpos", "err", err)
+	}
+
+	return arr
 }

@@ -26,7 +26,6 @@ import (
 // StateDB is an EVM database for full state querying.
 type StateDB interface {
 	CreateAccount(common.Address)
-	UpdateDposAccount(common.Address, common.Address, []byte)
 	SubBalance(common.Address, *big.Int)
 	AddBalance(common.Address, *big.Int)
 	GetBalance(common.Address) *big.Int
@@ -105,7 +104,7 @@ type StateDB interface {
 
 	ModifyPnsContent(context TxContext)
 
-	ApplyToBeDPoSNode(blockNumber *big.Int, context TxContext)
+	ApplyToBeDPoSNode(context TxContext)
 }
 
 // CallContext provides a basic interface for the EVM calling conventions. The EVM

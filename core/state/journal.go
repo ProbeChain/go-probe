@@ -126,9 +126,9 @@ type (
 		owner       common.Address
 		pledgeValue *big.Int
 		voteValue   *big.Int
+		weight      *big.Int
 		info        []byte
 		validPeriod *big.Int
-		state       byte
 	}
 
 	lossSuicideChange struct {
@@ -139,15 +139,6 @@ type (
 		newAccount  common.Address
 		height      *big.Int
 		infoDigest  []byte
-	}
-
-	dPoSCandidateSuicideChange struct {
-		account       *common.Address
-		suicide       bool
-		enode         common.DposEnode
-		owner         common.Address
-		weight        *big.Int
-		delegateValue *big.Int
 	}
 
 	// Changes to individual accounts.
@@ -246,6 +237,13 @@ type (
 		account     *common.Address
 		pledgeValue *big.Int
 		voteValue   *big.Int
+	}
+
+	dPosCandidateForAuthorizeChange struct {
+		account   *common.Address
+		info      []byte
+		voteValue big.Int
+		weight    big.Int
 	}
 )
 
@@ -358,7 +356,7 @@ func (ch authorizeSuicideChange) revert(s *StateDB) {
 		obj.authorizeAccount.VoteValue = ch.voteValue
 		obj.authorizeAccount.Info = ch.info
 		obj.authorizeAccount.ValidPeriod = ch.validPeriod
-		obj.authorizeAccount.State = ch.state
+		obj.authorizeAccount.Weight = ch.weight
 	}
 }
 
@@ -379,21 +377,6 @@ func (ch lossSuicideChange) revert(s *StateDB) {
 }
 
 func (ch lossSuicideChange) dirtied() *common.Address {
-	return ch.account
-}
-
-func (ch dPoSCandidateSuicideChange) revert(s *StateDB) {
-	obj := s.getStateObject(*ch.account)
-	if obj != nil {
-		obj.suicided = ch.suicide
-		obj.dposCandidateAccount.Enode = ch.enode
-		obj.dposCandidateAccount.Owner = ch.owner
-		obj.dposCandidateAccount.Weight = ch.weight
-		obj.dposCandidateAccount.DelegateValue = ch.delegateValue
-	}
-}
-
-func (ch dPoSCandidateSuicideChange) dirtied() *common.Address {
 	return ch.account
 }
 
@@ -511,6 +494,31 @@ func (ch redemptionForAuthorizeChange) revert(s *StateDB) {
 }
 
 func (ch redemptionForAuthorizeChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch dPosCandidateForAuthorizeChange) revert(s *StateDB) {
+	authorizeAccount := s.getStateObject(*ch.account).authorizeAccount
+
+	dPosCandidateAccount := common.DPoSCandidateAccount{}
+	dPosCandidateAccount.Owner = authorizeAccount.Owner
+	dPosCandidateAccount.Vote = *ch.account
+	dPosCandidateAccount.VoteValue = &ch.voteValue
+	dPosCandidateAccount.Weight = &ch.weight
+	if len(ch.info) == 0 {
+		dPosCandidateAccount.Enode = common.BytesToDposEnode(authorizeAccount.Info)
+		GetDPosCandidates().DeleteDPosCandidate(dPosCandidateAccount)
+	} else {
+		dPosCandidateAccount.Enode = common.BytesToDposEnode(ch.info)
+		GetDPosCandidates().UpdateDPosCandidate(dPosCandidateAccount)
+	}
+	authorizeAccount.VoteValue = &ch.voteValue
+	authorizeAccount.Info = ch.info
+	authorizeAccount.Weight = &ch.weight
+
+}
+
+func (ch dPosCandidateForAuthorizeChange) dirtied() *common.Address {
 	return ch.account
 }
 
