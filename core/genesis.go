@@ -287,10 +287,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 				log.Info("ToBlock roothash ", "hash", s.Hex())
 			}*/
 			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
-			log.Info("ToBlock dPosHash", "dPosHash", dPosHash.Hex())
-			rootHash := statedb.IntermediateRootForDPosHash(dPosHash)
-			log.Info("ToBlock rootHash", "rootHash", rootHash.Hex())
-
+			statedb.UpdateDPosHash(dPosHash)
 			rawdb.WriteDPos(db, dposNo, g.DposConfig.DposList)
 			//data, _ := json.Marshal(g.DposConfig.DposList)
 			/*			data, err := rlp.EncodeToBytes(g.DposConfig.DposList)

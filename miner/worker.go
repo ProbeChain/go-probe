@@ -373,13 +373,10 @@ func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 		log.Error("somprobeing wrong in get dpos account, neeQd to check", "blockNumber", blockNumber)
 		return false
 	}
-	if account.Owner == w.coinbase {
-		log.Debug("I'm producer on current block", "blockNumber", blockNumber, "my addr", w.coinbase)
-		return true
-	} else {
-		log.Debug("I'm not producer on current block", "blockNumber", blockNumber, "my addr", w.coinbase)
-		return false
-	}
+
+	log.Debug(" producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " current:", account.Owner, " re:", account.Owner == w.coinbase)
+
+	return account.Owner == w.coinbase
 }
 
 func (w *worker) imProducer(blockNumber uint64) bool {
@@ -1122,6 +1119,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(w.current.receipts)
 	s := w.current.state.Copy()
+	s.UpdateDPosHashForBlockNumber(header.Number.Uint64())
 	w.current.header.Root = s.IntermediateRoot(w.chain.Config().IsEIP158(header.Number))
 
 	greatri, _ := w.engine.(*greatri2.Greatri)

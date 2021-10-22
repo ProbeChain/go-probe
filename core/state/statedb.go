@@ -1955,8 +1955,21 @@ func (s *StateDB) GetStateDbTrie() *TotalTrie {
 	return &s.trie
 }
 
-func (s *StateDB) IntermediateRootForDPosHash(dPosHash common.Hash) common.Hash {
-	//  dPosHash
+func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
 	s.trie.dPosHash = dPosHash
-	return s.trie.Hash()
+}
+
+func (s *StateDB) UpdateDPosHashForBlockNumber(number uint64) {
+	epoch := globalconfig.Epoch
+	// update dPos hash when first block of per round
+	if number > epoch && (number-1)%epoch == 0 {
+		accounts := s.GetDposAccounts(common.Hash{}, number, epoch)
+		curDPosAccounts := make([]common.DPoSAccount, len(accounts))
+		for i, account := range accounts {
+			curDPosAccounts[i] = *account
+		}
+		dPosHash := BuildHashForDPos(curDPosAccounts)
+		//fmt.Printf("writeDPosNodes: %d, %x\n", number, dPosHash)
+		s.UpdateDPosHash(dPosHash)
+	}
 }

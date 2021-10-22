@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/consensus/probeash"
 	"github.com/probeum/go-probeum/p2p/enode"
 	"io"
 	"math/big"
@@ -98,6 +99,9 @@ const (
 	maxChainDposAcks    = 256
 	maxUnclePowAnswer   = 5
 	confirmDpos         = 64
+	powAnswerUncheck    = 0
+	powAnswerLegal      = 1
+	powAnswerIllegal    = 2
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -163,6 +167,7 @@ func (x Uint64Slice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 // PowAnswerPool contains all pow answer
 type PowAnswerPool struct {
 	lock         sync.RWMutex
+	check        map[common.Hash]uint8
 	powAnswerMap map[uint64][]*types.PowAnswer
 }
 
@@ -170,6 +175,7 @@ type PowAnswerPool struct {
 func NewPowAnswerPool() *PowAnswerPool {
 	pool := &PowAnswerPool{
 		powAnswerMap: make(map[uint64][]*types.PowAnswer),
+		check:        map[common.Hash]uint8{},
 	}
 	return pool
 }
@@ -184,6 +190,18 @@ func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
 	return false
 }
 
+func (pool *PowAnswerPool) CheckRet(powAnswer *types.PowAnswer) uint8 {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	return pool.check[powAnswer.Id()]
+}
+
+func (pool *PowAnswerPool) CheckSet(powAnswer *types.PowAnswer, result uint8) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	pool.check[powAnswer.Id()] = result
+}
+
 func (pool *PowAnswerPool) Contain(powAnswer *types.PowAnswer) bool {
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
@@ -195,6 +213,18 @@ func (pool *PowAnswerPool) List(number *big.Int) []*types.PowAnswer {
 	defer pool.lock.Unlock()
 	powAnswers := pool.powAnswerMap[number.Uint64()]
 	return powAnswers
+}
+
+func (pool *PowAnswerPool) FilterList(powAnswers []*types.PowAnswer) []*types.PowAnswer {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	answers := make([]*types.PowAnswer, 0, len(powAnswers))
+	for _, answer := range powAnswers {
+		if pool.check[answer.Id()] == powAnswerLegal {
+			answers = append(answers, answer)
+		}
+	}
+	return answers
 }
 
 func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
@@ -371,6 +401,7 @@ type BlockChain struct {
 	procInterrupt int32          // interrupt signaler for block processing
 
 	engine     consensus.Engine
+	powEngine  consensus.Engine
 	validator  Validator // Block and state validator interface
 	prefetcher Prefetcher
 	processor  Processor // Block transaction processor interface
@@ -383,7 +414,7 @@ type BlockChain struct {
 // NewBlockChain returns a fully initialised block chain using information
 // available in the database. It initialises the default Probeum Validator and
 // Processor.
-func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server) (*BlockChain, error) {
+func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server, powEngine consensus.Engine) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -413,6 +444,7 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 		txLookupCache:  txLookupCache,
 		futureBlocks:   futureBlocks,
 		engine:         engine,
+		powEngine:      powEngine,
 		vmConfig:       vmConfig,
 		powAnswers:     NewPowAnswerPool(),
 		dposAcks:       NewDposAckPool(),
@@ -1679,12 +1711,13 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	if err != nil {
 		return NonStatTy, err
 	}
-
 	bc.writeDposNodes(state)
+
 	hashes := state.GetStateDbTrie().GetTallHash()
 	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
-	log.Info(" Writing dpos nodes with block")
+	//log.Info("Writing dPos nodes with block，root hash:%x")
+	//fmt.Printf("Writing dPos nodes with block，root hash:%x\n", root)
 
 	bc.updateP2pDposNodes()
 
@@ -2551,6 +2584,8 @@ func (bc *BlockChain) maintainTxIndex(ancients uint64) {
 	for {
 		select {
 		case head := <-headCh:
+			log.Info("SubscribeChainHeadEvent", "headNumber", head.Block.Header().Number.Uint64())
+			bc.DispatchPowAnswer()
 			if done == nil {
 				done = make(chan struct{})
 				go indexBlocks(rawdb.ReadTxIndexTail(bc.db), head.Block.NumberU64(), done)
@@ -2620,12 +2655,8 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	if number == 0 {
 		return
 	}
-	var epoch uint64
-	if bc.chainConfig.DposConfig == nil {
-		log.Crit("Failed to writ dpos on write block", "err", bc.chainConfig.DposConfig)
-	} else {
-		epoch = bc.chainConfig.DposConfig.Epoch
-	}
+	epoch := bc.chainConfig.DposConfig.Epoch
+
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
 		confirmBlockNum = epoch - confirmDpos
@@ -2639,10 +2670,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	/*	for _, dposCandidate := range presetDPosAccounts {
 		fmt.Printf("hasNew:%t, Owner:%s, Enode:%s\n", hasNew, dposCandidate.Owner, dposCandidate.Enode)
 	}*/
-	dPosHash := state.BuildHashForDPos(presetDPosAccounts)
-	//log.Info("writeDPosNodes newDPosHash", "block_number", number, "newDPosHash", dPosHash)
-	stateDB.IntermediateRootForDPosHash(dPosHash)
-	//log.Info("writeDPosNodes rootHash", "rootHash", rootHash.Hex())
+	//arrivedRound := number%epoch == 0
 	if hasNew {
 		factor := number + confirmBlockNum + epoch - 1
 		dposNo := factor - factor%epoch
@@ -2945,8 +2973,8 @@ func (bc *BlockChain) HasSixState(root common.Hash) bool {
 	return err == nil
 }
 
-// CheckPowAnswer check a pow answer is legal (no check the MixDigest nonce is right)
-func (bc *BlockChain) CheckPowAnswer(powAnswer *types.PowAnswer) bool {
+// CheckPowAnswerSketchy check a pow answer is legal (no check the MixDigest nonce is right)
+func (bc *BlockChain) CheckPowAnswerSketchy(powAnswer *types.PowAnswer) bool {
 	number := powAnswer.Number.Uint64()
 	chainNumber := bc.CurrentBlock().NumberU64()
 	if chainNumber > maxUnclePowAnswer {
@@ -2956,13 +2984,43 @@ func (bc *BlockChain) CheckPowAnswer(powAnswer *types.PowAnswer) bool {
 	}
 }
 
+// DispatchPowAnswer dispatch list check illegal pow answer
+func (bc *BlockChain) DispatchPowAnswer() int {
+	count := 0
+	pow, ok := bc.powEngine.(*probeash.Probeash)
+	if !ok {
+		log.Warn("DispatchPowAnswer err! pow is not a pow engine")
+	}
+	curNumber := bc.CurrentHeader().Number.Int64()
+	maxGap := int64(0)
+	for curNumber >= 0 && maxGap <= maxUnclePowAnswer {
+		curHeader := bc.GetHeaderByNumber(uint64(curNumber))
+		powAnswers := bc.powAnswers.List(big.NewInt(curNumber))
+		for _, answer := range powAnswers {
+			if bc.powAnswers.CheckRet(answer) == powAnswerUncheck {
+				err := pow.PowVerifySeal(bc, curHeader, false, answer)
+				if err == nil {
+					bc.powAnswers.CheckSet(answer, powAnswerLegal)
+					count += bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: answer})
+				} else {
+					log.Warn("PowAnswer PowVerifySeal illegal", "number", answer.Number.String(), "nonce", answer.Nonce.Uint64(), "miner", answer.Miner.String(), "MixDigest", answer.MixDigest.String())
+					bc.powAnswers.CheckSet(answer, powAnswerIllegal)
+				}
+			}
+		}
+		maxGap += 1
+		curNumber -= maxGap
+	}
+	return count
+}
+
 // HandlePowAnswer send a pow answer to worker and save it
 func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	if bc.powAnswers.Contain(powAnswer) {
 		return 0
 	} else {
 		bc.powAnswers.Add(powAnswer)
-		return bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
+		return bc.DispatchPowAnswer()
 	}
 }
 
@@ -2993,12 +3051,13 @@ func (bc *BlockChain) HandleDposAck(dposAck *types.DposAck) int {
 
 // GetPowAnswers get a pow answer list
 func (bc *BlockChain) GetPowAnswers(number *big.Int) []*types.PowAnswer {
-	return bc.powAnswers.List(number)
+	return bc.powAnswers.FilterList(bc.powAnswers.List(number))
 }
 
 // GetLatestPowAnswer get a pow answer receive latest
 func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 	ans := bc.powAnswers.List(number)
+	ans = bc.powAnswers.FilterList(ans)
 	if len(ans) > 0 {
 		return ans[0]
 	} else {
@@ -3042,7 +3101,7 @@ func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 		}
 	}
 
-	return ret
+	return bc.powAnswers.FilterList(ret)
 }
 
 // GetDposAck get a dpos ack list

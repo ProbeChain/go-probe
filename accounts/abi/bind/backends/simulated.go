@@ -37,11 +37,11 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probe/filters"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/filters"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rpc"
 )
 
@@ -60,7 +60,7 @@ var (
 // ChainReader, ChainStateReader, ContractBackend, ContractCaller, ContractFilterer, ContractTransactor,
 // DeployBackend, GasEstimator, GasPricer, LogFilterer, PendingContractCaller, TransactionReader, and TransactionSender
 type SimulatedBackend struct {
-	database   probedb.Database   // In memory database to store our testing data
+	database   probedb.Database // In memory database to store our testing data
 	blockchain *core.BlockChain // Probeum blockchain to handle the consensus
 
 	mu           sync.Mutex
@@ -78,7 +78,7 @@ type SimulatedBackend struct {
 func NewSimulatedBackendWithDatabase(database probedb.Database, alloc core.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
 	genesis := core.Genesis{Config: params.AllProbeashProtocolChanges, GasLimit: gasLimit, Alloc: alloc}
 	genesis.MustCommit(database)
-	blockchain, _ := core.NewBlockChain(database, nil, genesis.Config, probeash.NewFaker(), vm.Config{}, nil, nil, nil)
+	blockchain, _ := core.NewBlockChain(database, nil, genesis.Config, probeash.NewFaker(), vm.Config{}, nil, nil, nil, nil)
 
 	backend := &SimulatedBackend{
 		database:   database,
@@ -818,8 +818,8 @@ type filterBackend struct {
 	bc *core.BlockChain
 }
 
-func (fb *filterBackend) ChainDb() probedb.Database  { return fb.db }
-func (fb *filterBackend) EventMux() *event.TypeMux { panic("not supported") }
+func (fb *filterBackend) ChainDb() probedb.Database { return fb.db }
+func (fb *filterBackend) EventMux() *event.TypeMux  { panic("not supported") }
 
 func (fb *filterBackend) HeaderByNumber(ctx context.Context, block rpc.BlockNumber) (*types.Header, error) {
 	if block == rpc.LatestBlockNumber {
