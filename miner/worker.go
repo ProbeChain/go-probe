@@ -1119,6 +1119,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(w.current.receipts)
 	s := w.current.state.Copy()
+	s.UpdateDPosHashForBlockNumber(header.Number.Uint64())
 	w.current.header.Root = s.IntermediateRoot(w.chain.Config().IsEIP158(header.Number))
 
 	greatri, _ := w.engine.(*greatri2.Greatri)

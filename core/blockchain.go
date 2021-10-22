@@ -1706,7 +1706,6 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		log.Crit("Failed to write block into disk", "err", err)
 	}
 
-	bc.updateDPosHash(state)
 	// Commit all cached state changes into underlying memory database.
 	root, err := state.Commit(bc.chainConfig.IsEIP158(block.Number()))
 	if err != nil {
@@ -2677,22 +2676,6 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		dposNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dposNo, presetDPosAccounts)
 		//fmt.Printf("WriteDPos:%d\n", dposNo)
-	}
-}
-func (bc *BlockChain) updateDPosHash(stateDB *state.StateDB) {
-	block := bc.CurrentBlock()
-	number := block.NumberU64()
-	epoch := bc.chainConfig.DposConfig.Epoch
-	// update dPos hash when first block of per round
-	if number > epoch && (number-1)%epoch == 0 {
-		accounts := stateDB.GetDposAccounts(block.Root(), number, epoch)
-		curDPosAccounts := make([]common.DPoSAccount, len(accounts))
-		for i, account := range accounts {
-			curDPosAccounts[i] = *account
-		}
-		dPosHash := state.BuildHashForDPos(curDPosAccounts)
-		//fmt.Printf("writeDPosNodes: %d, %x\n", number, dPosHash)
-		stateDB.UpdateDPosHash(dPosHash)
 	}
 }
 
