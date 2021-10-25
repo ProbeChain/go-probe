@@ -2661,24 +2661,21 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	if epoch > confirmDpos {
 		confirmBlockNum = epoch - confirmDpos
 	}
-	delFlag := (number+confirmBlockNum)%epoch == 0
-	presetDPosAccounts, hasNew := state.GetDPosCandidates().GetPresetDPosAccounts(delFlag)
-	if presetDPosAccounts == nil {
-		log.Info("current preset DPos account is null")
-		return
-	}
-	/*	for _, dposCandidate := range presetDPosAccounts {
-		fmt.Printf("hasNew:%t, Owner:%s, Enode:%s\n", hasNew, dposCandidate.Owner, dposCandidate.Enode)
-	}*/
-	//arrivedRound := number%epoch == 0
-	if hasNew {
+	arrivedRound := (number+confirmBlockNum)%epoch == 0
+	if arrivedRound {
+		presetDPosAccounts := state.GetDPosCandidates().GetPresetDPosAccounts()
+		if presetDPosAccounts == nil {
+			log.Error("No candidate was elected")
+			return
+		}
 		factor := number + confirmBlockNum + epoch - 1
-		dposNo := factor - factor%epoch
-		rawdb.WriteDPos(bc.db, dposNo, presetDPosAccounts)
-		//fmt.Printf("WriteDPos:%d\n", dposNo)
+		dPosNo := factor - factor%epoch
+		rawdb.WriteDPos(bc.db, dPosNo, presetDPosAccounts)
 	}
-}
+	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
+	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
 
+}
 func (bc *BlockChain) updateP2pDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()

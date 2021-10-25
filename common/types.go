@@ -215,6 +215,15 @@ type DPoSAccount struct {
 	Owner Address   `json:"owner,omitempty"`
 }
 
+// DPoSCandidateAccount DPoS候选账户
+type DPoSCandidateAccount struct {
+	Enode     DposEnode
+	Owner     Address
+	Vote      Address
+	Weight    *big.Int
+	VoteValue *big.Int
+}
+
 // BytesToAddress returns Address with value b.
 // If b is larger than len(h), b will be cropped from the left.
 /*func BytesToAddress(b []byte) Address {
@@ -535,6 +544,12 @@ func (enode *DposEnode) UnmarshalJSON(input []byte) error {
 // MarshalJSON marshals the original value
 func (enode *DposEnode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(enode[:]))
+}
+
+func (enode *DposEnode) String() string {
+	s := string(enode[:])
+	i := strings.Index(s, "enode://")
+	return string([]byte(s)[i:])
 }
 
 func InetAtoN(ip string) *big.Int {

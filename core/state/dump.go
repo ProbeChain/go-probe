@@ -65,6 +65,7 @@ type DumpAccount struct {
 	PledgeValue hexutil.Big     `json:"pledgeValue"`
 	ValidPeriod hexutil.Big     `json:"validPeriod"`
 	Height      hexutil.Big     `json:"height"`
+	Weight      hexutil.Big     `json:"weight"`
 	Value       hexutil.Big     `json:"value"`
 	Nonce       uint64          `json:"nonce"`
 	Data        hexutil.Bytes   `json:"data"`
@@ -328,7 +329,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 					VoteValue:   hexutil.Big(*wrapper.authorizeAccount.VoteValue),
 					Info:        wrapper.authorizeAccount.Info,
 					ValidPeriod: hexutil.Big(*wrapper.authorizeAccount.ValidPeriod),
-					State:       hexutil.Uint8(wrapper.authorizeAccount.State),
+					Weight:      hexutil.Big(*wrapper.authorizeAccount.Weight),
 					//Nonce:			wrapper.authorizeAccount.Nonce,
 				}
 			}

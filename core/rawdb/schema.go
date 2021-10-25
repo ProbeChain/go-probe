@@ -102,6 +102,8 @@ var (
 
 	DPosPrefix = []byte("DPos-")
 
+	DPosCandidatePrefix = []byte("DPos-Candidate-")
+
 	preimageCounter    = metrics.NewRegisteredCounter("db/preimage/total", nil)
 	preimageHitCounter = metrics.NewRegisteredCounter("db/preimage/hits", nil)
 )
@@ -248,6 +250,10 @@ func StateRootKey(hash common.Hash) []byte {
 
 func DposKey(key uint64) []byte {
 	return append(DPosPrefix, IntToBytes(key)...)
+}
+
+func DPosCandidateKey() []byte {
+	return DPosCandidatePrefix
 }
 
 func IntToBytes(n uint64) []byte {

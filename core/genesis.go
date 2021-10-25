@@ -165,6 +165,11 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	if genesis != nil && genesis.Config == nil {
 		return params.AllProbeashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
+	dPosCandidates := rawdb.ReadDPosCandidate(db)
+	log.Info(fmt.Sprintf("load %d dPos candidate", len(dPosCandidates)))
+	for _, candidate := range dPosCandidates {
+		state.GetDPosCandidates().AddDPosCandidate(candidate)
+	}
 	// Just commit the new block if there is no stored genesis block.
 	// 如果没有存储的genesis块，只需提交新块。
 	stored := rawdb.ReadCanonicalHash(db, 0)

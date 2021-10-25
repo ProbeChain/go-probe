@@ -15,14 +15,14 @@ type DPosCandidate struct {
 	dPosCandidateAccounts dPosCandidateAccountList
 }
 
-type dPosCandidateAccountList []DPoSCandidateAccount
+type dPosCandidateAccountList []common.DPoSCandidateAccount
 
 var dPosCandidate *DPosCandidate
 
 func init() {
 	log.Info("DPosCandidate init")
 	dPosCandidate = &DPosCandidate{
-		dPosCandidateAccounts: make([]DPoSCandidateAccount, 0),
+		dPosCandidateAccounts: make([]common.DPoSCandidateAccount, 0),
 	}
 }
 
@@ -35,54 +35,58 @@ func (d dPosCandidateAccountList) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
 func (d dPosCandidateAccountList) Len() int { return len(d) }
 
 func (d dPosCandidateAccountList) Less(i, j int) bool {
-	if d[i].DelegateValue == nil && d[j].DelegateValue != nil {
+	if d[i].VoteValue == nil && d[j].VoteValue != nil {
 		return false
 	}
-	if d[i].DelegateValue != nil && d[j].DelegateValue == nil {
+	if d[i].VoteValue != nil && d[j].VoteValue == nil {
 		return true
 	}
-	cmpRet := d[i].DelegateValue.Cmp(d[j].DelegateValue)
+	cmpRet := d[i].VoteValue.Cmp(d[j].VoteValue)
 	if cmpRet == 0 {
 		cmpRet = d[i].Weight.Cmp(d[j].Weight)
 	}
 	return cmpRet > 0
 }
 
-func (d *DPosCandidate) GetDPosCandidateAccounts() *dPosCandidateAccountList {
-	return &d.dPosCandidateAccounts
+func (d *DPosCandidate) GetDPosCandidateAccounts() []common.DPoSCandidateAccount {
+	return d.dPosCandidateAccounts
 }
 
-func (d *DPosCandidate) GetPresetDPosAccounts(del bool) ([]common.DPoSAccount, bool) {
-	presetLen := d.dPosCandidateAccounts.Len()
-	if presetLen > common.DposNodeLength {
-		presetLen = common.DposNodeLength
-	}
-	hasNew := false
-	presetDPoSAccounts := make([]common.DPoSAccount, presetLen)
-	for i := 0; i < presetLen; i++ {
-		dPosCandidate := d.dPosCandidateAccounts[i]
-		if dPosCandidate.Mark == byte(0) {
-			hasNew = true
-			d.dPosCandidateAccounts[i].Mark = byte(1)
+func (d *DPosCandidate) GetPresetDPosAccounts() []common.DPoSAccount {
+	presetLen := 0
+	presetDPoSAccountMap := make(map[common.DposEnode]*common.DPoSAccount)
+	for i, dPosCandidate := range d.dPosCandidateAccounts {
+		if len(presetDPoSAccountMap) >= common.DposNodeLength {
+			break
 		}
-		presetDPoSAccounts[i] = common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner}
+		existDPosCandidate := presetDPoSAccountMap[dPosCandidate.Enode]
+		if existDPosCandidate == nil {
+			presetDPoSAccountMap[dPosCandidate.Enode] = &common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner}
+		}
+		presetLen = i
 	}
-	if del {
-		d.dPosCandidateAccounts = d.dPosCandidateAccounts[presetLen:]
+	if d.dPosCandidateAccounts.Len() > 0 {
+		d.dPosCandidateAccounts = d.dPosCandidateAccounts[presetLen+1:]
 	}
-	if presetLen == 0 {
-		presetDPoSAccounts = nil
+	if len(presetDPoSAccountMap) == 0 {
+		return nil
 	}
-	return presetDPoSAccounts, hasNew
+	presetDPoSAccounts := make([]common.DPoSAccount, len(presetDPoSAccountMap))
+	index := 0
+	for _, dPoSAccount := range presetDPoSAccountMap {
+		presetDPoSAccounts[index] = *dPoSAccount
+		index++
+	}
+	return presetDPoSAccounts
 }
 
 func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
 	if len(dposList) == 0 {
 		return
 	}
-	dPosCandidateAccounts := make([]DPoSCandidateAccount, len(dposList))
+	dPosCandidateAccounts := make([]common.DPoSCandidateAccount, len(dposList))
 	for i, dposAccount := range dposList {
-		var dposCandidateAccount DPoSCandidateAccount
+		var dposCandidateAccount common.DPoSCandidateAccount
 		dposCandidateAccount.Enode = dposAccount.Enode
 		dposCandidateAccount.Owner = dposAccount.Owner
 		dposEnode := bytes.Trim(dposAccount.Enode[:], "\x00")
@@ -90,8 +94,7 @@ func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
 		reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
 		remoteIp := reg.FindAllString(string(dposStr), -1)[0]
 		dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-		dposCandidateAccount.Mark = byte(0)
-		dposCandidateAccount.DelegateValue = new(big.Int).SetUint64(0)
+		dposCandidateAccount.VoteValue = new(big.Int).SetUint64(0)
 
 		dPosCandidateAccounts[i] = dposCandidateAccount
 	}
@@ -99,38 +102,64 @@ func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
 	sort.Stable(d.dPosCandidateAccounts)
 }
 
-func (d *DPosCandidate) AddDPosCandidate(preNode DPoSCandidateAccount) {
-	isAdd := true
+func (d *DPosCandidate) AddDPosCandidate(curNode common.DPoSCandidateAccount) {
+	exist := false
 	if d.dPosCandidateAccounts.Len() > 0 {
 		for i, node := range d.dPosCandidateAccounts {
-			cmpRet := d.compare(&node, &preNode)
-			if cmpRet == -1 {
-				isAdd = false
-				break
-			}
-			if cmpRet == 1 {
-				preNode.Mark = node.Mark
-				d.dPosCandidateAccounts[i] = preNode
-				isAdd = false
+			if node.Vote == curNode.Vote {
+				d.dPosCandidateAccounts[i] = curNode
+				exist = true
 				break
 			}
 		}
 	}
-	if isAdd {
-		d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, preNode)
+	if !exist {
+		d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, curNode)
 	}
 	sort.Stable(d.dPosCandidateAccounts)
 }
 
-func (d *DPosCandidate) compare(node1, node2 *DPoSCandidateAccount) int {
+func (d *DPosCandidate) UpdateDPosCandidate(curNode common.DPoSCandidateAccount) {
+	isUpdate := false
+	if d.dPosCandidateAccounts.Len() > 0 {
+		for i, node := range d.dPosCandidateAccounts {
+			if node.Vote == curNode.Vote {
+				d.dPosCandidateAccounts[i] = curNode
+				isUpdate = true
+				break
+			}
+		}
+	}
+	if isUpdate {
+		sort.Stable(d.dPosCandidateAccounts)
+	}
+}
+
+func (d *DPosCandidate) DeleteDPosCandidate(curNode common.DPoSCandidateAccount) {
+	deleteIndex := -1
+	if d.dPosCandidateAccounts.Len() > 0 {
+		for i, node := range d.dPosCandidateAccounts {
+			if node.Vote == curNode.Vote {
+				deleteIndex = i
+				break
+			}
+		}
+	}
+	if deleteIndex > -1 {
+		d.dPosCandidateAccounts = append(d.dPosCandidateAccounts[:deleteIndex], d.dPosCandidateAccounts[deleteIndex+1:]...)
+		//sort.Stable(d.dPosCandidateAccounts)
+	}
+}
+
+func (d *DPosCandidate) compare(node1, node2 *common.DPoSCandidateAccount) int {
 	if node1.Owner == node2.Owner && node1.Enode == node2.Enode {
-		if node1.DelegateValue == nil && node2.DelegateValue != nil {
+		if node1.VoteValue == nil && node2.VoteValue != nil {
 			return 1
 		}
-		if node1.DelegateValue != nil && node2.DelegateValue == nil {
+		if node1.VoteValue != nil && node2.VoteValue == nil {
 			return -1
 		}
-		cmpRet := node1.DelegateValue.Cmp(node2.DelegateValue)
+		cmpRet := node1.VoteValue.Cmp(node2.VoteValue)
 		if cmpRet == 0 {
 			cmpRet = node1.Weight.Cmp(node2.Weight)
 		}
@@ -149,23 +178,5 @@ func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
 		curNum := new(big.Int).SetBytes(crypto.Keccak512(append(account.Enode[:], account.Owner.Bytes()...)))
 		num = new(big.Int).Xor(curNum, num)
 	}
-	return crypto.Keccak256Hash(num.Bytes())
-}
-
-func BuildHashForDPosCandidate(accounts []DPoSCandidateAccount) common.Hash {
-	num := big.NewInt(0)
-	for _, account := range accounts {
-		bytes1 := append(account.Enode[:], account.Owner.Bytes()...)
-		bytes2 := append(account.Weight.Bytes(), account.DelegateValue.Bytes()...)
-		bytes3 := append(bytes1, bytes2...)
-		curNum := new(big.Int).SetBytes(crypto.Keccak512(bytes3))
-		num = new(big.Int).Xor(curNum, num)
-	}
-	//hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
-	//hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
-	//
-	//var ret [32]byte
-	//copy(ret[:], hash[32:64])
-
 	return crypto.Keccak256Hash(num.Bytes())
 }

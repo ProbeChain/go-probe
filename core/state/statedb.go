@@ -845,7 +845,7 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 			voteValue:   obj.authorizeAccount.VoteValue,
 			info:        obj.authorizeAccount.Info,
 			validPeriod: obj.authorizeAccount.ValidPeriod,
-			state:       obj.authorizeAccount.State,
+			weight:      obj.authorizeAccount.Weight,
 		})
 	case common.ACC_TYPE_OF_LOSE:
 		s.journal.append(lossSuicideChange{
@@ -1066,32 +1066,6 @@ func (s *StateDB) setMarkLossAccount(address common.Address) {
 			s.markLossAccounts[address.Last12BytesToHash()] = append(arr, address)
 		}
 	}
-}
-
-func (s *StateDB) UpdateDposAccount(ower common.Address, addr common.Address, jsonData []byte) {
-	stateObject := s.getStateObject(addr)
-	if nil != stateObject {
-		return
-	}
-	var dposMap map[string]interface{}
-	err := json.Unmarshal(jsonData, &dposMap)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
-	remoteEnode := dposMap["enode"].(string)
-	remoteIp := dposMap["ip"].(string)
-	remotePort := dposMap["port"].(string)
-	var enode bytes.Buffer
-	enode.WriteString("enode://")
-	enode.WriteString(remoteEnode)
-	enode.WriteString("@")
-	enode.WriteString(remoteIp)
-	enode.WriteString(":")
-	enode.WriteString(remotePort)
-	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
-	stateObject.dposCandidateAccount.Owner = ower
-	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	GetDPosCandidates().AddDPosCandidate(stateObject.dposCandidateAccount)
 }
 
 func InetAtoN(ip string) *big.Int {
@@ -1670,7 +1644,7 @@ func (s *StateDB) Register(context vm.TxContext) {
 		obj.authorizeAccount.Owner = context.From
 		obj.authorizeAccount.ValidPeriod = context.Height
 		obj.authorizeAccount.VoteValue = pledgeValue
-		obj.authorizeAccount.Info = context.Data
+		obj.authorizeAccount.Weight = new(big.Int).SetUint64(0)
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
 		s.setMarkLossAccount(*context.New)
@@ -1846,20 +1820,21 @@ func (s *StateDB) Redemption(context vm.TxContext) {
 	}
 }
 
-func (s *StateDB) ApplyToBeDPoSNode(blockNumber *big.Int, context vm.TxContext) {
-	stateObject := s.getStateObject(*context.To)
-	if nil == stateObject {
+func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
+	stateObj := s.getStateObject(*context.To)
+	if nil == stateObj {
 		return
 	}
-	var dposMap map[string]interface{}
-	err := json.Unmarshal(context.Data, &dposMap)
+	authorizeAccount := stateObj.authorizeAccount
+	var dPosMap map[string]interface{}
+	err := json.Unmarshal(context.Data, &dPosMap)
 	if err != nil {
 		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", context.To.Bytes(), err))
 		return
 	}
-	remoteEnode := dposMap["enode"].(string)
-	remoteIp := dposMap["ip"].(string)
-	remotePort := dposMap["port"].(string)
+	remoteEnode := dPosMap["enode"].(string)
+	remoteIp := dPosMap["ip"].(string)
+	remotePort := dPosMap["port"].(string)
 	var enode bytes.Buffer
 	enode.WriteString("enode://")
 	enode.WriteString(remoteEnode)
@@ -1867,11 +1842,25 @@ func (s *StateDB) ApplyToBeDPoSNode(blockNumber *big.Int, context vm.TxContext) 
 	enode.WriteString(remoteIp)
 	enode.WriteString(":")
 	enode.WriteString(remotePort)
-	stateObject.dposCandidateAccount.Enode = common.BytesToDposEnode([]byte(enode.String()))
-	stateObject.dposCandidateAccount.Owner = context.From
-	stateObject.dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-	stateObject.dposCandidateAccount.Mark = byte(0)
-	GetDPosCandidates().AddDPosCandidate(stateObject.dposCandidateAccount)
+
+	stateObj.db.journal.append(dPosCandidateForAuthorizeChange{
+		account:   &stateObj.address,
+		info:      authorizeAccount.Info,
+		voteValue: *authorizeAccount.VoteValue,
+		weight:    *authorizeAccount.Weight,
+	})
+
+	authorizeAccount.Info = []byte(enode.String())
+	authorizeAccount.Weight = common.InetAtoN(remoteIp)
+
+	dPosCandidateAccount := common.DPoSCandidateAccount{
+		Enode:     common.BytesToDposEnode(authorizeAccount.Info),
+		Owner:     authorizeAccount.Owner,
+		Vote:      *context.To,
+		Weight:    authorizeAccount.Weight,
+		VoteValue: authorizeAccount.VoteValue,
+	}
+	GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)
 }
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {

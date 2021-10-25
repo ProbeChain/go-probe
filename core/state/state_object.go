@@ -81,8 +81,6 @@ type stateObject struct {
 	// 挂失账户
 	lossAccount LossAccount
 
-	dposCandidateAccount DPoSCandidateAccount
-
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -150,9 +148,8 @@ type AuthorizeAccount struct {
 	PledgeValue *big.Int
 	VoteValue   *big.Int
 	Info        []byte
-	//InterestRate *big.Int
 	ValidPeriod *big.Int
-	State       byte //授权状态 0：投票中，1：过期或禁止申请成为DPos候选账户
+	Weight      *big.Int
 }
 
 // LossAccount 挂失账户
@@ -164,15 +161,6 @@ type LossAccount struct {
 	InfoDigest  []byte         // 挂失内容摘要
 }
 
-// DPoSCandidateAccount DPoS候选账户
-type DPoSCandidateAccount struct {
-	Enode         common.DposEnode
-	Owner         common.Address
-	Mark          byte
-	Weight        *big.Int
-	DelegateValue *big.Int
-}
-
 type Wrapper struct {
 	accountType          byte
 	regularAccount       RegularAccount
@@ -181,7 +169,7 @@ type Wrapper struct {
 	authorizeAccount     AuthorizeAccount
 	lossAccount          LossAccount
 	dPoSAccount          common.DPoSAccount
-	dPoSCandidateAccount DPoSCandidateAccount
+	dPoSCandidateAccount common.DPoSCandidateAccount
 }
 
 type RPCAccountInfo struct {
@@ -894,7 +882,8 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		//info := hexutil.Bytes(s.authorizeAccount.Info)
 		accountInfo.Info = string(s.authorizeAccount.Info)
 		accountInfo.ValidPeriod = s.authorizeAccount.ValidPeriod.String()
-		accountInfo.State = strconv.Itoa(int(s.authorizeAccount.State))
+		accountInfo.Weight = s.authorizeAccount.Weight.String()
+		//accountInfo.State = strconv.Itoa(int(s.authorizeAccount.State))
 	case common.ACC_TYPE_OF_LOSE:
 		accountInfo.State = strconv.Itoa(int(s.lossAccount.State))
 		accountInfo.LossAccount = &s.lossAccount.LossAccount
