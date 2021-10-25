@@ -168,36 +168,36 @@ func ReadRootHashForNew(db probedb.KeyValueReader, hash common.Hash) []common.Ha
 
 func WriteDPos(db probedb.KeyValueWriter, dPosNo uint64, list []common.DPoSAccount) {
 	// add trie root
-	arrdata, err := rlp.EncodeToBytes(list)
+	arr, err := rlp.EncodeToBytes(list)
 	if err != nil {
-		log.Crit("Failed to EncodeToBytes dpos", "err", err)
+		log.Crit("Failed to EncodeToBytes dPos", "err", err)
 	}
 	key := DposKey(dPosNo)
-	if err := db.Put(key, arrdata); err != nil {
-		log.Crit("Failed to store dpos", "err", err)
+	if err := db.Put(key, arr); err != nil {
+		log.Crit("Failed to store dPos", "err", err)
 	}
 }
 
 func WriteDPosCandidate(db probedb.KeyValueWriter, list []common.DPoSCandidateAccount) {
-	arrdata, err := rlp.EncodeToBytes(list)
+	arr, err := rlp.EncodeToBytes(list)
 	if err != nil {
 		log.Crit("Failed to EncodeToBytes dPos candidate", "err", err)
 	}
-	if err := db.Put(DPosCandidateKey(), arrdata); err != nil {
+	if err := db.Put(DPosCandidateKey(), arr); err != nil {
 		log.Crit("Failed to store dPos candidate", "err", err)
 	}
 }
 
 func ReadDPos(db probedb.KeyValueReader, dkey uint64) []common.DPoSAccount {
-	var intarray []common.DPoSAccount
+	var arr []common.DPoSAccount
 	key := DposKey(dkey)
 	data, _ := db.Get(key)
-	err := rlp.DecodeBytes(data, &intarray)
+	err := rlp.DecodeBytes(data, &arr)
 	if err != nil {
-		log.Error("Failed to get dpos", "err", err)
+		log.Warn("Failed to get dPos", "err", err)
 	}
 
-	return intarray
+	return arr
 }
 
 func ReadDPosCandidate(db probedb.KeyValueReader) []common.DPoSCandidateAccount {
@@ -205,7 +205,7 @@ func ReadDPosCandidate(db probedb.KeyValueReader) []common.DPoSCandidateAccount 
 	data, _ := db.Get(DPosCandidateKey())
 	err := rlp.DecodeBytes(data, &arr)
 	if err != nil {
-		log.Error("Failed to get dpos", "err", err)
+		log.Warn("Failed to get dPos candidate", "err", err)
 	}
 
 	return arr
