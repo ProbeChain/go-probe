@@ -1139,6 +1139,8 @@ func (bc *BlockChain) HasBlockAndState(hash common.Hash, number uint64) bool {
 	// Check first that the block itself is known
 	block := bc.GetBlock(hash, number)
 	if block == nil {
+
+		log.Debug("get no block", "number", number, "hash", hash)
 		return false
 	}
 	//return bc.HasState(block.Root())
