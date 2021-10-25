@@ -542,14 +542,9 @@ func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
 
 // BroadcastDposAck broadcast dpos ack to all peers
 func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
-	check := h.chain.CheckDposAck(dposAck)
-	//future := dposAck.Number.Uint64() >= h.chain.CurrentHeader().Number.Uint64()
-	future := true
-	broadcast := check && future
+	check := h.chain.CheckDposAckSketchy(dposAck)
 	if check {
 		h.chain.HandleDposAck(dposAck)
-	}
-	if broadcast {
 		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
 			if err := peer.SendNewDposAck(dposAck); err != nil {
 				log.Debug("SendNewDposAck", "err", err)
@@ -557,7 +552,7 @@ func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
 		}
 		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "future", future, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 	}
 }
 

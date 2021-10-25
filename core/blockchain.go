@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"github.com/probeum/go-probeum/consensus/probeash"
 	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/status-im/keycard-go/hexutils"
 	"io"
 	"math/big"
 	mrand "math/rand"
@@ -102,6 +103,9 @@ const (
 	powAnswerUncheck    = 0
 	powAnswerLegal      = 1
 	powAnswerIllegal    = 2
+	dposAckUncheck      = 0
+	dposAckLegal        = 1
+	dposAckIllegal      = 2
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -261,6 +265,7 @@ func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
 // DposAckPool contains all dpos ack
 type DposAckPool struct {
 	lock       sync.RWMutex
+	check      map[common.Hash]uint8
 	dposAckMap map[uint64][]*types.DposAck
 }
 
@@ -268,6 +273,7 @@ type DposAckPool struct {
 func NewDposAckPool() *DposAckPool {
 	pool := &DposAckPool{
 		dposAckMap: make(map[uint64][]*types.DposAck),
+		check:      map[common.Hash]uint8{},
 	}
 	return pool
 }
@@ -280,6 +286,19 @@ func (pool *DposAckPool) contain(dposAck *types.DposAck) bool {
 		}
 	}
 	return false
+}
+
+func (pool *DposAckPool) CheckRet(dposAck *types.DposAck) uint8 {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	return pool.check[dposAck.Id()]
+}
+
+func (pool *DposAckPool) CheckSet(dposAck *types.DposAck, result uint8) {
+	log.Info("CheckSet", "id", dposAck.Id().String())
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	pool.check[dposAck.Id()] = result
 }
 
 func (pool *DposAckPool) Contain(dposAck *types.DposAck) bool {
@@ -334,6 +353,18 @@ func (pool *DposAckPool) Add(dposAck *types.DposAck) {
 	}
 
 	pool.dposAckMap[number.Uint64()] = dposAcks
+}
+
+func (pool *DposAckPool) FilterList(dposAcks []*types.DposAck) []*types.DposAck {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	acks := make([]*types.DposAck, 0, len(dposAcks))
+	for _, dposAck := range dposAcks {
+		if pool.check[dposAck.Id()] == dposAckLegal {
+			acks = append(acks, dposAck)
+		}
+	}
+	return acks
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -2586,6 +2617,7 @@ func (bc *BlockChain) maintainTxIndex(ancients uint64) {
 		case head := <-headCh:
 			log.Info("SubscribeChainHeadEvent", "headNumber", head.Block.Header().Number.Uint64())
 			bc.DispatchPowAnswer()
+			bc.DispatchDposAck()
 			if done == nil {
 				done = make(chan struct{})
 				go indexBlocks(rawdb.ReadTxIndexTail(bc.db), head.Block.NumberU64(), done)
@@ -3011,6 +3043,31 @@ func (bc *BlockChain) DispatchPowAnswer() int {
 	return count
 }
 
+// DispatchDposAck dispatch list check illegal dpos ack
+func (bc *BlockChain) DispatchDposAck() int {
+	count := 0
+	curNumber := bc.CurrentHeader().Number.Int64()
+	maxGap := int64(0)
+	for curNumber >= 0 && maxGap <= maxUnclePowAnswer {
+		dposAcks := bc.dposAcks.List(big.NewInt(curNumber), types.AckTypeAll)
+		for _, dposAck := range dposAcks {
+			if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
+				check := bc.CheckDposAck(dposAck)
+				if check {
+					bc.dposAcks.CheckSet(dposAck, dposAckLegal)
+					count += bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+				} else {
+					log.Warn("DposAck illegal", "number", dposAck.Number.String(), "owner", dposAck.BlockHash.String(), "AckType", dposAck.AckType, "WitnessSig", hexutils.BytesToHex(dposAck.WitnessSig))
+					bc.dposAcks.CheckSet(dposAck, dposAckIllegal)
+				}
+			}
+		}
+		maxGap += 1
+		curNumber -= maxGap
+	}
+	return count
+}
+
 // HandlePowAnswer send a pow answer to worker and save it
 func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	if bc.powAnswers.Contain(powAnswer) {
@@ -3021,6 +3078,27 @@ func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	}
 }
 
+// CheckDposAckSketchy based on the existing conditions check a dpos ack is legal
+func (bc *BlockChain) CheckDposAckSketchy(dposAck *types.DposAck) bool {
+	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
+	if len(accounts) == 0 {
+		return true
+	}
+	owner, err := dposAck.RecoverOwner()
+	if err == nil {
+		for _, account := range accounts {
+			if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+				curHash := bc.GetHeaderByNumber(dposAck.Number.Uint64()).Hash()
+				if curHash == dposAck.BlockHash {
+					return true
+				}
+			}
+		}
+	}
+	log.Debug("CheckDposAck Fail", "owner", owner, "err", err)
+	return false
+}
+
 // CheckDposAck check a dpos ack is legal
 func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
@@ -3028,7 +3106,14 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 	if err == nil {
 		for _, account := range accounts {
 			if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
-				return true
+				if dposAck.AckType == types.AckTypeOppose {
+					return true
+				} else {
+					curHash := bc.GetHeaderByNumber(dposAck.Number.Uint64()).Hash()
+					if curHash == dposAck.BlockHash {
+						return true
+					}
+				}
 			}
 		}
 	}
@@ -3042,7 +3127,7 @@ func (bc *BlockChain) HandleDposAck(dposAck *types.DposAck) int {
 		return 0
 	} else {
 		bc.dposAcks.Add(dposAck)
-		return bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+		return bc.DispatchDposAck()
 	}
 }
 
@@ -3103,10 +3188,10 @@ func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 
 // GetDposAck get a dpos ack list
 func (bc *BlockChain) GetDposAck(number *big.Int, ackType types.DposAckType) []*types.DposAck {
-	return bc.dposAcks.List(number, ackType)
+	return bc.dposAcks.FilterList(bc.dposAcks.List(number, ackType))
 }
 
 // GetDposAckSize get a dpos ack list size
 func (bc *BlockChain) GetDposAckSize(number *big.Int, ackType types.DposAckType) int {
-	return len(bc.dposAcks.List(number, ackType))
+	return len(bc.dposAcks.FilterList(bc.dposAcks.List(number, ackType)))
 }

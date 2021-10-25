@@ -246,13 +246,8 @@ func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *typ
 // handleDposAckBroadcast is invoked from a peer's message handler when it transmits a
 // dpos ack for the local node to process.
 func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.DposAck) error {
-
-	check := h.chain.CheckDposAck(dposAck)
-	//future := dposAck.Number.Uint64() > h.chain.CurrentHeader().Number.Uint64()
-	future := true
-	broadcast := check && future
-	// boardcast dpos ack again
-	if broadcast {
+	check := h.chain.CheckDposAckSketchy(dposAck)
+	if check {
 		peer.KnownDposAck(dposAck.Id())
 		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
 			if err := peer.SendNewDposAck(dposAck); err != nil {
@@ -261,7 +256,7 @@ func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.D
 		}
 		h.chain.HandleDposAck(dposAck)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "future", future, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
 	}
 	return nil
 }
