@@ -175,6 +175,14 @@ func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Ba
 	//set contract deploy fee
 	if args.To == nil {
 		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_CONTRACT)))
+	} else {
+		accType, err := common.ValidAddress(*args.To)
+		if err != nil {
+			return err
+		}
+		if common.ACC_TYPE_OF_CONTRACT != accType {
+			return errors.New("account must be contract type")
+		}
 	}
 	return args.DoEstimateGas(ctx, b)
 }
