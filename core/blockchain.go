@@ -3090,8 +3090,16 @@ func (bc *BlockChain) CheckDposAckSketchy(dposAck *types.DposAck) bool {
 	if err == nil {
 		for _, account := range accounts {
 			if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
-				curHash := bc.GetHeaderByNumber(dposAck.Number.Uint64()).Hash()
-				if curHash == dposAck.BlockHash {
+				log.Info("CheckDposAckSketchy account found")
+				curHeader := bc.GetHeaderByNumber(dposAck.Number.Uint64())
+				if curHeader != nil {
+					if curHeader.Hash() == dposAck.BlockHash {
+						return true
+					} else {
+						log.Info("CheckDposAckSketchy hash is not equel", "Hash", curHeader.Hash().String(), "BlockHash", dposAck.BlockHash.String())
+					}
+				} else {
+					log.Info("CheckDposAckSketchy head is nill")
 					return true
 				}
 			}
