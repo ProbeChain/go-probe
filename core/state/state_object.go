@@ -116,6 +116,7 @@ type stateObject struct {
 
 // RegularAccount 普通账户
 type RegularAccount struct {
+	Type        byte
 	VoteAccount common.Address
 	VoteValue   *big.Int
 	LossType    uint8
@@ -229,7 +230,7 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 
 // newRegularAccount creates a state object.
 func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *stateObject {
-	trie := *db.getStateObjectTireByAccountType(wrapper.accountType)
+	trie := db.trie
 	return &stateObject{
 		db:               db,
 		address:          address,
