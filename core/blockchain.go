@@ -3080,8 +3080,10 @@ func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
 	}
 }
 
+//todo
 // CheckDposAckSketchy based on the existing conditions check a dpos ack is legal
 func (bc *BlockChain) CheckDposAckSketchy(dposAck *types.DposAck) bool {
+	return true
 	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
 	if len(accounts) == 0 {
 		return true
