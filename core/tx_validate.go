@@ -129,6 +129,10 @@ func (pool *TxPool) validateTxOfContractCall(tx *types.Transaction, local bool) 
 		if tx.Value().Cmp(pledgeAmount) != 0 {
 			return errors.New("wrong value")
 		}
+	} else {
+		if !pool.currentState.Exist(*tx.To()) {
+			return ErrAccountNotExists
+		}
 	}
 	return pool.validateGas(tx, local)
 }
