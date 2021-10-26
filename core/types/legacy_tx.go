@@ -44,12 +44,12 @@ type LegacyTx struct {
 	New       *common.Address `rlp:"nil"`
 	Initiator *common.Address `rlp:"nil"`
 	Receiver  *common.Address `rlp:"nil"`
-	Value2    *big.Int        `rlp:"nil"`
+	Value2    *big.Int
 	Mark      []byte
-	Height    *big.Int       `rlp:"nil"`
-	AccType   *hexutil.Uint8 `rlp:"nil"`
-	LossType  *hexutil.Uint8 `rlp:"nil"`
-	PnsType   *hexutil.Uint8 `rlp:"nil"`
+	Height    *big.Int
+	AccType   *hexutil.Uint8
+	LossType  *hexutil.Uint8
+	PnsType   *hexutil.Uint8
 }
 
 // NewTransaction creates an unsigned legacy transaction.
