@@ -315,7 +315,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			statedb.SetState(addr, key, value)
 		}
 	}
-	root := statedb.IntermediateRoot(false)
+	root := statedb.IntermediateRoot(false, nil)
 
 	// 更新所有
 	hash := statedb.GetStateDbTrie().GetTallHash()

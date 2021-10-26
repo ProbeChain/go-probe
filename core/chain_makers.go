@@ -26,8 +26,8 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 )
 
 // BlockGen creates blocks for testing.
@@ -257,8 +257,9 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 	} else {
 		time = parent.Time() + 10 // block time is fixed at 10 seconds
 	}
+	currentNumber := new(big.Int).Add(parent.Number(), common.Big1)
 	header := &types.Header{
-		Root:       state.IntermediateRoot(chain.Config().IsEIP158(parent.Number())),
+		Root:       state.IntermediateRoot(chain.Config().IsEIP158(parent.Number()), currentNumber),
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
 		Difficulty: engine.CalcDifficulty(chain, time, &types.Header{
@@ -268,7 +269,7 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 			UncleHash:  parent.UncleHash(),
 		}),
 		GasLimit: parent.GasLimit(),
-		Number:   new(big.Int).Add(parent.Number(), common.Big1),
+		Number:   currentNumber,
 		Time:     time,
 	}
 	if chain.Config().IsLondon(header.Number) {

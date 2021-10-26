@@ -663,7 +663,7 @@ func (probeash *Probeash) Prepare(chain consensus.ChainHeaderReader, header *typ
 func (probeash *Probeash) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// Accumulate any block and uncle rewards and commit the final state root
 	accumulateRewards(chain.Config(), state, header, uncles)
-	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number), header.Number)
 }
 
 // FinalizeAndAssemble implements consensus.Engine, accumulating the block and

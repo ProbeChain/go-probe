@@ -1325,7 +1325,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 // IntermediateRoot computes the current root hash of the state trie.
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
-func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
+func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool, blockNumber *big.Int) common.Hash {
 	// Finalise all the dirty storage states and write them into the tries
 	s.Finalise(deleteEmptyObjects)
 
@@ -1380,6 +1380,9 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	if metrics.EnabledExpensive {
 		defer func(start time.Time) { s.AccountHashes += time.Since(start) }(time.Now())
 	}
+	if blockNumber != nil {
+		s.updateDPosHashByBlockNumber(blockNumber.Uint64())
+	}
 	return s.trie.Hash()
 }
 
@@ -1405,7 +1408,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 		return common.Hash{}, fmt.Errorf("commit aborted due to earlier error: %v", s.dbErr)
 	}
 	// Finalize any pending changes and merge everything into the tries
-	s.IntermediateRoot(deleteEmptyObjects)
+	s.IntermediateRoot(deleteEmptyObjects, nil)
 
 	// Commit objects to the trie, measuring the elapsed time
 	codeWriter := s.db.TrieDB().DiskDB().NewBatch()
@@ -1950,7 +1953,7 @@ func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
 	s.trie.dPosHash = dPosHash
 }
 
-func (s *StateDB) UpdateDPosHashForBlockNumber(number uint64) {
+func (s *StateDB) updateDPosHashByBlockNumber(number uint64) {
 	epoch := globalconfig.Epoch
 	// update dPos hash when first block of per round
 	if number > epoch && (number-1)%epoch == 0 {

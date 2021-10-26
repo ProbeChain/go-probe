@@ -35,21 +35,21 @@ type LegacyTx struct {
 	K        byte
 	V, R, S  *big.Int // signature values
 
-	From      *common.Address `rlp:"optional"`
-	Owner     *common.Address `rlp:"optional"`
-	Vote      *common.Address `rlp:"optional"`
-	Loss      *common.Address `rlp:"optional"`
-	Asset     *common.Address `rlp:"optional"`
-	Old       *common.Address `rlp:"optional"`
-	New       *common.Address `rlp:"optional"`
-	Initiator *common.Address `rlp:"optional"`
-	Receiver  *common.Address `rlp:"optional"`
-	Value2    *big.Int        `rlp:"optional"`
-	Mark      []byte          `rlp:"optional"`
-	Height    *big.Int        `rlp:"optional"`
-	AccType   *hexutil.Uint8  `rlp:"optional"`
-	LossType  *hexutil.Uint8  `rlp:"optional"`
-	PnsType   *hexutil.Uint8  `rlp:"optional"`
+	From      *common.Address `rlp:"nil"`
+	Owner     *common.Address `rlp:"nil"`
+	Vote      *common.Address `rlp:"nil"`
+	Loss      *common.Address `rlp:"nil"`
+	Asset     *common.Address `rlp:"nil"`
+	Old       *common.Address `rlp:"nil"`
+	New       *common.Address `rlp:"nil"`
+	Initiator *common.Address `rlp:"nil"`
+	Receiver  *common.Address `rlp:"nil"`
+	Value2    *big.Int        `rlp:"nil"`
+	Mark      []byte
+	Height    *big.Int       `rlp:"nil"`
+	AccType   *hexutil.Uint8 `rlp:"nil"`
+	LossType  *hexutil.Uint8 `rlp:"nil"`
+	PnsType   *hexutil.Uint8 `rlp:"nil"`
 }
 
 // NewTransaction creates an unsigned legacy transaction.
