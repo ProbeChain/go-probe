@@ -459,8 +459,9 @@ func OpenTotalTrieForBMpt(root common.Hash, db Database) (TotalTrie, error) {
 		dPosHash:          hash[6],
 		dPosCandidateHash: hash[7],
 	}
-
-	log.Error("Failed to load totalTrie", "err", err)
+	if err != nil {
+		log.Error("OpenTotalTrieForBMpt", "err", err)
+	}
 	return totalTrie, err
 }
 

@@ -295,7 +295,6 @@ func (pool *DposAckPool) CheckRet(dposAck *types.DposAck) uint8 {
 }
 
 func (pool *DposAckPool) CheckSet(dposAck *types.DposAck, result uint8) {
-	log.Info("CheckSet", "id", dposAck.Id().String())
 	pool.lock.Lock()
 	defer pool.lock.Unlock()
 	pool.check[dposAck.Id()] = result
@@ -3049,8 +3048,13 @@ func (bc *BlockChain) DispatchPowAnswer() int {
 func (bc *BlockChain) DispatchDposAck() int {
 	count := 0
 	curNumber := bc.CurrentHeader().Number.Int64()
-	maxGap := int64(0)
-	for curNumber >= 0 && maxGap <= maxUnclePowAnswer {
+	maxNumber := curNumber + 64 // for check dpos ack type oppose
+	curNumber = curNumber - maxUnclePowAnswer
+	if curNumber < 0 {
+		curNumber = 0
+	}
+
+	for curNumber <= maxNumber {
 		dposAcks := bc.dposAcks.List(big.NewInt(curNumber), types.AckTypeAll)
 		for _, dposAck := range dposAcks {
 			if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
@@ -3064,9 +3068,9 @@ func (bc *BlockChain) DispatchDposAck() int {
 				}
 			}
 		}
-		maxGap += 1
-		curNumber -= maxGap
+		curNumber += 1
 	}
+
 	return count
 }
 
@@ -3114,6 +3118,9 @@ func (bc *BlockChain) CheckDposAckSketchy(dposAck *types.DposAck) bool {
 // CheckDposAck check a dpos ack is legal
 func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
+	if len(accounts) == 0 && dposAck.AckType == types.AckTypeOppose {
+		return true
+	}
 	owner, err := dposAck.RecoverOwner()
 	if err == nil {
 		for _, account := range accounts {
