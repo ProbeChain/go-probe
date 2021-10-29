@@ -3136,7 +3136,10 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 			}
 		}
 	}
-	log.Debug("CheckDposAck Fail", "owner", owner, "err", err)
+	log.Warn("CheckDposAck Fail", "owner", owner, "err", err, "accounts size", len(accounts))
+	for _, account := range accounts {
+		log.Info("account", "owner", account.Owner.String(), "enode", account.Enode.String())
+	}
 	return false
 }
 
