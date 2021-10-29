@@ -315,7 +315,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			statedb.SetState(addr, key, value)
 		}
 	}
-	root := statedb.IntermediateRoot(false)
+	root := statedb.IntermediateRoot(false, nil)
 
 	head := &types.Header{
 		Number:           new(big.Int).SetUint64(g.Number),

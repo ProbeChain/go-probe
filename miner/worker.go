@@ -374,7 +374,7 @@ func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 		return false
 	}
 
-	log.Debug(" producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " current:", account.Owner, " re:", account.Owner == w.coinbase)
+	log.Debug(" producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " current:", account.Owner, " current:", account.Enode.String(), " re:", account.Owner == w.coinbase)
 
 	return account.Owner == w.coinbase
 }
@@ -1119,8 +1119,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, parentBlockNu
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(w.current.receipts)
 	s := w.current.state.Copy()
-	s.UpdateDPosHashForBlockNumber(header.Number.Uint64())
-	w.current.header.Root = s.IntermediateRoot(w.chain.Config().IsEIP158(header.Number))
+	w.current.header.Root = s.IntermediateRoot(w.chain.Config().IsEIP158(header.Number), header.Number)
 
 	greatri, _ := w.engine.(*greatri2.Greatri)
 	greatri.DposFinalize(w.chain, header, s, w.current.txs, w.current.powAnswerUncles)

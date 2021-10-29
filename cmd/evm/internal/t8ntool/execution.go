@@ -178,7 +178,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 			if chainConfig.IsByzantium(vmContext.BlockNumber) {
 				statedb.Finalise(true)
 			} else {
-				root = statedb.IntermediateRoot(chainConfig.IsEIP158(vmContext.BlockNumber)).Bytes()
+				root = statedb.IntermediateRoot(chainConfig.IsEIP158(vmContext.BlockNumber), vmContext.BlockNumber).Bytes()
 			}
 
 			// Create a new receipt for the transaction, storing the intermediate root and
@@ -209,7 +209,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 
 		txIndex++
 	}
-	statedb.IntermediateRoot(chainConfig.IsEIP158(vmContext.BlockNumber))
+	statedb.IntermediateRoot(chainConfig.IsEIP158(vmContext.BlockNumber), vmContext.BlockNumber)
 	// Add mining reward?
 	if miningReward > 0 {
 		// Add mining reward. The mining reward may be `0`, which only makes a difference in the cases

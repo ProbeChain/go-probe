@@ -256,7 +256,7 @@ func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.D
 		}
 		h.chain.HandleDposAck(dposAck)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash)
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
 	}
 	return nil
 }

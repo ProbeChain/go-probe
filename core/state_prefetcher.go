@@ -73,7 +73,7 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 		}
 		// If we're pre-byzantium, pre-load trie nodes for the intermediate root
 		if !byzantium {
-			statedb.IntermediateRoot(true)
+			statedb.IntermediateRoot(true, block.Number())
 		}
 	}
 	// If were post-byzantium, pre-load trie nodes for the final root hash
