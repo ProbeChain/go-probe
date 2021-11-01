@@ -3049,15 +3049,18 @@ func (bc *BlockChain) DispatchDposAck() int {
 	count := 0
 	curNumber := bc.CurrentHeader().Number.Int64()
 	maxNumber := curNumber + 64 // for check dpos ack type oppose
-	curNumber = curNumber - maxUnclePowAnswer
-	if curNumber < 0 {
-		curNumber = 0
+	minNumber := curNumber - maxUnclePowAnswer
+	if minNumber < 0 {
+		minNumber = 0
 	}
 
-	for curNumber <= maxNumber {
-		dposAcks := bc.dposAcks.List(big.NewInt(curNumber), types.AckTypeAll)
+	for minNumber <= maxNumber {
+		dposAcks := bc.dposAcks.List(big.NewInt(minNumber), types.AckTypeAll)
 		for _, dposAck := range dposAcks {
 			if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
+				if dposAck.AckType == types.AckTypeAgree && dposAck.Number.Int64() > curNumber {
+					continue
+				}
 				check := bc.CheckDposAck(dposAck)
 				if check {
 					bc.dposAcks.CheckSet(dposAck, dposAckLegal)
@@ -3068,7 +3071,7 @@ func (bc *BlockChain) DispatchDposAck() int {
 				}
 			}
 		}
-		curNumber += 1
+		minNumber += 1
 	}
 
 	return count
