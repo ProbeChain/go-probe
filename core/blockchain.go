@@ -2709,7 +2709,11 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	}
 	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
 	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
-	log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
+	//log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
+
+	for _, presetDPos := range dPosCandidateAccounts {
+		fmt.Printf("WriteDPosCandidate,Owner:%s,Vote:%s, VoteValue:%d,Enode:%s\n", presetDPos.Owner, presetDPos.Vote, presetDPos.VoteValue, presetDPos.Enode.String())
+	}
 
 }
 func (bc *BlockChain) updateP2pDposNodes() {

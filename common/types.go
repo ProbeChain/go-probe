@@ -217,10 +217,10 @@ type DPoSAccount struct {
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	Enode     DposEnode
-	Owner     Address
-	Vote      Address
-	Weight    *big.Int
+	Enode DposEnode
+	Owner Address
+	Vote  Address
+	//Weight    *big.Int
 	VoteValue *big.Int
 }
 

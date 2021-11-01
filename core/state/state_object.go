@@ -149,7 +149,6 @@ type AuthorizeAccount struct {
 	VoteValue   *big.Int
 	Info        []byte
 	ValidPeriod *big.Int
-	Weight      *big.Int
 }
 
 // LossAccount 挂失账户
@@ -882,7 +881,6 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		//info := hexutil.Bytes(s.authorizeAccount.Info)
 		accountInfo.Info = string(s.authorizeAccount.Info)
 		accountInfo.ValidPeriod = s.authorizeAccount.ValidPeriod.String()
-		accountInfo.Weight = s.authorizeAccount.Weight.String()
 		//accountInfo.State = strconv.Itoa(int(s.authorizeAccount.State))
 	case common.ACC_TYPE_OF_LOSE:
 		accountInfo.State = strconv.Itoa(int(s.lossAccount.State))

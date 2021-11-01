@@ -243,7 +243,6 @@ type (
 		account   *common.Address
 		info      []byte
 		voteValue big.Int
-		weight    big.Int
 	}
 )
 
@@ -356,7 +355,6 @@ func (ch authorizeSuicideChange) revert(s *StateDB) {
 		obj.authorizeAccount.VoteValue = ch.voteValue
 		obj.authorizeAccount.Info = ch.info
 		obj.authorizeAccount.ValidPeriod = ch.validPeriod
-		obj.authorizeAccount.Weight = ch.weight
 	}
 }
 
@@ -504,7 +502,6 @@ func (ch dPosCandidateForAuthorizeChange) revert(s *StateDB) {
 	dPosCandidateAccount.Owner = authorizeAccount.Owner
 	dPosCandidateAccount.Vote = *ch.account
 	dPosCandidateAccount.VoteValue = &ch.voteValue
-	dPosCandidateAccount.Weight = &ch.weight
 	if len(ch.info) == 0 {
 		dPosCandidateAccount.Enode = common.BytesToDposEnode(authorizeAccount.Info)
 		GetDPosCandidates().DeleteDPosCandidate(dPosCandidateAccount)
@@ -514,7 +511,6 @@ func (ch dPosCandidateForAuthorizeChange) revert(s *StateDB) {
 	}
 	authorizeAccount.VoteValue = &ch.voteValue
 	authorizeAccount.Info = ch.info
-	authorizeAccount.Weight = &ch.weight
 
 }
 

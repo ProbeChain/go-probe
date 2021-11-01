@@ -329,7 +329,6 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 					VoteValue:   hexutil.Big(*wrapper.authorizeAccount.VoteValue),
 					Info:        wrapper.authorizeAccount.Info,
 					ValidPeriod: hexutil.Big(*wrapper.authorizeAccount.ValidPeriod),
-					Weight:      hexutil.Big(*wrapper.authorizeAccount.Weight),
 					//Nonce:			wrapper.authorizeAccount.Nonce,
 				}
 			}

@@ -848,7 +848,6 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 			voteValue:   obj.authorizeAccount.VoteValue,
 			info:        obj.authorizeAccount.Info,
 			validPeriod: obj.authorizeAccount.ValidPeriod,
-			weight:      obj.authorizeAccount.Weight,
 		})
 	case common.ACC_TYPE_OF_LOSE:
 		s.journal.append(lossSuicideChange{
@@ -1650,7 +1649,6 @@ func (s *StateDB) Register(context vm.TxContext) {
 		obj.authorizeAccount.Owner = context.From
 		obj.authorizeAccount.ValidPeriod = context.Height
 		obj.authorizeAccount.VoteValue = pledgeValue
-		obj.authorizeAccount.Weight = new(big.Int).SetUint64(0)
 	case common.ACC_TYPE_OF_LOSE:
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
 		s.setMarkLossAccount(*context.New)
@@ -1853,17 +1851,14 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 		account:   &stateObj.address,
 		info:      authorizeAccount.Info,
 		voteValue: *authorizeAccount.VoteValue,
-		weight:    *authorizeAccount.Weight,
 	})
 
 	authorizeAccount.Info = []byte(enode.String())
-	authorizeAccount.Weight = common.InetAtoN(remoteIp)
 
 	dPosCandidateAccount := common.DPoSCandidateAccount{
 		Enode:     common.BytesToDposEnode(authorizeAccount.Info),
 		Owner:     authorizeAccount.Owner,
 		Vote:      *context.To,
-		Weight:    authorizeAccount.Weight,
 		VoteValue: authorizeAccount.VoteValue,
 	}
 	GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)
