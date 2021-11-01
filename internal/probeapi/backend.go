@@ -29,10 +29,10 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rpc"
 )
 
@@ -92,6 +92,10 @@ type Backend interface {
 	Engine() consensus.Engine
 
 	Exist(addr common.Address) bool
+
+	GetDPOSByBlockNumber(number rpc.BlockNumber) []*common.DPoSAccount
+
+	GetDPOSCandidate() []common.DPoSCandidateAccount
 }
 
 func GetAPIs(apiBackend Backend) []rpc.API {

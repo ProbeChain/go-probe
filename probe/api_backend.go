@@ -30,12 +30,12 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/miner"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rpc"
 )
 
@@ -43,7 +43,7 @@ import (
 type ProbeAPIBackend struct {
 	extRPCEnabled       bool
 	allowUnprotectedTxs bool
-	probe                 *Probeum
+	probe               *Probeum
 	gpo                 *gasprice.Oracle
 }
 
@@ -357,4 +357,20 @@ func (b *ProbeAPIBackend) StateAtTransaction(ctx context.Context, block *types.B
 
 func (b *ProbeAPIBackend) Exist(addr common.Address) bool {
 	return b.TxPool().Exist(addr)
+}
+
+func (b *ProbeAPIBackend) GetDPOSByBlockNumber(blockNumber rpc.BlockNumber) []*common.DPoSAccount {
+	var epoch = b.probe.blockchain.Config().DposConfig.Epoch
+	var number = uint64(blockNumber.Int64())
+	dposNo := number - 1 - (number-1)%epoch
+	nodes := rawdb.ReadDPos(b.ChainDb(), dposNo)
+	data := make([]*common.DPoSAccount, 0, len(nodes))
+	for index, _ := range nodes {
+		data = append(data, &nodes[index])
+	}
+	return data
+}
+
+func (b *ProbeAPIBackend) GetDPOSCandidate() []common.DPoSCandidateAccount {
+	return state.GetDPosCandidates().GetDPosCandidateAccounts()
 }

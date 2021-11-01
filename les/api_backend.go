@@ -30,19 +30,19 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/light"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rpc"
 )
 
 type LesApiBackend struct {
 	extRPCEnabled       bool
 	allowUnprotectedTxs bool
-	probe                 *LightProbeum
+	probe               *LightProbeum
 	gpo                 *gasprice.Oracle
 }
 
@@ -324,5 +324,12 @@ func (b *LesApiBackend) Exist(addr common.Address) bool {
 	return false
 }
 func (b *LesApiBackend) DposAccounts(number rpc.BlockNumber) []*common.DPoSAccount {
+	return nil
+}
+func (b *LesApiBackend) GetDPOSByBlockNumber(number rpc.BlockNumber) []*common.DPoSAccount {
+	return nil
+}
+
+func (b *LesApiBackend) GetDPOSCandidate() []common.DPoSCandidateAccount {
 	return nil
 }

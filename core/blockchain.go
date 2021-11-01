@@ -2689,12 +2689,11 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		return
 	}
 	epoch := bc.chainConfig.DposConfig.Epoch
-
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
-		confirmBlockNum = epoch - confirmDpos
+		confirmBlockNum = confirmDpos
 	}
-	arrivedRound := (number+confirmBlockNum)%epoch == 0
+	arrivedRound := number%((number/epoch+1)*epoch-confirmBlockNum) == 0
 	if arrivedRound {
 		presetDPosAccounts := state.GetDPosCandidates().GetPresetDPosAccounts()
 		if presetDPosAccounts == nil {
@@ -2704,9 +2703,13 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		factor := number + confirmBlockNum + epoch - 1
 		dPosNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dPosNo, presetDPosAccounts)
+		for _, presetDPos := range presetDPosAccounts {
+			log.Info(fmt.Sprintf("WriteDPos,dPosNo:%d,Owner:%s, Enode:%s\n", dPosNo, presetDPos.Owner, presetDPos.Enode.String()))
+		}
 	}
 	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
 	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
+	log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
 
 }
 func (bc *BlockChain) updateP2pDposNodes() {
@@ -2716,14 +2719,12 @@ func (bc *BlockChain) updateP2pDposNodes() {
 
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
-		confirmBlockNum = epoch - confirmDpos
+		confirmBlockNum = confirmDpos
 	}
 
 	if number > 0 {
-		// next dpos if not find in the pre dpos list, add it
-		//mod := (number + confirmBlockNum) % epoch
-		//fmt.Printf("number:%d, confirmBlockNum:%d, epoch:%d, mod:%d\n", number, confirmBlockNum, epoch, mod)
-		if (number+confirmBlockNum)%epoch == 0 {
+		arrivedRound := number%((number/epoch+1)*epoch-confirmBlockNum) == 0
+		if arrivedRound {
 			curDposAccounts := bc.GetDposAccounts(number)
 			nextDposAccounts := bc.GetNextDposAccounts(number)
 			for _, da1 := range nextDposAccounts {

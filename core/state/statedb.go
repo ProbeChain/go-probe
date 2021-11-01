@@ -706,7 +706,7 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
 	//dposHash := GetHash(root, s.Database())[6]
 	dposNo := number + 1 - (number+1)%epoch
-	//fmt.Printf("------>  number:%d, epoch:%d, dposNo:%d\n", number, epoch, dposNo)
+	log.Info(fmt.Sprintf("GetDposAccounts,number:%d, epoch:%d, dposNo:%d\n", number, epoch, dposNo))
 	nodes := rawdb.ReadDPos(s.db.TrieDB().DiskDB(), dposNo)
 	data := make([]*common.DPoSAccount, 0, len(nodes))
 	for index, _ := range nodes {
