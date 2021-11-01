@@ -2689,12 +2689,11 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		return
 	}
 	epoch := bc.chainConfig.DposConfig.Epoch
-
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
-		confirmBlockNum = epoch - confirmDpos
+		confirmBlockNum = confirmDpos
 	}
-	arrivedRound := (number+confirmBlockNum)%epoch == 0
+	arrivedRound := number%((number/epoch+1)*epoch-confirmBlockNum) == 0
 	if arrivedRound {
 		presetDPosAccounts := state.GetDPosCandidates().GetPresetDPosAccounts()
 		if presetDPosAccounts == nil {
@@ -2704,9 +2703,13 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		factor := number + confirmBlockNum + epoch - 1
 		dPosNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dPosNo, presetDPosAccounts)
+		for _, presetDPos := range presetDPosAccounts {
+			log.Info(fmt.Sprintf("WriteDPos,dPosNo:%d,Owner:%s, Enode:%s\n", dPosNo, presetDPos.Owner, presetDPos.Enode.String()))
+		}
 	}
 	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
 	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
+	log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
 
 }
 func (bc *BlockChain) updateP2pDposNodes() {
@@ -2716,14 +2719,12 @@ func (bc *BlockChain) updateP2pDposNodes() {
 
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
-		confirmBlockNum = epoch - confirmDpos
+		confirmBlockNum = confirmDpos
 	}
 
 	if number > 0 {
-		// next dpos if not find in the pre dpos list, add it
-		//mod := (number + confirmBlockNum) % epoch
-		//fmt.Printf("number:%d, confirmBlockNum:%d, epoch:%d, mod:%d\n", number, confirmBlockNum, epoch, mod)
-		if (number+confirmBlockNum)%epoch == 0 {
+		arrivedRound := number%((number/epoch+1)*epoch-confirmBlockNum) == 0
+		if arrivedRound {
 			curDposAccounts := bc.GetDposAccounts(number)
 			nextDposAccounts := bc.GetNextDposAccounts(number)
 			for _, da1 := range nextDposAccounts {
@@ -3049,15 +3050,18 @@ func (bc *BlockChain) DispatchDposAck() int {
 	count := 0
 	curNumber := bc.CurrentHeader().Number.Int64()
 	maxNumber := curNumber + 64 // for check dpos ack type oppose
-	curNumber = curNumber - maxUnclePowAnswer
-	if curNumber < 0 {
-		curNumber = 0
+	minNumber := curNumber - maxUnclePowAnswer
+	if minNumber < 0 {
+		minNumber = 0
 	}
 
-	for curNumber <= maxNumber {
-		dposAcks := bc.dposAcks.List(big.NewInt(curNumber), types.AckTypeAll)
+	for minNumber <= maxNumber {
+		dposAcks := bc.dposAcks.List(big.NewInt(minNumber), types.AckTypeAll)
 		for _, dposAck := range dposAcks {
 			if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
+				if dposAck.AckType == types.AckTypeAgree && dposAck.Number.Int64() > curNumber {
+					continue
+				}
 				check := bc.CheckDposAck(dposAck)
 				if check {
 					bc.dposAcks.CheckSet(dposAck, dposAckLegal)
@@ -3068,7 +3072,7 @@ func (bc *BlockChain) DispatchDposAck() int {
 				}
 			}
 		}
-		curNumber += 1
+		minNumber += 1
 	}
 
 	return count

@@ -244,6 +244,11 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 	probe.miner.SetMinDifficulty(originDifficulty)
 	probe.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
+	coinbase, err := probe.Probeerbase()
+	if err != nil {
+		probe.SetProbeerbase(coinbase)
+	}
+
 	probe.APIBackend = &ProbeAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, probe, nil}
 	if probe.APIBackend.allowUnprotectedTxs {
 		log.Info("Unprotected transactions allowed")
@@ -400,6 +405,7 @@ func (s *Probeum) Probeerbase() (eb common.Address, err error) {
 			return probeerbase, nil
 		}
 	}
+	log.Info("probeerbase must be explicitly specified")
 	return common.Address{}, fmt.Errorf("probeerbase must be explicitly specified")
 }
 

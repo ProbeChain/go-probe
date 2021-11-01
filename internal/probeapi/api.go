@@ -663,6 +663,33 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc
 	return data, nil
 }
 
+func (s *PublicBlockChainAPI) GetDPOSByBlockNumber(blockNumber rpc.BlockNumber) ([]*DPoSRpcData, error) {
+	dposAccounts := s.b.GetDPOSByBlockNumber(blockNumber)
+	data := make([]*DPoSRpcData, 0, len(dposAccounts))
+	for _, account := range dposAccounts {
+		data = append(data, &DPoSRpcData{
+			Enode: account.Enode.String(),
+			Owner: account.Owner,
+		})
+	}
+	return data, nil
+}
+
+func (s *PublicBlockChainAPI) GetDPOSCandidate() (interface{}, error) {
+	dposCandidateAccounts := s.b.GetDPOSCandidate()
+	data := make([]string, 0, len(dposCandidateAccounts))
+	for _, account := range dposCandidateAccounts {
+		data = append(data, "{"+
+			"Enode:"+account.Enode.String(),
+			"Owner:"+account.Owner.String(),
+			"Vote:"+account.Vote.String(),
+			"Weight:"+account.Weight.String(),
+			"VoteValue:"+account.VoteValue.String(),
+			"}")
+	}
+	return data, nil
+}
+
 // Result structs for GetProof
 type AccountResult struct {
 	Address      common.Address  `json:"address"`

@@ -22,9 +22,9 @@ var Modules = map[string]string{
 	"admin":      AdminJs,
 	"chequebook": ChequebookJs,
 	"clique":     CliqueJs,
-	"probeash":     ProbeashJs,
+	"probeash":   ProbeashJs,
 	"debug":      DebugJs,
-	"probe":        ProbeJs,
+	"probe":      ProbeJs,
 	"miner":      MinerJs,
 	"net":        NetJs,
 	"personal":   PersonalJs,
@@ -598,6 +598,17 @@ web3._extend({
 			call: 'probe_getDPOSList',
 			params: 1,
             inputFormatter: [null]
+		}),
+       new web3._extend.Method({
+			name: 'getDPOSByBlockNumber',
+			call: 'probe_getDPOSByBlockNumber',
+			params: 1,
+            inputFormatter: [null]
+		}),
+       new web3._extend.Method({
+			name: 'getDPOSCandidate',
+			call: 'probe_getDPOSCandidate',
+			params: 0
 		}),
 	],
 	properties: [
