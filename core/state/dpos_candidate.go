@@ -3,8 +3,9 @@ package state
 import (
 	"bytes"
 	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
 	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 	"math/big"
 	"regexp"
 	"sort"
@@ -173,10 +174,31 @@ func (d *DPosCandidate) compare(node1, node2 *common.DPoSCandidateAccount) int {
 }
 
 func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
-	num := big.NewInt(0)
-	for _, account := range accounts {
-		curNum := new(big.Int).SetBytes(crypto.Keccak512(append(account.Enode[:], account.Owner.Bytes()...)))
-		num = new(big.Int).Xor(curNum, num)
+	if len(accounts) < 1 {
+		return emptyRoot
 	}
-	return crypto.Keccak256Hash(num.Bytes())
+
+	data, err := rlp.EncodeToBytes(accounts)
+	if err != nil {
+		panic("BuildHashForDPos encode error: " + err.Error())
+	}
+	return buildHashData(data)
+}
+
+func BuildHashForDPosCandidate(accounts []common.DPoSCandidateAccount) common.Hash {
+	if len(accounts) < 1 {
+		return emptyRoot
+	}
+
+	data, err := rlp.EncodeToBytes(accounts)
+	if err != nil {
+		panic("BuildHashForDPos encode error: " + err.Error())
+	}
+	return buildHashData(data)
+}
+
+func buildHashData(data []byte) common.Hash {
+	h := trie.NewHasher(false)
+
+	return h.HashData(data)
 }
