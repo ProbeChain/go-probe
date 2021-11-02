@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"github.com/probeum/go-probeum/core/globalconfig"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probedb"
 	"math/big"
 	"net"
 	"sort"
@@ -51,21 +50,6 @@ var (
 	emptyRoot = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 )
 
-const (
-	GENERAL_TRIE_DEPTH    = 20
-	PNS_TRIE_DEPTH        = 15
-	ASSET_TRIE_DEPTH      = 15
-	CONTRACT_TRIE_DEPTH   = 15
-	AUTHORIZES_TRIE_DEPTH = 15
-	LOSE_TRIE_DEPTH       = 15
-	GENERAL_TRIE_PATH     = "/trie/generalStateTrie"
-	PNS_TRIE_PATH         = "/trie/pnsStateTrie"
-	ASSET_TRIE_PATH       = "/trie/assetStateTrie"
-	CONTRACT_TRIE_PATH    = "/trie/contractStateTrie"
-	AUTHORIZES_TRIE_PATH  = "/trie/authorizesSateTrie"
-	LOSE_TRIE_PATH        = "/trie/loseStateTrie"
-)
-
 type proofList [][]byte
 
 func (n *proofList) Put(key []byte, value []byte) error {
@@ -77,240 +61,6 @@ func (n *proofList) Delete(key []byte) error {
 	panic("not supported")
 }
 
-type TotalTrie struct {
-	//trie          Trie // storage trie, which becomes non-nil on first access
-	regularTrie       Trie // storage trie, which becomes non-nil on first access
-	pnsTrie           Trie // storage trie, which becomes non-nil on first access
-	digitalTrie       Trie // storage trie, which becomes non-nil on first access
-	contractTrie      Trie // storage trie, which becomes non-nil on first access
-	authorizeTrie     Trie // storage trie, which becomes non-nil on first access
-	lossTrie          Trie // storage trie, which becomes non-nil on first access
-	dPosHash          common.Hash
-	dPosCandidateHash common.Hash
-}
-
-func (t *TotalTrie) GetKey(key []byte) []byte {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return nil
-	}
-	shaKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.GetKey(shaKey)
-	default:
-		return nil
-	}
-}
-
-func (t *TotalTrie) TryGet(key []byte) ([]byte, error) {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return nil, err
-	}
-	newKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryGet(newKey)
-	default:
-		return nil, fmt.Errorf("trieType no exsist")
-	}
-}
-
-func (t *TotalTrie) TryUpdate(key, value []byte) error {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return err
-	}
-	newKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryUpdate(newKey, value)
-	default:
-		return fmt.Errorf("trieType no exsist")
-	}
-}
-
-func (t *TotalTrie) TryDelete(key []byte) error {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return err
-	}
-	newKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryDelete(newKey)
-	default:
-		return fmt.Errorf("trieType no exsist")
-	}
-}
-
-func (t *TotalTrie) Hash() common.Hash {
-	hashes := t.GetTallHash()
-	return BuildHash(hashes)
-}
-
-func (t *TotalTrie) GetTallHash() []common.Hash {
-	hashes := []common.Hash{t.regularTrie.Hash(),
-		t.pnsTrie.Hash(),
-		t.digitalTrie.Hash(),
-		t.contractTrie.Hash(),
-		t.authorizeTrie.Hash(),
-		t.lossTrie.Hash(),
-		t.dPosHash,
-		t.dPosCandidateHash,
-	}
-	return hashes
-}
-
-//func (s *StateDB) GetTallHash() []common.Hash {
-//	hashes := []common.Hash{s.trie.regularTrie.Hash(),
-//		s.trie.pnsTrie.Hash(),
-//		s.trie.digitalTrie.Hash(),
-//		s.trie.contractTrie.Hash(),
-//		s.trie.authorizeTrie.Hash(),
-//		s.trie.lossTrie.Hash()}
-//	return hashes
-//}
-
-func BuildHash(hashes []common.Hash) common.Hash {
-	num := big.NewInt(0) // 利用 x ⊕ 0 == x
-	for _, hash := range hashes {
-		curNum := new(big.Int).SetBytes(crypto.Keccak256(hash.Bytes()))
-		num = new(big.Int).Xor(curNum, num)
-	}
-	hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
-	hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
-
-	var ret [32]byte
-	copy(ret[:], hash[32:64])
-
-	return common.BytesToHash(ret[:])
-}
-
-func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err error) {
-	root0, err0 := t.regularTrie.Commit(onleaf)
-	root1, err1 := t.pnsTrie.Commit(onleaf)
-	if err1 != nil {
-		err0 = err1
-	}
-	root2, err2 := t.digitalTrie.Commit(onleaf)
-	if err2 != nil {
-		err0 = err2
-	}
-	root3, err3 := t.contractTrie.Commit(onleaf)
-	if err3 != nil {
-		err0 = err3
-	}
-	root4, err4 := t.authorizeTrie.Commit(onleaf)
-	if err4 != nil {
-		err0 = err4
-	}
-	root5, err5 := t.lossTrie.Commit(onleaf)
-	if err5 != nil {
-		err0 = err5
-	}
-	root6 := t.dPosHash
-	root7 := t.dPosCandidateHash
-
-	hashes := []common.Hash{root0, root1, root2, root3, root4, root5, root6, root7}
-	//hashes := []common.Hash{root0, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-
-	return BuildHash(hashes), err0
-}
-
-//func (t *TotalTrie) NodeIterator(start []byte) trie.NodeIterator {
-//	trieType, err := common.ValidAddress(common.BytesToAddress(start))
-//	if err != nil {
-//		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-//		return nil
-//	}
-//	switch trieType {
-//	case common.General:
-//		return t.regularTrie.NodeIterator(start)
-//	case common.Pns:
-//		return t.pnsTrie.NodeIterator(start)
-//	case common.Asset:
-//		return t.digitalTrie.NodeIterator(start)
-//	case common.Contract:
-//		return t.contractTrie.NodeIterator(start)
-//	case common.Authorize:
-//		return t.authorizeTrie.NodeIterator(start)
-//	case common.Lose:
-//		return t.lossTrie.NodeIterator(start)
-//	default:
-//		return nil
-//	}
-//}
-
-func (t *TotalTrie) Prove(key []byte, fromLevel uint, proofDb probedb.KeyValueWriter) error {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return err
-	}
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.Prove(key, fromLevel, proofDb)
-	default:
-		return nil
-	}
-}
-
 // StateDB structs within the probeum protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
@@ -320,8 +70,7 @@ type StateDB struct {
 	db           Database
 	prefetcher   *triePrefetcher
 	originalRoot common.Hash // The pre-state root, before any changes were made
-	//trie         Trie
-	trie TotalTrie
+	trie         Trie
 
 	hasher crypto.KeccakState
 
@@ -379,31 +128,15 @@ type StateDB struct {
 	SnapshotCommits      time.Duration
 }
 
-func GetHash(root common.Hash, db Database) []common.Hash {
-	if root == (common.Hash{}) || root == emptyRoot {
-		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	}
-	hash := rawdb.ReadRootHashForNew(db.TrieDB().DiskDB(), root)
-	if hash == nil {
-		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	}
-	return hash
-}
-
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
-	// 根据 root 获取六棵树hash数组
-	totalTrie, err := OpenTotalTrieForBMpt(root, db)
-	//totalTrie, err := OpenTotalTrieForMpt(root, db)
-	//tr, err := db.OpenTrie(root)
-	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
+	tr, err := db.OpenTrie(root)
 	if err != nil {
 		return nil, err
 	}
 	sdb := &StateDB{
-		db: db,
-		//trie:                tr,
-		trie:                totalTrie,
+		db:                  db,
+		trie:                tr,
 		originalRoot:        root,
 		snaps:               snaps,
 		stateObjects:        make(map[common.Address]*stateObject),
@@ -424,82 +157,6 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 	//	}
 	//}
 	return sdb, nil
-}
-
-func OpenTotalTrieForBMpt(root common.Hash, db Database) (TotalTrie, error) {
-	hash := GetHash(root, db)
-	trGeneral, err := db.OpenBinTrie(hash[0], globalconfig.DataDir+GENERAL_TRIE_PATH, GENERAL_TRIE_DEPTH)
-	trPns, err1 := db.OpenBinTrie(hash[1], globalconfig.DataDir+PNS_TRIE_PATH, PNS_TRIE_DEPTH)
-	if err1 != nil {
-		err = err1
-	}
-	trAsset, err2 := db.OpenBinTrie(hash[2], globalconfig.DataDir+ASSET_TRIE_PATH, ASSET_TRIE_DEPTH)
-	if err2 != nil {
-		err = err2
-	}
-	trContract, err3 := db.OpenBinTrie(hash[3], globalconfig.DataDir+CONTRACT_TRIE_PATH, CONTRACT_TRIE_DEPTH)
-	if err3 != nil {
-		err = err3
-	}
-	trAuthorize, err4 := db.OpenBinTrie(hash[4], globalconfig.DataDir+AUTHORIZES_TRIE_PATH, AUTHORIZES_TRIE_DEPTH)
-	if err4 != nil {
-		err = err4
-	}
-	trLose, err5 := db.OpenBinTrie(hash[5], globalconfig.DataDir+LOSE_TRIE_PATH, LOSE_TRIE_DEPTH)
-	if err5 != nil {
-		err = err5
-	}
-	totalTrie := TotalTrie{
-		regularTrie:       trGeneral,
-		pnsTrie:           trPns,
-		digitalTrie:       trAsset,
-		contractTrie:      trContract,
-		authorizeTrie:     trAuthorize,
-		lossTrie:          trLose,
-		dPosHash:          hash[6],
-		dPosCandidateHash: hash[7],
-	}
-	if err != nil {
-		log.Error("OpenTotalTrieForBMpt", "err", err)
-	}
-	return totalTrie, err
-}
-
-//OpenTotalTrie use mpt
-func OpenTotalTrieForMpt(root common.Hash, db Database) (TotalTrie, error) {
-	hash := GetHash(root, db)
-	trGeneral, err := db.OpenTrie(hash[0])
-	trPns, err1 := db.OpenTrie(hash[1])
-	if err1 != nil {
-		err = err1
-	}
-	trAsset, err2 := db.OpenTrie(hash[2])
-	if err2 != nil {
-		err = err2
-	}
-	trContract, err3 := db.OpenTrie(hash[3])
-	if err3 != nil {
-		err = err3
-	}
-	trAuthorize, err4 := db.OpenTrie(hash[4])
-	if err4 != nil {
-		err = err4
-	}
-	trLose, err5 := db.OpenTrie(hash[5])
-	if err5 != nil {
-		err = err5
-	}
-	totalTrie := TotalTrie{
-		regularTrie:       trGeneral,
-		pnsTrie:           trPns,
-		digitalTrie:       trAsset,
-		contractTrie:      trContract,
-		authorizeTrie:     trAuthorize,
-		lossTrie:          trLose,
-		dPosHash:          hash[6],
-		dPosCandidateHash: hash[7],
-	}
-	return totalTrie, err
 }
 
 // StartPrefetcher initializes a new trie prefetcher to pull in nodes from the
@@ -1117,41 +774,12 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 // Snapshots of the copied state cannot be applied to the copy.
 func (s *StateDB) Copy() *StateDB {
 	// Copy all the basic fields, initialize the memory ones
-	var regularTrie, pnsTrie, digitalTrie, contractTrie, authorizeTrie, lossTrie Trie
-	if s.trie.regularTrie != nil {
-		regularTrie = s.db.CopyTrie(s.trie.regularTrie)
-	}
-	if s.trie.pnsTrie != nil {
-		pnsTrie = s.db.CopyTrie(s.trie.pnsTrie)
-	}
-	if s.trie.digitalTrie != nil {
-		digitalTrie = s.db.CopyTrie(s.trie.digitalTrie)
-	}
-	if s.trie.contractTrie != nil {
-		contractTrie = s.db.CopyTrie(s.trie.contractTrie)
-	}
-	if s.trie.authorizeTrie != nil {
-		authorizeTrie = s.db.CopyTrie(s.trie.authorizeTrie)
-	}
-	if s.trie.lossTrie != nil {
-		lossTrie = s.db.CopyTrie(s.trie.lossTrie)
-	}
 	/*	if s.dposList != nil {
 		dbDposList = s.copyDposList()
 	}*/
 	state := &StateDB{
-		db: s.db,
-		//trie:                s.db.CopyTrie(s.trie),
-		trie: TotalTrie{
-			regularTrie:       regularTrie,
-			pnsTrie:           pnsTrie,
-			digitalTrie:       digitalTrie,
-			contractTrie:      contractTrie,
-			authorizeTrie:     authorizeTrie,
-			lossTrie:          lossTrie,
-			dPosHash:          s.trie.dPosHash,
-			dPosCandidateHash: s.trie.dPosCandidateHash,
-		},
+		db:                  s.db,
+		trie:                s.db.CopyTrie(s.trie),
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
@@ -1865,9 +1493,9 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 }
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
-	accountType, err := common.ValidAddress(addr)
+	accountType, err := rlp.ParseTypeByEnd(enc)
 	if err != nil {
-		log.Error("Failed to ValidAddress", "addr", addr, "err", err)
+		log.Error("Failed to ParseTypeByEnd", "addr", addr, "err", err)
 		return nil, true
 	}
 	switch accountType {
@@ -1897,7 +1525,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 				return nil, true
 			}
 		}
-		return newAssetAccount(s, addr, *data), false
+		return newAssetAccount(s, addr, *data, 0), false
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {
@@ -1921,32 +1549,13 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	}
 }
 
-// getStateObjectTireByAccountType return stateObject's tire
-func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
-	switch accountType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return &s.trie.regularTrie
-	case common.ACC_TYPE_OF_PNS:
-		return &s.trie.pnsTrie
-	case common.ACC_TYPE_OF_ASSET:
-		return &s.trie.digitalTrie
-	case common.ACC_TYPE_OF_CONTRACT:
-		return &s.trie.contractTrie
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return &s.trie.authorizeTrie
-	case common.ACC_TYPE_OF_LOSE:
-		return &s.trie.lossTrie
-	default:
-		return nil
-	}
-}
-
-func (s *StateDB) GetStateDbTrie() *TotalTrie {
+func (s *StateDB) GetStateDbTrie() *Trie {
 	return &s.trie
 }
 
+// UpdateDPosHash todo 待定
 func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
-	s.trie.dPosHash = dPosHash
+	//s.trie.dPosHash = dPosHash
 }
 
 func (s *StateDB) updateDPosHashByBlockNumber(number uint64) {
