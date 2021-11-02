@@ -59,14 +59,17 @@ func (d *DPosCandidate) GetPresetDPosAccounts() []common.DPoSAccount {
 	defer d.lock.Unlock()
 	sort.Sort(d.dPosCandidateAccounts)
 	presetLen := 0
-	presetDPoSAccountMap := make(map[common.DposEnode]*common.DPoSAccount)
+	flag := 1
+	presetDPoSAccountMap := make(map[common.DposEnode]*int)
+	presetDPoSAccounts := make([]common.DPoSAccount, 0)
 	for i, dPosCandidate := range d.dPosCandidateAccounts {
 		if len(presetDPoSAccountMap) >= common.DposNodeLength {
 			break
 		}
 		existDPosCandidate := presetDPoSAccountMap[dPosCandidate.Enode]
 		if existDPosCandidate == nil {
-			presetDPoSAccountMap[dPosCandidate.Enode] = &common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner}
+			presetDPoSAccountMap[dPosCandidate.Enode] = &flag
+			presetDPoSAccounts = append(presetDPoSAccounts, common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner})
 		}
 		presetLen = i
 	}
@@ -76,36 +79,7 @@ func (d *DPosCandidate) GetPresetDPosAccounts() []common.DPoSAccount {
 	if len(presetDPoSAccountMap) == 0 {
 		return nil
 	}
-	presetDPoSAccounts := make([]common.DPoSAccount, len(presetDPoSAccountMap))
-	index := 0
-	for _, dPoSAccount := range presetDPoSAccountMap {
-		presetDPoSAccounts[index] = *dPoSAccount
-		index++
-	}
 	return presetDPoSAccounts
-}
-
-func (d *DPosCandidate) ConvertToDPosCandidate(dposList []common.DPoSAccount) {
-	if len(dposList) == 0 {
-		return
-	}
-	dPosCandidateAccounts := make([]common.DPoSCandidateAccount, len(dposList))
-	for i, dposAccount := range dposList {
-		var dposCandidateAccount common.DPoSCandidateAccount
-		dposCandidateAccount.Enode = dposAccount.Enode
-		dposCandidateAccount.Owner = dposAccount.Owner
-		//dposEnode := bytes.Trim(dposAccount.Enode[:], "\x00")
-		//dposStr := string(dposEnode[:])
-		//reg := regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
-		//remoteIp := reg.FindAllString(string(dposStr), -1)[0]
-		//dposCandidateAccount.Weight = common.InetAtoN(remoteIp)
-		dposCandidateAccount.VoteValue = new(big.Int).SetUint64(0)
-
-		dPosCandidateAccounts[i] = dposCandidateAccount
-	}
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	d.dPosCandidateAccounts = append(d.dPosCandidateAccounts, dPosCandidateAccounts...)
 }
 
 func (d *DPosCandidate) AddDPosCandidate(curNode common.DPoSCandidateAccount) {
@@ -154,28 +128,6 @@ func (d *DPosCandidate) DeleteDPosCandidate(curNode common.DPoSCandidateAccount)
 	if deleteIndex > -1 {
 		d.dPosCandidateAccounts = append(d.dPosCandidateAccounts[:deleteIndex], d.dPosCandidateAccounts[deleteIndex+1:]...)
 	}
-}
-
-func (d *DPosCandidate) compare(node1, node2 *common.DPoSCandidateAccount) int {
-	if node1.Owner == node2.Owner && node1.Enode == node2.Enode {
-		if node1.VoteValue == nil && node2.VoteValue != nil {
-			return 1
-		}
-		if node1.VoteValue != nil && node2.VoteValue == nil {
-			return -1
-		}
-		cmpRet := node1.VoteValue.Cmp(node2.VoteValue)
-		if cmpRet == 0 {
-			cmpRet = node1.Owner.Hash().Big().Cmp(node2.Owner.Hash().Big())
-			//cmpRet = node1.Weight.Cmp(node2.Weight)
-		}
-		if cmpRet > 0 || cmpRet == 0 {
-			return -1
-		} else {
-			return 1
-		}
-	}
-	return 0
 }
 
 func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
