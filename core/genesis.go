@@ -317,10 +317,6 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	}
 	root := statedb.IntermediateRoot(false, nil)
 
-	// 更新所有
-	hash := statedb.GetStateDbTrie().GetTallHash()
-	rawdb.WriteAllStateRootHash(db, hash, root)
-
 	head := &types.Header{
 		Number:           new(big.Int).SetUint64(g.Number),
 		Nonce:            types.EncodeNonce(g.Nonce),
@@ -362,8 +358,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	}*/
 
 	statedb.Commit(false)
-	//statedb.Database().TrieDB().Commit(hash[0], true, nil)
-	statedb.Database().TrieDB().CommitForNew(hash, true, nil)
+	statedb.Database().TrieDB().Commit(root, true, nil)
 
 	block := types.DposNewBlock(head, nil, nil, nil, nil, trie.NewStackTrie(nil))
 

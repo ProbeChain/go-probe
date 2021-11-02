@@ -112,12 +112,10 @@ func TestRlp1(t *testing.T) {
 	s := newStateNewTest()
 	//address := common.BytesToAddress([]byte{0x01})
 	address := common.HexToAddress("0x0085c9ef121fbdcb1bf8d0a7c606c363c0b3f172068cc3507b")
-	address1 := common.Hash{1}
 	result, _ := s.state.trie.TryGet(address.Bytes())
 	fmt.Printf("result：%v \n", result)
 	//arrdata, _ := rlp.EncodeToBytes([]common.Hash{common.Hash{}, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot})
 	arrdata := []common.Hash{common.Hash{}, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	rawdb.WriteAllStateRootHash1(s.db, arrdata, address1)
 	fmt.Printf("arrdata：%v \n", arrdata)
 	//var b []byte
 	//for _, d := range hash {
@@ -126,8 +124,6 @@ func TestRlp1(t *testing.T) {
 	//rawdb.WriteRootHash(db, root, b)
 
 	//rootHash := rawdb.ReadRootHash(db, root)
-	rootHash := rawdb.ReadRootHashForNew(s.db, address1)
-	fmt.Printf("rootHash：%v \n", rootHash)
 	//s.db.Put(address1.Bytes(), arrdata)
 	//if err != nil {
 	//	log.Crit("Failed to EncodeToBytes", "err", err,result)
