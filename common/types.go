@@ -557,10 +557,3 @@ func InetAtoN(ip string) *big.Int {
 	ret.SetBytes(net.ParseIP(ip).To4())
 	return ret
 }
-
-func ReBuildAddress(addr []byte) []byte {
-	if len(addr) == AddressLength {
-		return addr[1:]
-	}
-	return addr
-}

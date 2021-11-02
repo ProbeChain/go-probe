@@ -1498,9 +1498,9 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 }
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
-	accountType, err := common.ValidAddress(addr)
+	accountType, err := rlp.ParseTypeByEnd(enc)
 	if err != nil {
-		log.Error("Failed to ValidAddress", "addr", addr, "err", err)
+		log.Error("Failed to ParseTypeByEnd", "addr", addr, "err", err)
 		return nil, true
 	}
 	switch accountType {
@@ -1530,7 +1530,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 				return nil, true
 			}
 		}
-		return newAssetAccount(s, addr, *data), false
+		return newAssetAccount(s, addr, *data, 0), false
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {

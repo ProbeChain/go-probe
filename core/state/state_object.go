@@ -116,19 +116,20 @@ type stateObject struct {
 
 // RegularAccount 普通账户
 type RegularAccount struct {
-	Type        byte
 	VoteAccount common.Address
 	VoteValue   *big.Int
 	LossType    uint8
 	Nonce       uint64
 	Value       *big.Int
+	TagType     byte
 }
 
 // PnsAccount PNS账号
 type PnsAccount struct {
-	Type  byte
-	Owner common.Address
-	Data  []byte
+	Type    byte
+	Owner   common.Address
+	Data    []byte
+	TagType byte
 }
 
 // AssetAccount 资产账户 和 合约账户
@@ -141,6 +142,7 @@ type AssetAccount struct {
 	VoteAccount common.Address
 	VoteValue   *big.Int
 	Nonce       uint64
+	TagType     byte
 }
 
 // AuthorizeAccount 授权账户
@@ -151,6 +153,7 @@ type AuthorizeAccount struct {
 	Info        []byte
 	ValidPeriod *big.Int
 	Weight      *big.Int
+	TagType     byte
 }
 
 // LossAccount 挂失账户
@@ -160,6 +163,7 @@ type LossAccount struct {
 	NewAccount  common.Address // 新账户地址
 	Height      *big.Int       // 揭示时区块高度
 	InfoDigest  []byte         // 挂失内容摘要
+	TagType     byte
 }
 
 type Wrapper struct {
@@ -253,6 +257,7 @@ func newRegularAccount(db *StateDB, address common.Address, data RegularAccount)
 	if data.Value == nil {
 		data.Value = new(big.Int)
 	}
+	data.TagType = common.ACC_TYPE_OF_GENERAL
 	return &stateObject{
 		db:             db,
 		address:        address,
@@ -267,6 +272,7 @@ func newRegularAccount(db *StateDB, address common.Address, data RegularAccount)
 
 // newPnsAccount creates a state object.
 func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateObject {
+	data.TagType = common.ACC_TYPE_OF_PNS
 	return &stateObject{
 		db:             db,
 		address:        address,
@@ -280,7 +286,7 @@ func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateO
 }
 
 // newAssetAccount creates a state object.
-func newAssetAccount(db *StateDB, address common.Address, data AssetAccount) *stateObject {
+func newAssetAccount(db *StateDB, address common.Address, data AssetAccount, accountType byte) *stateObject {
 	if data.Value == nil {
 		data.Value = new(big.Int)
 	}
@@ -293,12 +299,12 @@ func newAssetAccount(db *StateDB, address common.Address, data AssetAccount) *st
 	if data.StorageRoot == (common.Hash{}) {
 		data.StorageRoot = emptyRoot
 	}
-	accType, _ := common.ValidAddress(address)
+	data.TagType = accountType
 	return &stateObject{
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accType,
+		accountType:    accountType,
 		assetAccount:   data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -308,6 +314,7 @@ func newAssetAccount(db *StateDB, address common.Address, data AssetAccount) *st
 
 // newAuthorizeAccount creates a state object.
 func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAccount) *stateObject {
+	data.TagType = common.ACC_TYPE_OF_AUTHORIZE
 	return &stateObject{
 		db:               db,
 		address:          address,
@@ -322,6 +329,7 @@ func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAcco
 
 // newLossAccount creates a state object.
 func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stateObject {
+	data.TagType = common.ACC_TYPE_OF_LOSE
 	return &stateObject{
 		db:             db,
 		address:        address,
@@ -488,9 +496,8 @@ func (s *stateObject) GetCommittedState(db Database, key common.Hash) common.Has
 		if metrics.EnabledExpensive {
 			meter = &s.db.StorageReads
 		}
-		newKey := common.ReBuildAddress(key.Bytes())
 		//if enc, err = s.getTrie(db).TryGet(key.Bytes()); err != nil {
-		if enc, err = s.getTrie(db).TryGet(newKey); err != nil {
+		if enc, err = s.getTrie(db).TryGet(key.Bytes()); err != nil {
 			s.setError(err)
 			return common.Hash{}
 		}
@@ -590,7 +597,6 @@ func (s *stateObject) updateTrie(db Database) Trie {
 
 	usedStorage := make([][]byte, 0, len(s.pendingStorage))
 	for key, value := range s.pendingStorage {
-		newKey := common.ReBuildAddress(key.Bytes())
 		// Skip noop changes, persist actual changes
 		if value == s.originStorage[key] {
 			continue
@@ -600,12 +606,12 @@ func (s *stateObject) updateTrie(db Database) Trie {
 		var v []byte
 		if (value == common.Hash{}) {
 			//s.setError(tr.TryDelete(key[:]))
-			s.setError(tr.TryDelete(newKey[:]))
+			s.setError(tr.TryDelete(key[:]))
 		} else {
 			// Encoding []byte cannot fail, ok to ignore the error.
 			v, _ = rlp.EncodeToBytes(common.TrimLeftZeroes(value[:]))
 			//s.setError(tr.TryUpdate(key[:], v))
-			s.setError(tr.TryUpdate(newKey[:], v))
+			s.setError(tr.TryUpdate(key[:], v))
 		}
 		// If state snapshotting is active, cache the data til commit
 		if s.db.snap != nil {
@@ -712,7 +718,7 @@ func (s *stateObject) setBalance(amount *big.Int) {
 
 func (s *stateObject) deepCopy(db *StateDB) *stateObject {
 	//stateObject := newRegularAccount(db, s.address, s.regularAccount)
-	stateObject := s.getNewStateObjectByAddr(db, s.address)
+	stateObject := s.getNewStateObjectByAddr(db, s.accountType)
 	if s.trie != nil {
 		stateObject.trie = db.db.CopyTrie(s.trie)
 	}
@@ -726,11 +732,7 @@ func (s *stateObject) deepCopy(db *StateDB) *stateObject {
 	return stateObject
 }
 
-func (s *stateObject) getNewStateObjectByAddr(db *StateDB, address common.Address) *stateObject {
-	accountType, err := common.ValidAddress(address)
-	if err != nil {
-		return nil
-	}
+func (s *stateObject) getNewStateObjectByAddr(db *StateDB, accountType byte) *stateObject {
 	var (
 		state *stateObject
 	)
@@ -740,7 +742,7 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, address common.Addres
 	case common.ACC_TYPE_OF_PNS:
 		state = newPnsAccount(db, s.address, s.pnsAccount)
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		state = newAssetAccount(db, s.address, s.assetAccount)
+		state = newAssetAccount(db, s.address, s.assetAccount, accountType)
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
 	case common.ACC_TYPE_OF_LOSE:
