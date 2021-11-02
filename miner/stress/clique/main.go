@@ -19,7 +19,8 @@ package main
 
 import (
 	"bytes"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"crypto/ecdsa"
+	"github.com/probeum/go-probeum/crypto"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -47,13 +48,13 @@ func main() {
 	fdlimit.Raise(2048)
 
 	// Generate a batch of accounts to seal and fund with
-	faucets := make([]*probecrypto.PrivateKey, 128)
+	faucets := make([]*ecdsa.PrivateKey, 128)
 	for i := 0; i < len(faucets); i++ {
-		faucets[i], _ = probecrypto.GenerateKey()
+		faucets[i], _ = crypto.GenerateKey()
 	}
-	sealers := make([]*probecrypto.PrivateKey, 4)
+	sealers := make([]*ecdsa.PrivateKey, 4)
 	for i := 0; i < len(sealers); i++ {
-		sealers[i], _ = probecrypto.GenerateKey()
+		sealers[i], _ = crypto.GenerateKey()
 	}
 	// Create a Clique network based off of the Rinkeby config
 	genesis := makeGenesis(faucets, sealers)
@@ -110,7 +111,7 @@ func main() {
 		backend := nodes[index%len(nodes)]
 
 		// Create a self transaction and inject into the pool
-		tx, err := types.SignTx(types.NewTransaction(nonces[index], probecrypto.PubkeyToAddress(faucets[index].PublicKey), new(big.Int), 21000, big.NewInt(100000000000), nil), types.HomesteadSigner{}, faucets[index])
+		tx, err := types.SignTx(types.NewTransaction(nonces[index], crypto.PubkeyToAddress(faucets[index].PublicKey), new(big.Int), 21000, big.NewInt(100000000000), nil), types.HomesteadSigner{}, faucets[index])
 		if err != nil {
 			panic(err)
 		}
@@ -128,7 +129,7 @@ func main() {
 
 // makeGenesis creates a custom Clique genesis block based on some pre-defined
 // signer and faucet accounts.
-func makeGenesis(faucets []*probecrypto.PrivateKey, sealers []*probecrypto.PrivateKey) *core.Genesis {
+func makeGenesis(faucets []*ecdsa.PrivateKey, sealers []*ecdsa.PrivateKey) *core.Genesis {
 	// Create a Clique network based off of the Rinkeby config
 	genesis := core.DefaultRinkebyGenesisBlock()
 	genesis.GasLimit = 25000000
@@ -139,14 +140,14 @@ func makeGenesis(faucets []*probecrypto.PrivateKey, sealers []*probecrypto.Priva
 
 	genesis.Alloc = core.GenesisAlloc{}
 	for _, faucet := range faucets {
-		genesis.Alloc[probecrypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
+		genesis.Alloc[crypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 		}
 	}
 	// Sort the signers and embed into the extra-data section
 	signers := make([]common.Address, len(sealers))
 	for i, sealer := range sealers {
-		signers[i] = probecrypto.PubkeyToAddress(sealer.PublicKey)
+		signers[i] = crypto.PubkeyToAddress(sealer.PublicKey)
 	}
 	for i := 0; i < len(signers); i++ {
 		for j := i + 1; j < len(signers); j++ {

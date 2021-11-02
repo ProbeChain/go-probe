@@ -18,7 +18,8 @@ package t8ntool
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/crypto"
+
 	"math/big"
 	"os"
 
@@ -194,7 +195,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 
 			// If the transaction created a contract, store the creation address in the receipt.
 			if msg.To() == nil {
-				receipt.ContractAddress, _ = probecrypto.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
+				receipt.ContractAddress, _ = crypto.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce())
 			}
 
 			// Set the receipt logs and create the bloom filter.

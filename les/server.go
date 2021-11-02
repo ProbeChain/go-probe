@@ -17,7 +17,7 @@
 package les
 
 import (
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"crypto/ecdsa"
 	"time"
 
 	"github.com/probeum/go-probeum/common/mclock"
@@ -60,7 +60,7 @@ type LesServer struct {
 	peers       *clientPeerSet
 	serverset   *serverSet
 	vfluxServer *vfs.Server
-	privateKey  *probecrypto.PrivateKey
+	privateKey  *ecdsa.PrivateKey
 
 	// Flow control and capacity management
 	fcManager    *flowcontrol.ClientManager

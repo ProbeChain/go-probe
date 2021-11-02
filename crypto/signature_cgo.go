@@ -24,7 +24,6 @@ import (
 	"crypto/elliptic"
 	"fmt"
 	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"github.com/probeum/go-probeum/crypto/secp256k1"
 )
 
@@ -34,25 +33,14 @@ func Ecrecover(hash, sig []byte) ([]byte, error) {
 }
 
 // SigToPub returns the public key that created the given signature.
-func SigToPub(hash, sig []byte) (*probecrypto.PublicKey, error) {
-	k := sig[65]
+func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
 	s, err := Ecrecover(hash, sig)
 	if err != nil {
 		return nil, err
 	}
 
-	x, y := elliptic.Unmarshal(S256ByType(k), s[:65])
-	return &probecrypto.PublicKey{Curve: S256(), X: x, Y: y, K: k}, nil
-}
-
-func SigToPubForType(hash, sig []byte, k byte) (*ecdsa.PublicKey, error) {
-	s, err := Ecrecover(hash, sig)
-	if err != nil {
-		return nil, err
-	}
-
-	x, y := elliptic.Unmarshal(S256ByType(k), s)
-	return &ecdsa.PublicKey{Curve: S256ByType(k), X: x, Y: y}, nil
+	x, y := elliptic.Unmarshal(S256(), s)
+	return &ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil
 }
 
 // Sign calculates an ECDSA signature.
@@ -63,15 +51,13 @@ func SigToPubForType(hash, sig []byte, k byte) (*ecdsa.PublicKey, error) {
 // solution is to hash any input before calculating the signature.
 //
 // The produced signature is in the [R || S || V] format where V is 0 or 1.
-func Sign(digestHash []byte, prv *probecrypto.PrivateKey) (sig []byte, err error) {
+func Sign(digestHash []byte, prv *ecdsa.PrivateKey) (sig []byte, err error) {
 	if len(digestHash) != DigestLength {
 		return nil, fmt.Errorf("hash is required to be exactly %d bytes (%d)", DigestLength, len(digestHash))
 	}
 	seckey := math.PaddedBigBytes(prv.D, prv.Params().BitSize/8)
 	defer zeroBytes(seckey)
-	sig, err = secp256k1.Sign(digestHash, seckey)
-	//append(sig,prv.PublicKey.Curve.C)
-	return append(sig, GetAccountType()), err
+	return secp256k1.Sign(digestHash, seckey)
 }
 
 // VerifySignature checks that the given public key created signature over digest.
@@ -82,28 +68,20 @@ func VerifySignature(pubkey, digestHash, signature []byte) bool {
 }
 
 // DecompressPubkey parses a public key in the 33-byte compressed format.
-func DecompressPubkey(pubkey []byte) (*probecrypto.PublicKey, error) {
+func DecompressPubkey(pubkey []byte) (*ecdsa.PublicKey, error) {
 	x, y := secp256k1.DecompressPubkey(pubkey)
 	if x == nil {
 		return nil, fmt.Errorf("invalid public key")
 	}
-	return &probecrypto.PublicKey{X: x, Y: y, Curve: S256()}, nil
+	return &ecdsa.PublicKey{X: x, Y: y, Curve: S256()}, nil
 }
 
 // CompressPubkey encodes a public key to the 33-byte compressed format.
-func CompressPubkey(pubkey *probecrypto.PublicKey) []byte {
-	return secp256k1.CompressPubkey(pubkey.X, pubkey.Y, pubkey.K)
+func CompressPubkey(pubkey *ecdsa.PublicKey) []byte {
+	return secp256k1.CompressPubkey(pubkey.X, pubkey.Y)
 }
 
 // S256 returns an instance of the secp256k1 curve.
 func S256() elliptic.Curve {
 	return secp256k1.S256()
-}
-
-func S256ByType(c byte) elliptic.Curve {
-	return secp256k1.S256ByType(c)
-}
-
-func GetAccountType() byte {
-	return secp256k1.GetAccountType()
 }

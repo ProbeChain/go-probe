@@ -34,7 +34,6 @@ type DynamicFeeTx struct {
 	Value      *big.Int
 	Data       []byte
 	AccessList AccessList
-	K          byte `json:"k" gencodec:"required"`
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
 	R *big.Int `json:"r" gencodec:"required"`
@@ -73,7 +72,6 @@ func (tx *DynamicFeeTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
-		K:          tx.K,
 		AccType:    tx.AccType,
 		BizType:    tx.BizType,
 		LossType:   tx.LossType,
@@ -140,11 +138,10 @@ func (tx *DynamicFeeTx) mark() []byte                 { return tx.Mark }
 func (tx *DynamicFeeTx) accType() *hexutil.Uint8      { return tx.AccType }
 func (tx *DynamicFeeTx) lossType() *hexutil.Uint8     { return tx.LossType }
 func (tx *DynamicFeeTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
-func (tx *DynamicFeeTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
-	return tx.K, tx.V, tx.R, tx.S
+func (tx *DynamicFeeTx) rawSignatureValues() (v, r, s *big.Int) {
+	return tx.V, tx.R, tx.S
 }
 
-func (tx *DynamicFeeTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {
+func (tx *DynamicFeeTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s
-	tx.K = k
 }

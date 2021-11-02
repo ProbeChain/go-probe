@@ -17,8 +17,10 @@
 package node
 
 import (
+	"crypto/ecdsa"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/crypto"
+
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -352,14 +354,14 @@ func (c *Config) instanceDir() string {
 // NodeKey retrieves the currently configured private key of the node, checking
 // first any manually set key, falling back to the one found in the configured
 // data folder. If no key can be found, a new one is generated.
-func (c *Config) NodeKey() *probecrypto.PrivateKey {
+func (c *Config) NodeKey() *ecdsa.PrivateKey {
 	// Use any specifically configured key.
 	if c.P2P.PrivateKey != nil {
 		return c.P2P.PrivateKey
 	}
 	// Generate ephemeral key if no datadir is being used.
 	if c.DataDir == "" {
-		key, err := probecrypto.GenerateKey()
+		key, err := crypto.GenerateKey()
 		if err != nil {
 			log.Crit(fmt.Sprintf("Failed to generate ephemeral node key: %v", err))
 		}
@@ -367,11 +369,11 @@ func (c *Config) NodeKey() *probecrypto.PrivateKey {
 	}
 
 	keyfile := c.ResolvePath(datadirPrivateKey)
-	if key, err := probecrypto.LoadECDSA(keyfile); err == nil {
+	if key, err := crypto.LoadECDSA(keyfile); err == nil {
 		return key
 	}
 	// No persistent key found, generate and store a new one.
-	key, err := probecrypto.GenerateKey()
+	key, err := crypto.GenerateKey()
 	if err != nil {
 		log.Crit(fmt.Sprintf("Failed to generate node key: %v", err))
 	}
@@ -381,7 +383,7 @@ func (c *Config) NodeKey() *probecrypto.PrivateKey {
 		return key
 	}
 	keyfile = filepath.Join(instanceDir, datadirPrivateKey)
-	if err := probecrypto.SaveECDSA(keyfile, key); err != nil {
+	if err := crypto.SaveECDSA(keyfile, key); err != nil {
 		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
 	}
 	return key
