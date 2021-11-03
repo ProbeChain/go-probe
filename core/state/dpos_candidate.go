@@ -131,7 +131,7 @@ func (d *DPosCandidate) DeleteDPosCandidate(curNode common.DPoSCandidateAccount)
 	}
 }
 
-func (d *DPosCandidate) BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
+func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
 	if len(accounts) < 1 {
 		return emptyRoot
 	}
@@ -143,7 +143,7 @@ func (d *DPosCandidate) BuildHashForDPos(accounts []common.DPoSAccount) common.H
 	return buildHashData(data)
 }
 
-func (d *DPosCandidate) BuildHashForDPosCandidate(accounts []common.DPoSCandidateAccount) common.Hash {
+func BuildHashForDPosCandidate(accounts []common.DPoSCandidateAccount) common.Hash {
 	if len(accounts) < 1 {
 		return emptyRoot
 	}

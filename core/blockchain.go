@@ -2684,14 +2684,14 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		factor := number + confirmBlockNum + epoch - 1
 		dPosNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dPosNo, presetDPosAccounts)
-		block.Header().DPoSRoot = state.GetDPosCandidates().BuildHashForDPos(presetDPosAccounts)
+		block.Header().DPoSRoot = state.BuildHashForDPos(presetDPosAccounts)
 		for _, presetDPos := range presetDPosAccounts {
 			log.Info(fmt.Sprintf("WriteDPos,dPosNo:%d,Owner:%s, Enode:%s\n", dPosNo, presetDPos.Owner, presetDPos.Enode.String()))
 		}
 	}
 	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
 	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
-	block.Header().DPoSCandidateRoot = state.GetDPosCandidates().BuildHashForDPosCandidate(dPosCandidateAccounts)
+	block.Header().DPoSCandidateRoot = state.BuildHashForDPosCandidate(dPosCandidateAccounts)
 	log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
 
 	/*	for _, presetDPos := range dPosCandidateAccounts {
