@@ -1027,7 +1027,7 @@ func (t *Trie) Commit(onleaf LeafCallback) (root common.Hash, err error) {
 			t.db.insertLeaf(index, common.BytesToHash(hash), estimateSize(t.bt.binaryLeafs[index]), t.bt.binaryLeafs[index])
 		}
 		// 最后提交一个总的哈希，也就是哈希节点的第一个值，一来用于判断创世块是否存在。二来可以统计每个区块上面存在的账号数据
-		t.db.insert(rootHash, estimateSize(t.bt.binaryHashNodes[0]), t.bt.binaryHashNodes[0])
+		t.db.insertHashNode(rootHash, estimateSize(t.bt.binaryHashNodes[0]), t.bt.binaryHashNodes[0])
 
 		t.bt.uncommitedIndex = make([]int, 0)
 
