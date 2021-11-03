@@ -37,6 +37,7 @@ import (
 
 var (
 	EmptyRootHash           = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
+	VisualBlockRootHash     = common.HexToHash("0000000000000000000000000000000000000000000000000000000000000000")
 	EmptyUncleHash          = rlpHash([]*Header(nil))
 	EmptyPowAnswerUncleHash = rlpHash([]*PowAnswer(nil))
 	EmptyDposAckHash        = rlpHash([]*DposAck(nil))
@@ -48,6 +49,14 @@ const (
 	AckTypeAgree  DposAckType = 0
 	AckTypeOppose DposAckType = 1
 	AckTypeAll    DposAckType = 255
+)
+
+type BlockType uint8
+
+const (
+	BlockTypeEffect BlockType = 0
+	BlockTypeVisual BlockType = 1
+	BlockTypeAll    BlockType = 255
 )
 
 // A BlockNonce is a 64-bit hash which proves (combined with the
@@ -87,9 +96,7 @@ type PowAnswer struct {
 
 // Id returns the pow answer unique id
 func (powAnswer *PowAnswer) Id() common.Hash {
-	// We assume that the miners will only give one answer in a given block number
-	id := append(append(powAnswer.Miner.Bytes(), powAnswer.Number.Bytes()...), []byte{0, 0, 0, 0}...)
-	return common.BytesToHash(id)
+	return powAnswer.MixDigest
 }
 
 //send from dpos witness node
@@ -144,9 +151,8 @@ func (dposAck *DposAck) RecoverOwner() (common.Address, error) {
 
 // Header represents a block header in the Probeum blockchain.
 type Header struct {
-	DposSigAddr common.Address `json:"dposMiner"        gencodec:"required"`
-	DposSig     []byte         `json:"dposSig"          gencodec:"required"`
-	//BlockHash        common.Hash     `json:"blockHash"        gencodec:"required"`
+	DposSigAddr      common.Address  `json:"dposMiner"        gencodec:"required"`
+	DposSig          []byte          `json:"dposSig"          gencodec:"required"`
 	DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
 	DposAcksHash     common.Hash     `json:"dposAcksHash"     gencodec:"required"`
 	PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
@@ -306,7 +312,8 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 	return b
 }
 
-func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnswer, dposAcks []*DposAck, receipts []*Receipt, hasher TrieHasher) *Block {
+func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnswer, dposAcks []*DposAck, receipts []*Receipt,
+	hasher TrieHasher, blockType BlockType) *Block {
 	b := &Block{header: CopyHeader(header), td: new(big.Int)}
 
 	// TODO: panic if len(txs) != len(receipts)

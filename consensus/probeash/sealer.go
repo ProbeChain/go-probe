@@ -186,28 +186,32 @@ func (probeash *Probeash) PowSeal(chain consensus.ChainHeaderReader, block *type
 	}
 	// Wait until sealing is terminated or a nonce is found
 	go func() {
-		var result *types.PowAnswer
-		select {
-		case <-stop:
-			// Outside abort, stop all miner threads
-			close(abort)
-		case result = <-locals:
-			// One of the threads found a block, abort all others
+		for {
+			var result *types.PowAnswer
 			select {
-			case results <- result:
-			default:
-				probeash.config.Log.Warn("Sealing result is not read by miner", "mode", "local", "sealhash", probeash.SealHash(block.Header()))
+			case <-stop:
+				// Outside abort, stop all miner threads
+				close(abort)
+				pend.Wait()
+				return
+			case result = <-locals:
+				// One of the threads found a block, abort all others
+				select {
+				case results <- result:
+				default:
+					probeash.config.Log.Warn("Sealing result is not read by miner", "mode", "local", "sealhash", probeash.SealHash(block.Header()))
+				}
+				//close(abort)
+			case <-probeash.update:
+				// Thread count was changed on user request, restart
+				close(abort)
+				pend.Wait()
+				if err := probeash.PowSeal(chain, block, results, stop, coinbase); err != nil {
+					probeash.config.Log.Error("Failed to restart sealing after update", "err", err)
+				}
 			}
-			close(abort)
-		case <-probeash.update:
-			// Thread count was changed on user request, restart
-			close(abort)
-			if err := probeash.PowSeal(chain, block, results, stop, coinbase); err != nil {
-				probeash.config.Log.Error("Failed to restart sealing after update", "err", err)
-			}
+			// Wait for all miners to terminate and return the block
 		}
-		// Wait for all miners to terminate and return the block
-		pend.Wait()
 	}()
 	return nil
 }
@@ -270,7 +274,7 @@ search:
 				case <-abort:
 					logger.Trace("Probeash nonce found but discarded", "attempts", nonce-seed, "nonce", nonce)
 				}
-				break search
+				//break search
 			}
 			nonce++
 		}

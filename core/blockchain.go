@@ -129,7 +129,8 @@ const (
 	// - Version 8
 	//  The following incompatible database changes were added:
 	//    * New scheme for contract code in order to separate the codes and trie nodes
-	BlockChainVersion uint64 = 8
+	BlockChainVersion      uint64 = 8
+	MaxHeightMinerPowCount        = 64
 )
 
 // CacheConfig contains the configuration values for the trie caching/pruning
@@ -186,8 +187,12 @@ func NewPowAnswerPool() *PowAnswerPool {
 
 func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
 	powAnswers := pool.powAnswerMap[powAnswer.Number.Uint64()]
+	var count = 0
 	for _, answer := range powAnswers {
 		if powAnswer.Miner == answer.Miner {
+			count++
+		}
+		if count > MaxHeightMinerPowCount || powAnswer.MixDigest == answer.MixDigest {
 			return true
 		}
 	}
@@ -3139,10 +3144,13 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 					curHash := bc.GetHeaderByNumber(dposAck.Number.Uint64()).Hash()
 					if curHash == dposAck.BlockHash {
 						return true
+					} else {
+						log.Debug("CheckDposAck Fail, hash not match", "signer", owner, "err", err)
 					}
 				}
 			}
 		}
+		log.Debug("CheckDposAck Fail, singer is not the dpos node", "signer", owner, "err", err)
 	}
 	log.Warn("CheckDposAck Fail", "owner", owner, "err", err, "accounts size", len(accounts))
 	for _, account := range accounts {

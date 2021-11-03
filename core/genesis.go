@@ -363,7 +363,8 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	//statedb.Database().TrieDB().Commit(hash[0], true, nil)
 	statedb.Database().TrieDB().CommitForNew(hash, true, nil)
 
-	block := types.DposNewBlock(head, nil, nil, nil, nil, trie.NewStackTrie(nil))
+	block := types.DposNewBlock(head, nil, nil, nil, nil,
+		trie.NewStackTrie(nil), types.BlockTypeEffect)
 
 	tmp := block.Header()
 	bs, err1 := json.Marshal(tmp)
