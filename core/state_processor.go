@@ -19,6 +19,7 @@ package core
 import (
 	"fmt"
 	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
+	"github.com/probeum/go-probeum/crypto"
 
 	"math/big"
 
@@ -127,7 +128,7 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	receipt.BizType = msg.BizType()
 	// If the transaction created a contract, store the creation address in the receipt.
 	if msg.To() == nil && msg.BizType() == common.ContractCall {
-		receipt.ContractAddress, _ = crypto.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
+		receipt.ContractAddress, _ = crypto.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce())
 	}
 
 	// Set the receipt logs and create the bloom filter.

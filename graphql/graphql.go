@@ -31,8 +31,8 @@ import (
 	"github.com/probeum/go-probeum/common/math"
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/filters"
 	"github.com/probeum/go-probeum/internal/probeapi"
+	"github.com/probeum/go-probeum/probe/filters"
 	"github.com/probeum/go-probeum/rpc"
 )
 
@@ -453,7 +453,7 @@ func (t *Transaction) R(ctx context.Context) (hexutil.Big, error) {
 	if err != nil || tx == nil {
 		return hexutil.Big{}, err
 	}
-	_, _, r, _ := tx.RawSignatureValues()
+	_, r, _ := tx.RawSignatureValues()
 	return hexutil.Big(*r), nil
 }
 
@@ -462,7 +462,7 @@ func (t *Transaction) S(ctx context.Context) (hexutil.Big, error) {
 	if err != nil || tx == nil {
 		return hexutil.Big{}, err
 	}
-	_, _, _, s := tx.RawSignatureValues()
+	_, _, s := tx.RawSignatureValues()
 	return hexutil.Big(*s), nil
 }
 
@@ -471,7 +471,7 @@ func (t *Transaction) V(ctx context.Context) (hexutil.Big, error) {
 	if err != nil || tx == nil {
 		return hexutil.Big{}, err
 	}
-	_, v, _, _ := tx.RawSignatureValues()
+	v, _, _ := tx.RawSignatureValues()
 	return hexutil.Big(*v), nil
 }
 

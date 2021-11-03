@@ -39,7 +39,7 @@ const (
 	// HashLength is the expected length of the hash
 	HashLength = 32
 	// AddressLength is the expected length of the address
-	AddressLength = 25
+	AddressLength = 20
 	// AddressChecksumLen is the checkSum length of the address
 	AddressChecksumLen = 4
 	//DposEnodeLength is the cheche length of dpos node

@@ -1365,7 +1365,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		signer = types.HomesteadSigner{}
 	}
 	from, _ := types.Sender(signer, tx)
-	k, v, r, s := tx.RawSignatureValues()
+	v, r, s := tx.RawSignatureValues()
 	result := &RPCTransaction{
 		Type:     hexutil.Uint64(tx.Type()),
 		From:     from,
@@ -1380,7 +1380,6 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
-		K:        hexutil.Uint8(k),
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
