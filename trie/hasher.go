@@ -17,6 +17,7 @@
 package trie
 
 import (
+	"github.com/probeum/go-probeum/common"
 	"sync"
 
 	"github.com/probeum/go-probeum/crypto"
@@ -204,4 +205,21 @@ func (h *hasher) proofHash(original node) (collapsed, hashed node) {
 		// Value and hash nodes don't have children so they're left as were
 		return n, n
 	}
+}
+
+func (h *hasher) HashData(data []byte) common.Hash {
+	if len(data) < 1 {
+		return common.Hash{}
+	}
+	//b, err := rlp.EncodeToBytes(deposList)
+	//if err != nil {
+	//	panic("encode error: " + err.Error())
+	//}
+	return common.BytesToHash(h.hashData(data))
+}
+
+func NewHasher(parallel bool) *hasher {
+	h := hasherPool.Get().(*hasher)
+	h.parallel = parallel
+	return h
 }

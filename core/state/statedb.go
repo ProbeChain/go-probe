@@ -1525,7 +1525,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 				return nil, true
 			}
 		}
-		return newAssetAccount(s, addr, *data, 0), false
+		return newAssetAccount(s, addr, *data, accountType), false
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {

@@ -11,8 +11,8 @@ func ParseTypeByHead(b []byte) (byte, error) {
 	_, l, err := s.Kind()
 
 	if err != nil {
-		log.Error("ParseTypeByHead %d: Kind returned error: %v", l, err)
-		return 0, errors.New("Parse type error!")
+		log.Error("test %d: Kind returned error: %v", l, err)
+		return 0, errors.New("unsupported account type")
 	}
 	hs := uint64(len(b)) - l
 
@@ -23,5 +23,5 @@ func ParseTypeByEnd(b []byte) (byte, error) {
 	if len(b) > 0 {
 		return b[len(b)-1 : len(b)][0], nil
 	}
-	return 0, errors.New(" ParseTypeByEnd Parse type error!")
+	return 0, errors.New("unsupported account type")
 }
