@@ -10,7 +10,7 @@ import (
 )
 
 type DPosCandidate struct {
-	lock                  *sync.RWMutex
+	lock                  sync.RWMutex
 	dPosCandidateAccounts dPosCandidateAccountList
 }
 
@@ -21,7 +21,6 @@ var dPosCandidate *DPosCandidate
 func init() {
 	log.Info("DPosCandidate init")
 	dPosCandidate = &DPosCandidate{
-		lock:                  new(sync.RWMutex),
 		dPosCandidateAccounts: make([]common.DPoSCandidateAccount, 0),
 	}
 }
