@@ -28,9 +28,9 @@ import (
 	"github.com/VictoriaMetrics/fastcache"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 )
 
@@ -366,25 +366,6 @@ func (db *Database) insertLeaf(index int, hash common.Hash, size int, node node)
 		Index:  index,
 		Hash:   hash,
 	}}, db.commitLeafs...)
-}
-
-// insertHashNode inserts a hash trie node into the memory database.
-func (db *Database) insertHashNode(hash common.Hash, size int, node node) {
-	// If the node's already cached, skip
-	if _, ok := db.dirties[hash]; ok {
-		return
-	}
-	memcacheDirtyWriteMeter.Mark(int64(size))
-
-	// Create the cached entry for this node
-	entry := &cachedNode{
-		node:      simplifyNode(node),
-		size:      uint16(size),
-		flushPrev: db.newest,
-		index:     -1,
-	}
-	db.dirties[hash] = entry
-	db.dirtiesSize += common.StorageSize(common.HashLength + entry.size)
 }
 
 // insert inserts a collapsed trie node into the memory database.
@@ -1087,7 +1068,6 @@ func (c *cleaner) Put(key []byte, rlp []byte) error {
 	_, binaryHash := node.node.(binaryHashNode)
 	_, binaryLeaf := node.node.(binaryLeaf)
 	if binaryHash || binaryLeaf {
-		delete(c.db.dirties, hash)
 		return nil
 	}
 	// Node still exists, remove it from the flush-list
