@@ -493,7 +493,6 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 			suicide:     obj.suicided,
 			voteAccount: obj.assetAccount.VoteAccount,
 			voteValue:   obj.assetAccount.VoteValue,
-			assetType:   obj.assetAccount.Type,
 			value:       obj.assetAccount.Value,
 		})
 	case common.ACC_TYPE_OF_AUTHORIZE:
@@ -1068,7 +1067,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	// The onleaf func is called _serially_, so we can reuse the same account
 	// for unmarshalling every time.
-	var account AssetAccount
+	var account ContractAccount
 	root, err := s.trie.Commit(func(_ [][]byte, _ []byte, leaf []byte, parent common.Hash) error {
 		if err := rlp.DecodeBytes(leaf, &account); err != nil {
 			return nil
@@ -1184,22 +1183,13 @@ func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	return nil
 }
 
-// GetAsset 资产账户
-func (s *StateDB) GetAsset(addr common.Address) AssetAccount {
-	stateObject := s.getStateObject(addr)
-	if stateObject != nil {
-		return stateObject.assetAccount
-	}
-	return AssetAccount{}
-}
-
 // GetContract 合约账户
-func (s *StateDB) GetContract(addr common.Address) AssetAccount {
+func (s *StateDB) GetContract(addr common.Address) ContractAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
 		return stateObject.assetAccount
 	}
-	return AssetAccount{}
+	return ContractAccount{}
 }
 
 // GetAuthorize 授权账户
@@ -1518,7 +1508,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 		}
 		return newPnsAccount(s, addr, *data), false
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		data := new(AssetAccount)
+		data := new(ContractAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
 				log.Error("Failed to decode state object", "addr", addr, "err", err)

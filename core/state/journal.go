@@ -336,7 +336,6 @@ func (ch assetSuicideChange) revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.suicide
-		obj.assetAccount.Type = ch.assetType
 		obj.assetAccount.VoteAccount = ch.voteAccount
 		obj.assetAccount.VoteValue = ch.voteValue
 		obj.assetAccount.Value = ch.value

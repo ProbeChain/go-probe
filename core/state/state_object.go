@@ -75,7 +75,7 @@ type stateObject struct {
 	// PnsAccount PNS账号
 	pnsAccount PnsAccount
 	// AssetAccount 资产账户
-	assetAccount AssetAccount
+	assetAccount ContractAccount
 	// AuthorizeAccount 授权账户
 	authorizeAccount AuthorizeAccount
 	// 挂失账户
@@ -132,9 +132,8 @@ type PnsAccount struct {
 	AccType byte
 }
 
-// AssetAccount 资产账户 和 合约账户
-type AssetAccount struct {
-	Type     byte
+// ContractAccount 合约账户
+type ContractAccount struct {
 	CodeHash []byte
 	//StorageRoot []byte
 	StorageRoot common.Hash
@@ -169,7 +168,7 @@ type Wrapper struct {
 	accountType          byte
 	regularAccount       RegularAccount
 	pnsAccount           PnsAccount
-	assetAccount         AssetAccount
+	assetAccount         ContractAccount
 	authorizeAccount     AuthorizeAccount
 	lossAccount          LossAccount
 	dPoSAccount          common.DPoSAccount
@@ -213,7 +212,7 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.pnsAccount = data
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		var data AssetAccount
+		var data ContractAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.assetAccount = data
 	case common.ACC_TYPE_OF_AUTHORIZE:
@@ -285,7 +284,7 @@ func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateO
 }
 
 // newAssetAccount creates a state object.
-func newAssetAccount(db *StateDB, address common.Address, data AssetAccount, accountType byte) *stateObject {
+func newAssetAccount(db *StateDB, address common.Address, data ContractAccount, accountType byte) *stateObject {
 	if data.Value == nil {
 		data.Value = new(big.Int)
 	}
@@ -870,7 +869,6 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		//data := hexutil.Bytes(s.pnsAccount.Data)
 		accountInfo.Data = string(s.pnsAccount.Data)
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		accountInfo.Type = strconv.Itoa(int(s.assetAccount.Type))
 		codeHash := hexutil.Bytes(s.assetAccount.CodeHash)
 		accountInfo.CodeHash = codeHash.String()
 		accountInfo.Value = s.assetAccount.Value.String()

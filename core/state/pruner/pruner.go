@@ -33,8 +33,8 @@ import (
 	"github.com/probeum/go-probeum/core/state/snapshot"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
 )
@@ -427,7 +427,7 @@ func extractGenesis(db probedb.Database, stateBloom *stateBloom) error {
 		// dig into the storage trie further.
 		if accIter.Leaf() {
 			//var acc state.RegularAccount
-			var acc state.AssetAccount
+			var acc state.ContractAccount
 			if err := rlp.DecodeBytes(accIter.LeafBlob(), &acc); err != nil {
 				return err
 			}

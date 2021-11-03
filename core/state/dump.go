@@ -308,7 +308,6 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 					continue
 				}
 				account = DumpAccount{
-					Type:        hexutil.Uint8(wrapper.assetAccount.Type),
 					CodeHash:    wrapper.assetAccount.CodeHash,
 					StorageRoot: wrapper.assetAccount.StorageRoot,
 					Value:       hexutil.Big(*wrapper.assetAccount.Value),

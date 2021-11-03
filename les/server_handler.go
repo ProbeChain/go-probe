@@ -29,12 +29,12 @@ import (
 	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/les/flowcontrol"
 	"github.com/probeum/go-probeum/light"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/metrics"
 	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
 )
@@ -360,22 +360,22 @@ func (h *serverHandler) AddTxsSync() bool {
 
 // getAccount retrieves an account from the state based on root.
 //func getAccount(triedb *trie.Database, root, hash common.Hash) (state.RegularAccount, error) {
-func getAccount(triedb *trie.Database, root, hash common.Hash) (state.AssetAccount, error) {
+func getAccount(triedb *trie.Database, root, hash common.Hash) (state.ContractAccount, error) {
 	trie, err := trie.New(root, triedb)
 	if err != nil {
-		return state.AssetAccount{}, err
+		return state.ContractAccount{}, err
 		//return state.RegularAccount{}, err
 	}
 	blob, err := trie.TryGet(hash[:])
 	if err != nil {
 		//return state.RegularAccount{}, err
-		return state.AssetAccount{}, err
+		return state.ContractAccount{}, err
 	}
 	//var account state.RegularAccount
-	var account state.AssetAccount
+	var account state.ContractAccount
 	if err = rlp.DecodeBytes(blob, &account); err != nil {
 		//return state.RegularAccount{}, err
-		return state.AssetAccount{}, err
+		return state.ContractAccount{}, err
 	}
 	return account, nil
 }

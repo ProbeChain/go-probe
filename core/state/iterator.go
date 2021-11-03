@@ -105,7 +105,7 @@ func (it *NodeIterator) step() error {
 	}
 	// Otherwise we've reached an account node, initiate data iteration
 	//var account RegularAccount
-	var account AssetAccount
+	var account ContractAccount
 	if err := rlp.Decode(bytes.NewReader(it.stateIt.LeafBlob()), &account); err != nil {
 		return err
 	}

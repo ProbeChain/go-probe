@@ -49,7 +49,7 @@ func NewStateSync(root common.Hash, database probedb.KeyValueReader, bloom *trie
 		//}
 		//syncer.AddSubTrie(obj.Root, hexpath, parent, onSlot)
 		//syncer.AddCodeEntry(common.BytesToHash(obj.CodeHash), hexpath, parent)
-		var obj AssetAccount
+		var obj ContractAccount
 		if err := rlp.Decode(bytes.NewReader(leaf), &obj); err != nil {
 			return err
 		}
