@@ -33,7 +33,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"io"
 	"io/ioutil"
 	"os"
@@ -232,14 +232,14 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := probecrypto.ToECDSAUnsafe(keyBytes)
+	key := crypto.ToECDSAUnsafe(keyBytes)
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
 		return nil, err
 	}
 	return &Key{
 		Id:         id,
-		Address:    probecrypto.PubkeyToAddress(key.PublicKey),
+		Address:    crypto.PubkeyToAddress(key.PublicKey),
 		PrivateKey: key,
 	}, nil
 }

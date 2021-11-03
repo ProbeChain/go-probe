@@ -18,7 +18,8 @@
 package main
 
 import (
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"crypto/ecdsa"
+	"github.com/probeum/go-probeum/crypto"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -52,9 +53,9 @@ func main() {
 	fdlimit.Raise(2048)
 
 	// Generate a batch of accounts to seal and fund with
-	faucets := make([]*probecrypto.PrivateKey, 128)
+	faucets := make([]*ecdsa.PrivateKey, 128)
 	for i := 0; i < len(faucets); i++ {
-		faucets[i], _ = probecrypto.GenerateKey()
+		faucets[i], _ = crypto.GenerateKey()
 	}
 	// Pre-generate the probeash mining DAG so we don't race
 	probeash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".probeash"))
@@ -138,17 +139,17 @@ func main() {
 	}
 }
 
-func makeTransaction(nonce uint64, privKey *probecrypto.PrivateKey, signer types.Signer, baseFee *big.Int) *types.Transaction {
+func makeTransaction(nonce uint64, privKey *ecdsa.PrivateKey, signer types.Signer, baseFee *big.Int) *types.Transaction {
 	// Generate legacy transaction
 	if rand.Intn(2) == 0 {
-		tx, err := types.SignTx(types.NewTransaction(nonce, probecrypto.PubkeyToAddress(privKey.PublicKey), new(big.Int), 21000, big.NewInt(100000000000+rand.Int63n(65536)), nil), signer, privKey)
+		tx, err := types.SignTx(types.NewTransaction(nonce, crypto.PubkeyToAddress(privKey.PublicKey), new(big.Int), 21000, big.NewInt(100000000000+rand.Int63n(65536)), nil), signer, privKey)
 		if err != nil {
 			panic(err)
 		}
 		return tx
 	}
 	// Generate eip 1559 transaction
-	recipient := probecrypto.PubkeyToAddress(privKey.PublicKey)
+	recipient := crypto.PubkeyToAddress(privKey.PublicKey)
 
 	// Feecap and feetip are limited to 32 bytes. Offer a sightly
 	// larger buffer for creating both valid and invalid transactions.
@@ -182,9 +183,9 @@ func makeTransaction(nonce uint64, privKey *probecrypto.PrivateKey, signer types
 	})
 }
 
-// makeGenesis creates a custom Probeash genesis block based on some pre-defined
+// makeGenesis creates a custom Ethash genesis block based on some pre-defined
 // faucet accounts.
-func makeGenesis(faucets []*probecrypto.PrivateKey) *core.Genesis {
+func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	genesis := core.DefaultRopstenGenesisBlock()
 
 	genesis.Config = params.AllProbeashProtocolChanges
@@ -199,7 +200,7 @@ func makeGenesis(faucets []*probecrypto.PrivateKey) *core.Genesis {
 
 	genesis.Alloc = core.GenesisAlloc{}
 	for _, faucet := range faucets {
-		genesis.Alloc[probecrypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
+		genesis.Alloc[crypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 		}
 	}

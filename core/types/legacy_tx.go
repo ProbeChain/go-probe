@@ -31,8 +31,7 @@ type LegacyTx struct {
 	To       *common.Address `rlp:"nil"` // nil means contract creation
 	Value    *big.Int        // wei amount
 	BizType  uint8
-	Data     []byte // contract invocation input data
-	K        byte
+	Data     []byte   // contract invocation input data
 	V, R, S  *big.Int // signature values
 
 	From      *common.Address `rlp:"nil"`
@@ -91,7 +90,6 @@ func (tx *LegacyTx) copy() TxData {
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
-		K:        tx.K,
 		AccType:  tx.AccType,
 		LossType: tx.LossType,
 		PnsType:  tx.PnsType,
@@ -152,11 +150,10 @@ func (tx *LegacyTx) accType() *hexutil.Uint8      { return tx.AccType }
 func (tx *LegacyTx) lossType() *hexutil.Uint8     { return tx.LossType }
 func (tx *LegacyTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
 
-func (tx *LegacyTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
-	return tx.K, tx.V, tx.R, tx.S
+func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
+	return tx.V, tx.R, tx.S
 }
 
-func (tx *LegacyTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {
+func (tx *LegacyTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.V, tx.R, tx.S = v, r, s
-	tx.K = k
 }

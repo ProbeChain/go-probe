@@ -85,8 +85,8 @@ type TxData interface {
 	nonce() uint64
 	to() *common.Address
 	bizType() uint8
-	rawSignatureValues() (k byte, v, r, s *big.Int)
-	setSignatureValues(k byte, chainID, v, r, s *big.Int)
+	rawSignatureValues() (v, r, s *big.Int)
+	setSignatureValues(chainID, v, r, s *big.Int)
 
 	from() *common.Address
 	setFrom(from *common.Address)
@@ -337,7 +337,7 @@ func (tx *Transaction) Cost() *big.Int {
 
 // RawSignatureValues returns the V, R, S signature values of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) RawSignatureValues() (k byte, v, r, s *big.Int) {
+func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
 	return tx.inner.rawSignatureValues()
 }
 
@@ -431,12 +431,12 @@ func (tx *Transaction) Size() common.StorageSize {
 // WithSignature returns a New transaction with the given signature.
 // This signature needs to be in the [R || S || V] format where V is 0 or 1.
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
-	k, r, s, v, err := signer.SignatureValues(tx, sig)
+	r, s, v, err := signer.SignatureValues(tx, sig)
 	if err != nil {
 		return nil, err
 	}
 	cpy := tx.inner.copy()
-	cpy.setSignatureValues(k, signer.ChainID(), v, r, s)
+	cpy.setSignatureValues(signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 

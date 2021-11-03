@@ -21,12 +21,14 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"hash"
 	"io"
 	mrand "math/rand"
@@ -47,7 +49,7 @@ import (
 // This type is not generally safe for concurrent use, but reading and writing of messages
 // may happen concurrently after the handshake.
 type Conn struct {
-	dialDest *probecrypto.PublicKey
+	dialDest *ecdsa.PublicKey
 	conn     net.Conn
 	session  *sessionState
 
@@ -90,7 +92,7 @@ func newHashMAC(cipher cipher.Block, h hash.Hash) hashMAC {
 
 // NewConn wraps the given network connection. If dialDest is non-nil, the connection
 // behaves as the initiator during the handshake.
-func NewConn(conn net.Conn, dialDest *probecrypto.PublicKey) *Conn {
+func NewConn(conn net.Conn, dialDest *ecdsa.PublicKey) *Conn {
 	return &Conn{
 		dialDest: dialDest,
 		conn:     conn,
@@ -206,7 +208,7 @@ func (h *sessionState) readFrame(conn io.Reader) ([]byte, error) {
 // Write writes a message to the connection.
 //
 // Write returns the written size of the message data. This may be less than or equal to
-// len(data) depending on whprobeer snappy compression is enabled.
+// len(data) depending on whether snappy compression is enabled.
 func (c *Conn) Write(code uint64, data []byte) (uint32, error) {
 	if c.session == nil {
 		panic("can't WriteMsg before handshake")
@@ -296,7 +298,7 @@ func (m *hashMAC) compute(sum1, seed []byte) []byte {
 
 // Handshake performs the handshake. This must be called before any data is written
 // or read from the connection.
-func (c *Conn) Handshake(prv *probecrypto.PrivateKey) (*probecrypto.PublicKey, error) {
+func (c *Conn) Handshake(prv *ecdsa.PrivateKey) (*ecdsa.PublicKey, error) {
 	var (
 		sec Secrets
 		err error
@@ -370,16 +372,16 @@ var (
 type Secrets struct {
 	AES, MAC              []byte
 	EgressMAC, IngressMAC hash.Hash
-	remote                *probecrypto.PublicKey
+	remote                *ecdsa.PublicKey
 }
 
 // handshakeState contains the state of the encryption handshake.
 type handshakeState struct {
 	initiator            bool
-	remote               *probecrypto.PublicKey  // remote-pubk
-	initNonce, respNonce []byte                  // nonce
-	randomPrivKey        *probecrypto.PrivateKey // ecdhe-random
-	remoteRandomPub      *probecrypto.PublicKey  // ecdhe-random-pubk
+	remote               *ecies.PublicKey  // remote-pubk
+	initNonce, respNonce []byte            // nonce
+	randomPrivKey        *ecies.PrivateKey // ecdhe-random
+	remoteRandomPub      *ecies.PublicKey  // ecdhe-random-pubk
 
 	rbuf readBuffer
 	wbuf writeBuffer
@@ -410,7 +412,7 @@ type authRespV4 struct {
 // it should be called on the listening side of the connection.
 //
 // prv is the local client's private key.
-func (h *handshakeState) runRecipient(conn io.ReadWriter, prv *probecrypto.PrivateKey) (s Secrets, err error) {
+func (h *handshakeState) runRecipient(conn io.ReadWriter, prv *ecdsa.PrivateKey) (s Secrets, err error) {
 	authMsg := new(authMsgV4)
 	authPacket, err := h.readMsg(authMsg, prv, conn)
 	if err != nil {
@@ -435,7 +437,7 @@ func (h *handshakeState) runRecipient(conn io.ReadWriter, prv *probecrypto.Priva
 	return h.secrets(authPacket, authRespPacket)
 }
 
-func (h *handshakeState) handleAuthMsg(msg *authMsgV4, prv *probecrypto.PrivateKey) error {
+func (h *handshakeState) handleAuthMsg(msg *authMsgV4, prv *ecdsa.PrivateKey) error {
 	// Import the remote identity.
 	rpub, err := importPublicKey(msg.InitiatorPubkey[:])
 	if err != nil {
@@ -447,8 +449,7 @@ func (h *handshakeState) handleAuthMsg(msg *authMsgV4, prv *probecrypto.PrivateK
 	// Generate random keypair for ECDH.
 	// If a private key is already set, use it instead of generating one (for testing).
 	if h.randomPrivKey == nil {
-		//h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
-		h.randomPrivKey, err = probecrypto.GenerateKeyByTypeForRand(0x0, rand.Reader)
+		h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
 		if err != nil {
 			return err
 		}
@@ -471,7 +472,7 @@ func (h *handshakeState) handleAuthMsg(msg *authMsgV4, prv *probecrypto.PrivateK
 // secrets is called after the handshake is completed.
 // It extracts the connection secrets from the handshake values.
 func (h *handshakeState) secrets(auth, authResp []byte) (Secrets, error) {
-	ecdheSecret, err := ecies.ImportECDSA(h.randomPrivKey).GenerateShared(ecies.ImportECDSAPublic(h.remoteRandomPub), sskLen, sskLen)
+	ecdheSecret, err := h.randomPrivKey.GenerateShared(h.remoteRandomPub, sskLen, sskLen)
 	if err != nil {
 		return Secrets{}, err
 	}
@@ -480,7 +481,7 @@ func (h *handshakeState) secrets(auth, authResp []byte) (Secrets, error) {
 	sharedSecret := crypto.Keccak256(ecdheSecret, crypto.Keccak256(h.respNonce, h.initNonce))
 	aesSecret := crypto.Keccak256(ecdheSecret, sharedSecret)
 	s := Secrets{
-		remote: h.remote,
+		remote: h.remote.ExportECDSA(),
 		AES:    aesSecret,
 		MAC:    crypto.Keccak256(ecdheSecret, aesSecret),
 	}
@@ -503,17 +504,17 @@ func (h *handshakeState) secrets(auth, authResp []byte) (Secrets, error) {
 
 // staticSharedSecret returns the static shared secret, the result
 // of key agreement between the local and remote static node key.
-func (h *handshakeState) staticSharedSecret(prv *probecrypto.PrivateKey) ([]byte, error) {
-	return ecies.ImportECDSA(prv).GenerateShared(ecies.ImportECDSAPublic(h.remote), sskLen, sskLen)
+func (h *handshakeState) staticSharedSecret(prv *ecdsa.PrivateKey) ([]byte, error) {
+	return ecies.ImportECDSA(prv).GenerateShared(h.remote, sskLen, sskLen)
 }
 
 // runInitiator negotiates a session token on conn.
 // it should be called on the dialing side of the connection.
 //
 // prv is the local client's private key.
-func (h *handshakeState) runInitiator(conn io.ReadWriter, prv *probecrypto.PrivateKey, remote *probecrypto.PublicKey) (s Secrets, err error) {
+func (h *handshakeState) runInitiator(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ecdsa.PublicKey) (s Secrets, err error) {
 	h.initiator = true
-	h.remote = remote
+	h.remote = ecies.ImportECDSAPublic(remote)
 
 	authMsg, err := h.makeAuthMsg(prv)
 	if err != nil {
@@ -541,7 +542,7 @@ func (h *handshakeState) runInitiator(conn io.ReadWriter, prv *probecrypto.Priva
 }
 
 // makeAuthMsg creates the initiator handshake message.
-func (h *handshakeState) makeAuthMsg(prv *probecrypto.PrivateKey) (*authMsgV4, error) {
+func (h *handshakeState) makeAuthMsg(prv *ecdsa.PrivateKey) (*authMsgV4, error) {
 	// Generate random initiator nonce.
 	h.initNonce = make([]byte, shaLen)
 	_, err := rand.Read(h.initNonce)
@@ -549,8 +550,7 @@ func (h *handshakeState) makeAuthMsg(prv *probecrypto.PrivateKey) (*authMsgV4, e
 		return nil, err
 	}
 	// Generate random keypair to for ECDH.
-	//h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256ByType(prv.K), nil)
-	h.randomPrivKey, err = probecrypto.GenerateKeyByTypeForRand(prv.K, rand.Reader)
+	h.randomPrivKey, err = ecies.GenerateKey(rand.Reader, crypto.S256(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -561,14 +561,14 @@ func (h *handshakeState) makeAuthMsg(prv *probecrypto.PrivateKey) (*authMsgV4, e
 		return nil, err
 	}
 	signed := xor(token, h.initNonce)
-	signature, err := crypto.Sign(signed, h.randomPrivKey)
+	signature, err := crypto.Sign(signed, h.randomPrivKey.ExportECDSA())
 	if err != nil {
 		return nil, err
 	}
 
 	msg := new(authMsgV4)
 	copy(msg.Signature[:], signature)
-	copy(msg.InitiatorPubkey[:], probecrypto.FromECDSAPub(&prv.PublicKey)[1:])
+	copy(msg.InitiatorPubkey[:], crypto.FromECDSAPub(&prv.PublicKey)[1:])
 	copy(msg.Nonce[:], h.initNonce)
 	msg.Version = 4
 	return msg, nil
@@ -595,7 +595,7 @@ func (h *handshakeState) makeAuthResp() (msg *authRespV4, err error) {
 }
 
 // readMsg reads an encrypted handshake message, decoding it into msg.
-func (h *handshakeState) readMsg(msg interface{}, prv *probecrypto.PrivateKey, r io.Reader) ([]byte, error) {
+func (h *handshakeState) readMsg(msg interface{}, prv *ecdsa.PrivateKey, r io.Reader) ([]byte, error) {
 	h.rbuf.reset()
 	h.rbuf.grow(512)
 
@@ -637,12 +637,12 @@ func (h *handshakeState) sealEIP8(msg interface{}) ([]byte, error) {
 	prefix := make([]byte, 2)
 	binary.BigEndian.PutUint16(prefix, uint16(len(h.wbuf.data)+eciesOverhead))
 
-	enc, err := ecies.Encrypt(rand.Reader, ecies.ImportECDSAPublic(h.remote), h.wbuf.data, nil, prefix)
+	enc, err := ecies.Encrypt(rand.Reader, h.remote, h.wbuf.data, nil, prefix)
 	return append(prefix, enc...), err
 }
 
 // importPublicKey unmarshals 512 bit public keys.
-func importPublicKey(pubKey []byte) (*probecrypto.PublicKey, error) {
+func importPublicKey(pubKey []byte) (*ecies.PublicKey, error) {
 	var pubKey65 []byte
 	switch len(pubKey) {
 	case 64:
@@ -650,24 +650,22 @@ func importPublicKey(pubKey []byte) (*probecrypto.PublicKey, error) {
 		pubKey65 = append([]byte{0x04}, pubKey...)
 	case 65:
 		pubKey65 = pubKey
-	case 66:
-		pubKey65 = pubKey
 	default:
 		return nil, fmt.Errorf("invalid public key length %v (expect 64/65)", len(pubKey))
 	}
 	// TODO: fewer pointless conversions
-	pub, err := probecrypto.UnmarshalPubkey(pubKey65)
+	pub, err := crypto.UnmarshalPubkey(pubKey65)
 	if err != nil {
 		return nil, err
 	}
-	return pub, nil
+	return ecies.ImportECDSAPublic(pub), nil
 }
 
-func exportPubkey(pub *probecrypto.PublicKey) []byte {
+func exportPubkey(pub *ecies.PublicKey) []byte {
 	if pub == nil {
 		panic("nil pubkey")
 	}
-	return probecrypto.Marshal(pub.Curve, pub.X, pub.Y, pub.K)[1:]
+	return elliptic.Marshal(pub.Curve, pub.X, pub.Y)[1:]
 }
 
 func xor(one, other []byte) (xor []byte) {

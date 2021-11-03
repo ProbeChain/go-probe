@@ -22,7 +22,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"github.com/probeum/go-probeum/crypto/secp256k1"
 	"io"
 	"math/big"
@@ -132,9 +132,9 @@ func (dposAck *DposAck) Hash() []byte {
 func (dposAck *DposAck) RecoverOwner() (common.Address, error) {
 	pubkey, err := secp256k1.RecoverPubkey(dposAck.Hash(), dposAck.WitnessSig)
 	if err == nil {
-		publicKey, err := probecrypto.UnmarshalPubkey(pubkey)
+		publicKey, err := crypto.UnmarshalPubkey(pubkey)
 		if err == nil {
-			return probecrypto.PubkeyToAddress(*publicKey), nil
+			return crypto.PubkeyToAddress(*publicKey), nil
 		}
 	}
 	return common.Address{}, err

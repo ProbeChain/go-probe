@@ -21,7 +21,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/crypto"
+
 	"io/ioutil"
 	"math/big"
 
@@ -119,7 +120,7 @@ func fetchKeystore(am *accounts.Manager) *keystore.KeyStore {
 // Example call (should fail on password too short)
 // {"jsonrpc":"2.0","method":"clef_importRawKey","params":["1111111111111111111111111111111111111111111111111111111111111111","test"], "id":6}
 func (s *UIServerAPI) ImportRawKey(privkey string, password string) (accounts.Account, error) {
-	key, err := probecrypto.HexToECDSA(privkey)
+	key, err := crypto.HexToECDSA(privkey)
 	if err != nil {
 		return accounts.Account{}, err
 	}

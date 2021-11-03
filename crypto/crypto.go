@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -37,15 +38,13 @@ import (
 )
 
 //SignatureLength indicates the byte length required to carry a signature with recovery id.
-const SignatureLength = 64 + 2 // 64 bytes ECDSA signature + 1 byte recovery id + 1 byte accountType
+const SignatureLength = 64 + 1 // 64 bytes ECDSA signature + 1 byte recovery id
 
 // RecoveryIDOffset points to the byte offset within the signature that contains the recovery id.
 const RecoveryIDOffset = 64
 
 // DigestLength sets the signature digest exact length
 const DigestLength = 32
-
-const General = byte(0)
 
 var (
 	secp256k1N, _  = new(big.Int).SetString("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141", 16)
@@ -106,34 +105,41 @@ func Keccak512(data ...[]byte) []byte {
 	return d.Sum(nil)
 }
 
-// CreateAddress creates an probeum address given the bytes and the nonce
+// CreateAddress creates an ethereum address given the bytes and the nonce
 func CreateAddress(b common.Address, nonce uint64) common.Address {
 	data, _ := rlp.EncodeToBytes([]interface{}{b, nonce})
 	return common.BytesToAddress(Keccak256(data)[12:])
 }
 
-/*func CreateAddressForPNSString(b common.Address, pns string) common.Address {
-	data, _ := rlp.EncodeToBytes([]interface{}{b, pns})
-	k := Keccak256(data[1:])[12:]
-	c := make([]byte, len(k)+1)
-	c[0] = 0x01
-	copy(c[1:], k)
-	return common.BytesToAddress(c)
-}
-
-func CreateAddressForPNS(b common.Address, pns []byte) common.Address {
-	data, _ := rlp.EncodeToBytes([]interface{}{b, pns})
-	k := Keccak256(data[1:])[12:]
-	c := make([]byte, len(k)+1)
-	c[0] = 0x01
-	copy(c[1:], k)
-	return common.BytesToAddress(c)
-}*/
-
-// CreateAddress2 creates an probeum address given the address bytes, initial
+// CreateAddress2 creates an ethereum address given the address bytes, initial
 // contract code hash and a salt.
 func CreateAddress2(b common.Address, salt [32]byte, inithash []byte) common.Address {
 	return common.BytesToAddress(Keccak256([]byte{0xff}, b.Bytes(), salt[:], inithash)[12:])
+}
+
+func CreateAddressForAccountType(address common.Address, nonce uint64) (add common.Address, err error) {
+	k1, err := common.ValidAddress(address)
+	if k1 != 0x00 || err != nil {
+		return address, errors.New("unsupported account type for createAddress")
+	}
+	//data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
+	//return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, nonce)
+	return common.BytesToAddress(Keccak256([]byte{0xff}, address.Bytes(), b[:])[12:]), nil
+}
+
+func CreatePNSAddress(address common.Address, pns []byte) (add common.Address, err error) {
+	if len(pns) <= 0 {
+		return address, errors.New("Creat PNSAddress error,PNS parameter is invalid")
+	}
+	k1, err := common.ValidAddress(address)
+	if k1 != 0x00 || err != nil {
+		return address, err
+	}
+	//data, _ := rlp.EncodeToBytes([]interface{}{K, address, pns})
+	//return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
+	return common.BytesToAddress(Keccak256([]byte{}, address.Bytes(), pns)[12:]), nil
 }
 
 // ToECDSA creates a private key with the given D value.
@@ -150,13 +156,10 @@ func ToECDSAUnsafe(d []byte) *ecdsa.PrivateKey {
 }
 
 // toECDSA creates a private key with the given D value. The strict parameter
-// controls whprobeer the key's length should be enforced at the curve size or
+// controls whether the key's length should be enforced at the curve size or
 // it can also accept legacy encodings (0 prefixes).
 func toECDSA(d []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	priv := new(ecdsa.PrivateKey)
-	//priv.C = d[0]
-	//priv.PublicKey.C = priv.C
-	d = d[1:]
 	priv.PublicKey.Curve = S256()
 	if strict && 8*len(d) != priv.Params().BitSize {
 		return nil, fmt.Errorf("invalid length, need %d bits", priv.Params().BitSize)
@@ -181,37 +184,10 @@ func toECDSA(d []byte, strict bool) (*ecdsa.PrivateKey, error) {
 
 // FromECDSA exports a private key into a binary dump.
 func FromECDSA(priv *ecdsa.PrivateKey) []byte {
-	/*
-		if priv == nil {
-			return nil
-		}
-		return math.PaddedBigBytes(priv.D, priv.Params().BitSize/8)
-	*/
 	if priv == nil {
 		return nil
 	}
-	b := math.PaddedBigBytes(priv.D, priv.Params().BitSize/8)
-	c := make([]byte, len(b)+1)
-	c[0] = General
-	copy(c[1:], b)
-	return c
-}
-
-func FromECDSAByType(priv *ecdsa.PrivateKey, k byte) []byte {
-	/*
-		if priv == nil {
-			return nil
-		}
-		return math.PaddedBigBytes(priv.D, priv.Params().BitSize/8)
-	*/
-	if priv == nil {
-		return nil
-	}
-	b := math.PaddedBigBytes(priv.D, priv.Params().BitSize/8)
-	c := make([]byte, len(b)+1)
-	c[0] = k
-	copy(c[1:], b)
-	return c
+	return math.PaddedBigBytes(priv.D, priv.Params().BitSize/8)
 }
 
 // UnmarshalPubkey converts bytes to a secp256k1 public key.
@@ -221,14 +197,6 @@ func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 		return nil, errInvalidPubkey
 	}
 	return &ecdsa.PublicKey{Curve: S256(), X: x, Y: y}, nil
-}
-
-func UnmarshalPubkeyForType(pub []byte, k byte) (*ecdsa.PublicKey, error) {
-	x, y := elliptic.Unmarshal(S256ByType(k), pub)
-	if x == nil {
-		return nil, errInvalidPubkey
-	}
-	return &ecdsa.PublicKey{Curve: S256ByType(k), X: x, Y: y}, nil
 }
 
 func FromECDSAPub(pub *ecdsa.PublicKey) []byte {
@@ -316,11 +284,7 @@ func GenerateKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(S256(), rand.Reader)
 }
 
-func GenerateKeyByType(t byte) (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(S256ByType(t), rand.Reader)
-}
-
-// ValidateSignatureValues verifies whprobeer the signature values are valid with
+// ValidateSignatureValues verifies whether the signature values are valid with
 // the given chain rules. The v value is assumed to be either 0 or 1.
 func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 	if r.Cmp(common.Big1) < 0 || s.Cmp(common.Big1) < 0 {
@@ -336,34 +300,12 @@ func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
 }
 
 func PubkeyToAddress(p ecdsa.PublicKey) common.Address {
-	/*
-		pubBytes := FromECDSAPub(&p)
-		return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])
-	*/
 	pubBytes := FromECDSAPub(&p)
-	return PubkeyBytesToAddress(pubBytes, General)
-}
-
-func PubkeyToAddressForType(p ecdsa.PublicKey, k byte) common.Address {
-	/*
-		pubBytes := FromECDSAPub(&p)
-		return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])
-	*/
-	pubBytes := FromECDSAPub(&p)
-	return PubkeyBytesToAddress(pubBytes, k)
+	return common.BytesToAddress(Keccak256(pubBytes[1:])[12:])
 }
 
 func zeroBytes(bytes []byte) {
 	for i := range bytes {
 		bytes[i] = 0
 	}
-}
-
-func PubkeyBytesToAddress(pubKey []byte, k byte) common.Address {
-	b := Keccak256(pubKey[1:])[12:]
-	c := make([]byte, len(b)+1)
-	c[0] = k
-	copy(c[1:], b)
-	checkSumBytes := common.CheckSum(c)
-	return common.BytesToAddress(append(c, checkSumBytes...))
 }

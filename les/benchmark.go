@@ -19,7 +19,8 @@ package les
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/crypto"
+
 	"math/big"
 	"math/rand"
 	"sync"
@@ -169,8 +170,8 @@ type benchmarkTxSend struct {
 }
 
 func (b *benchmarkTxSend) init(h *serverHandler, count int) error {
-	key, _ := probecrypto.GenerateKey()
-	addr := probecrypto.PubkeyToAddress(key.PublicKey)
+	key, _ := crypto.GenerateKey()
+	addr := crypto.PubkeyToAddress(key.PublicKey)
 	signer := types.LatestSigner(h.server.chainConfig)
 	b.txs = make(types.Transactions, count)
 

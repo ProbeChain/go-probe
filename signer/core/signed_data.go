@@ -21,7 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"math/big"
 	"mime"
 	"reflect"
@@ -665,7 +665,7 @@ func (api *SignerAPI) EcRecover(ctx context.Context, data hexutil.Bytes, sig hex
 	if err != nil {
 		return common.Address{}, err
 	}
-	return probecrypto.PubkeyToAddress(*rpk), nil
+	return crypto.PubkeyToAddress(*rpk), nil
 }
 
 // UnmarshalValidatorData converts the bytes input to typed data
