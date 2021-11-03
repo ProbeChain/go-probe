@@ -360,7 +360,7 @@ func (b *ProbeAPIBackend) Exist(addr common.Address) bool {
 }
 
 func (b *ProbeAPIBackend) GetDPOSByBlockNumber(blockNumber rpc.BlockNumber) []*common.DPoSAccount {
-	var epoch = b.probe.blockchain.Config().DposConfig.Epoch
+	var epoch = b.probe.blockchain.Config().Dpos.Epoch
 	var number = uint64(blockNumber.Int64())
 	dposNo := number - 1 - (number-1)%epoch
 	nodes := rawdb.ReadDPos(b.ChainDb(), dposNo)

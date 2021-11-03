@@ -49,7 +49,6 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 // fork switch-over blocks through the chain configuration.
 type Genesis struct {
 	Config     *params.ChainConfig `json:"config"`
-	DposConfig *params.DposConfig  `json:"dpos"`
 	Nonce      uint64              `json:"nonce"`
 	Timestamp  uint64              `json:"timestamp"`
 	ExtraData  []byte              `json:"extraData"`
@@ -210,7 +209,6 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	}
 	// Check whprobeer the genesis block is already written.
 	if genesis != nil {
-		genesis.Config.DposConfig = genesis.DposConfig
 		hash := genesis.ToBlock(nil).Hash()
 		log.Info("hash", hash.Hex())
 		if hash != stored {
@@ -225,8 +223,8 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 		return newcfg, common.Hash{}, err
 	}
 	storedcfg := rawdb.ReadChainConfig(db, stored)
-	globalconfig.Epoch = storedcfg.DposConfig.Epoch
-	//state.GetDPosCandidates().ConvertToDPosCandidate(storedcfg.DposConfig.DposList)
+	globalconfig.Epoch = storedcfg.Dpos.Epoch
+	//state.GetDPosCandidates().ConvertToDPosCandidate(storedcfg.Dpos.DposList)
 	if storedcfg == nil {
 		// 读取失败，说明创世区块写入被中断
 		log.Warn("Found genesis block without chain config")
@@ -283,19 +281,19 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	if err != nil {
 		panic(err)
 	}
-	if g.DposConfig != nil {
+	if g.Config.Dpos != nil {
 		number := g.Number
-		epoch := g.DposConfig.Epoch
+		epoch := g.Config.Dpos.Epoch
 		dposNo := number + 1 - (number+1)%epoch
 		if number == 0 {
 			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
 				log.Info("ToBlock roothash ", "hash", s.Hex())
 			}*/
-			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
+			dPosHash := state.BuildHashForDPos(g.Config.Dpos.DposList)
 			statedb.UpdateDPosHash(dPosHash)
-			rawdb.WriteDPos(db, dposNo, g.DposConfig.DposList)
-			//data, _ := json.Marshal(g.DposConfig.DposList)
-			/*			data, err := rlp.EncodeToBytes(g.DposConfig.DposList)
+			rawdb.WriteDPos(db, dposNo, g.Config.Dpos.DposList)
+			//data, _ := json.Marshal(g.Dpos.DposList)
+			/*			data, err := rlp.EncodeToBytes(g.Dpos.DposList)
 						if err != nil {
 							log.Error("ToBlock", "dpos Should not error: %v", err)
 						}
@@ -354,9 +352,9 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}
-	/*	if g.DposConfig != nil {
+	/*	if g.Dpos != nil {
 		dposAccountList := statedb.GetDpostList()
-		for _, candidateDPOS := range g.DposConfig.DposList {
+		for _, candidateDPOS := range g.Dpos.DposList {
 			dposAccountList = append(dposAccountList, candidateDPOS)
 		}
 	}*/
@@ -389,9 +387,6 @@ func (g *Genesis) Commit(db probedb.Database) (*types.Block, error) {
 	config := g.Config
 	if config == nil {
 		config = params.AllProbeashProtocolChanges
-	}
-	if nil != g.DposConfig {
-		config.DposConfig = g.DposConfig
 	}
 	if err := config.CheckConfigForkOrder(); err != nil {
 		return nil, err

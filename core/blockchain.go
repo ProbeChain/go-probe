@@ -504,7 +504,7 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	}
 	dposHash := stateDB.GetStateDbTrie().GetTallHash()[6]
 	log.Info("NewBlockChain dPosHash", "dPosHash", dposHash.Hex())
-	epoch := chainConfig.DposConfig.Epoch
+	epoch := chainConfig.Dpos.Epoch
 	dposNo := number + 1 - (number+1)%epoch
 	//dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	dposAccountList := rawdb.ReadDPos(db, dposNo)
@@ -516,9 +516,9 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 			log.Crit("Invalid dposList for block number in database", "err", err)
 		}*/
 
-	chainConfig.DposConfig = new(params.DposConfig)
-	chainConfig.DposConfig.DposList = dposAccountList
-	chainConfig.DposConfig.Epoch = epoch
+	chainConfig.Dpos = new(params.DposConfig)
+	chainConfig.Dpos.DposList = dposAccountList
+	chainConfig.Dpos.Epoch = epoch
 	log.Info("Initialised chain configuration AND DPOSNODES")
 	//bc.dposConfig.Epoch = epoch
 	//}
@@ -2688,7 +2688,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	if number == 0 {
 		return
 	}
-	epoch := bc.chainConfig.DposConfig.Epoch
+	epoch := bc.chainConfig.Dpos.Epoch
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
 		confirmBlockNum = confirmDpos
@@ -2719,7 +2719,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 func (bc *BlockChain) updateP2pDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	epoch := bc.chainConfig.DposConfig.Epoch
+	epoch := bc.chainConfig.Dpos.Epoch
 
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
@@ -2780,7 +2780,7 @@ func (bc *BlockChain) updateP2pDposNodes() {
 
 // GetDposAccounts get latest dpos nodes
 func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
-	index := number / bc.chainConfig.DposConfig.Epoch
+	index := number / bc.chainConfig.Dpos.Epoch
 
 	accounts := bc.dposAccounts[index]
 	if len(accounts) != 0 {
@@ -2790,7 +2790,7 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
 	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
 	if block != nil {
-		epoch := bc.chainConfig.DposConfig.Epoch
+		epoch := bc.chainConfig.Dpos.Epoch
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
@@ -2808,7 +2808,7 @@ func (bc *BlockChain) GetDposAccountSize(number uint64) int {
 
 // GetNextDposAccounts get next dpos nodes
 func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
-	index := (number + confirmDpos) / bc.chainConfig.DposConfig.Epoch
+	index := (number + confirmDpos) / bc.chainConfig.Dpos.Epoch
 
 	accounts := bc.dposAccounts[index]
 	if accounts != nil {
@@ -2818,7 +2818,7 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
 	if block != nil {
-		epoch := bc.chainConfig.DposConfig.Epoch
+		epoch := bc.chainConfig.Dpos.Epoch
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
@@ -2842,7 +2842,7 @@ func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
 	accounts := bc.GetDposAccounts(num)
 	if len(accounts) != 0 {
 		size := uint64(len(accounts))
-		return accounts[num%bc.chainConfig.DposConfig.Epoch%size]
+		return accounts[num%bc.chainConfig.Dpos.Epoch%size]
 	}
 	return nil
 }

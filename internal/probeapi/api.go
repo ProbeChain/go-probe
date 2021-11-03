@@ -644,10 +644,10 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc
 	block := s.b.CurrentBlock()
 	number := block.NumberU64()
 	var epoch uint64
-	if s.b.ChainConfig().DposConfig == nil {
-		log.Crit("Failed to writ dpos on write block", "err", s.b.ChainConfig().DposConfig)
+	if s.b.ChainConfig().Dpos == nil {
+		log.Crit("Failed to writ dpos on write block", "err", s.b.ChainConfig().Dpos)
 	} else {
-		epoch = s.b.ChainConfig().DposConfig.Epoch
+		epoch = s.b.ChainConfig().Dpos.Epoch
 	}
 	dposNo := number - 1 - (number-1)%epoch
 	dposAccounts := rawdb.ReadDPos(state.Database().TrieDB().DiskDB(), dposNo)
@@ -1809,7 +1809,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		addr, _ := probecrypto.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
-		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())
+		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value(), "gas", tx.Gas())
 	}
 	return tx.Hash(), nil
 }
