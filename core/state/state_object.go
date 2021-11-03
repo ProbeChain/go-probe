@@ -121,7 +121,7 @@ type RegularAccount struct {
 	LossType    uint8
 	Nonce       uint64
 	Value       *big.Int
-	TagType     byte
+	AccType     byte
 }
 
 // PnsAccount PNS账号
@@ -129,7 +129,7 @@ type PnsAccount struct {
 	Type    byte
 	Owner   common.Address
 	Data    []byte
-	TagType byte
+	AccType byte
 }
 
 // AssetAccount 资产账户 和 合约账户
@@ -142,7 +142,7 @@ type AssetAccount struct {
 	VoteAccount common.Address
 	VoteValue   *big.Int
 	Nonce       uint64
-	TagType     byte
+	AccType     byte
 }
 
 // AuthorizeAccount 授权账户
@@ -152,7 +152,7 @@ type AuthorizeAccount struct {
 	VoteValue   *big.Int
 	Info        []byte
 	ValidPeriod *big.Int
-	TagType     byte
+	AccType     byte
 }
 
 // LossAccount 挂失账户
@@ -162,7 +162,7 @@ type LossAccount struct {
 	NewAccount  common.Address // 新账户地址
 	Height      *big.Int       // 揭示时区块高度
 	InfoDigest  []byte         // 挂失内容摘要
-	TagType     byte
+	AccType     byte
 }
 
 type Wrapper struct {
@@ -256,7 +256,7 @@ func newRegularAccount(db *StateDB, address common.Address, data RegularAccount)
 	if data.Value == nil {
 		data.Value = new(big.Int)
 	}
-	data.TagType = common.ACC_TYPE_OF_GENERAL
+	data.AccType = common.ACC_TYPE_OF_GENERAL
 	return &stateObject{
 		db:             db,
 		address:        address,
@@ -271,7 +271,7 @@ func newRegularAccount(db *StateDB, address common.Address, data RegularAccount)
 
 // newPnsAccount creates a state object.
 func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateObject {
-	data.TagType = common.ACC_TYPE_OF_PNS
+	data.AccType = common.ACC_TYPE_OF_PNS
 	return &stateObject{
 		db:             db,
 		address:        address,
@@ -298,7 +298,7 @@ func newAssetAccount(db *StateDB, address common.Address, data AssetAccount, acc
 	if data.StorageRoot == (common.Hash{}) {
 		data.StorageRoot = emptyRoot
 	}
-	data.TagType = accountType
+	data.AccType = accountType
 	return &stateObject{
 		db:             db,
 		address:        address,
@@ -313,7 +313,7 @@ func newAssetAccount(db *StateDB, address common.Address, data AssetAccount, acc
 
 // newAuthorizeAccount creates a state object.
 func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAccount) *stateObject {
-	data.TagType = common.ACC_TYPE_OF_AUTHORIZE
+	data.AccType = common.ACC_TYPE_OF_AUTHORIZE
 	return &stateObject{
 		db:               db,
 		address:          address,
@@ -328,7 +328,7 @@ func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAcco
 
 // newLossAccount creates a state object.
 func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stateObject {
-	data.TagType = common.ACC_TYPE_OF_LOSE
+	data.AccType = common.ACC_TYPE_OF_LOSE
 	return &stateObject{
 		db:             db,
 		address:        address,
