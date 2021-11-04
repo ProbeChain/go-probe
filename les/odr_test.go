@@ -33,9 +33,9 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/light"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 )
 
@@ -135,7 +135,7 @@ func odrContractCall(ctx context.Context, db probedb.Database, config *params.Ch
 				from := statedb.GetOrNewStateObject(bankAddr)
 				from.SetBalance(math.MaxBig256)
 
-				msg := callmsg{types.NewMessage(from.Address(), &testContractAddr, 0,0, new(big.Int), 100000, big.NewInt(params.InitialBaseFee), big.NewInt(params.InitialBaseFee), new(big.Int), data, nil, false)}
+				msg := callmsg{types.NewMessage(from.Address(), &testContractAddr, 0, 0, new(big.Int), 100000, big.NewInt(params.InitialBaseFee), big.NewInt(params.InitialBaseFee), new(big.Int), data, nil, false, nil)}
 
 				context := core.NewEVMBlockContext(header, bc, nil)
 				txContext := core.NewEVMTxContext(msg)
@@ -150,7 +150,7 @@ func odrContractCall(ctx context.Context, db probedb.Database, config *params.Ch
 			header := lc.GetHeaderByHash(bhash)
 			state := light.NewState(ctx, header, lc.Odr())
 			state.SetBalance(bankAddr, math.MaxBig256)
-			msg := callmsg{types.NewMessage(bankAddr, &testContractAddr, 0,0, new(big.Int), 100000, big.NewInt(params.InitialBaseFee), big.NewInt(params.InitialBaseFee), new(big.Int), data, nil, false)}
+			msg := callmsg{types.NewMessage(bankAddr, &testContractAddr, 0, 0, new(big.Int), 100000, big.NewInt(params.InitialBaseFee), big.NewInt(params.InitialBaseFee), new(big.Int), data, nil, false, nil)}
 			context := core.NewEVMBlockContext(header, lc, nil)
 			txContext := core.NewEVMTxContext(msg)
 			vmenv := vm.NewEVM(context, txContext, state, config, vm.Config{NoBaseFee: true})

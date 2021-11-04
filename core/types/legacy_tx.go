@@ -33,8 +33,8 @@ type LegacyTx struct {
 	Data     []byte   // contract invocation input data
 	V, R, S  *big.Int // signature values
 
-	From *common.Address `rlp:"nil"`
-	Args []byte
+	From    *common.Address `rlp:"nil"`
+	ExtArgs []byte
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -77,7 +77,7 @@ func (tx *LegacyTx) copy() TxData {
 		R:        new(big.Int),
 		S:        new(big.Int),
 		BizType:  tx.BizType,
-		Args:     common.CopyBytes(tx.Args),
+		ExtArgs:  common.CopyBytes(tx.ExtArgs),
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -113,7 +113,7 @@ func (tx *LegacyTx) bizType() uint8         { return tx.BizType }
 
 func (tx *LegacyTx) from() *common.Address        { return tx.From }
 func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *LegacyTx) args() []byte                 { return tx.Args }
+func (tx *LegacyTx) extArgs() []byte              { return tx.ExtArgs }
 
 func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S

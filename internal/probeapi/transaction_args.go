@@ -44,7 +44,7 @@ type TransactionArgs struct {
 	Input                *hexutil.Bytes    `json:"input"`
 	AccessList           *types.AccessList `json:"accessList,omitempty"`
 	ChainID              *hexutil.Big      `json:"chainId,omitempty"`
-	Args                 []byte
+	ExtArgs              []byte
 }
 
 // from retrieves the transaction sender address.
@@ -242,7 +242,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 		addr, args.To, args.BizType,
 		0, value, gas,
 		gasPrice, gasFeeCap, gasTipCap,
-		data, accessList, false)
+		data, accessList, false, args.ExtArgs)
 	return msg, nil
 }
 
@@ -268,7 +268,7 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			Data:       args.data(),
 			AccessList: al,
 			BizType:    args.BizType,
-			Args:       args.Args,
+			ExtArgs:    args.ExtArgs,
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
@@ -282,7 +282,7 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			Data:       args.data(),
 			AccessList: *args.AccessList,
 			BizType:    args.BizType,
-			Args:       args.Args,
+			ExtArgs:    args.ExtArgs,
 		}
 	default:
 		data = &types.LegacyTx{
@@ -294,7 +294,7 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			Value:    (*big.Int)(args.Value),
 			Data:     args.data(),
 			BizType:  args.BizType,
-			Args:     args.Args,
+			ExtArgs:  args.ExtArgs,
 		}
 	}
 

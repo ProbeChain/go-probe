@@ -33,8 +33,8 @@ import (
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/core/vm"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
 )
@@ -194,7 +194,10 @@ func odrContractCall(ctx context.Context, db probedb.Database, bc *core.BlockCha
 
 		// Perform read-only call.
 		st.SetBalance(testBankAddress, math.MaxBig256)
-		msg := callmsg{types.NewMessage(testBankAddress, &testContractAddr, 0, new(big.Int), 1000000, big.NewInt(params.InitialBaseFee), big.NewInt(params.InitialBaseFee), new(big.Int), data, nil, false)}
+		msg := callmsg{types.NewMessage(testBankAddress, &testContractAddr, 0,
+			1000, big.NewInt(params.InitialBaseFee), 1000000,
+			big.NewInt(params.InitialBaseFee), new(big.Int), new(big.Int),
+			data, nil, false, nil)}
 		txContext := core.NewEVMTxContext(msg)
 		context := core.NewEVMBlockContext(header, chain, nil)
 		vmenv := vm.NewEVM(context, txContext, st, config, vm.Config{NoBaseFee: true})

@@ -17,6 +17,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/probeum/go-probeum/core/types"
 	"math/big"
 
@@ -52,16 +53,16 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer:      CanTransfer,
-		GetHash:          GetHashFn(header, chain),
-		Coinbase:         beneficiary,
-		BlockNumber:      new(big.Int).Set(header.Number),
-		Time:             new(big.Int).SetUint64(header.Time),
-		Difficulty:       new(big.Int).Set(header.Difficulty),
-		BaseFee:          baseFee,
-		GasLimit:         header.GasLimit,
-		ContractTransfer: ContractTransfer,
-		CallDB:           CallDB,
+		CanTransfer:    CanTransfer,
+		GetHash:        GetHashFn(header, chain),
+		Coinbase:       beneficiary,
+		BlockNumber:    new(big.Int).Set(header.Number),
+		Time:           new(big.Int).SetUint64(header.Time),
+		Difficulty:     new(big.Int).Set(header.Difficulty),
+		BaseFee:        baseFee,
+		GasLimit:       header.GasLimit,
+		ContractDeploy: ContractDeploy,
+		CallDB:         CallDB,
 	}
 }
 
@@ -75,6 +76,7 @@ func NewEVMTxContext(msg Message) vm.TxContext {
 		BizType:  msg.BizType(),
 		Value:    msg.Value(),
 		Data:     msg.Data(),
+		ExtArgs:  msg.ExtArgs(),
 	}
 }
 
@@ -118,11 +120,10 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 	return db.GetBalance(addr).Cmp(amount) >= 0
 }
 
-// ContractTransfer subtracts amount from sender and adds amount to recipient using the given Db
-func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	//fmt.Printf("ContractTransfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
-	db.SubBalance(sender, amount)
-	//db.AddBalance(recipient, amount)
+// ContractDeploy subtracts amount from sender and adds amount to recipient using the given Db
+func ContractDeploy(db vm.StateDB, sender common.Address) {
+	fmt.Printf("ContractDeploy, sender:%s,pledgeAmount:%d\n", sender.String(), common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
+	db.SubBalance(sender, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT))
 }
 
 //CallDB call database for update operation
@@ -135,7 +136,9 @@ func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
 	case common.TRANSFER:
 		db.Transfer(txContext)
 	case common.CONTRACT_DEPLOY:
-		ContractTransfer(db, txContext.From, *txContext.To, txContext.Value)
+		//ContractDeploy(db, txContext.From)
+		//todo
+		panic("ContractDeploy--------")
 	case common.SEND_LOSS_REPORT:
 		db.SendLossReport(blockNumber, txContext)
 	case common.REVEAL_LOSS_REPORT:

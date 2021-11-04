@@ -1375,19 +1375,11 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	}
 
 	switch tx.BizType() {
-	case common.REGISTER_PNS:
-		args := new(common.RegisterPnsArgs)
-		rlp.DecodeBytes(tx.Args(), &args)
-		result.NewAccount = &args.PnsAddress
-	case common.REGISTER_AUTHORIZE:
-		args := new(common.RegisterAuthorizeArgs)
-		rlp.DecodeBytes(tx.Args(), &args)
-		result.NewAccount = &args.VoteAddress
-	case common.REGISTER_LOSE:
-		args := new(common.RegisterLoseArgs)
-		rlp.DecodeBytes(tx.Args(), &args)
-		result.NewAccount = &args.LoseAddress
+	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
+		newAccount := common.BytesToAddress(tx.ExtArgs())
+		result.NewAccount = &newAccount
 	}
+
 	switch tx.Type() {
 	case types.AccessListTxType:
 		al := tx.AccessList()
@@ -1530,7 +1522,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 			args.from(), args.To, args.BizType,
 			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
 			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
-			args.data(), accessList, false)
+			args.data(), accessList, false, args.ExtArgs)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1713,18 +1705,8 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 
 	//不同业务类型展示不同字段
 	switch tx.BizType() {
-	case common.REGISTER_PNS:
-		args := new(common.RegisterPnsArgs)
-		rlp.DecodeBytes(tx.Args(), &args)
-		fields["newAccount"] = args.PnsAddress
-	case common.REGISTER_AUTHORIZE:
-		args := new(common.RegisterAuthorizeArgs)
-		rlp.DecodeBytes(tx.Args(), &args)
-		fields["newAccount"] = args.VoteAddress
-	case common.REGISTER_LOSE:
-		args := new(common.RegisterLoseArgs)
-		rlp.DecodeBytes(tx.Args(), &args)
-		fields["newAccount"] = args.LoseAddress
+	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
+		fields["newAccount"] = common.BytesToAddress(tx.ExtArgs())
 	}
 
 	// Assign the effective gas price paid
