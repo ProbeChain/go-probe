@@ -71,15 +71,11 @@ type stateObject struct {
 
 	accountType byte
 
-	regularAccount RegularAccount
-	// PnsAccount PNS账号
-	pnsAccount PnsAccount
-	// AssetAccount 资产账户
-	assetAccount ContractAccount
-	// AuthorizeAccount 授权账户
+	regularAccount   RegularAccount
+	pnsAccount       PnsAccount
+	assetAccount     ContractAccount
 	authorizeAccount AuthorizeAccount
-	// 挂失账户
-	lossAccount LossAccount
+	lossAccount      LossAccount
 
 	// DB error.
 	// State objects are used by the consensus core and VM which are
@@ -105,16 +101,6 @@ type stateObject struct {
 	deleted   bool
 }
 
-// Account is the Probeum consensus representation of accounts.
-// These objects are stored in the main account trie.
-//type RegularAccount struct {
-//	Nonce    uint64
-//	Balance  *big.Int
-//	Root     common.Hash // merkle root of the storage trie
-//	CodeHash []byte
-//}
-
-// RegularAccount 普通账户
 type RegularAccount struct {
 	VoteAccount common.Address
 	VoteValue   *big.Int
@@ -124,7 +110,6 @@ type RegularAccount struct {
 	AccType     byte
 }
 
-// PnsAccount PNS账号
 type PnsAccount struct {
 	Type    byte
 	Owner   common.Address
@@ -132,10 +117,8 @@ type PnsAccount struct {
 	AccType byte
 }
 
-// ContractAccount 合约账户
 type ContractAccount struct {
-	CodeHash []byte
-	//StorageRoot []byte
+	CodeHash    []byte
 	StorageRoot common.Hash
 	Value       *big.Int
 	VoteAccount common.Address
@@ -144,7 +127,6 @@ type ContractAccount struct {
 	AccType     byte
 }
 
-// AuthorizeAccount 授权账户
 type AuthorizeAccount struct {
 	Owner       common.Address
 	PledgeValue *big.Int
@@ -154,13 +136,13 @@ type AuthorizeAccount struct {
 	AccType     byte
 }
 
-// LossAccount 挂失账户
 type LossAccount struct {
-	State       byte           // 业务状态 0:初始化，1:挂失申请，2：揭示中
-	LossAccount common.Address // 挂失账户地址
-	NewAccount  common.Address // 新账户地址
-	Height      *big.Int       // 揭示时区块高度
-	InfoDigest  []byte         // 挂失内容摘要
+	State       byte
+	LossAccount common.Address
+	NewAccount  common.Address
+	Height      *big.Int
+	InfoDigest  common.Hash
+	LastTenBits uint16
 	AccType     byte
 }
 
@@ -283,8 +265,8 @@ func newPnsAccount(db *StateDB, address common.Address, data PnsAccount) *stateO
 	}
 }
 
-// newAssetAccount creates a state object.
-func newAssetAccount(db *StateDB, address common.Address, data ContractAccount, accountType byte) *stateObject {
+// newContractAccount creates a state object.
+func newContractAccount(db *StateDB, address common.Address, data ContractAccount) *stateObject {
 	if data.Value == nil {
 		data.Value = new(big.Int)
 	}
@@ -297,12 +279,12 @@ func newAssetAccount(db *StateDB, address common.Address, data ContractAccount, 
 	if data.StorageRoot == (common.Hash{}) {
 		data.StorageRoot = emptyRoot
 	}
-	data.AccType = accountType
+	data.AccType = common.ACC_TYPE_OF_CONTRACT
 	return &stateObject{
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    accountType,
+		accountType:    common.ACC_TYPE_OF_CONTRACT,
 		assetAccount:   data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -339,25 +321,6 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 		dirtyStorage:   make(Storage),
 	}
 }
-
-// newDPoSAccount creates a state object.
-/*func newDPoSAccount(db *StateDB, address common.Address, data DPoSAccount) *stateObject {
-	return &stateObject{
-		db:             db,
-		address:        address,
-		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType: 	common.ACC_TYPE_OF_PNS,
-		dPoSAccount: 	data,
-		originStorage:  make(Storage),
-		pendingStorage: make(Storage),
-		dirtyStorage:   make(Storage),
-	}
-}*/
-
-// EncodeRLP implements rlp.Encoder.
-/*func (s *stateObject) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, s.regularAccount)
-}*/
 
 // EncodeRLP implements rlp.Encoder.
 func (s *stateObject) EncodeRLP(w io.Writer) error {
@@ -715,7 +678,6 @@ func (s *stateObject) setBalance(amount *big.Int) {
 }
 
 func (s *stateObject) deepCopy(db *StateDB) *stateObject {
-	//stateObject := newRegularAccount(db, s.address, s.regularAccount)
 	stateObject := s.getNewStateObjectByAddr(db, s.accountType)
 	if s.trie != nil {
 		stateObject.trie = db.db.CopyTrie(s.trie)
@@ -740,14 +702,11 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, accountType byte) *st
 	case common.ACC_TYPE_OF_PNS:
 		state = newPnsAccount(db, s.address, s.pnsAccount)
 	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		state = newAssetAccount(db, s.address, s.assetAccount, accountType)
+		state = newContractAccount(db, s.address, s.assetAccount)
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
 	case common.ACC_TYPE_OF_LOSE:
 		state = newLossAccount(db, s.address, s.lossAccount)
-	//case common.ACC_TYPE_OF_DPOS:
-	//
-	//case common.ACC_TYPE_OF_DPOS_CANDIDATE:
 	default:
 		state = nil
 	}
@@ -889,7 +848,7 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		accountInfo.NewAccount = &s.lossAccount.NewAccount
 		accountInfo.Height = s.lossAccount.Height.String()
 		//infoDigest := hexutil.Bytes(s.lossAccount.InfoDigest)
-		accountInfo.Data = string(s.lossAccount.InfoDigest)
+		accountInfo.Data = s.lossAccount.InfoDigest.String()
 	}
 	return accountInfo
 }

@@ -1165,7 +1165,6 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 	return s.accessList.Contains(addr, slot)
 }
 
-// GetRegular 获取普通账户
 func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1174,7 +1173,6 @@ func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 	return nil
 }
 
-// GetPns PNS账号
 func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1183,7 +1181,6 @@ func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	return nil
 }
 
-// GetContract 合约账户
 func (s *StateDB) GetContract(addr common.Address) ContractAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1192,7 +1189,6 @@ func (s *StateDB) GetContract(addr common.Address) ContractAccount {
 	return ContractAccount{}
 }
 
-// GetAuthorize 授权账户
 func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1201,7 +1197,6 @@ func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	return nil
 }
 
-// GetLoss 挂失账户
 func (s *StateDB) GetLoss(addr common.Address) *LossAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1303,7 +1298,7 @@ func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 					state:      stateObject.lossAccount.State,
 					height:     stateObject.lossAccount.Height,
 				})
-				stateObject.lossAccount.InfoDigest = context.Data
+				stateObject.lossAccount.InfoDigest = common.BytesToHash(context.Data)
 				stateObject.lossAccount.State = common.LOSS_STATE_OF_APPLY
 				stateObject.lossAccount.Height = blockNumber
 			}
@@ -1449,7 +1444,7 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	}
 	authorizeAccount := stateObj.authorizeAccount
 	var dPosMap map[string]interface{}
-	err := json.Unmarshal(context.Data, &dPosMap)
+	err := json.Unmarshal(context.Data[:], &dPosMap)
 	if err != nil {
 		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", context.To.Bytes(), err))
 		return
@@ -1474,10 +1469,10 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	authorizeAccount.Info = []byte(enode.String())
 
 	dPosCandidateAccount := common.DPoSCandidateAccount{
-		Enode:     common.BytesToDposEnode(authorizeAccount.Info),
-		Owner:     authorizeAccount.Owner,
-		Vote:      *context.To,
-		VoteValue: authorizeAccount.VoteValue,
+		Enode:       common.BytesToDposEnode(authorizeAccount.Info),
+		Owner:       authorizeAccount.Owner,
+		VoteAccount: *context.To,
+		VoteValue:   authorizeAccount.VoteValue,
 	}
 	GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)
 }
@@ -1515,7 +1510,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 				return nil, true
 			}
 		}
-		return newAssetAccount(s, addr, *data, accountType), false
+		return newContractAccount(s, addr, *data), false
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {
@@ -1543,7 +1538,7 @@ func (s *StateDB) GetStateDbTrie() *Trie {
 	return &s.trie
 }
 
-// UpdateDPosHash todo 待定
+// UpdateDPosHash todo
 func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
 	//s.trie.dPosHash = dPosHash
 }

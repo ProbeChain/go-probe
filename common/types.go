@@ -205,30 +205,18 @@ type Address [AddressLength]byte
 
 type DposEnode [DposEnodeLength]byte
 
-// DPoSAccount DPoS账户
 type DPoSAccount struct {
 	Enode DposEnode `json:"enode,omitempty"`
 	Owner Address   `json:"owner,omitempty"`
 }
 
-// DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	Enode DposEnode
-	Owner Address
-	Vote  Address
+	Enode       DposEnode
+	Owner       Address
+	VoteAccount Address
 	//Weight    *big.Int
 	VoteValue *big.Int
 }
-
-// BytesToAddress returns Address with value b.
-// If b is larger than len(h), b will be cropped from the left.
-/*func BytesToAddress(b []byte) Address {
-	var a Address
-	//调用CheckSum方法返回前四个字节的checksum
-	checkSumBytes := CheckSum(b)
-	a.SetBytes(append(b, checkSumBytes...))
-	return a
-}*/
 
 func BytesToAddress(b []byte) Address {
 	var a Address
@@ -480,7 +468,6 @@ func ValidCheckAddress(v string) (c byte, err error) {
 
 func ValidAddress(addr Address) (c byte, err error) {
 	b := addr.Bytes()
-	//创世块判断
 	if (addr == Address{}) {
 		byte := b[0]
 		return byte, nil
@@ -521,11 +508,4 @@ func InetAtoN(ip string) *big.Int {
 	ret := big.NewInt(0)
 	ret.SetBytes(net.ParseIP(ip).To4())
 	return ret
-}
-
-func ReBuildAddress(addr []byte) []byte {
-	if len(addr) == AddressLength {
-		return addr[1:]
-	}
-	return addr
 }

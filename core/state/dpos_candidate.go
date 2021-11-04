@@ -89,7 +89,7 @@ func (d *DPosCandidate) AddDPosCandidate(curNode common.DPoSCandidateAccount) {
 	exist := false
 	if d.dPosCandidateAccounts.Len() > 0 {
 		for i, node := range d.dPosCandidateAccounts {
-			if node.Vote == curNode.Vote {
+			if node.VoteAccount == curNode.VoteAccount {
 				d.dPosCandidateAccounts[i] = curNode
 				exist = true
 				break
@@ -106,7 +106,7 @@ func (d *DPosCandidate) UpdateDPosCandidate(curNode common.DPoSCandidateAccount)
 	defer d.lock.Unlock()
 	if d.dPosCandidateAccounts.Len() > 0 {
 		for i, node := range d.dPosCandidateAccounts {
-			if node.Vote == curNode.Vote {
+			if node.VoteAccount == curNode.VoteAccount {
 				d.dPosCandidateAccounts[i] = curNode
 				break
 			}
@@ -120,7 +120,7 @@ func (d *DPosCandidate) DeleteDPosCandidate(curNode common.DPoSCandidateAccount)
 	deleteIndex := -1
 	if d.dPosCandidateAccounts.Len() > 0 {
 		for i, node := range d.dPosCandidateAccounts {
-			if node.Vote == curNode.Vote {
+			if node.VoteAccount == curNode.VoteAccount {
 				deleteIndex = i
 				break
 			}

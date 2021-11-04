@@ -72,7 +72,7 @@ type DumpAccount struct {
 	CodeHash    hexutil.Bytes   `json:"codeHash"`
 	StorageRoot common.Hash     `json:"storageRoot"`
 	Info        hexutil.Bytes   `json:"info"`
-	InfoDigest  hexutil.Bytes   `json:"infoDigest"`
+	InfoDigest  common.Hash     `json:"infoDigest"`
 	State       hexutil.Uint8   `json:"lossState"`
 	Type        hexutil.Uint8   `json:"type"`
 	Ip          hexutil.Bytes   `json:"ip"`

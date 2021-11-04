@@ -138,7 +138,7 @@ type (
 		lossAccount common.Address
 		newAccount  common.Address
 		height      *big.Int
-		infoDigest  []byte
+		infoDigest  common.Hash
 	}
 
 	// Changes to individual accounts.
@@ -200,7 +200,7 @@ type (
 		account    *common.Address
 		state      byte
 		height     *big.Int
-		infoDigest []byte
+		infoDigest common.Hash
 	}
 
 	revealLossReportChange struct {
@@ -499,7 +499,7 @@ func (ch dPosCandidateForAuthorizeChange) revert(s *StateDB) {
 
 	dPosCandidateAccount := common.DPoSCandidateAccount{}
 	dPosCandidateAccount.Owner = authorizeAccount.Owner
-	dPosCandidateAccount.Vote = *ch.account
+	dPosCandidateAccount.VoteAccount = *ch.account
 	dPosCandidateAccount.VoteValue = &ch.voteValue
 	if len(ch.info) == 0 {
 		dPosCandidateAccount.Enode = common.BytesToDposEnode(authorizeAccount.Info)
