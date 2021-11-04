@@ -193,7 +193,7 @@ func (pool *TxPool) validateTxOfRevealLossReport(tx *types.Transaction, local bo
 	if lossAccount.State != common.LOSS_STATE_OF_APPLY {
 		return errors.New("loss account has been revealed")
 	}
-	if !common.ByteSliceEqual(lossAccount.InfoDigest, tx.Data()) {
+	if !common.ByteSliceEqual(lossAccount.InfoDigest[:], tx.Data()) {
 		return errors.New("wrong information digest")
 	}
 	markLossAccounts := pool.currentState.GetMarkLossAccounts(tx.To().Last12BytesToHash())

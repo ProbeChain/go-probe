@@ -1303,7 +1303,7 @@ func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 					state:      stateObject.lossAccount.State,
 					height:     stateObject.lossAccount.Height,
 				})
-				stateObject.lossAccount.InfoDigest = context.Data
+				stateObject.lossAccount.InfoDigest = common.BytesToHash(context.Data)
 				stateObject.lossAccount.State = common.LOSS_STATE_OF_APPLY
 				stateObject.lossAccount.Height = blockNumber
 			}
@@ -1449,7 +1449,7 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	}
 	authorizeAccount := stateObj.authorizeAccount
 	var dPosMap map[string]interface{}
-	err := json.Unmarshal(context.Data, &dPosMap)
+	err := json.Unmarshal(context.Data[:], &dPosMap)
 	if err != nil {
 		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", context.To.Bytes(), err))
 		return
@@ -1474,10 +1474,10 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	authorizeAccount.Info = []byte(enode.String())
 
 	dPosCandidateAccount := common.DPoSCandidateAccount{
-		Enode:     common.BytesToDposEnode(authorizeAccount.Info),
-		Owner:     authorizeAccount.Owner,
-		Vote:      *context.To,
-		VoteValue: authorizeAccount.VoteValue,
+		Enode:       common.BytesToDposEnode(authorizeAccount.Info),
+		Owner:       authorizeAccount.Owner,
+		VoteAccount: *context.To,
+		VoteValue:   authorizeAccount.VoteValue,
 	}
 	GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)
 }
@@ -1515,7 +1515,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 				return nil, true
 			}
 		}
-		return newAssetAccount(s, addr, *data, accountType), false
+		return newContractAccount(s, addr, *data), false
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {

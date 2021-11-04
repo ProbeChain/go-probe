@@ -209,7 +209,6 @@ type Address [AddressLength]byte
 
 type DposEnode [DposEnodeLength]byte
 
-// DPoSAccount DPoS账户
 type DPoSAccount struct {
 	Enode DposEnode `json:"enode,omitempty"`
 	Owner Address   `json:"owner,omitempty"`
@@ -217,22 +216,14 @@ type DPoSAccount struct {
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	Enode DposEnode
-	Owner Address
-	Vote  Address
-	//Weight    *big.Int
-	VoteValue *big.Int
+	Enode       DposEnode
+	Owner       Address
+	VoteAccount Address
+	VoteValue   *big.Int
 }
 
 // BytesToAddress returns Address with value b.
 // If b is larger than len(h), b will be cropped from the left.
-/*func BytesToAddress(b []byte) Address {
-	var a Address
-	//调用CheckSum方法返回前四个字节的checksum
-	checkSumBytes := CheckSum(b)
-	a.SetBytes(append(b, checkSumBytes...))
-	return a
-}*/
 
 func BytesToAddress(b []byte) Address {
 	var a Address
@@ -246,14 +237,12 @@ func BytesToDposEnode(b []byte) DposEnode {
 	return n
 }
 
-//取前4个字节
 func CheckSum(payload []byte) []byte {
-	//这里传入的payload其实是version+Pub Key hash，对其进行两次256运算
 	hash1 := sha256.Sum256(payload)
 
 	hash2 := sha256.Sum256(hash1[:])
 
-	return hash2[:AddressChecksumLen] //返回前四个字节，为CheckSum值
+	return hash2[:AddressChecksumLen]
 }
 
 // BigToAddress returns Address with byte values of b.
@@ -506,7 +495,6 @@ func ValidCheckAddress(v string) (c byte, err error) {
 
 func ValidAddress(addr Address) (c byte, err error) {
 	b := addr.Bytes()
-	//创世块判断
 	if (addr == Address{}) {
 		byte := b[0]
 		return byte, nil
@@ -556,11 +544,4 @@ func InetAtoN(ip string) *big.Int {
 	ret := big.NewInt(0)
 	ret.SetBytes(net.ParseIP(ip).To4())
 	return ret
-}
-
-func ReBuildAddress(addr []byte) []byte {
-	if len(addr) == AddressLength {
-		return addr[1:]
-	}
-	return addr
 }

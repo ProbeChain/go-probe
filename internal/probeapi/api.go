@@ -682,7 +682,7 @@ func (s *PublicBlockChainAPI) GetDPOSCandidate() (interface{}, error) {
 		data = append(data, "{"+
 			"Enode:"+account.Enode.String(),
 			"Owner:"+account.Owner.String(),
-			"Vote:"+account.Vote.String(),
+			"Vote:"+account.VoteAccount.String(),
 			"VoteValue:"+account.VoteValue.String(),
 			"}")
 	}
