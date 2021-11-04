@@ -635,7 +635,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 	//// Insert into the live set
 	//obj := newRegularAccount(s, addr, *data)
 
-	obj, done := s.newAccountDataByAddr(addr, enc)
+	obj, done := s.newAccountDataByAddr(addr, enc, common.ACC_TYPE_OF_UNKNOWN)
 	if done {
 		return obj
 	}
@@ -673,7 +673,7 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 		}
 	}
 	//newobj = newRegularAccount(s, addr, RegularAccount{})
-	newobj, done := s.newAccountDataByAddr(addr, nil)
+	newobj, done := s.newAccountDataByAddr(addr, nil, common.ACC_TYPE_OF_GENERAL)
 	if done {
 		return newobj, nil
 	}
@@ -1477,12 +1477,16 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 	GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)
 }
 
-func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
-	accountType, err := rlp.ParseTypeByEnd(enc)
-	if err != nil {
-		log.Error("Failed to ParseTypeByEnd", "addr", addr, "err", err)
-		return nil, true
+func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountType byte) (*stateObject, bool) {
+	if accountType != common.ACC_TYPE_OF_UNKNOWN {
+		b, err := rlp.ParseTypeByEnd(enc)
+		if err != nil {
+			log.Error("Failed to ParseTypeByEnd", "addr", addr, "err", err)
+			return nil, true
+		}
+		accountType = b
 	}
+
 	switch accountType {
 	case common.ACC_TYPE_OF_GENERAL:
 		data := new(RegularAccount)

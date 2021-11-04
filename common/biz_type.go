@@ -40,12 +40,13 @@ const (
 // account type of Probe
 // 6 kinds
 const (
-	ACC_TYPE_OF_GENERAL   = byte(0) //普通账户
-	ACC_TYPE_OF_PNS       = byte(1) //PNS账户
-	ACC_TYPE_OF_ASSET     = byte(2) //资产账户
-	ACC_TYPE_OF_CONTRACT  = byte(3) //合约账户
-	ACC_TYPE_OF_AUTHORIZE = byte(4) //授权账户
-	ACC_TYPE_OF_LOSE      = byte(5) //挂失账户
+	ACC_TYPE_OF_GENERAL   = byte(0)   //普通账户
+	ACC_TYPE_OF_PNS       = byte(1)   //PNS账户
+	ACC_TYPE_OF_ASSET     = byte(2)   //资产账户
+	ACC_TYPE_OF_CONTRACT  = byte(3)   //合约账户
+	ACC_TYPE_OF_AUTHORIZE = byte(4)   //授权账户
+	ACC_TYPE_OF_LOSE      = byte(5)   //挂失账户
+	ACC_TYPE_OF_UNKNOWN   = byte(100) //未知账户
 )
 
 const (
