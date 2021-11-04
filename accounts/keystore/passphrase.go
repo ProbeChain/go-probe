@@ -116,6 +116,7 @@ func (ks keyStorePassphrase) StoreKey(filename string, key *Key, auth string) er
 	}
 	if !ks.skipKeyFileVerification {
 		// Verify that we can decrypt the file with the given password.
+
 		_, err = ks.GetKey(key.Address, tmpName, auth)
 		if err != nil {
 			msg := "An error was encountered when saving and verifying the keystore file. \n" +
@@ -139,7 +140,7 @@ func (ks keyStorePassphrase) JoinPath(filename string) string {
 }
 
 // Encryptdata encrypts the data given as 'data' with the password 'auth'.
-func EncryptDataV3(data, auth []byte, scryptN, scryptP int, c byte) (CryptoJSON, error) {
+func EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) {
 
 	salt := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
@@ -161,16 +162,12 @@ func EncryptDataV3(data, auth []byte, scryptN, scryptP int, c byte) (CryptoJSON,
 	}
 	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
 
-	scryptParamsJSON := make(map[string]interface{}, 6)
+	scryptParamsJSON := make(map[string]interface{}, 5)
 	scryptParamsJSON["n"] = scryptN
 	scryptParamsJSON["r"] = scryptR
 	scryptParamsJSON["p"] = scryptP
 	scryptParamsJSON["dklen"] = scryptDKLen
 	scryptParamsJSON["salt"] = hex.EncodeToString(salt)
-	var accountType [1]byte
-	accountType[0] = c
-	scryptParamsJSON["t"] = hex.EncodeToString(accountType[:])
-
 	cipherParamsJSON := cipherparamsJSON{
 		IV: hex.EncodeToString(iv),
 	}
@@ -190,7 +187,7 @@ func EncryptDataV3(data, auth []byte, scryptN, scryptP int, c byte) (CryptoJSON,
 // blob that can be decrypted later on.
 func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
 	keyBytes := math.PaddedBigBytes(key.PrivateKey.D, 32)
-	cryptoStruct, err := EncryptDataV3(keyBytes, []byte(auth), scryptN, scryptP, common.ACC_TYPE_OF_GENERAL)
+	cryptoStruct, err := EncryptDataV3(keyBytes, []byte(auth), scryptN, scryptP)
 	if err != nil {
 		return nil, err
 	}
@@ -277,11 +274,7 @@ func DecryptDataV3(cryptoJson CryptoJSON, auth string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	c, err := hex.DecodeString(cryptoJson.KDFParams["t"].(string))
-	priveKey := make([]byte, len(plainText)+1)
-	priveKey[0] = c[0]
-	copy(priveKey[1:], plainText)
-	return priveKey, err
+	return plainText, err
 }
 
 func decryptKeyV3(keyProtected *encryptedKeyJSONV3, auth string) (keyBytes []byte, keyId []byte, err error) {
