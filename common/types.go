@@ -466,22 +466,6 @@ func ValidCheckAddress(v string) (c byte, err error) {
 	return 0, errors.New("unsupported account type")
 }
 
-func ValidAddress(addr Address) (c byte, err error) {
-	b := addr.Bytes()
-	if (addr == Address{}) {
-		byte := b[0]
-		return byte, nil
-	}
-	return 128, errors.New("unsupported account type")
-}
-
-func If(condition bool, trueVal, falseVal interface{}) interface{} {
-	if condition {
-		return trueVal
-	}
-	return falseVal
-}
-
 // UnmarshalJSON enode
 func (enode *DposEnode) UnmarshalJSON(input []byte) error {
 	var textEnode string
@@ -508,4 +492,40 @@ func InetAtoN(ip string) *big.Int {
 	ret := big.NewInt(0)
 	ret.SetBytes(net.ParseIP(ip).To4())
 	return ret
+}
+
+type RegisterPnsArgs struct {
+	PnsAddress Address
+	PnsType    byte
+	//PledgeAmount uint64
+}
+
+type RegisterAuthorizeArgs struct {
+	VoteAddress Address
+	ValidPeriod uint64
+	//PledgeAmount uint64
+}
+type RegisterLoseArgs struct {
+	LoseAddress Address
+	//PledgeAmount uint64
+}
+type CancellationArgs struct {
+	CancelAddress      Address
+	BeneficiaryAddress Address
+}
+
+type ApplyDPosArgs struct {
+	VoteAddress Address
+	NodeInfo    string
+}
+
+type PnsOwnerArgs struct {
+	PnsAddress   Address
+	OwnerAddress Address
+}
+
+type PnsContentArgs struct {
+	PnsAddress Address
+	PnsType    hexutil.Uint8
+	PnsData    hexutil.Bytes
 }

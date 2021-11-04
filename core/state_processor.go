@@ -127,7 +127,7 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	receipt.GasUsed = result.UsedGas
 	receipt.BizType = msg.BizType()
 	// If the transaction created a contract, store the creation address in the receipt.
-	if msg.To() == nil && msg.BizType() == common.ContractCall {
+	if msg.To() == nil && msg.BizType() == common.CONTRACT_DEPLOY {
 		receipt.ContractAddress, _ = crypto.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce())
 	}
 

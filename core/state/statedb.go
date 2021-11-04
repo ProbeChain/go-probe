@@ -487,7 +487,7 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 			owner:   obj.pnsAccount.Owner,
 			data:    obj.pnsAccount.Data,
 		})
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		s.journal.append(assetSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
@@ -573,6 +573,10 @@ func (s *StateDB) getStateObject(addr common.Address) *stateObject {
 		return obj
 	}
 	return nil
+}
+
+func (s *StateDB) GetStateObject(addr common.Address) *stateObject {
+	return s.getStateObject(addr)
 }
 
 // getDeletedStateObject is similar to getStateObject, but instead of returning
@@ -1253,8 +1257,6 @@ func (s *StateDB) Register(context vm.TxContext) {
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(*context.PnsType)
-	case common.ACC_TYPE_OF_ASSET:
-	//case common.ACC_TYPE_OF_CONTRACT:
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		createAccountFee := common.AmountOfPledgeForCreateAccount(uint8(*context.AccType))
 		pledgeValue := new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
@@ -1506,7 +1508,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountT
 			}
 		}
 		return newPnsAccount(s, addr, *data), false
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		data := new(ContractAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {

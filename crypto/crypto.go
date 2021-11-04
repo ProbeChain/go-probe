@@ -118,12 +118,6 @@ func CreateAddress2(b common.Address, salt [32]byte, inithash []byte) common.Add
 }
 
 func CreateAddressForAccountType(address common.Address, nonce uint64) (add common.Address, err error) {
-	k1, err := common.ValidAddress(address)
-	if k1 != 0x00 || err != nil {
-		return address, errors.New("unsupported account type for createAddress")
-	}
-	//data, _ := rlp.EncodeToBytes([]interface{}{K, address, nonce})
-	//return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, nonce)
 	return common.BytesToAddress(Keccak256([]byte{0xff}, address.Bytes(), b[:])[12:]), nil
@@ -133,12 +127,6 @@ func CreatePNSAddress(address common.Address, pns []byte) (add common.Address, e
 	if len(pns) <= 0 {
 		return address, errors.New("Creat PNSAddress error,PNS parameter is invalid")
 	}
-	k1, err := common.ValidAddress(address)
-	if k1 != 0x00 || err != nil {
-		return address, err
-	}
-	//data, _ := rlp.EncodeToBytes([]interface{}{K, address, pns})
-	//return PubkeyBytesToAddress(Keccak256(data)[12:], K), nil
 	return common.BytesToAddress(Keccak256([]byte{}, address.Bytes(), pns)[12:]), nil
 }
 

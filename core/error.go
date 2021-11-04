@@ -101,4 +101,6 @@ var (
 	ErrValidPeriodTooLow = errors.New("valid period too low")
 
 	ErrValidCandidateDPOSValue = errors.New("valid apply candidate dposAccout value too large")
+
+	ErrValidUnsupportedAccount = errors.New("unsupported account")
 )

@@ -303,7 +303,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 2 || i == 3 {
-				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_ASSET)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_CONTRACT)
 				if err != nil {
 					continue
 				}

@@ -1335,20 +1335,7 @@ type RPCTransaction struct {
 	R                *hexutil.Big      `json:"r"`
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
-
-	Owner     *common.Address `json:"owner,omitempty"`
-	Vote      *common.Address `json:"vote,omitempty"`
-	Loss      *common.Address `json:"loss,omitempty"`
-	Asset     *common.Address `json:"asset,omitempty"`
-	Old       *common.Address `json:"old,omitempty"`
-	New       *common.Address `json:"new,omitempty"`
-	Initiator *common.Address `json:"initiator,omitempty"`
-	Receiver  *common.Address `json:"receiver,omitempty"`
-	Value2    *hexutil.Big    `json:"value2,omitempty"`
-	Height    *hexutil.Uint64 `json:"height,omitempty"`
-	Mark      *hexutil.Bytes  `json:"mark,omitempty"`
-	AccType   *hexutil.Uint8  `json:"accType,omitempty"`
-	LossType  *hexutil.Uint8  `json:"lossType,omitempty"`
+	NewAccount       *common.Address   `json:"new,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1388,20 +1375,19 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	}
 
 	switch tx.BizType() {
-	case common.Register:
-		result.New = tx.New()
-		result.AccType = tx.AccType()
-	case common.Cancellation:
-		result.New = tx.New()
-	case common.Transfer:
-	case common.ContractCall:
-	case common.SendLossReport:
-		mark := hexutil.Bytes(tx.Mark())
-		result.Mark = &mark
-	case common.ModifyLossType:
-		result.LossType = tx.LossType()
+	case common.REGISTER_PNS:
+		args := new(common.RegisterPnsArgs)
+		rlp.DecodeBytes(tx.Args(), &args)
+		result.NewAccount = &args.PnsAddress
+	case common.REGISTER_AUTHORIZE:
+		args := new(common.RegisterAuthorizeArgs)
+		rlp.DecodeBytes(tx.Args(), &args)
+		result.NewAccount = &args.VoteAddress
+	case common.REGISTER_LOSE:
+		args := new(common.RegisterLoseArgs)
+		rlp.DecodeBytes(tx.Args(), &args)
+		result.NewAccount = &args.LoseAddress
 	}
-
 	switch tx.Type() {
 	case types.AccessListTxType:
 		al := tx.AccessList()
@@ -1541,14 +1527,10 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		// Copy the original db so we don't modify it
 		statedb := db.Copy()
 		msg := types.NewMessage(
-			args.from(), args.To, uint8(*args.BizType),
+			args.from(), args.To, args.BizType,
 			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
 			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
-			args.data(), accessList, false,
-			args.Owner, args.Loss, args.Asset,
-			args.Old, args.New, args.Initiator,
-			args.Receiver, args.mark(), args.value2(),
-			args.height(), args.AccType, args.LossType, args.PnsType)
+			args.data(), accessList, false)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1731,16 +1713,18 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 
 	//不同业务类型展示不同字段
 	switch tx.BizType() {
-	case common.Register:
-		fields["new"] = tx.New()
-		fields["accType"] = tx.AccType()
-	case common.Cancellation:
-	case common.Transfer:
-	case common.ContractCall:
-	case common.SendLossReport:
-		fields["mark"] = hexutil.Bytes(tx.Mark())
-	case common.ModifyLossType:
-		fields["lossType"] = tx.LossType()
+	case common.REGISTER_PNS:
+		args := new(common.RegisterPnsArgs)
+		rlp.DecodeBytes(tx.Args(), &args)
+		fields["newAccount"] = args.PnsAddress
+	case common.REGISTER_AUTHORIZE:
+		args := new(common.RegisterAuthorizeArgs)
+		rlp.DecodeBytes(tx.Args(), &args)
+		fields["newAccount"] = args.VoteAddress
+	case common.REGISTER_LOSE:
+		args := new(common.RegisterLoseArgs)
+		rlp.DecodeBytes(tx.Args(), &args)
+		fields["newAccount"] = args.LoseAddress
 	}
 
 	// Assign the effective gas price paid
@@ -1804,7 +1788,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, err
 	}
 
-	if tx.To() == nil && tx.BizType() == common.ContractCall {
+	if tx.To() == nil && tx.BizType() == common.CONTRACT_DEPLOY {
 		addr, _ := crypto.CreateAddressForAccountType(from, tx.Nonce())
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {

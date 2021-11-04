@@ -5,41 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/rlp"
 
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/rpc"
 	"math/big"
 )
 
-// setDefaultsOfRegister set default parameters of register business type
-func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backend) error {
-	currentBlockNumber := b.CurrentBlock().Number()
-	if args.AccType == nil {
-		return errors.New(`account type must be specified`)
-	}
-	accType := uint8(*args.AccType)
-	if !common.CheckRegisterAccType(accType) {
-		return accounts.ErrWrongAccountType
-	}
-	if args.New != nil {
-		if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_GENERAL, "new"); err != nil {
-			return err
-		}
-		if accType != common.ACC_TYPE_OF_GENERAL {
-			return accounts.ErrWrongAccountFormat
-		}
-	} else {
-		if accType == common.ACC_TYPE_OF_GENERAL {
-			return errors.New(`regular account must be specified`)
-		}
-	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
+// setDefaultsOfRegisterPns set default parameters of register business type
+func (args *TransactionArgs) setDefaultsOfRegisterPns(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
@@ -47,45 +24,95 @@ func (args *TransactionArgs) setDefaultsOfRegister(ctx context.Context, b Backen
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if args.New == nil {
-		var newAccount common.Address
-		var err error
-		if accType == common.ACC_TYPE_OF_PNS {
-			if err := common.ValidateNil(args.Data, "data"); err != nil {
-				return err
-			}
-			//if err := common.ValidateNil(args.PnsType, "pns type"); err != nil {
-			//	return err
-			//}
-			//pnsData := *args.Data
-			//pnsData = append(pnsData, byte(*args.PnsType))
-			defaultPnsType := uint8(0)
-			args.PnsType = (*hexutil.Uint8)(&defaultPnsType)
-			newAccount, err = crypto.CreatePNSAddress(args.from(), *args.Data)
-		} else {
-			newAccount, err = crypto.CreateAddressForAccountType(args.from(), uint64(*args.Nonce))
-		}
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
+		return err
+	}
+	var pnsData string
+	err := rlp.DecodeBytes(*args.Data, &pnsData)
+	if err != nil {
+		return err
+	}
+	var pnsAddress common.Address
+	pnsAddress, err = crypto.CreatePNSAddress(args.from(), []byte(pnsData))
+	if err != nil {
+		return err
+	}
+	registerPnsArgs := common.RegisterPnsArgs{
+		PnsAddress: pnsAddress,
+		PnsType:    uint8(0),
+	}
+	argsBytes, err := rlp.EncodeToBytes(registerPnsArgs)
+	if err != nil {
+		return err
+	}
+	args.Args = argsBytes
+	return args.DoEstimateGas(ctx, b)
+}
+
+// setDefaultsOfRegisterAuthorize set default parameters of register business type
+func (args *TransactionArgs) setDefaultsOfRegisterAuthorize(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
 		if err != nil {
 			return err
 		}
-		args.New = &newAccount
+		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if *args.From == *args.New {
-		return errors.New("must not equals initiator")
+	currentBlockNumber := b.CurrentBlock().Number()
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
+		return err
 	}
-	pledgeAmount := common.AmountOfPledgeForCreateAccount(accType)
-	if accType == common.ACC_TYPE_OF_AUTHORIZE {
-		if args.Value == nil || args.Value.ToInt().Sign() < 1 {
-			return errors.New(`pledge amount must be specified and greater than 0`)
-		} else {
-			args.Value = (*hexutil.Big)(new(big.Int).Add(args.Value.ToInt(), new(big.Int).SetUint64(pledgeAmount)))
+	var validPeriod hexutil.Big
+	err := rlp.DecodeBytes(*args.Data, &validPeriod)
+	if err != nil {
+		return err
+	}
+	if args.Value == nil || args.Value.ToInt().Sign() < 1 {
+		return errors.New(`pledge amount must be specified and greater than 0`)
+	}
+	if validPeriod.ToInt().Cmp(currentBlockNumber) < 1 {
+		return errors.New(`valid period block number must be specified and greater than current block number`)
+	}
+	var newAccount common.Address
+	newAccount, err = crypto.CreateAddressForAccountType(args.from(), uint64(*args.Nonce))
+	if err != nil {
+		return err
+	}
+	registerAuthorizeArgs := common.RegisterAuthorizeArgs{
+		VoteAddress: newAccount,
+		ValidPeriod: validPeriod.ToInt().Uint64(),
+	}
+	argsBytes, err := rlp.EncodeToBytes(registerAuthorizeArgs)
+	if err != nil {
+		return err
+	}
+	args.Args = argsBytes
+	return args.DoEstimateGas(ctx, b)
+}
+
+// setDefaultsOfRegisterLose set default parameters of register business type
+func (args *TransactionArgs) setDefaultsOfRegisterLose(ctx context.Context, b Backend) error {
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
 		}
-		if args.Height == nil || args.Height.ToInt().Cmp(currentBlockNumber) < 1 {
-			return errors.New(`valid period block number must be specified and greater than current block number`)
-		}
-	} else {
-		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
+		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
+	var newAccount common.Address
+	var err error
+	newAccount, err = crypto.CreateAddressForAccountType(args.from(), uint64(*args.Nonce))
+	if err != nil {
+		return err
+	}
+	registerAuthorizeArgs := common.RegisterLoseArgs{
+		LoseAddress: newAccount,
+	}
+	argsBytes, err := rlp.EncodeToBytes(registerAuthorizeArgs)
+	if err != nil {
+		return err
+	}
+	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -98,28 +125,25 @@ func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Ba
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if err := common.ValidateNil(args.To, "cancel account"); err != nil {
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	accType, err := common.ValidAddress(*args.To)
+	var cancellationArgs common.CancellationArgs
+	err := rlp.DecodeBytes(*args.Data, &cancellationArgs)
 	if err != nil {
-		return errors.New("unsupported account type")
-	}
-	if !common.CheckCancelAccType(accType) {
-		return accounts.ErrWrongAccountType
-	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.New, "beneficiary account"); err != nil {
+	if err := common.ValidateNil(cancellationArgs.CancelAddress, "cancel address"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_GENERAL, "new"); err != nil {
+	if err := common.ValidateNil(cancellationArgs.BeneficiaryAddress, "beneficiary address"); err != nil {
 		return err
 	}
-	pledgeAmount := common.AmountOfPledgeForCreateAccount(accType)
-	// Estimate the gas usage if necessary.
-	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
+	argsBytes, err := rlp.EncodeToBytes(cancellationArgs)
+	if err != nil {
+		return err
+	}
+	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -140,17 +164,6 @@ func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backen
 	}
 	if err := common.ValidateNil(args.To, "to"); err != nil {
 		return err
-	}
-
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	toAccType, err := common.ValidAddress(*args.To)
-	if err != nil {
-		return err
-	}
-	if !common.CheckTransferAccType(toAccType) {
-		return accounts.ErrUnsupportedAccountTransfer
 	}
 	return args.DoEstimateGas(ctx, b)
 }
@@ -176,21 +189,8 @@ func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Ba
 	//set contract deploy fee
 	if args.To == nil {
 		args.Value = (*hexutil.Big)(new(big.Int).SetUint64(common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_CONTRACT)))
-	} else {
-		accType, err := common.ValidAddress(*args.To)
-		if err != nil {
-			return err
-		}
-		if common.ACC_TYPE_OF_CONTRACT != accType {
-			return errors.New("account must be contract type")
-		}
 	}
 	return args.DoEstimateGas(ctx, b)
-}
-
-//todo
-func (args *TransactionArgs) setDefaultsOfExchangeAsset(ctx context.Context, b Backend) error {
-	return nil
 }
 
 //setDefaultsOfVote  set default parameters of vote business type
@@ -202,7 +202,15 @@ func (args *TransactionArgs) setDefaultsOfVote(ctx context.Context, b Backend) e
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if err := common.ValidateNil(args.To, "vote account"); err != nil {
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
+		return err
+	}
+	var voteAddr common.Address
+	err := rlp.DecodeBytes(*args.Data, &voteAddr)
+	if err != nil {
+		return err
+	}
+	if err := common.ValidateNil(voteAddr, "vote account"); err != nil {
 		return err
 	}
 	if err := common.ValidateNil(args.Value, "vote value"); err != nil {
@@ -210,12 +218,6 @@ func (args *TransactionArgs) setDefaultsOfVote(ctx context.Context, b Backend) e
 	}
 	if args.Value.ToInt().Sign() != 1 {
 		return errors.New("value must be greater than 0")
-	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_AUTHORIZE, "to"); err != nil {
-		return err
 	}
 	return args.DoEstimateGas(ctx, b)
 }
@@ -228,132 +230,100 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	args.Value = new(hexutil.Big)
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.To, "vote account"); err != nil {
+	applyDPosArgs := new(common.ApplyDPosArgs)
+	err := rlp.DecodeBytes(*args.Data, &applyDPosArgs)
+	if err != nil {
 		return err
 	}
-	var dposMap map[string]interface{}
-	voteData, err := hexutil.Decode(args.Data.String())
+	args.Value = new(hexutil.Big)
+	if err := common.ValidateNil(applyDPosArgs.VoteAddress, "vote address"); err != nil {
+		return err
+	}
+	var dPosMap map[string]interface{}
+	voteData, err := hexutil.Decode(applyDPosArgs.NodeInfo)
 	if err != nil {
-		return errors.New("The format of the address data parameter is incorrect,data begin with 0x, eg: 0x7b226970223a223139322e3136382e302e31222c22706f7274223a2231333037227d")
+		return err
 	}
-
-	err = json.Unmarshal(voteData, &dposMap)
+	err = json.Unmarshal(voteData, &dPosMap)
 	if err != nil {
-		return errors.New("The format of the address data parameter is incorrect,data begin with 0x")
+		return err
 	}
-	if nil == dposMap["enode"] || nil == dposMap["ip"] || nil == dposMap["port"] {
-		return errors.New("voteAccount parameter data error ")
+	if nil == dPosMap["enode"] || nil == dPosMap["ip"] || nil == dPosMap["port"] {
+		return errors.New("the dpos data format is incorrect")
 	}
-	remoteEnode := dposMap["enode"].(string)
-	log.Info("verification_args", "setDefaultsOfApplyToBeDPoSNode remoteEnode length error ", len(remoteEnode))
+	remoteEnode := dPosMap["enode"].(string)
 	if len(remoteEnode) != 130 {
 		return errors.New("the length of voteAccount's enode length error")
 	}
-
-	return args.DoEstimateGas(ctx, b)
-}
-
-func (args *TransactionArgs) setDefaultsOfUpdatingVotesOrData(ctx context.Context, b Backend) error {
-	if args.Nonce == nil {
-		nonce, err := b.GetPoolNonce(ctx, args.from())
-		if err != nil {
-			return err
-		}
-		args.Nonce = (*hexutil.Uint64)(&nonce)
-	}
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
-	}
-	if err := common.ValidateNil(args.Data, "data"); err != nil {
+	argsBytes, err := rlp.EncodeToBytes(applyDPosArgs)
+	if err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.To, "vote account"); err != nil {
-		return err
-	}
-	var dposMap map[string]interface{}
-	voteData, err := hexutil.Decode(args.Data.String())
-	if err != nil {
-		return errors.New("The format of the address data parameter is incorrect,data begin with 0x, eg: 0x7b226970223a223139322e3136382e302e31222c22706f7274223a2231333037227d")
-	}
-	err = json.Unmarshal(voteData, &dposMap)
-	if err != nil {
-		return errors.New("The format of the address data parameter is incorrect,data begin with 0x")
-	}
-	if nil == dposMap["ip"] || nil == dposMap["port"] {
-		return errors.New("voteAccount parameter data error ")
-	}
-
+	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 
 func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b Backend) error {
-	if err := common.ValidateNil(args.Mark, "mark"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.Data, "information digests data"); err != nil {
-		return err
-	}
-	if args.Nonce == nil {
-		nonce, err := b.GetPoolNonce(ctx, args.from())
-		if err != nil {
+	/*	if err := common.ValidateNil(args.Mark, "mark"); err != nil {
 			return err
 		}
-		args.Nonce = (*hexutil.Uint64)(&nonce)
-	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
-	}
+		if err := common.ValidateNil(args.Data, "information digests data"); err != nil {
+			return err
+		}
+		if args.Nonce == nil {
+			nonce, err := b.GetPoolNonce(ctx, args.from())
+			if err != nil {
+				return err
+			}
+			args.Nonce = (*hexutil.Uint64)(&nonce)
+		}
+		if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+			return err
+		}
+		if args.Value == nil {
+			args.Value = new(hexutil.Big)
+		}*/
 	return args.DoEstimateGas(ctx, b)
 }
 
 func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, b Backend) error {
-	if args.Nonce == nil {
-		nonce, err := b.GetPoolNonce(ctx, args.from())
-		if err != nil {
+	/*	if args.Nonce == nil {
+			nonce, err := b.GetPoolNonce(ctx, args.from())
+			if err != nil {
+				return err
+			}
+			args.Nonce = (*hexutil.Uint64)(&nonce)
+		}
+		if err := common.ValidateNil(args.Value, "value"); err != nil {
 			return err
 		}
-		args.Nonce = (*hexutil.Uint64)(&nonce)
-	}
-	if err := common.ValidateNil(args.Value, "value"); err != nil {
-		return err
-	}
-	if args.Value.ToInt().Sign() != 1 {
-		return errors.New("value must be greater than 0")
-	}
-	if err := common.ValidateNil(args.Data, "data"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.From, "from account"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.To, "loss account"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.Old, "lost account"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.New, "new account "); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.Old, common.ACC_TYPE_OF_GENERAL, "old"); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_GENERAL, "new"); err != nil {
-		return err
-	}
+		if args.Value.ToInt().Sign() != 1 {
+			return errors.New("value must be greater than 0")
+		}
+		if err := common.ValidateNil(args.Data, "data"); err != nil {
+			return err
+		}
+		if err := common.ValidateNil(args.From, "from account"); err != nil {
+			return err
+		}
+		if err := common.ValidateNil(args.To, "loss account"); err != nil {
+			return err
+		}
+		if err := common.ValidateNil(args.Old, "lost account"); err != nil {
+			return err
+		}
+		if err := common.ValidateNil(args.New, "new account "); err != nil {
+			return err
+		}
+		if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+			return err
+		}
+		if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+			return err
+		}*/
 
 	return args.DoEstimateGas(ctx, b)
 }
@@ -371,37 +341,12 @@ func (args *TransactionArgs) setDefaultsOfTransferLostAccount(ctx context.Contex
 	if err := common.ValidateNil(args.To, "loss account"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
-		return err
-	}
-
-	return args.DoEstimateGas(ctx, b)
-}
-
-//todo
-func (args *TransactionArgs) setDefaultsOfTransferLostAssetAccount(ctx context.Context, b Backend) error {
-	if args.Mark == nil {
-		return errors.New(`mark must be specified`)
-	}
-	if args.Data == nil {
-		return errors.New(`information digests mark must be specified`)
-	}
-	if args.Nonce == nil {
-		nonce, err := b.GetPoolNonce(ctx, args.from())
-		if err != nil {
+	/*	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
 			return err
 		}
-		args.Nonce = (*hexutil.Uint64)(&nonce)
-	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if args.Value == nil {
-		args.Value = new(hexutil.Big)
-	}
+		if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+			return err
+		}*/
 
 	return args.DoEstimateGas(ctx, b)
 }
@@ -419,12 +364,12 @@ func (args *TransactionArgs) setDefaultsOfRemoveLossReport(ctx context.Context, 
 	if err := common.ValidateNil(args.To, "loss account"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
-		return err
-	}
+	/*	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+			return err
+		}
+		if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+			return err
+		}*/
 	pledgeAmount := common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_LOSE)
 	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
 
@@ -444,12 +389,12 @@ func (args *TransactionArgs) setDefaultsOfRejectLossReport(ctx context.Context, 
 	if err := common.ValidateNil(args.To, "loss account"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
-		return err
-	}
+	/*	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+			return err
+		}
+		if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_LOSE, "to"); err != nil {
+			return err
+		}*/
 	pledgeAmount := common.AmountOfPledgeForCreateAccount(common.ACC_TYPE_OF_LOSE)
 	args.Value = (*hexutil.Big)(new(big.Int).SetUint64(pledgeAmount))
 
@@ -465,39 +410,21 @@ func (args *TransactionArgs) setDefaultsOfRedemption(ctx context.Context, b Back
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if err := common.ValidateNil(args.To, "vote account"); err != nil {
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+	var voteAddr common.Address
+	err := rlp.DecodeBytes(*args.Data, &voteAddr)
+	if err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_AUTHORIZE, "to"); err != nil {
+	//todo ValidateNil是否可以去掉
+	if err := common.ValidateNil(voteAddr, "vote account"); err != nil {
 		return err
 	}
 	return args.DoEstimateGas(ctx, b)
 }
 
-// setDefaultsOfModifyLossType set default parameters of modify loss report type
-func (args *TransactionArgs) setDefaultsOfModifyLossType(ctx context.Context, b Backend) error {
-	if args.Nonce == nil {
-		nonce, err := b.GetPoolNonce(ctx, args.from())
-		if err != nil {
-			return err
-		}
-		args.Nonce = (*hexutil.Uint64)(&nonce)
-	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.LossType, "loss type"); err != nil {
-		return err
-	}
-	if !common.CheckLossType(uint8(*args.LossType)) {
-		return errors.New("wrong loss type")
-	}
-
-	return args.DoEstimateGas(ctx, b)
-}
 func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b Backend) error {
 	if args.Nonce == nil {
 		nonce, err := b.GetPoolNonce(ctx, args.from())
@@ -506,25 +433,28 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-	if err := common.ValidateNil(args.From, "from account"); err != nil {
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.To, "pns account"); err != nil {
+	pnsOwnerArgs := new(common.PnsOwnerArgs)
+	err := rlp.DecodeBytes(*args.Data, &pnsOwnerArgs)
+	if err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.New, "new owner account"); err != nil {
+	if err := common.ValidateNil(args.From, "from address"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+	if err := common.ValidateNil(pnsOwnerArgs.PnsAddress, "pns address"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_PNS, "to"); err != nil {
+	if err := common.ValidateNil(pnsOwnerArgs.OwnerAddress, "new owner address"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.New, common.ACC_TYPE_OF_GENERAL, "new owner"); err != nil {
+	argsBytes, err := rlp.EncodeToBytes(pnsOwnerArgs)
+	if err != nil {
 		return err
 	}
-
+	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, b Backend) error {
@@ -535,28 +465,31 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 		}
 		args.Nonce = (*hexutil.Uint64)(&nonce)
 	}
-
-	if err := common.ValidateNil(args.From, "from account"); err != nil {
+	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.To, "pns account"); err != nil {
+	pnsContentArgs := new(common.PnsContentArgs)
+	err := rlp.DecodeBytes(*args.Data, &pnsContentArgs)
+	if err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.From, common.ACC_TYPE_OF_GENERAL, "from"); err != nil {
+	if err := common.ValidateNil(args.From, "from address"); err != nil {
 		return err
 	}
-	if err := common.ValidateAccType(args.To, common.ACC_TYPE_OF_PNS, "pns"); err != nil {
+	if err := common.ValidateNil(pnsContentArgs.PnsAddress, "pns address"); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.Data, "pns content data"); err != nil {
+	if err := common.ValidateNil(pnsContentArgs.PnsData, "pns content data"); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.PnsType, "pns type"); err != nil {
+	if err := common.ValidateNil(pnsContentArgs.PnsType, "pns type"); err != nil {
 		return err
 	}
-	//if !common.CheckPnsType(uint8(*args.PnsType)) {
-	//	return errors.New("wrong pns type")
-	//}
+	argsBytes, err := rlp.EncodeToBytes(pnsContentArgs)
+	if err != nil {
+		return err
+	}
+	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -574,14 +507,7 @@ func (args *TransactionArgs) DoEstimateGas(ctx context.Context, b Backend) error
 			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			Old:                  args.Old,
-			New:                  args.New,
-			AccType:              args.AccType,
-			Height:               args.Height,
-			Mark:                 args.Mark,
-			Loss:                 args.Loss,
-			LossType:             args.LossType,
-			PnsType:              args.PnsType,
+			Args:                 args.Args,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())

@@ -275,7 +275,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	//if isPrecompile {
 	//	ret, gas, err = RunPrecompiledContract(p, input, gas)
 	//} else {
-	if evm.TxContext.BizType == common.ContractCall {
+	if evm.TxContext.BizType == common.CONTRACT_DEPLOY {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.
 		code := evm.StateDB.GetCode(to)

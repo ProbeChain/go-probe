@@ -18,7 +18,6 @@ package core
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/common/hexutil"
 	"math"
 	"math/big"
 
@@ -76,20 +75,8 @@ type Message interface {
 	Data() []byte
 	AccessList() types.AccessList
 
-	BizType() uint8
-	AccType() *hexutil.Uint8
-	LossType() *hexutil.Uint8
-	PnsType() *hexutil.Uint8
-	Owner() *common.Address
-	Loss() *common.Address
-	Asset() *common.Address
-	Old() *common.Address
-	New() *common.Address
-	Initiator() *common.Address
-	Receiver() *common.Address
-	Value2() *big.Int
-	Height() *big.Int
-	Mark() []byte
+	BizType() byte
+	//Args() []byte
 }
 
 // ExecutionResult includes all output after executing given evm
@@ -294,7 +281,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	sender := vm.AccountRef(msg.From())
 	homestead := st.evm.ChainConfig().IsHomestead(st.evm.Context.BlockNumber)
 	istanbul := st.evm.ChainConfig().IsIstanbul(st.evm.Context.BlockNumber)
-	contractCreation := msg.To() == nil && msg.BizType() == common.ContractCall
+	contractCreation := msg.To() == nil && msg.BizType() == common.CONTRACT_DEPLOY
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
 	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, homestead, istanbul)
 	if err != nil {

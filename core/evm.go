@@ -70,26 +70,11 @@ func NewEVMTxContext(msg Message) vm.TxContext {
 	return vm.TxContext{
 		Origin:   msg.From(),
 		GasPrice: new(big.Int).Set(msg.GasPrice()),
-
-		From:      msg.From(),
-		To:        msg.To(),
-		Owner:     msg.Owner(),
-		Loss:      msg.Loss(),
-		Asset:     msg.Asset(),
-		Old:       msg.Old(),
-		New:       msg.New(),
-		Initiator: msg.Initiator(),
-		Receiver:  msg.Receiver(),
-
+		From:     msg.From(),
+		To:       msg.To(),
 		BizType:  msg.BizType(),
 		Value:    msg.Value(),
-		Value2:   msg.Value2(),
-		Height:   msg.Height(),
 		Data:     msg.Data(),
-		Mark:     msg.Mark(),
-		AccType:  msg.AccType(),
-		LossType: msg.LossType(),
-		PnsType:  msg.PnsType(),
 	}
 }
 
@@ -143,39 +128,35 @@ func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *b
 //CallDB call database for update operation
 func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
 	switch txContext.BizType {
-	case common.Register:
+	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
 		db.Register(txContext)
-	case common.Cancellation:
+	case common.CANCELLATION:
 		db.Cancellation(txContext)
-	case common.Transfer:
+	case common.TRANSFER:
 		db.Transfer(txContext)
-	case common.ExchangeAsset:
-		db.ExchangeAsset(txContext)
-	case common.ContractCall:
+	case common.CONTRACT_DEPLOY:
 		ContractTransfer(db, txContext.From, *txContext.To, txContext.Value)
-	case common.SendLossReport:
+	case common.SEND_LOSS_REPORT:
 		db.SendLossReport(blockNumber, txContext)
-	case common.RevealLossReport:
+	case common.REVEAL_LOSS_REPORT:
 		db.RevealLossReport(blockNumber, txContext)
-	case common.TransferLostAccount:
+	case common.TRANSFER_LOST_ACCOUNT:
 		db.TransferLostAccount(txContext)
-	case common.TransferLostAssetAccount:
-		db.TransferLostAssetAccount(txContext)
-	case common.RemoveLossReport:
+	case common.REMOVE_LOSS_REPORT:
 		db.RemoveLossReport(txContext)
-	case common.RejectLossReport:
+	case common.REJECT_LOSS_REPORT:
 		db.RejectLossReport(txContext)
-	case common.Vote:
+	case common.VOTE:
 		db.Vote(txContext)
-	case common.ApplyToBeDPoSNode:
+	case common.APPLY_TO_BE_DPOS_NODE:
 		db.ApplyToBeDPoSNode(txContext)
-	case common.Redemption:
+	case common.REDEMPTION:
 		db.Redemption(txContext)
-	case common.ModifyLossType:
-		db.ModifyLossType(txContext)
-	case common.ModifyPnsOwner:
+		/*	case common.ModifyLossType:
+			db.ModifyLossType(txContext)*/
+	case common.MODIFY_PNS_OWNER:
 		db.ModifyPnsOwner(txContext)
-	case common.ModifyPnsContent:
+	case common.MODIFY_PNS_CONTENT:
 		db.ModifyPnsContent(txContext)
 	}
 }
