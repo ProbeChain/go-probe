@@ -1478,7 +1478,7 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 }
 
 func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountType byte) (*stateObject, bool) {
-	if accountType != common.ACC_TYPE_OF_UNKNOWN {
+	if accountType == common.ACC_TYPE_OF_UNKNOWN {
 		b, err := rlp.ParseTypeByEnd(enc)
 		if err != nil {
 			log.Error("Failed to ParseTypeByEnd", "addr", addr, "err", err)
