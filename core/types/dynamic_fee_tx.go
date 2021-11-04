@@ -17,7 +17,6 @@
 package types
 
 import (
-	"github.com/probeum/go-probeum/common/hexutil"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -30,7 +29,7 @@ type DynamicFeeTx struct {
 	GasFeeCap  *big.Int
 	Gas        uint64
 	To         *common.Address `rlp:"nil"` // nil means contract creation
-	BizType    uint8
+	BizType    byte
 	Value      *big.Int
 	Data       []byte
 	AccessList AccessList
@@ -39,20 +38,8 @@ type DynamicFeeTx struct {
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
 
-	From      *common.Address `rlp:"nil"`
-	Owner     *common.Address `rlp:"nil"`
-	Loss      *common.Address `rlp:"nil"`
-	Asset     *common.Address `rlp:"nil"`
-	Old       *common.Address `rlp:"nil"`
-	New       *common.Address `rlp:"nil"`
-	Initiator *common.Address `rlp:"nil"`
-	Receiver  *common.Address `rlp:"nil"`
-	Value2    *big.Int
-	Mark      []byte
-	Height    *big.Int
-	AccType   *hexutil.Uint8
-	LossType  *hexutil.Uint8
-	PnsType   *hexutil.Uint8
+	From *common.Address `rlp:"nil"`
+	Args []byte
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -72,16 +59,8 @@ func (tx *DynamicFeeTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
-		AccType:    tx.AccType,
 		BizType:    tx.BizType,
-		LossType:   tx.LossType,
-		PnsType:    tx.PnsType,
-		New:        tx.New,
-		Old:        tx.Old,
-		Loss:       tx.Loss,
-		Receiver:   tx.Receiver,
-		Mark:       common.CopyBytes(tx.Mark),
-		Height:     tx.Height,
+		Args:       tx.Args,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -125,19 +104,7 @@ func (tx *DynamicFeeTx) bizType() uint8         { return tx.BizType }
 
 func (tx *DynamicFeeTx) from() *common.Address        { return tx.From }
 func (tx *DynamicFeeTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *DynamicFeeTx) owner() *common.Address       { return tx.Owner }
-func (tx *DynamicFeeTx) loss() *common.Address        { return tx.Loss }
-func (tx *DynamicFeeTx) asset() *common.Address       { return tx.Asset }
-func (tx *DynamicFeeTx) old() *common.Address         { return tx.Old }
-func (tx *DynamicFeeTx) new() *common.Address         { return tx.New }
-func (tx *DynamicFeeTx) initiator() *common.Address   { return tx.Initiator }
-func (tx *DynamicFeeTx) receiver() *common.Address    { return tx.Receiver }
-func (tx *DynamicFeeTx) value2() *big.Int             { return tx.Value2 }
-func (tx *DynamicFeeTx) height() *big.Int             { return tx.Height }
-func (tx *DynamicFeeTx) mark() []byte                 { return tx.Mark }
-func (tx *DynamicFeeTx) accType() *hexutil.Uint8      { return tx.AccType }
-func (tx *DynamicFeeTx) lossType() *hexutil.Uint8     { return tx.LossType }
-func (tx *DynamicFeeTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
+func (tx *DynamicFeeTx) args() []byte                 { return tx.Args }
 func (tx *DynamicFeeTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }

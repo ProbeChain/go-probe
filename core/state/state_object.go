@@ -193,7 +193,7 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		var data PnsAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.pnsAccount = data
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		var data ContractAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.assetAccount = data
@@ -329,7 +329,7 @@ func (s *stateObject) EncodeRLP(w io.Writer) error {
 		return rlp.Encode(w, s.regularAccount)
 	case common.ACC_TYPE_OF_PNS:
 		return rlp.Encode(w, s.pnsAccount)
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return rlp.Encode(w, s.assetAccount)
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		return rlp.Encode(w, s.authorizeAccount)
@@ -657,7 +657,7 @@ func (s *stateObject) SubBalance(amount *big.Int) {
 }
 
 func (s *stateObject) SetBalance(amount *big.Int) {
-	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_ASSET || s.accountType == common.ACC_TYPE_OF_CONTRACT {
+	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_CONTRACT {
 		s.db.journal.append(balanceChange{
 			account: &s.address,
 			//prev:    new(big.Int).Set(s.regularAccount.Balance),
@@ -671,7 +671,7 @@ func (s *stateObject) setBalance(amount *big.Int) {
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
 		s.setValueForRegular(amount)
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		s.setValueForAsset(amount)
 	default:
 	}
@@ -701,7 +701,7 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, accountType byte) *st
 		state = newRegularAccount(db, s.address, s.regularAccount)
 	case common.ACC_TYPE_OF_PNS:
 		state = newPnsAccount(db, s.address, s.pnsAccount)
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		state = newContractAccount(db, s.address, s.assetAccount)
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
@@ -773,7 +773,7 @@ func (s *stateObject) setCode(codeHash common.Hash, code []byte) {
 }
 
 func (s *stateObject) SetNonce(nonce uint64) {
-	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_ASSET || s.accountType == common.ACC_TYPE_OF_CONTRACT {
+	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_CONTRACT {
 		s.db.journal.append(nonceChange{
 			account: &s.address,
 			//prev:    s.regularAccount.Nonce,
@@ -788,7 +788,7 @@ func (s *stateObject) setNonce(nonce uint64) {
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
 		s.regularAccount.Nonce = nonce
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		s.assetAccount.Nonce = nonce
 	default:
 	}
@@ -804,7 +804,7 @@ func (s *stateObject) Balance() *big.Int {
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
 		return s.regularAccount.Value
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Value
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		return s.authorizeAccount.VoteValue
@@ -827,7 +827,7 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		accountInfo.Owner = &s.pnsAccount.Owner
 		//data := hexutil.Bytes(s.pnsAccount.Data)
 		accountInfo.Data = string(s.pnsAccount.Data)
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		codeHash := hexutil.Bytes(s.assetAccount.CodeHash)
 		accountInfo.CodeHash = codeHash.String()
 		accountInfo.Value = s.assetAccount.Value.String()
@@ -858,11 +858,30 @@ func (s *stateObject) Nonce() uint64 {
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
 		return s.regularAccount.Nonce
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Nonce
 	default:
 		return 0
 	}
+}
+
+func (s *stateObject) AccountType() byte {
+	return s.accountType
+}
+func (s *stateObject) RegularAccount() RegularAccount {
+	return s.regularAccount
+}
+func (s *stateObject) PnsAccount() PnsAccount {
+	return s.pnsAccount
+}
+func (s *stateObject) ContractAccount() ContractAccount {
+	return s.assetAccount
+}
+func (s *stateObject) AuthorizeAccount() AuthorizeAccount {
+	return s.authorizeAccount
+}
+func (s *stateObject) LossAccount() LossAccount {
+	return s.lossAccount
 }
 
 // Never called, but must be present to allow stateObject to be used

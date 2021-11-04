@@ -566,39 +566,33 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	}
 	var err error
 	switch bizType {
-	case common.Register:
+	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
 		err = pool.validateTxOfRegister(tx, local)
-	case common.Cancellation:
+	case common.CANCELLATION:
 		err = pool.validateTxOfCancellation(tx, local)
-	case common.Transfer:
+	case common.TRANSFER:
 		err = pool.validateTxOfTransfer(tx, local)
-	case common.ExchangeAsset:
-		err = pool.validateTxOfExchangeAsset(tx, local)
-	case common.ContractCall:
+	case common.CONTRACT_DEPLOY:
 		err = pool.validateTxOfContractCall(tx, local)
-	case common.SendLossReport:
+	case common.SEND_LOSS_REPORT:
 		err = pool.validateTxOfSendLossReport(tx, local)
-	case common.RevealLossReport:
+	case common.REVEAL_LOSS_REPORT:
 		return pool.validateTxOfRevealLossReport(tx, local)
-	case common.TransferLostAccount:
+	case common.TRANSFER_LOST_ACCOUNT:
 		return pool.validateTxOfTransferLostAccount(tx, local)
-	case common.TransferLostAssetAccount:
-		return pool.validateTxOfTransferLostAssetAccount(tx, local)
-	case common.RemoveLossReport:
+	case common.REMOVE_LOSS_REPORT:
 		return pool.validateTxOfRemoveLossReport(tx, local)
-	case common.RejectLossReport:
+	case common.REJECT_LOSS_REPORT:
 		return pool.validateTxOfRejectLossReport(tx, local)
-	case common.Vote:
+	case common.VOTE:
 		err = pool.validateTxOfVote(tx, local)
-	case common.ApplyToBeDPoSNode:
+	case common.APPLY_TO_BE_DPOS_NODE:
 		err = pool.validateTxOfApplyToBeDPoSNode(tx, local)
-	case common.Redemption:
+	case common.REDEMPTION:
 		err = pool.validateTxOfRedemption(tx, local)
-	case common.ModifyLossType:
-		return pool.validateTxOfModifyLossType(tx, local)
-	case common.ModifyPnsOwner:
+	case common.MODIFY_PNS_OWNER:
 		return pool.validateTxOfModifyPnsOwner(tx, local)
-	case common.ModifyPnsContent:
+	case common.MODIFY_PNS_CONTENT:
 		return pool.validateTxOfModifyPnsContent(tx, local)
 	default:
 		err = ErrBizTypeNotSupported

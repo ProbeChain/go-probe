@@ -793,23 +793,7 @@ func (m callMsg) Gas() uint64                  { return m.CallMsg.Gas }
 func (m callMsg) Value() *big.Int              { return m.CallMsg.Value }
 func (m callMsg) Data() []byte                 { return m.CallMsg.Data }
 func (m callMsg) AccessList() types.AccessList { return m.CallMsg.AccessList }
-
-func (m callMsg) New() *common.Address     { return m.CallMsg.New }
-func (m callMsg) BizType() uint8           { return m.CallMsg.BizType }
-func (m callMsg) AccType() *hexutil.Uint8  { return m.CallMsg.AccType }
-func (m callMsg) LossType() *hexutil.Uint8 { return m.CallMsg.LossType }
-func (m callMsg) PnsType() *hexutil.Uint8  { return m.CallMsg.PnsType }
-
-func (m callMsg) Owner() *common.Address     { return m.CallMsg.Owner }
-func (m callMsg) Vote() *common.Address      { return m.CallMsg.Vote }
-func (m callMsg) Loss() *common.Address      { return m.CallMsg.Loss }
-func (m callMsg) Asset() *common.Address     { return m.CallMsg.Asset }
-func (m callMsg) Old() *common.Address       { return m.CallMsg.Old }
-func (m callMsg) Initiator() *common.Address { return m.CallMsg.Initiator }
-func (m callMsg) Receiver() *common.Address  { return m.CallMsg.Receiver }
-func (m callMsg) Value2() *big.Int           { return m.CallMsg.Value2 }
-func (m callMsg) Height() *big.Int           { return m.CallMsg.Height }
-func (m callMsg) Mark() []byte               { return m.CallMsg.Mark }
+func (m callMsg) BizType() byte                { return m.CallMsg.BizType }
 
 // filterBackend implements filters.Backend to support filtering for logs without
 // taking bloom-bits acceleration structures into account.

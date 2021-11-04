@@ -18,7 +18,10 @@ package rlp
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/probeum/go-probeum/common"
 	"io"
+	"math/big"
 	"reflect"
 	"testing"
 	"testing/quick"
@@ -282,4 +285,24 @@ func TestAppendUint64Random(t *testing.T) {
 	if err := quick.Check(fn, &config); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestDecode(t *testing.T) {
+	type Example struct {
+		VoteAddress common.Address
+		a           *big.Int
+		b           string
+	}
+	args := Example{
+		VoteAddress: common.HexToAddress("0x0000000000000000000000000000000000000001"),
+		a:           new(big.Int).SetInt64(11),
+		b:           "abc",
+	}
+	bytes, err := EncodeToBytes(args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(len(bytes))
+	args2 := new(Example)
+	DecodeBytes(bytes, &args2)
 }

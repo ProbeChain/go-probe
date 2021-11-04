@@ -17,7 +17,6 @@
 package types
 
 import (
-	"github.com/probeum/go-probeum/common/hexutil"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -34,21 +33,8 @@ type LegacyTx struct {
 	Data     []byte   // contract invocation input data
 	V, R, S  *big.Int // signature values
 
-	From      *common.Address `rlp:"nil"`
-	Owner     *common.Address `rlp:"nil"`
-	Vote      *common.Address `rlp:"nil"`
-	Loss      *common.Address `rlp:"nil"`
-	Asset     *common.Address `rlp:"nil"`
-	Old       *common.Address `rlp:"nil"`
-	New       *common.Address `rlp:"nil"`
-	Initiator *common.Address `rlp:"nil"`
-	Receiver  *common.Address `rlp:"nil"`
-	Value2    *big.Int
-	Mark      []byte
-	Height    *big.Int
-	AccType   *hexutil.Uint8
-	LossType  *hexutil.Uint8
-	PnsType   *hexutil.Uint8
+	From *common.Address `rlp:"nil"`
+	Args []byte
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -90,16 +76,8 @@ func (tx *LegacyTx) copy() TxData {
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
-		AccType:  tx.AccType,
-		LossType: tx.LossType,
-		PnsType:  tx.PnsType,
 		BizType:  tx.BizType,
-		New:      tx.New,
-		Old:      tx.Old,
-		Loss:     tx.Loss,
-		Receiver: tx.Receiver,
-		Mark:     common.CopyBytes(tx.Mark),
-		Height:   tx.Height,
+		Args:     common.CopyBytes(tx.Args),
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -135,20 +113,7 @@ func (tx *LegacyTx) bizType() uint8         { return tx.BizType }
 
 func (tx *LegacyTx) from() *common.Address        { return tx.From }
 func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *LegacyTx) owner() *common.Address       { return tx.Owner }
-func (tx *LegacyTx) vote() *common.Address        { return tx.Vote }
-func (tx *LegacyTx) loss() *common.Address        { return tx.Loss }
-func (tx *LegacyTx) asset() *common.Address       { return tx.Asset }
-func (tx *LegacyTx) old() *common.Address         { return tx.Old }
-func (tx *LegacyTx) new() *common.Address         { return tx.New }
-func (tx *LegacyTx) initiator() *common.Address   { return tx.Initiator }
-func (tx *LegacyTx) receiver() *common.Address    { return tx.Receiver }
-func (tx *LegacyTx) value2() *big.Int             { return tx.Value2 }
-func (tx *LegacyTx) height() *big.Int             { return tx.Height }
-func (tx *LegacyTx) mark() []byte                 { return tx.Mark }
-func (tx *LegacyTx) accType() *hexutil.Uint8      { return tx.AccType }
-func (tx *LegacyTx) lossType() *hexutil.Uint8     { return tx.LossType }
-func (tx *LegacyTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
+func (tx *LegacyTx) args() []byte                 { return tx.Args }
 
 func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
