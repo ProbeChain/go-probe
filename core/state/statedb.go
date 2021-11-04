@@ -1165,7 +1165,6 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 	return s.accessList.Contains(addr, slot)
 }
 
-// GetRegular 获取普通账户
 func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1174,7 +1173,6 @@ func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 	return nil
 }
 
-// GetPns PNS账号
 func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1183,7 +1181,6 @@ func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	return nil
 }
 
-// GetContract 合约账户
 func (s *StateDB) GetContract(addr common.Address) ContractAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1192,7 +1189,6 @@ func (s *StateDB) GetContract(addr common.Address) ContractAccount {
 	return ContractAccount{}
 }
 
-// GetAuthorize 授权账户
 func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1201,7 +1197,6 @@ func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	return nil
 }
 
-// GetLoss 挂失账户
 func (s *StateDB) GetLoss(addr common.Address) *LossAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1543,7 +1538,7 @@ func (s *StateDB) GetStateDbTrie() *Trie {
 	return &s.trie
 }
 
-// UpdateDPosHash todo 待定
+// UpdateDPosHash todo
 func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
 	//s.trie.dPosHash = dPosHash
 }
