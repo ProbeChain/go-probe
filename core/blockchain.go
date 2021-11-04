@@ -501,20 +501,11 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	dposNo := number + 1 - (number+1)%epoch
 	//dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	dposAccountList := rawdb.ReadDPos(db, dposNo)
-	//if nil != data {
-	/*	var dposAccountList []common.DPoSAccount
-
-		//json.Unmarshal(data, &dposAccountList)
-		if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
-			log.Crit("Invalid dposList for block number in database", "err", err)
-		}*/
 
 	chainConfig.DposConfig = new(params.DposConfig)
 	chainConfig.DposConfig.DposList = dposAccountList
 	chainConfig.DposConfig.Epoch = epoch
 	log.Info("Initialised chain configuration AND DPOSNODES")
-	//bc.dposConfig.Epoch = epoch
-	//}
 
 	var nilBlock *types.Block
 	bc.currentBlock.Store(nilBlock)
@@ -1724,6 +1715,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	// should be written atomically. BlockBatch is used for containing all components.
 	blockBatch := bc.db.NewBatch()
 	rawdb.WriteTd(blockBatch, block.Hash(), block.NumberU64(), externTd)
+	bc.writeDposNodes(state)
 	rawdb.WriteBlock(blockBatch, block)
 	rawdb.WriteReceipts(blockBatch, block.Hash(), block.NumberU64(), receipts)
 	rawdb.WritePreimages(blockBatch, state.Preimages())
@@ -1736,7 +1728,6 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	if err != nil {
 		return NonStatTy, err
 	}
-	bc.writeDposNodes(state)
 
 	triedb := bc.stateCache.TrieDB()
 	//log.Info("Writing dPos nodes with block，root hash:%x")
@@ -1748,8 +1739,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	//triedb.CommitForNew(hashes, false, nil)
 	if bc.cacheConfig.TrieDirtyDisabled {
 		if err := triedb.Commit(root, false, nil); err != nil {
-			//if err := triedb.CommitForNew(hashes, false, nil); err != nil {
-			//	return NonStatTy, err
+			return NonStatTy, err
 		}
 	} else {
 		// Full but not archive node, do proper garbage collection
@@ -2694,12 +2684,14 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		factor := number + confirmBlockNum + epoch - 1
 		dPosNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dPosNo, presetDPosAccounts)
+		block.Header().DPoSRoot = state.BuildHashForDPos(presetDPosAccounts)
 		for _, presetDPos := range presetDPosAccounts {
 			log.Info(fmt.Sprintf("WriteDPos,dPosNo:%d,Owner:%s, Enode:%s\n", dPosNo, presetDPos.Owner, presetDPos.Enode.String()))
 		}
 	}
 	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
 	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
+	block.Header().DPoSCandidateRoot = state.BuildHashForDPosCandidate(dPosCandidateAccounts)
 	log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
 
 	/*	for _, presetDPos := range dPosCandidateAccounts {

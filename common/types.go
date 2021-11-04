@@ -18,13 +18,11 @@ package common
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"database/sql/driver"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
 	"github.com/probeum/go-probeum/common/hexutil"
 	"golang.org/x/crypto/sha3"
 	"math/big"
@@ -40,8 +38,6 @@ const (
 	HashLength = 32
 	// AddressLength is the expected length of the address
 	AddressLength = 20
-	// AddressChecksumLen is the checkSum length of the address
-	AddressChecksumLen = 4
 	//DposEnodeLength is the cheche length of dpos node
 	DposEnodeLength = 256
 	DposNodeLength  = 7
@@ -209,6 +205,7 @@ type Address [AddressLength]byte
 
 type DposEnode [DposEnodeLength]byte
 
+// DPoSAccount DPoS账户
 type DPoSAccount struct {
 	Enode DposEnode `json:"enode,omitempty"`
 	Owner Address   `json:"owner,omitempty"`
@@ -216,14 +213,22 @@ type DPoSAccount struct {
 
 // DPoSCandidateAccount DPoS候选账户
 type DPoSCandidateAccount struct {
-	Enode       DposEnode
-	Owner       Address
-	VoteAccount Address
-	VoteValue   *big.Int
+	Enode DposEnode
+	Owner Address
+	Vote  Address
+	//Weight    *big.Int
+	VoteValue *big.Int
 }
 
 // BytesToAddress returns Address with value b.
 // If b is larger than len(h), b will be cropped from the left.
+/*func BytesToAddress(b []byte) Address {
+	var a Address
+	//调用CheckSum方法返回前四个字节的checksum
+	checkSumBytes := CheckSum(b)
+	a.SetBytes(append(b, checkSumBytes...))
+	return a
+}*/
 
 func BytesToAddress(b []byte) Address {
 	var a Address
@@ -235,14 +240,6 @@ func BytesToDposEnode(b []byte) DposEnode {
 	var n DposEnode
 	n.SetBytes(b)
 	return n
-}
-
-func CheckSum(payload []byte) []byte {
-	hash1 := sha256.Sum256(payload)
-
-	hash2 := sha256.Sum256(hash1[:])
-
-	return hash2[:AddressChecksumLen]
 }
 
 // BigToAddress returns Address with byte values of b.
@@ -478,18 +475,6 @@ func (ma *MixedcaseAddress) Original() string {
 
 // ValidateAddress return the accountType byte value for the input address
 func ValidCheckAddress(v string) (c byte, err error) {
-	b, err := hexutil.Decode(v)
-	if len(b) != AddressLength {
-		return 0, errors.New("unsupported account type")
-	}
-	sum := b[len(b)-AddressChecksumLen:]
-	checkSumBytes := CheckSum([]byte(hex.EncodeToString(b[0 : len(b)-AddressChecksumLen])))
-	flag := cmp.Equal(sum, checkSumBytes)
-	if flag {
-		byte := b[0]
-		fmt.Println("validateAddress byte: ", byte)
-		return byte, nil
-	}
 	return 0, errors.New("unsupported account type")
 }
 
@@ -498,15 +483,6 @@ func ValidAddress(addr Address) (c byte, err error) {
 	if (addr == Address{}) {
 		byte := b[0]
 		return byte, nil
-	}
-	if len(b) == AddressLength {
-		sum := b[len(b)-AddressChecksumLen:]
-		checkSumBytes := CheckSum([]byte(hex.EncodeToString(b[0 : len(b)-AddressChecksumLen])))
-		flag := cmp.Equal(sum, checkSumBytes)
-		if flag {
-			byte := b[0]
-			return byte, nil
-		}
 	}
 	return 128, errors.New("unsupported account type")
 }
@@ -544,4 +520,11 @@ func InetAtoN(ip string) *big.Int {
 	ret := big.NewInt(0)
 	ret.SetBytes(net.ParseIP(ip).To4())
 	return ret
+}
+
+func ReBuildAddress(addr []byte) []byte {
+	if len(addr) == AddressLength {
+		return addr[1:]
+	}
+	return addr
 }
