@@ -102,48 +102,48 @@ type stateObject struct {
 }
 
 type RegularAccount struct {
-	VoteAccount common.Address
-	VoteValue   *big.Int
-	LossType    uint8
-	Nonce       uint64
-	Value       *big.Int
-	AccType     byte
+	VoteAccount common.Address //Voting account address
+	VoteValue   *big.Int       //Voting amount
+	LossType    uint8          //Account loss reporting type
+	Nonce       uint64         //Transaction serial number
+	Value       *big.Int       //Balance
+	AccType     byte           //Account type
 }
 
 type PnsAccount struct {
-	Type    byte
-	Owner   common.Address
-	Data    []byte
-	AccType byte
+	Type    byte           //PNS type
+	Owner   common.Address //Attribution account
+	Data    []byte         //PNS information
+	AccType byte           //Account type
 }
 
 type ContractAccount struct {
-	CodeHash    []byte
-	StorageRoot common.Hash
-	Value       *big.Int
-	VoteAccount common.Address
-	VoteValue   *big.Int
-	Nonce       uint64
-	AccType     byte
+	CodeHash    []byte         //Contract code
+	StorageRoot common.Hash    //State tree hash
+	Value       *big.Int       //Balance
+	VoteAccount common.Address //Voting account address
+	VoteValue   *big.Int       //Voting amount
+	Nonce       uint64         //Transaction serial number
+	AccType     byte           //Account type
 }
 
 type AuthorizeAccount struct {
-	Owner       common.Address
-	PledgeValue *big.Int
-	VoteValue   *big.Int
-	Info        []byte
-	ValidPeriod *big.Int
-	AccType     byte
+	Owner       common.Address //Attribution account
+	PledgeValue *big.Int       //Pledge amount
+	VoteValue   *big.Int       //Cumulative votes
+	Info        []byte         //remarks
+	ValidPeriod *big.Int       //Effective height of voting deadline
+	AccType     byte           //Account type
 }
 
 type LossAccount struct {
-	State       byte
-	LossAccount common.Address
-	NewAccount  common.Address
-	Height      *big.Int
-	InfoDigest  common.Hash
-	LastTenBits uint16
-	AccType     byte
+	State       byte           //retrieve state
+	LossAccount common.Address //lost account address
+	NewAccount  common.Address //asset transfer account address
+	Height      *big.Int       //retrieve effective block height
+	InfoDigest  common.Hash    //summary of loss reporting information
+	LastTenBits uint16         //Last ten bits
+	AccType     byte           //Account type
 }
 
 type Wrapper struct {
