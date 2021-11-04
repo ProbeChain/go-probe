@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	crand "crypto/rand"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probeum/go-probeum/crypto"
 	"hash"
 	"math/big"
 	"reflect"
@@ -278,7 +278,7 @@ func (h *testHasher) Hash() common.Hash {
 
 func makeBenchBlock() *Block {
 	var (
-		key, _   = probe.GenerateKey()
+		key, _   = crypto.GenerateKey()
 		txs      = make([]*Transaction, 70)
 		receipts = make([]*Receipt, len(txs))
 		signer   = LatestSigner(params.TestChainConfig)

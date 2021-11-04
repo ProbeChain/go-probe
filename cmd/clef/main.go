@@ -42,8 +42,8 @@ import (
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/internal/probeapi"
 	"github.com/probeum/go-probeum/internal/flags"
+	"github.com/probeum/go-probeum/internal/probeapi"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/node"
 	"github.com/probeum/go-probeum/params"
@@ -973,7 +973,7 @@ type encryptedSeedStorage struct {
 // encryptSeed uses a similar scheme as the keystore uses, but with a different wrapping,
 // to encrypt the master seed
 func encryptSeed(seed []byte, auth []byte, scryptN, scryptP int) ([]byte, error) {
-	cryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP, common.ACC_TYPE_OF_GENERAL)
+	cryptoStruct, err := keystore.EncryptDataV3(seed, auth, scryptN, scryptP)
 	if err != nil {
 		return nil, err
 	}
