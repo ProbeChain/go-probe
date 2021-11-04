@@ -226,7 +226,7 @@ func LoadECDSA(file string) (*ecdsa.PrivateKey, error) {
 	defer fd.Close()
 
 	r := bufio.NewReader(fd)
-	buf := make([]byte, SignatureLength)
+	buf := make([]byte, 64)
 	n, err := readASCII(buf, r)
 	if err != nil {
 		return nil, err
