@@ -501,6 +501,8 @@ func (w *worker) printBlock(block *types.Block) {
 
 // newWorkLoop is a standalone goroutine to submit new mining work upon received events.
 func (w *worker) newWorkLoop(recommit time.Duration) {
+	time.Sleep(2 * time.Second)
+
 	var (
 		interrupt               *int32
 		minRecommit             = recommit // minimal resubmit interval specified by user.
