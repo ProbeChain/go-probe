@@ -17,12 +17,12 @@
 package enode
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
-
 	"math/bits"
 	"net"
 	"strings"
@@ -61,8 +61,16 @@ func MustParse(rawurl string) *Node {
 	return n
 }
 
+func compressStr(str string) string {
+	//dposEnodeTemp := common.BytesToDposEnode([]byte(str))
+	dposEnodeTemp := []byte(str)
+	dposEnode := bytes.Trim(dposEnodeTemp[:], "\x00")
+	return string(dposEnode[:])
+}
+
 // Parse decodes and verifies a base64-encoded node record.
 func Parse(validSchemes enr.IdentityScheme, input string) (*Node, error) {
+	input = compressStr(input)
 	if strings.HasPrefix(input, "enode://") {
 		return ParseV4(input)
 	}
