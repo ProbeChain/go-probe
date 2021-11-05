@@ -76,7 +76,7 @@ type Message interface {
 	AccessList() types.AccessList
 
 	BizType() byte
-	//Args() []byte
+	ExtArgs() []byte
 }
 
 // ExecutionResult includes all output after executing given evm
@@ -281,7 +281,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	sender := vm.AccountRef(msg.From())
 	homestead := st.evm.ChainConfig().IsHomestead(st.evm.Context.BlockNumber)
 	istanbul := st.evm.ChainConfig().IsIstanbul(st.evm.Context.BlockNumber)
-	contractCreation := msg.To() == nil && msg.BizType() == common.CONTRACT_DEPLOY
+	contractCreation := msg.To() == nil
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
 	gas, err := IntrinsicGas(st.data, st.msg.AccessList(), contractCreation, homestead, istanbul)
 	if err != nil {

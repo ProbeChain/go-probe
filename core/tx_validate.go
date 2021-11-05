@@ -15,34 +15,23 @@ func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) erro
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	var newAddress common.Address
-	switch tx.BizType() {
-	case common.REGISTER_PNS:
-		args := new(common.RegisterPnsArgs)
-		err := rlp.DecodeBytes(tx.Args(), &args)
+	newAccount := new(common.Address)
+	err := rlp.DecodeBytes(tx.ExtArgs(), &newAccount)
+	if err != nil {
+		return err
+	}
+
+	if tx.BizType() == common.REGISTER_AUTHORIZE {
+		validPeriod := new(big.Int)
+		err := rlp.DecodeBytes(tx.Data(), &validPeriod)
 		if err != nil {
 			return err
 		}
-		newAddress = args.PnsAddress
-	case common.REGISTER_AUTHORIZE:
-		args := new(common.RegisterAuthorizeArgs)
-		err := rlp.DecodeBytes(tx.Args(), &args)
-		if err != nil {
-			return err
-		}
-		if new(big.Int).SetUint64(args.ValidPeriod).Cmp(pool.chain.CurrentBlock().Number()) < 1 {
+		if validPeriod.Cmp(pool.chain.CurrentBlock().Number()) < 1 {
 			return errors.New(`valid period block number must be specified and greater than current block number`)
 		}
-		newAddress = args.VoteAddress
-	case common.REGISTER_LOSE:
-		args := new(common.RegisterLoseArgs)
-		err := rlp.DecodeBytes(tx.Args(), &args)
-		if err != nil {
-			return err
-		}
-		newAddress = args.LoseAddress
 	}
-	if pool.currentState.Exist(newAddress) {
+	if pool.currentState.Exist(*newAccount) {
 		return ErrAccountAlreadyExists
 	}
 	return pool.validateGas(tx, local)
@@ -53,7 +42,7 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 		return err
 	}
 	args := new(common.CancellationArgs)
-	err := rlp.DecodeBytes(tx.Args(), &args)
+	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
 	if err != nil {
 		return err
 	}
@@ -298,7 +287,7 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 		return err
 	}
 	args := new(common.ApplyDPosArgs)
-	err := rlp.DecodeBytes(tx.Args(), &args)
+	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
 	if err != nil {
 		return err
 	}
@@ -383,7 +372,7 @@ func (pool *TxPool) validateTxOfModifyPnsOwner(tx *types.Transaction, local bool
 		return err
 	}
 	args := new(common.PnsOwnerArgs)
-	err := rlp.DecodeBytes(tx.Args(), &args)
+	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
 	if err != nil {
 		return err
 	}
@@ -420,7 +409,7 @@ func (pool *TxPool) validateTxOfModifyPnsContent(tx *types.Transaction, local bo
 		return err
 	}
 	args := new(common.PnsContentArgs)
-	err := rlp.DecodeBytes(tx.Args(), &args)
+	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
 	if err != nil {
 		return err
 	}

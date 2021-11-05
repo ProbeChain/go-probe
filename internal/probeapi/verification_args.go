@@ -3,7 +3,6 @@ package probeapi
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/hexutil"
@@ -37,15 +36,11 @@ func (args *TransactionArgs) setDefaultsOfRegisterPns(ctx context.Context, b Bac
 	if err != nil {
 		return err
 	}
-	registerPnsArgs := common.RegisterPnsArgs{
-		PnsAddress: pnsAddress,
-		PnsType:    uint8(0),
-	}
-	argsBytes, err := rlp.EncodeToBytes(registerPnsArgs)
-	if err != nil {
-		return err
-	}
-	args.Args = argsBytes
+	/*	argsBytes, err := rlp.EncodeToBytes(pnsAddress)
+		if err != nil {
+			return err
+		}*/
+	args.ExtArgs = pnsAddress.Bytes()
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -62,7 +57,7 @@ func (args *TransactionArgs) setDefaultsOfRegisterAuthorize(ctx context.Context,
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	var validPeriod hexutil.Big
+	validPeriod := new(big.Int)
 	err := rlp.DecodeBytes(*args.Data, &validPeriod)
 	if err != nil {
 		return err
@@ -70,7 +65,7 @@ func (args *TransactionArgs) setDefaultsOfRegisterAuthorize(ctx context.Context,
 	if args.Value == nil || args.Value.ToInt().Sign() < 1 {
 		return errors.New(`pledge amount must be specified and greater than 0`)
 	}
-	if validPeriod.ToInt().Cmp(currentBlockNumber) < 1 {
+	if validPeriod.Cmp(currentBlockNumber) < 1 {
 		return errors.New(`valid period block number must be specified and greater than current block number`)
 	}
 	var newAccount common.Address
@@ -78,15 +73,7 @@ func (args *TransactionArgs) setDefaultsOfRegisterAuthorize(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	registerAuthorizeArgs := common.RegisterAuthorizeArgs{
-		VoteAddress: newAccount,
-		ValidPeriod: validPeriod.ToInt().Uint64(),
-	}
-	argsBytes, err := rlp.EncodeToBytes(registerAuthorizeArgs)
-	if err != nil {
-		return err
-	}
-	args.Args = argsBytes
+	args.ExtArgs = newAccount.Bytes()
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -105,14 +92,7 @@ func (args *TransactionArgs) setDefaultsOfRegisterLose(ctx context.Context, b Ba
 	if err != nil {
 		return err
 	}
-	registerAuthorizeArgs := common.RegisterLoseArgs{
-		LoseAddress: newAccount,
-	}
-	argsBytes, err := rlp.EncodeToBytes(registerAuthorizeArgs)
-	if err != nil {
-		return err
-	}
-	args.Args = argsBytes
+	args.ExtArgs = newAccount.Bytes()
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -128,7 +108,7 @@ func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Ba
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	var cancellationArgs common.CancellationArgs
+	cancellationArgs := new(common.CancellationArgs)
 	err := rlp.DecodeBytes(*args.Data, &cancellationArgs)
 	if err != nil {
 		return err
@@ -139,11 +119,6 @@ func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Ba
 	if err := common.ValidateNil(cancellationArgs.BeneficiaryAddress, "beneficiary address"); err != nil {
 		return err
 	}
-	argsBytes, err := rlp.EncodeToBytes(cancellationArgs)
-	if err != nil {
-		return err
-	}
-	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -242,27 +217,10 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 	if err := common.ValidateNil(applyDPosArgs.VoteAddress, "vote address"); err != nil {
 		return err
 	}
-	var dPosMap map[string]interface{}
-	voteData, err := hexutil.Decode(applyDPosArgs.NodeInfo)
-	if err != nil {
+	if err := common.ValidateNil(applyDPosArgs.NodeInfo, "node info"); err != nil {
 		return err
 	}
-	err = json.Unmarshal(voteData, &dPosMap)
-	if err != nil {
-		return err
-	}
-	if nil == dPosMap["enode"] || nil == dPosMap["ip"] || nil == dPosMap["port"] {
-		return errors.New("the dpos data format is incorrect")
-	}
-	remoteEnode := dPosMap["enode"].(string)
-	if len(remoteEnode) != 130 {
-		return errors.New("the length of voteAccount's enode length error")
-	}
-	argsBytes, err := rlp.EncodeToBytes(applyDPosArgs)
-	if err != nil {
-		return err
-	}
-	args.Args = argsBytes
+
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -413,7 +371,7 @@ func (args *TransactionArgs) setDefaultsOfRedemption(ctx context.Context, b Back
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	var voteAddr common.Address
+	voteAddr := new(common.Address)
 	err := rlp.DecodeBytes(*args.Data, &voteAddr)
 	if err != nil {
 		return err
@@ -450,11 +408,6 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 	if err := common.ValidateNil(pnsOwnerArgs.OwnerAddress, "new owner address"); err != nil {
 		return err
 	}
-	argsBytes, err := rlp.EncodeToBytes(pnsOwnerArgs)
-	if err != nil {
-		return err
-	}
-	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, b Backend) error {
@@ -485,11 +438,6 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 	if err := common.ValidateNil(pnsContentArgs.PnsType, "pns type"); err != nil {
 		return err
 	}
-	argsBytes, err := rlp.EncodeToBytes(pnsContentArgs)
-	if err != nil {
-		return err
-	}
-	args.Args = argsBytes
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -507,7 +455,7 @@ func (args *TransactionArgs) DoEstimateGas(ctx context.Context, b Backend) error
 			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
 			Data:                 args.Data,
 			AccessList:           args.AccessList,
-			Args:                 args.Args,
+			ExtArgs:              args.ExtArgs,
 		}
 		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
 		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())

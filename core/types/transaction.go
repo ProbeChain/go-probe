@@ -89,7 +89,7 @@ type TxData interface {
 
 	from() *common.Address
 	setFrom(from *common.Address)
-	args() []byte
+	extArgs() []byte
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -437,8 +437,8 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 }
 
 // GasTipCapIntCmp compares the gasTipCap of the transaction against the given gasTipCap.
-func (tx *Transaction) Args() []byte {
-	return tx.inner.args()
+func (tx *Transaction) ExtArgs() []byte {
+	return tx.inner.extArgs()
 }
 
 // Transactions implements DerivableList for transactions.
@@ -605,7 +605,7 @@ func (t *TransactionsByPriceAndNonce) Pop() {
 func NewMessage(from common.Address, to *common.Address, bizType byte,
 	nonce uint64, amount *big.Int, gasLimit uint64,
 	gasPrice, gasFeeCap, gasTipCap *big.Int,
-	data []byte, accessList AccessList, checkNonce bool) Message {
+	data []byte, accessList AccessList, checkNonce bool, extArgs []byte) Message {
 	return Message{
 		from:       from,
 		to:         to,
@@ -619,6 +619,7 @@ func NewMessage(from common.Address, to *common.Address, bizType byte,
 		data:       data,
 		accessList: accessList,
 		checkNonce: checkNonce,
+		extArgs:    extArgs,
 	}
 }
 
@@ -636,6 +637,7 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		accessList: tx.AccessList(),
 		checkNonce: true,
 		bizType:    tx.BizType(),
+		extArgs:    tx.ExtArgs(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {

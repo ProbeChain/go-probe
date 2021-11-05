@@ -19,7 +19,6 @@ package vm
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/log"
 	"math/big"
 	"sync/atomic"
@@ -43,8 +42,8 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// CancellationFunc is the signature of a cancellation function
 	CancellationFunc func(StateDB, common.Address, common.Address)
-	//ContractTransferFunc is the signature of a transfer function
-	ContractTransferFunc func(StateDB, common.Address, common.Address, *big.Int)
+	//ContractDeployFunc is the signature of a transfer function
+	ContractDeployFunc func(StateDB, common.Address)
 	//CallDBFunc call database
 	CallDBFunc func(StateDB, *big.Int, TxContext)
 )
@@ -91,8 +90,8 @@ type BlockContext struct {
 	CanTransfer CanTransferFunc
 	// GetHash returns the hash corresponding to n
 	GetHash GetHashFunc
-	//ContractTransfer transfers probeer from one account to the other
-	ContractTransfer ContractTransferFunc
+	//ContractDeploy transfers probeer from one account to the other
+	ContractDeploy ContractDeployFunc
 	//CallDB call database for update operation
 	CallDB CallDBFunc
 	// Block information
@@ -110,26 +109,12 @@ type TxContext struct {
 	// Message information
 	Origin   common.Address // Provides information for ORIGIN
 	GasPrice *big.Int       // Provides information for GASPRICE
-
-	From      common.Address
-	To        *common.Address
-	Owner     *common.Address
-	Loss      *common.Address
-	Asset     *common.Address
-	Old       *common.Address
-	New       *common.Address
-	Initiator *common.Address
-	Receiver  *common.Address
-
-	BizType  uint8
+	From     common.Address
+	To       *common.Address
+	BizType  byte
 	Value    *big.Int
-	Value2   *big.Int
-	Height   *big.Int
 	Data     []byte
-	Mark     []byte
-	AccType  *hexutil.Uint8
-	LossType *hexutil.Uint8
-	PnsType  *hexutil.Uint8
+	ExtArgs  []byte
 }
 
 // EVM is the Probeum Virtual Machine base object and provides
@@ -275,7 +260,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	//if isPrecompile {
 	//	ret, gas, err = RunPrecompiledContract(p, input, gas)
 	//} else {
-	if evm.TxContext.BizType == common.CONTRACT_DEPLOY {
+	if evm.TxContext.BizType == common.TRANSFER {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.
 		code := evm.StateDB.GetCode(to)
@@ -289,7 +274,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
 			ret, err = run(evm, contract, input, false)
 			if err != nil {
-				fmt.Printf("call contract err:%s\n", err)
+				log.Error(fmt.Sprintf("call contract err:%s\n", err))
 			}
 			gas = contract.Gas
 		}
@@ -345,7 +330,7 @@ func (evm *EVM) CallCode(caller ContractRef, addr common.Address, input []byte, 
 		contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), evm.StateDB.GetCode(addrCopy))
 		ret, err = run(evm, contract, input, false)
 		if err != nil {
-			fmt.Printf("CallCode %s\n", err)
+			log.Error(fmt.Sprintf("call code err:%s\n", err))
 		}
 		gas = contract.Gas
 	}
@@ -491,7 +476,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 		evm.StateDB.SetNonce(address, 1)
 	}
 
-	evm.Context.ContractTransfer(evm.StateDB, caller.Address(), address, value)
+	evm.Context.ContractDeploy(evm.StateDB, caller.Address())
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
@@ -526,7 +511,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 		if contract.UseGas(createDataGas) {
 			evm.StateDB.SetCode(address, ret)
 		} else {
-			fmt.Printf("create gas: %d, dataGas:%d\n", contract.Gas, createDataGas)
+			log.Error(fmt.Sprintf("contract deploy,gas: %d, dataGas:%d\n", contract.Gas, createDataGas))
 			err = ErrCodeStoreOutOfGas
 		}
 	}

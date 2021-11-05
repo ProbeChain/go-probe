@@ -18,8 +18,6 @@
 package state
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/core/globalconfig"
@@ -1217,7 +1215,9 @@ func (s *StateDB) ModifyLossType(context vm.TxContext) {
 			account: &stateObject.address,
 			prev:    stateObject.regularAccount.LossType,
 		})
-		stateObject.regularAccount.LossType = uint8(*context.LossType)
+		var lossType uint8
+		rlp.DecodeBytes(context.Data, &lossType)
+		stateObject.regularAccount.LossType = lossType
 	}
 }
 func (s *StateDB) Vote(context vm.TxContext) {
@@ -1251,33 +1251,36 @@ func (s *StateDB) Vote(context vm.TxContext) {
 func (s *StateDB) Register(context vm.TxContext) {
 	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
-	obj, _ := s.createObject(*context.New)
-	switch byte(*context.AccType) {
-	case common.ACC_TYPE_OF_PNS:
+	obj, _ := s.createObject(common.BytesToAddress(context.ExtArgs))
+	switch context.BizType {
+	case common.REGISTER_PNS:
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
-		obj.pnsAccount.Type = byte(*context.PnsType)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		createAccountFee := common.AmountOfPledgeForCreateAccount(uint8(*context.AccType))
-		pledgeValue := new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
+		obj.pnsAccount.Type = byte(0)
+	case common.REGISTER_AUTHORIZE:
+		pledgeValue := new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING)
 		obj.authorizeAccount.PledgeValue = pledgeValue
 		obj.authorizeAccount.Owner = context.From
-		obj.authorizeAccount.ValidPeriod = context.Height
+		validPeriod := new(big.Int)
+		rlp.DecodeBytes(context.Data, &validPeriod)
+		obj.authorizeAccount.ValidPeriod = validPeriod
 		obj.authorizeAccount.VoteValue = pledgeValue
-	case common.ACC_TYPE_OF_LOSE:
+	case common.REGISTER_LOSE:
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
-		s.setMarkLossAccount(*context.New)
+		//s.setMarkLossAccount(*context.New)
 	}
 }
 
 func (s *StateDB) Cancellation(context vm.TxContext) {
 	//fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
-	s.AddBalance(*context.New, context.Value)
-	s.Suicide(*context.To)
+	cancellationArgs := new(common.CancellationArgs)
+	rlp.DecodeBytes(context.Data, &cancellationArgs)
+	s.AddBalance(cancellationArgs.BeneficiaryAddress, context.Value)
+	s.Suicide(cancellationArgs.CancelAddress)
 }
 
 func (s *StateDB) Transfer(context vm.TxContext) {
-	//fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
+	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	s.AddBalance(*context.To, context.Value)
 }
@@ -1289,7 +1292,7 @@ func (s *StateDB) ExchangeAsset(context vm.TxContext) {
 func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 	//fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
 	s.SubBalance(context.From, context.Value)
-	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Mark))
+	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Data))
 	if len(addrs) > 0 {
 		for _, addr := range addrs {
 			stateObject := s.getStateObject(addr)
@@ -1309,22 +1312,22 @@ func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 }
 
 func (s *StateDB) RevealLossReport(blockNumber *big.Int, context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
-	s.AddBalance(*context.Old, context.Value)
-	stateObject := s.getStateObject(*context.To)
-	if stateObject != nil && stateObject.lossAccount.State == common.LOSS_STATE_OF_APPLY {
-		stateObject.db.journal.append(revealLossReportChange{
-			account:     &stateObject.address,
-			lossAccount: stateObject.lossAccount.LossAccount,
-			newAccount:  stateObject.lossAccount.NewAccount,
-			height:      stateObject.lossAccount.Height,
-			state:       stateObject.lossAccount.State,
-		})
-		stateObject.lossAccount.LossAccount = *context.Old
-		stateObject.lossAccount.NewAccount = *context.New
-		stateObject.lossAccount.State = common.LOSS_STATE_OF_NOTICE
-		stateObject.lossAccount.Height = blockNumber
-	}
+	/*	s.SubBalance(context.From, context.Value)
+		s.AddBalance(*context.Old, context.Value)
+		stateObject := s.getStateObject(*context.To)
+		if stateObject != nil && stateObject.lossAccount.State == common.LOSS_STATE_OF_APPLY {
+			stateObject.db.journal.append(revealLossReportChange{
+				account:     &stateObject.address,
+				lossAccount: stateObject.lossAccount.LossAccount,
+				newAccount:  stateObject.lossAccount.NewAccount,
+				height:      stateObject.lossAccount.Height,
+				state:       stateObject.lossAccount.State,
+			})
+			stateObject.lossAccount.LossAccount = *context.Old
+			stateObject.lossAccount.NewAccount = *context.New
+			stateObject.lossAccount.State = common.LOSS_STATE_OF_NOTICE
+			stateObject.lossAccount.Height = blockNumber
+		}*/
 }
 
 func (s *StateDB) TransferLostAccount(context vm.TxContext) {
@@ -1359,28 +1362,32 @@ func (s *StateDB) RejectLossReport(context vm.TxContext) {
 }
 
 func (s *StateDB) ModifyPnsOwner(context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
-	stateObject := s.getStateObject(*context.To)
-	if stateObject != nil {
-		stateObject.db.journal.append(modifyPnsOwnerChange{
-			account: &stateObject.address,
-			owner:   stateObject.pnsAccount.Owner,
+	pnsOwnerArgs := new(common.PnsOwnerArgs)
+	rlp.DecodeBytes(context.Data, &pnsOwnerArgs)
+	//s.SubBalance(context.From, context.Value)
+	stateObj := s.getStateObject(pnsOwnerArgs.PnsAddress)
+	if stateObj != nil {
+		stateObj.db.journal.append(modifyPnsOwnerChange{
+			account: &stateObj.address,
+			owner:   stateObj.pnsAccount.Owner,
 		})
-		stateObject.pnsAccount.Owner = *context.New
+		stateObj.pnsAccount.Owner = pnsOwnerArgs.OwnerAddress
 	}
 }
 
 func (s *StateDB) ModifyPnsContent(context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
-	stateObject := s.getStateObject(*context.To)
-	if stateObject != nil {
-		stateObject.db.journal.append(modifyPnsContentChange{
-			account: &stateObject.address,
-			pnsType: stateObject.pnsAccount.Type,
-			data:    stateObject.pnsAccount.Data,
+	pnsContentArgs := new(common.PnsContentArgs)
+	rlp.DecodeBytes(context.Data, &pnsContentArgs)
+	//s.SubBalance(context.From, context.Value)
+	stateObj := s.getStateObject(pnsContentArgs.PnsAddress)
+	if stateObj != nil {
+		stateObj.db.journal.append(modifyPnsContentChange{
+			account: &stateObj.address,
+			pnsType: stateObj.pnsAccount.Type,
+			data:    stateObj.pnsAccount.Data,
 		})
-		stateObject.pnsAccount.Type = byte(*context.PnsType)
-		stateObject.pnsAccount.Data = context.Data
+		stateObj.pnsAccount.Type = pnsContentArgs.PnsType
+		stateObj.pnsAccount.Data = pnsContentArgs.PnsData
 	}
 }
 
@@ -1421,59 +1428,44 @@ func (s *StateDB) RedemptionForAuthorize(addr common.Address, voteValue *big.Int
 }
 
 func (s *StateDB) Redemption(context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
+	voteAddr := new(common.Address)
+	rlp.DecodeBytes(context.Data, &voteAddr)
+	//s.SubBalance(context.From, context.Value)
 	s1 := s.getStateObject(context.From)
 	if s1 != nil {
 		regularAccount := s1.regularAccount
-		s2 := s.getStateObject(*context.To)
+		s2 := s.getStateObject(*voteAddr)
 		if s2 != nil {
 			authorizeAccount := s2.authorizeAccount
 			if context.From == authorizeAccount.Owner {
-				s.RedemptionForAuthorize(*context.To, nil)
+				s.RedemptionForAuthorize(*voteAddr, nil)
 			}
-			if *context.To == regularAccount.VoteAccount {
+			if *voteAddr == regularAccount.VoteAccount {
 				s.RedemptionForRegular(context.From)
-				s.RedemptionForAuthorize(*context.To, regularAccount.VoteValue)
+				s.RedemptionForAuthorize(*voteAddr, regularAccount.VoteValue)
 			}
 		}
 	}
 }
 
 func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
-	stateObj := s.getStateObject(*context.To)
+	applyDPosArgs := new(common.ApplyDPosArgs)
+	rlp.DecodeBytes(context.Data, &applyDPosArgs)
+	stateObj := s.getStateObject(applyDPosArgs.VoteAddress)
 	if nil == stateObj {
 		return
 	}
 	authorizeAccount := stateObj.authorizeAccount
-	var dPosMap map[string]interface{}
-	err := json.Unmarshal(context.Data[:], &dPosMap)
-	if err != nil {
-		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", context.To.Bytes(), err))
-		return
-	}
-	remoteEnode := dPosMap["enode"].(string)
-	remoteIp := dPosMap["ip"].(string)
-	remotePort := dPosMap["port"].(string)
-	var enode bytes.Buffer
-	enode.WriteString("enode://")
-	enode.WriteString(remoteEnode)
-	enode.WriteString("@")
-	enode.WriteString(remoteIp)
-	enode.WriteString(":")
-	enode.WriteString(remotePort)
-
 	stateObj.db.journal.append(dPosCandidateForAuthorizeChange{
 		account:   &stateObj.address,
 		info:      authorizeAccount.Info,
 		voteValue: *authorizeAccount.VoteValue,
 	})
 
-	authorizeAccount.Info = []byte(enode.String())
-
 	dPosCandidateAccount := common.DPoSCandidateAccount{
-		Enode:       common.BytesToDposEnode(authorizeAccount.Info),
+		Enode:       applyDPosArgs.NodeInfo,
 		Owner:       authorizeAccount.Owner,
-		VoteAccount: *context.To,
+		VoteAccount: applyDPosArgs.VoteAddress,
 		VoteValue:   authorizeAccount.VoteValue,
 	}
 	GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)

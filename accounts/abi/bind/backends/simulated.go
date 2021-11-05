@@ -794,6 +794,7 @@ func (m callMsg) Value() *big.Int              { return m.CallMsg.Value }
 func (m callMsg) Data() []byte                 { return m.CallMsg.Data }
 func (m callMsg) AccessList() types.AccessList { return m.CallMsg.AccessList }
 func (m callMsg) BizType() byte                { return m.CallMsg.BizType }
+func (m callMsg) ExtArgs() []byte              { return m.CallMsg.ExtArgs }
 
 // filterBackend implements filters.Backend to support filtering for logs without
 // taking bloom-bits acceleration structures into account.

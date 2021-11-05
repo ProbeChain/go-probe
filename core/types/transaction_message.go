@@ -21,7 +21,7 @@ type Message struct {
 	data       []byte
 	accessList AccessList
 	checkNonce bool
-	args       []byte
+	extArgs    []byte
 }
 
 func (m Message) From() common.Address   { return m.from }
@@ -36,4 +36,4 @@ func (m Message) Data() []byte           { return m.data }
 func (m Message) AccessList() AccessList { return m.accessList }
 func (m Message) CheckNonce() bool       { return m.checkNonce }
 func (m Message) BizType() byte          { return m.bizType }
-func (m Message) Args() []byte           { return m.args }
+func (m Message) ExtArgs() []byte        { return m.extArgs }

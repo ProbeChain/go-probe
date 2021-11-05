@@ -55,8 +55,8 @@ type AccessListTx struct {
 	AccessList AccessList // EIP-2930 access list
 	V, R, S    *big.Int   // signature values
 
-	From *common.Address `rlp:"nil"`
-	Args []byte
+	From    *common.Address `rlp:"nil"`
+	ExtArgs []byte
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -75,7 +75,7 @@ func (tx *AccessListTx) copy() TxData {
 		R:          new(big.Int),
 		S:          new(big.Int),
 		BizType:    tx.BizType,
-		Args:       common.CopyBytes(tx.Args),
+		ExtArgs:    common.CopyBytes(tx.ExtArgs),
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -116,7 +116,7 @@ func (tx *AccessListTx) bizType() uint8         { return tx.BizType }
 
 func (tx *AccessListTx) from() *common.Address        { return tx.From }
 func (tx *AccessListTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *AccessListTx) args() []byte                 { return tx.Args }
+func (tx *AccessListTx) extArgs() []byte              { return tx.ExtArgs }
 func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
