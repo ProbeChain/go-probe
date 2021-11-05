@@ -2253,7 +2253,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @return {Boolean}
      */
     var isStrictAddress = function (address) {
-      return /^0x[0-9a-f]{50}$/i.test(address);
+      return /^0x[0-9a-f]{40}$/i.test(address);
     };
 
     /**
@@ -2336,11 +2336,11 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
         return address;
       }
 
-      if (/^[0-9a-f]{50}$/.test(address)) {
+      if (/^[0-9a-f]{40}$/.test(address)) {
         return '0x' + address;
       }
 
-      return '0x' + padLeft(toHex(address).substr(2), 50);
+      return '0x' + padLeft(toHex(address).substr(2), 40);
     };
 
     /**

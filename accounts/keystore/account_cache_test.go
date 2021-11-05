@@ -17,7 +17,9 @@
 package keystore
 
 import (
+	"encoding/hex"
 	"fmt"
+	"github.com/probeum/go-probeum/crypto"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -403,4 +405,20 @@ func forceCopyFile(dst, src string) error {
 		return err
 	}
 	return ioutil.WriteFile(dst, data, 0644)
+}
+
+func TestKeystoreToPrivateKey(t *testing.T) {
+	keyjson, err := ioutil.ReadFile("E:\\probeData\\06\\01\\keystore\\0x1a36Bf08A0dCEc2d7DCeb447ED410A6E34790912.json")
+	if err != nil {
+		fmt.Println("read keyjson file failed：", err)
+	}
+	unlockedKey, err := DecryptKey(keyjson, "")
+	if err != nil {
+
+		fmt.Println("err ")
+
+	}
+	privKey := hex.EncodeToString(unlockedKey.PrivateKey.D.Bytes())
+	addr := crypto.PubkeyToAddress(unlockedKey.PrivateKey.PublicKey)
+	fmt.Println("privKey ", privKey, addr.String())
 }

@@ -309,15 +309,6 @@ func TestCheckValidteTest(*testing.T) {
 	fmt.Printf("flag[%T][%X]\n", c, c)
 }
 
-func TestCheckValidteAddressTest(*testing.T) {
-	a := common.HexToAddress("0x03b16d6687a30d93bef1a4d80952e8323f8758c1cd8c0c148a")
-	var c, err2 = common.ValidAddress(a)
-	if err2 != nil {
-		fmt.Printf("failed GenerateKey with %s.", err2)
-	}
-	fmt.Printf("flag[%T][%X]\n", c, c)
-}
-
 type ResolveUDPAddrTest struct {
 	network       string
 	litAddrOrName string
@@ -327,7 +318,7 @@ type ResolveUDPAddrTest struct {
 
 func TestPrintDposNode(*testing.T) {
 	//privateKey, _ := crypto.GenerateKey()
-	privateKey, _ := crypto.HexToECDSA("00bfed0787f3a2c033177bf18a89717a64b3a38eda85b20ce2c65b02b5ea75079a")
+	privateKey, _ := crypto.HexToECDSA("7308dacbb9ba9b3c97a14ef0faac7ccfb7851ccb003936a14d36d2ced0bf7087")
 	fmt.Println("private key have 0x   \n", hexutil.Encode(crypto.FromECDSA(privateKey)))
 	address := crypto.PubkeyToAddress(privateKey.PublicKey)
 	fmt.Println("address ", address.String())
@@ -388,11 +379,6 @@ func TestAccounTypeFoGenrateSign(*testing.T) {
 	contractAddr, _ := crypto.CreateAddressForAccountType(toAddress, nonce)
 	//contractAddr = common.HexToAddress("03f112c97935863463bc34871f506A9A8c3741a1CE0f8F60c9")
 	fmt.Println("contractAddr", contractAddr.String())
-	var c, err2 = common.ValidAddress(contractAddr)
-	if err2 != nil {
-		fmt.Printf("failed GenerateKey with %s.", err2)
-	}
-	fmt.Printf("flag[%T][%X]\n", c, c)
 }
 func TestOfflineSign(*testing.T) {
 	var testAddrHex = "0028c10835389d35319bcd8e5e21857b4832bbd77ba47af098"

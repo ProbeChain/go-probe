@@ -18,7 +18,7 @@ import (
 type gproberpc struct {
 	name     string
 	rpc      *rpc.Client
-	gprobe     *testgprobe
+	gprobe   *testgprobe
 	nodeInfo *p2p.NodeInfo
 }
 
@@ -27,9 +27,9 @@ func (g *gproberpc) killAndWait() {
 	g.gprobe.WaitExit()
 }
 
-func (g *gethrpc) callRPC(result interface{}, method string, args ...interface{}) {
+func (g *gproberpc) callRPC(result interface{}, method string, args ...interface{}) {
 	if err := g.rpc.Call(&result, method, args...); err != nil {
-		g.geth.Fatalf("callRPC %v: %v", method, err)
+		g.gprobe.Fatalf("callRPC %v: %v", method, err)
 	}
 }
 
@@ -134,7 +134,7 @@ func startGprobeWithIpc(t *testing.T, name string, args ...string) *gproberpc {
 	t.Logf("Starting %v with rpc: %v", name, args)
 
 	g := &gproberpc{
-		name: name,
+		name:   name,
 		gprobe: runGprobe(t, args...),
 	}
 	ipcpath := ipcEndpoint(ipcName, g.gprobe.Datadir)
