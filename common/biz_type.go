@@ -18,22 +18,22 @@ package common
 
 // BizType is probe business transaction type
 const (
-	TRANSFER              = byte(1)  //转账交易
-	CONTRACT_DEPLOY       = byte(2)  //合约部署
-	REGISTER_PNS          = byte(3)  //注册PNS账户
-	REGISTER_AUTHORIZE    = byte(4)  //注册授权账户
-	REGISTER_LOSE         = byte(5)  //注册挂失账户
-	CANCELLATION          = byte(6)  //注销账户
-	VOTE                  = byte(7)  //投票
-	APPLY_TO_BE_DPOS_NODE = byte(8)  //申请成为DPoS节点
-	REDEMPTION            = byte(9)  //赎回投票
-	SEND_LOSS_REPORT      = byte(10) //申请挂失
-	REVEAL_LOSS_REPORT    = byte(11) //挂失公告
-	TRANSFER_LOST_ACCOUNT = byte(12) //转移挂失账号的资产
-	REMOVE_LOSS_REPORT    = byte(13) //删除掉发起挂失不揭示内容挂失申请
-	REJECT_LOSS_REPORT    = byte(14) //拒绝挂失报告
-	MODIFY_PNS_OWNER      = byte(15) //修改PNS账号所有者
-	MODIFY_PNS_CONTENT    = byte(16) //修改PNS内容
+	TRANSFER              = byte(1)  //Transfer transaction
+	CONTRACT_DEPLOY       = byte(2)  //Contract deployment
+	REGISTER_PNS          = byte(3)  //Register PNS account
+	REGISTER_AUTHORIZE    = byte(4)  //Registered authorized account
+	REGISTER_LOSE         = byte(5)  //Registered loss reporting account
+	CANCELLATION          = byte(6)  //Cancellation of account
+	VOTE                  = byte(7)  //vote
+	APPLY_TO_BE_DPOS_NODE = byte(8)  //Apply to become a dpos node
+	REDEMPTION            = byte(9)  //Redemption vote
+	SEND_LOSS_REPORT      = byte(10) //Application for loss reporting
+	REVEAL_LOSS_REPORT    = byte(11) //Loss report announcement
+	TRANSFER_LOST_ACCOUNT = byte(12) //Transfer assets of loss reporting account
+	REMOVE_LOSS_REPORT    = byte(13) //Delete the loss report application initiated without revealing the contents
+	REJECT_LOSS_REPORT    = byte(14) //Refusal to report loss
+	MODIFY_PNS_OWNER      = byte(15) //Modify PNS account owner
+	MODIFY_PNS_CONTENT    = byte(16) //Modify PNS content
 )
 
 const (
@@ -56,12 +56,12 @@ const (
 // account type of Probe
 // 6 kinds
 const (
-	ACC_TYPE_OF_GENERAL   = byte(0)   //普通账户
-	ACC_TYPE_OF_PNS       = byte(1)   //PNS账户
-	ACC_TYPE_OF_CONTRACT  = byte(2)   //合约账户
-	ACC_TYPE_OF_AUTHORIZE = byte(3)   //授权账户
-	ACC_TYPE_OF_LOSE      = byte(4)   //挂失账户
-	ACC_TYPE_OF_UNKNOWN   = byte(100) //未知账户
+	ACC_TYPE_OF_GENERAL   = byte(1)   //General account
+	ACC_TYPE_OF_PNS       = byte(2)   //PNS account
+	ACC_TYPE_OF_CONTRACT  = byte(3)   //Contract account
+	ACC_TYPE_OF_AUTHORIZE = byte(4)   //Authorized account
+	ACC_TYPE_OF_LOSE      = byte(5)   //Loss reporting account
+	ACC_TYPE_OF_UNKNOWN   = byte(100) //Unknown account
 )
 
 const (
@@ -71,9 +71,9 @@ const (
 	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING      uint64 = 10000000000000000000 //10 PRO
 	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT uint64 = 1000000000000000000  //1 PRO
 
-	MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT uint64 = 10 //最小挂失金额是原账户余额的百分比
+	MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT uint64 = 10 //The minimum reported loss amount is the percentage of the original account balance
 	CYCLE_HEIGHT_OF_LOSS_TYPE                          uint64 = 1  //1 loss cycle height: (5760/day)*30day*3month=518400 blocks
-	THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT             uint64 = 1  //发起挂失不揭示内容，删除掉,高度阀值
+	THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT             uint64 = 1  //Initiate the loss report without revealing the content, delete it, and the height threshold
 )
 
 const (
