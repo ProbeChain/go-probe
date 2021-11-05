@@ -18,6 +18,7 @@
 package state
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/core/globalconfig"
@@ -472,15 +473,17 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 		s.journal.append(regularSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			voteAccount: obj.regularAccount.VoteAccount,
-			voteValue:   obj.regularAccount.VoteValue,
+			voteValue:   *obj.regularAccount.VoteValue,
 			lossType:    obj.regularAccount.LossType,
-			value:       obj.regularAccount.Value,
+			value:       *obj.regularAccount.Value,
 		})
 	case common.ACC_TYPE_OF_PNS:
 		s.journal.append(pnsSuicideChange{
 			account: &addr,
 			suicide: obj.suicided,
+			accType: obj.accountType,
 			pnsType: obj.pnsAccount.Type,
 			owner:   obj.pnsAccount.Owner,
 			data:    obj.pnsAccount.Data,
@@ -489,28 +492,31 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 		s.journal.append(assetSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			voteAccount: obj.assetAccount.VoteAccount,
-			voteValue:   obj.assetAccount.VoteValue,
-			value:       obj.assetAccount.Value,
+			voteValue:   *obj.assetAccount.VoteValue,
+			value:       *obj.assetAccount.Value,
 		})
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		s.journal.append(authorizeSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			owner:       obj.authorizeAccount.Owner,
-			pledgeValue: obj.authorizeAccount.PledgeValue,
-			voteValue:   obj.authorizeAccount.VoteValue,
+			pledgeValue: *obj.authorizeAccount.PledgeValue,
+			voteValue:   *obj.authorizeAccount.VoteValue,
 			info:        obj.authorizeAccount.Info,
-			validPeriod: obj.authorizeAccount.ValidPeriod,
+			validPeriod: *obj.authorizeAccount.ValidPeriod,
 		})
 	case common.ACC_TYPE_OF_LOSE:
 		s.journal.append(lossSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			state:       obj.lossAccount.State,
 			lossAccount: obj.lossAccount.LossAccount,
 			newAccount:  obj.lossAccount.NewAccount,
-			height:      obj.lossAccount.Height,
+			height:      *obj.lossAccount.Height,
 			infoDigest:  obj.lossAccount.InfoDigest,
 		})
 	default:
@@ -1232,7 +1238,7 @@ func (s *StateDB) Vote(context vm.TxContext) {
 		fromObj.db.journal.append(voteForRegularChange{
 			account:     &fromObj.address,
 			voteAccount: fromObj.regularAccount.VoteAccount,
-			voteValue:   lastVoteValue,
+			voteValue:   *lastVoteValue,
 		})
 		fromObj.regularAccount.VoteAccount = *context.To
 		fromObj.regularAccount.VoteValue = new(big.Int).Add(context.Value, lastVoteValue)
@@ -1242,7 +1248,7 @@ func (s *StateDB) Vote(context vm.TxContext) {
 	if toObj != nil {
 		toObj.db.journal.append(voteValueForAuthorizeChange{
 			account: &toObj.address,
-			prev:    toObj.authorizeAccount.VoteValue,
+			prev:    *toObj.authorizeAccount.VoteValue,
 		})
 		toObj.authorizeAccount.VoteValue = new(big.Int).Add(toObj.authorizeAccount.VoteValue, context.Value)
 	}
@@ -1250,29 +1256,31 @@ func (s *StateDB) Vote(context vm.TxContext) {
 
 func (s *StateDB) Register(context vm.TxContext) {
 	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
-	s.SubBalance(context.From, context.Value)
 	obj, _ := s.createObject(common.BytesToAddress(context.ExtArgs))
+	pledgeAmount := uint64(0)
 	switch context.BizType {
 	case common.REGISTER_PNS:
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(0)
 	case common.REGISTER_AUTHORIZE:
-		pledgeValue := new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING)
-		obj.authorizeAccount.PledgeValue = pledgeValue
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
+		obj.authorizeAccount.PledgeValue = context.Value
+		obj.authorizeAccount.VoteValue = context.Value
 		obj.authorizeAccount.Owner = context.From
-		validPeriod := new(big.Int)
-		rlp.DecodeBytes(context.Data, &validPeriod)
-		obj.authorizeAccount.ValidPeriod = validPeriod
-		obj.authorizeAccount.VoteValue = pledgeValue
+		args := new(common.RegisterAuthorizeArgs)
+		rlp.DecodeBytes(context.Data, &args)
+		obj.authorizeAccount.ValidPeriod = &args.ValidPeriod
 	case common.REGISTER_LOSE:
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
 		//s.setMarkLossAccount(*context.New)
 	}
+	s.SubBalance(context.From, context.Value.Add(context.Value, new(big.Int).SetUint64(pledgeAmount)))
 }
 
 func (s *StateDB) Cancellation(context vm.TxContext) {
-	//fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
 	cancellationArgs := new(common.CancellationArgs)
 	rlp.DecodeBytes(context.Data, &cancellationArgs)
 	s.AddBalance(cancellationArgs.BeneficiaryAddress, context.Value)
@@ -1281,12 +1289,12 @@ func (s *StateDB) Cancellation(context vm.TxContext) {
 
 func (s *StateDB) Transfer(context vm.TxContext) {
 	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s,isNew:%t\n", context.From.String(), context.To.String(), context.Value.String(), len(context.ExtArgs) > 0)
-	value := context.Value
+	pledgeAmount := uint64(0)
 	if len(context.ExtArgs) > 0 {
-		value = value.Sub(value, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR))
+		pledgeAmount = binary.BigEndian.Uint64(context.ExtArgs)
 	}
-	s.SubBalance(context.From, value)
-	s.AddBalance(*context.To, value)
+	s.SubBalance(context.From, context.Value)
+	s.AddBalance(*context.To, context.Value.Sub(context.Value, new(big.Int).SetUint64(pledgeAmount)))
 }
 
 //todo
@@ -1294,7 +1302,6 @@ func (s *StateDB) ExchangeAsset(context vm.TxContext) {
 
 }
 func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
-	//fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
 	s.SubBalance(context.From, context.Value)
 	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Data))
 	if len(addrs) > 0 {
@@ -1305,7 +1312,7 @@ func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 					account:    &stateObject.address,
 					infoDigest: stateObject.lossAccount.InfoDigest,
 					state:      stateObject.lossAccount.State,
-					height:     stateObject.lossAccount.Height,
+					height:     *stateObject.lossAccount.Height,
 				})
 				stateObject.lossAccount.InfoDigest = common.BytesToHash(context.Data)
 				stateObject.lossAccount.State = common.LOSS_STATE_OF_APPLY
@@ -1403,8 +1410,8 @@ func (s *StateDB) RedemptionForRegular(addr common.Address) (common.Address, *bi
 		stateObject.db.journal.append(redemptionForRegularChange{
 			account:     &stateObject.address,
 			voteAccount: stateObject.regularAccount.VoteAccount,
-			voteValue:   stateObject.regularAccount.VoteValue,
-			value:       stateObject.regularAccount.Value,
+			voteValue:   *stateObject.regularAccount.VoteValue,
+			value:       *stateObject.regularAccount.Value,
 		})
 		VoteAccount = stateObject.regularAccount.VoteAccount
 		voteValue = stateObject.regularAccount.VoteValue
@@ -1419,8 +1426,8 @@ func (s *StateDB) RedemptionForAuthorize(addr common.Address, voteValue *big.Int
 	if stateObject != nil {
 		stateObject.db.journal.append(redemptionForAuthorizeChange{
 			account:     &stateObject.address,
-			pledgeValue: stateObject.authorizeAccount.PledgeValue,
-			voteValue:   stateObject.authorizeAccount.VoteValue,
+			pledgeValue: *stateObject.authorizeAccount.PledgeValue,
+			voteValue:   *stateObject.authorizeAccount.VoteValue,
 		})
 		if voteValue == nil {
 			stateObject.authorizeAccount.VoteValue = new(big.Int).Sub(stateObject.authorizeAccount.VoteValue, stateObject.authorizeAccount.PledgeValue)

@@ -85,9 +85,6 @@ var (
 	// making the transaction invalid, rather a DOS protection.
 	ErrOversizedData = errors.New("oversized data")
 
-	// ErrInvalidCandidate is returned if vote other candidate
-	ErrInvalidCandidate = errors.New("invalid candidate")
-
 	ErrInvalidCandidateDPOS = errors.New("invalid candidateDPOS")
 
 	// ErrNoVote is returned if no vote

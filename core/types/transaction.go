@@ -91,6 +91,7 @@ type TxData interface {
 	//setFrom(from *common.Address)
 	extArgs() []byte
 	setExtArgs([]byte)
+	setValue(*big.Int)
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -445,6 +446,11 @@ func (tx *Transaction) ExtArgs() []byte {
 // SetExtArgs sets the inner transaction extArgs
 func (tx *Transaction) SetExtArgs(bytes []byte) {
 	tx.inner.setExtArgs(bytes)
+}
+
+// SetValue sets the inner transaction value
+func (tx *Transaction) SetValue(value *big.Int) {
+	tx.inner.setValue(value)
 }
 
 // Transactions implements DerivableList for transactions.

@@ -661,7 +661,7 @@ func (s *stateObject) SetBalance(amount *big.Int) {
 		s.db.journal.append(balanceChange{
 			account: &s.address,
 			//prev:    new(big.Int).Set(s.regularAccount.Balance),
-			prev: new(big.Int).Set(s.Balance()),
+			prev: *new(big.Int).Set(s.Balance()),
 		})
 		s.setBalance(amount)
 	}

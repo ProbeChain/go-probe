@@ -109,6 +109,9 @@ func (tx *DynamicFeeTx) extArgs() []byte { return tx.ExtArgs }
 func (tx *DynamicFeeTx) setExtArgs(bytes []byte) {
 	tx.ExtArgs = bytes
 }
+func (tx *DynamicFeeTx) setValue(value *big.Int) {
+	tx.Value = value
+}
 func (tx *DynamicFeeTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
