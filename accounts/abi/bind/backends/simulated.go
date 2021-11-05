@@ -455,8 +455,8 @@ func (b *SimulatedBackend) PendingCallContract(ctx context.Context, call probeum
 func (b *SimulatedBackend) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-
-	return b.pendingState.GetOrNewStateObject(account).Nonce(), nil
+	stateObj, _ := b.pendingState.GetOrNewStateObject(account)
+	return stateObj.Nonce(), nil
 }
 
 // SuggestGasPrice implements ContractTransactor.SuggestGasPrice. Since the simulated
@@ -606,7 +606,7 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call probeum.CallMs
 		call.Value = new(big.Int)
 	}
 	// Set infinite balance to the fake caller account.
-	from := stateDB.GetOrNewStateObject(call.From)
+	from, _ := stateDB.GetOrNewStateObject(call.From)
 	from.SetBalance(math.MaxBig256)
 	// Execute the call.
 	msg := callMsg{call}

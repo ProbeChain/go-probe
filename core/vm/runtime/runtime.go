@@ -173,7 +173,7 @@ func Call(address common.Address, input []byte, cfg *Config) ([]byte, uint64, er
 
 	vmenv := NewEnv(cfg)
 
-	sender := cfg.State.GetOrNewStateObject(cfg.Origin)
+	sender, _ := cfg.State.GetOrNewStateObject(cfg.Origin)
 	statedb := cfg.State
 
 	if rules := cfg.ChainConfig.Rules(vmenv.Context.BlockNumber); rules.IsBerlin {

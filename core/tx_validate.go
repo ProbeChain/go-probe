@@ -6,6 +6,7 @@ import (
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/rlp"
 	"math/big"
 )
@@ -101,7 +102,12 @@ func (pool *TxPool) validateTxOfTransfer(tx *types.Transaction, local bool) erro
 	}
 	toAccount := pool.currentState.GetStateObject(*tx.To())
 	if toAccount == nil {
-		return ErrAccountNotExists
+		log.Warn(fmt.Sprintf("receiver not exists, Will be created:%s", tx.To()))
+		if tx.Value().Cmp(new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR)) == -1 {
+			return errors.New("receiver not exists and will be created,but the deposit is not enough")
+		}
+		toAccount, _ = pool.currentState.GetOrNewStateObject(*tx.To())
+		tx.SetExtArgs([]byte{1})
 	}
 	if toAccount.AccountType() != common.ACC_TYPE_OF_GENERAL &&
 		toAccount.AccountType() != common.ACC_TYPE_OF_CONTRACT {

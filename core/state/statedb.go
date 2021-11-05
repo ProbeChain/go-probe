@@ -406,7 +406,7 @@ func (s *StateDB) HasSuicided(addr common.Address) bool {
 
 // AddBalance adds amount to the account associated with addr.
 func (s *StateDB) AddBalance(addr common.Address, amount *big.Int) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.AddBalance(amount)
 	}
@@ -414,35 +414,35 @@ func (s *StateDB) AddBalance(addr common.Address, amount *big.Int) {
 
 // SubBalance subtracts amount from the account associated with addr.
 func (s *StateDB) SubBalance(addr common.Address, amount *big.Int) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SubBalance(amount)
 	}
 }
 
 func (s *StateDB) SetBalance(addr common.Address, amount *big.Int) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetBalance(amount)
 	}
 }
 
 func (s *StateDB) SetNonce(addr common.Address, nonce uint64) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetNonce(nonce)
 	}
 }
 
 func (s *StateDB) SetCode(addr common.Address, code []byte) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetCode(crypto.Keccak256Hash(code), code)
 	}
 }
 
 func (s *StateDB) SetState(addr common.Address, key, value common.Hash) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetState(s.db, key, value)
 	}
@@ -451,7 +451,7 @@ func (s *StateDB) SetState(addr common.Address, key, value common.Hash) {
 // SetStorage replaces the entire storage for the specified account with given
 // storage. This function should only be used for debugging.
 func (s *StateDB) SetStorage(addr common.Address, storage map[common.Hash]common.Hash) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetStorage(storage)
 	}
@@ -654,12 +654,13 @@ func (s *StateDB) setStateObject(object *stateObject) {
 }
 
 // GetOrNewStateObject retrieves a state object or create a new state object if nil.
-func (s *StateDB) GetOrNewStateObject(addr common.Address) *stateObject {
+func (s *StateDB) GetOrNewStateObject(addr common.Address) (*stateObject, bool) {
+	isNew := false
 	stateObject := s.getStateObject(addr)
-	if stateObject == nil {
+	if isNew = stateObject == nil; isNew {
 		stateObject, _ = s.createObject(addr)
 	}
-	return stateObject
+	return stateObject, isNew
 }
 
 // createObject creates a new state object. If there is an existing account with
@@ -704,7 +705,6 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 func (s *StateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
-		//newObj.setBalance(prev.regularAccount.Balance)
 		newObj.setBalance(prev.Balance())
 	}
 }
@@ -1280,9 +1280,13 @@ func (s *StateDB) Cancellation(context vm.TxContext) {
 }
 
 func (s *StateDB) Transfer(context vm.TxContext) {
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
-	s.SubBalance(context.From, context.Value)
-	s.AddBalance(*context.To, context.Value)
+	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s,isNew:%t\n", context.From.String(), context.To.String(), context.Value.String(), len(context.ExtArgs) > 0)
+	value := context.Value
+	if len(context.ExtArgs) > 0 {
+		value = value.Sub(value, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR))
+	}
+	s.SubBalance(context.From, value)
+	s.AddBalance(*context.To, value)
 }
 
 //todo

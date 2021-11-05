@@ -88,8 +88,9 @@ type TxData interface {
 	setSignatureValues(chainID, v, r, s *big.Int)
 
 	from() *common.Address
-	setFrom(from *common.Address)
+	//setFrom(from *common.Address)
 	extArgs() []byte
+	setExtArgs([]byte)
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -439,6 +440,11 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 // GasTipCapIntCmp compares the gasTipCap of the transaction against the given gasTipCap.
 func (tx *Transaction) ExtArgs() []byte {
 	return tx.inner.extArgs()
+}
+
+// SetExtArgs sets the inner transaction extArgs
+func (tx *Transaction) SetExtArgs(bytes []byte) {
+	tx.inner.setExtArgs(bytes)
 }
 
 // Transactions implements DerivableList for transactions.

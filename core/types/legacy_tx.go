@@ -111,10 +111,13 @@ func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
 func (tx *LegacyTx) bizType() uint8         { return tx.BizType }
 
-func (tx *LegacyTx) from() *common.Address        { return tx.From }
-func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *LegacyTx) extArgs() []byte              { return tx.ExtArgs }
+func (tx *LegacyTx) from() *common.Address { return tx.From }
 
+//func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *LegacyTx) extArgs() []byte { return tx.ExtArgs }
+func (tx *LegacyTx) setExtArgs(bytes []byte) {
+	tx.ExtArgs = bytes
+}
 func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }

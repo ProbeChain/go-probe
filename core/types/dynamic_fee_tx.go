@@ -102,9 +102,13 @@ func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
 func (tx *DynamicFeeTx) bizType() uint8         { return tx.BizType }
 
-func (tx *DynamicFeeTx) from() *common.Address        { return tx.From }
-func (tx *DynamicFeeTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *DynamicFeeTx) extArgs() []byte              { return tx.ExtArgs }
+func (tx *DynamicFeeTx) from() *common.Address { return tx.From }
+
+//func (tx *DynamicFeeTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *DynamicFeeTx) extArgs() []byte { return tx.ExtArgs }
+func (tx *DynamicFeeTx) setExtArgs(bytes []byte) {
+	tx.ExtArgs = bytes
+}
 func (tx *DynamicFeeTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }

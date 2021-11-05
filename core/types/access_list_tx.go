@@ -114,9 +114,13 @@ func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) bizType() uint8         { return tx.BizType }
 
-func (tx *AccessListTx) from() *common.Address        { return tx.From }
-func (tx *AccessListTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *AccessListTx) extArgs() []byte              { return tx.ExtArgs }
+func (tx *AccessListTx) from() *common.Address { return tx.From }
+
+//func (tx *AccessListTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *AccessListTx) extArgs() []byte { return tx.ExtArgs }
+func (tx *AccessListTx) setExtArgs(bytes []byte) {
+	tx.ExtArgs = bytes
+}
 func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
