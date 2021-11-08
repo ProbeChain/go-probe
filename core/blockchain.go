@@ -3186,7 +3186,12 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 }
 
 // GetUnclePowAnswers get uncle pow answer list
-func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
+func (bc *BlockChain) GetUnclePowAnswers(blockNumber *big.Int) []*types.PowAnswer {
+	number := new(big.Int).SetInt64(0)
+	if blockNumber.Uint64() > 0 {
+		number.Sub(blockNumber, common.Big1)
+	}
+
 	uncles := maxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
 	chainAns := make([]*types.PowAnswer, 0, uncles*2)
