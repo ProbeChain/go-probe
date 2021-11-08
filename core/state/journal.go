@@ -97,15 +97,17 @@ type (
 	regularSuicideChange struct {
 		account     *common.Address
 		suicide     bool
+		accType     byte
 		voteAccount common.Address
-		voteValue   *big.Int
+		voteValue   big.Int
 		lossType    uint8
-		value       *big.Int
+		value       big.Int
 	}
 
 	pnsSuicideChange struct {
 		account *common.Address
 		suicide bool
+		accType byte
 		pnsType byte
 		owner   common.Address
 		data    []byte
@@ -114,37 +116,39 @@ type (
 	assetSuicideChange struct {
 		account     *common.Address
 		suicide     bool
+		accType     byte
 		assetType   byte
-		value       *big.Int
+		value       big.Int
 		voteAccount common.Address
-		voteValue   *big.Int
+		voteValue   big.Int
 	}
 
 	authorizeSuicideChange struct {
 		account     *common.Address
 		suicide     bool
+		accType     byte
 		owner       common.Address
-		pledgeValue *big.Int
-		voteValue   *big.Int
-		weight      *big.Int
+		pledgeValue big.Int
+		voteValue   big.Int
 		info        []byte
-		validPeriod *big.Int
+		validPeriod big.Int
 	}
 
 	lossSuicideChange struct {
 		account     *common.Address
 		suicide     bool
+		accType     byte
 		state       byte
 		lossAccount common.Address
 		newAccount  common.Address
-		height      *big.Int
+		height      big.Int
 		infoDigest  common.Hash
 	}
 
 	// Changes to individual accounts.
 	balanceChange struct {
 		account *common.Address
-		prev    *big.Int
+		prev    big.Int
 	}
 	nonceChange struct {
 		account *common.Address
@@ -184,7 +188,7 @@ type (
 	voteForRegularChange struct {
 		account     *common.Address
 		voteAccount common.Address
-		voteValue   *big.Int
+		voteValue   big.Int
 	}
 	lossTypeForRegularChange struct {
 		account *common.Address
@@ -193,13 +197,13 @@ type (
 
 	voteValueForAuthorizeChange struct {
 		account *common.Address
-		prev    *big.Int
+		prev    big.Int
 	}
 
 	sendLossReportChange struct {
 		account    *common.Address
 		state      byte
-		height     *big.Int
+		height     big.Int
 		infoDigest common.Hash
 	}
 
@@ -207,7 +211,7 @@ type (
 		account     *common.Address
 		lossAccount common.Address
 		newAccount  common.Address
-		height      *big.Int
+		height      big.Int
 		state       byte
 	}
 
@@ -219,8 +223,8 @@ type (
 	redemptionForRegularChange struct {
 		account     *common.Address
 		voteAccount common.Address
-		voteValue   *big.Int
-		value       *big.Int
+		voteValue   big.Int
+		value       big.Int
 	}
 
 	modifyPnsOwnerChange struct {
@@ -235,8 +239,8 @@ type (
 	}
 	redemptionForAuthorizeChange struct {
 		account     *common.Address
-		pledgeValue *big.Int
-		voteValue   *big.Int
+		pledgeValue big.Int
+		voteValue   big.Int
 	}
 
 	dPosCandidateForAuthorizeChange struct {
@@ -250,7 +254,7 @@ func (i sendLossReportChange) revert(db *StateDB) {
 	var lossAccount = db.getStateObject(*i.account).lossAccount
 	lossAccount.InfoDigest = i.infoDigest
 	lossAccount.State = i.state
-	lossAccount.Height = i.height
+	lossAccount.Height = &i.height
 }
 
 func (i sendLossReportChange) dirtied() *common.Address {
@@ -258,7 +262,7 @@ func (i sendLossReportChange) dirtied() *common.Address {
 }
 
 func (d voteValueForAuthorizeChange) revert(db *StateDB) {
-	db.getStateObject(*d.account).authorizeAccount.VoteValue = d.prev
+	db.getStateObject(*d.account).authorizeAccount.VoteValue = &d.prev
 }
 
 func (d voteValueForAuthorizeChange) dirtied() *common.Address {
@@ -276,7 +280,7 @@ func (l lossTypeForRegularChange) dirtied() *common.Address {
 func (v voteForRegularChange) revert(db *StateDB) {
 	regularAccount := db.getStateObject(*v.account).regularAccount
 	regularAccount.VoteAccount = v.voteAccount
-	regularAccount.VoteValue = v.voteValue
+	regularAccount.VoteValue = &v.voteValue
 }
 
 func (v voteForRegularChange) dirtied() *common.Address {
@@ -307,10 +311,11 @@ func (ch regularSuicideChange) revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.suicide
+		obj.regularAccount.AccType = ch.accType
 		obj.regularAccount.VoteAccount = ch.voteAccount
-		obj.regularAccount.VoteValue = ch.voteValue
+		obj.regularAccount.VoteValue = &ch.voteValue
 		obj.regularAccount.LossType = ch.lossType
-		obj.regularAccount.Value = ch.value
+		obj.regularAccount.Value = &ch.value
 	}
 }
 
@@ -322,6 +327,7 @@ func (ch pnsSuicideChange) revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.suicide
+		obj.pnsAccount.AccType = ch.accType
 		obj.pnsAccount.Type = ch.pnsType
 		obj.pnsAccount.Owner = ch.owner
 		obj.pnsAccount.Data = ch.data
@@ -336,9 +342,10 @@ func (ch assetSuicideChange) revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.suicide
+		obj.assetAccount.AccType = ch.accType
 		obj.assetAccount.VoteAccount = ch.voteAccount
-		obj.assetAccount.VoteValue = ch.voteValue
-		obj.assetAccount.Value = ch.value
+		obj.assetAccount.VoteValue = &ch.voteValue
+		obj.assetAccount.Value = &ch.value
 	}
 }
 func (ch assetSuicideChange) dirtied() *common.Address {
@@ -349,11 +356,12 @@ func (ch authorizeSuicideChange) revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.suicide
+		obj.authorizeAccount.AccType = ch.accType
 		obj.authorizeAccount.Owner = ch.owner
-		obj.authorizeAccount.PledgeValue = ch.pledgeValue
-		obj.authorizeAccount.VoteValue = ch.voteValue
+		obj.authorizeAccount.PledgeValue = &ch.pledgeValue
+		obj.authorizeAccount.VoteValue = &ch.voteValue
 		obj.authorizeAccount.Info = ch.info
-		obj.authorizeAccount.ValidPeriod = ch.validPeriod
+		obj.authorizeAccount.ValidPeriod = &ch.validPeriod
 	}
 }
 
@@ -365,10 +373,11 @@ func (ch lossSuicideChange) revert(s *StateDB) {
 	obj := s.getStateObject(*ch.account)
 	if obj != nil {
 		obj.suicided = ch.suicide
+		obj.lossAccount.AccType = ch.accType
 		obj.lossAccount.State = ch.state
 		obj.lossAccount.LossAccount = ch.lossAccount
 		obj.lossAccount.NewAccount = ch.newAccount
-		obj.lossAccount.Height = ch.height
+		obj.lossAccount.Height = &ch.height
 		obj.lossAccount.InfoDigest = ch.infoDigest
 	}
 }
@@ -387,7 +396,7 @@ func (ch touchChange) dirtied() *common.Address {
 }
 
 func (ch balanceChange) revert(s *StateDB) {
-	s.getStateObject(*ch.account).setBalance(ch.prev)
+	s.getStateObject(*ch.account).setBalance(&ch.prev)
 }
 
 func (ch balanceChange) dirtied() *common.Address {
@@ -476,8 +485,8 @@ func (ch accessListAddSlotChange) dirtied() *common.Address {
 func (ch redemptionForRegularChange) revert(s *StateDB) {
 	regularAccount := s.getStateObject(*ch.account).regularAccount
 	regularAccount.VoteAccount = ch.voteAccount
-	regularAccount.VoteValue = ch.voteValue
-	regularAccount.Value = ch.value
+	regularAccount.VoteValue = &ch.voteValue
+	regularAccount.Value = &ch.value
 }
 
 func (ch redemptionForRegularChange) dirtied() *common.Address {
@@ -486,8 +495,8 @@ func (ch redemptionForRegularChange) dirtied() *common.Address {
 
 func (ch redemptionForAuthorizeChange) revert(s *StateDB) {
 	authorizeAccount := s.getStateObject(*ch.account).authorizeAccount
-	authorizeAccount.PledgeValue = ch.pledgeValue
-	authorizeAccount.VoteValue = ch.voteValue
+	authorizeAccount.PledgeValue = &ch.pledgeValue
+	authorizeAccount.VoteValue = &ch.voteValue
 }
 
 func (ch redemptionForAuthorizeChange) dirtied() *common.Address {

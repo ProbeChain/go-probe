@@ -16,23 +16,17 @@ func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) erro
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	newAccount := new(common.Address)
-	err := rlp.DecodeBytes(tx.ExtArgs(), &newAccount)
-	if err != nil {
-		return err
-	}
-
+	newAccount := common.BytesToAddress(tx.ExtArgs())
 	if tx.BizType() == common.REGISTER_AUTHORIZE {
-		validPeriod := new(big.Int)
-		err := rlp.DecodeBytes(tx.Data(), &validPeriod)
-		if err != nil {
+		dataArgs := new(common.RegisterAuthorizeArgs)
+		if err := rlp.DecodeBytes(tx.Data(), &dataArgs); err != nil {
 			return err
 		}
-		if validPeriod.Cmp(pool.chain.CurrentBlock().Number()) < 1 {
+		if dataArgs.ValidPeriod.Cmp(pool.chain.CurrentBlock().Number()) < 1 {
 			return errors.New(`valid period block number must be specified and greater than current block number`)
 		}
 	}
-	if pool.currentState.Exist(*newAccount) {
+	if pool.currentState.Exist(newAccount) {
 		return ErrAccountAlreadyExists
 	}
 	return pool.validateGas(tx, local)
@@ -43,14 +37,7 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 		return err
 	}
 	args := new(common.CancellationArgs)
-	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
-	if err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.CancelAddress, "cancel address"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.BeneficiaryAddress, "beneficiary address"); err != nil {
+	if err := rlp.DecodeBytes(tx.Data(), &args); err != nil {
 		return err
 	}
 	cancelAccount := pool.currentState.GetStateObject(args.CancelAddress)
@@ -64,6 +51,7 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 	if beneficiaryAccount.AccountType() != common.ACC_TYPE_OF_GENERAL {
 		return errors.New("the beneficiary must be a regular account")
 	}
+	var pledgeAmount uint64
 	switch cancelAccount.AccountType() {
 	case common.ACC_TYPE_OF_GENERAL:
 		if cancelAccount.RegularAccount().VoteValue.Sign() > 0 {
@@ -72,10 +60,12 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 		if args.CancelAddress != *tx.From() {
 			return errors.New("wrong owner")
 		}
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
 	case common.ACC_TYPE_OF_PNS:
 		if cancelAccount.PnsAccount().Owner != *tx.From() {
 			return errors.New("wrong owner")
 		}
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		if pool.chain.CurrentBlock().Number().Cmp(cancelAccount.AuthorizeAccount().ValidPeriod) != 1 {
 			return errors.New("voting is not over")
@@ -83,6 +73,7 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 		if cancelAccount.AuthorizeAccount().VoteValue.Sign() > 0 {
 			return errors.New("some tickets were not redeemed,please inform the voters first")
 		}
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
 	case common.ACC_TYPE_OF_LOSE:
 		if cancelAccount.LossAccount().State != common.LOSS_STATE_OF_SUCCESS {
 			return errors.New("cancellation is not allowed in the current state")
@@ -90,9 +81,11 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 		if cancelAccount.LossAccount().NewAccount != *tx.From() {
 			return errors.New("wrong owner")
 		}
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
 	default:
 		return accounts.ErrWrongAccountType
 	}
+	tx.SetValue(new(big.Int).SetUint64(pledgeAmount))
 	return pool.validateGas(tx, local)
 }
 
@@ -106,12 +99,11 @@ func (pool *TxPool) validateTxOfTransfer(tx *types.Transaction, local bool) erro
 		if tx.Value().Cmp(new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR)) == -1 {
 			return errors.New("receiver not exists and will be created,but the deposit is not enough")
 		}
-		toAccount, _ = pool.currentState.GetOrNewStateObject(*tx.To())
 		tx.SetExtArgs([]byte{1})
-	}
-	if toAccount.AccountType() != common.ACC_TYPE_OF_GENERAL &&
-		toAccount.AccountType() != common.ACC_TYPE_OF_CONTRACT {
-		return errors.New("unsupported receiver")
+	} else {
+		if toAccount.AccountType() != common.ACC_TYPE_OF_GENERAL && toAccount.AccountType() != common.ACC_TYPE_OF_CONTRACT {
+			return errors.New("unsupported receiver")
+		}
 	}
 	return pool.validateGas(tx, local)
 }
@@ -293,8 +285,7 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 		return err
 	}
 	args := new(common.ApplyDPosArgs)
-	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
-	if err != nil {
+	if err := rlp.DecodeBytes(tx.ExtArgs(), &args); err != nil {
 		return err
 	}
 	voteAccount := pool.currentState.GetStateObject(args.VoteAddress)
@@ -323,12 +314,11 @@ func (pool *TxPool) validateTxOfVote(tx *types.Transaction, local bool) error {
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	voteAddr := new(common.Address)
-	err := rlp.DecodeBytes(tx.Data(), &voteAddr)
-	if err != nil {
+	voteArgs := new(common.VoteArgs)
+	if err := rlp.DecodeBytes(tx.Data(), &voteArgs); err != nil {
 		return err
 	}
-	voteAccount := pool.currentState.GetStateObject(*voteAddr)
+	voteAccount := pool.currentState.GetStateObject(voteArgs.VoteAddress)
 	if voteAccount == nil {
 		return ErrAccountNotExists
 	}
@@ -339,8 +329,8 @@ func (pool *TxPool) validateTxOfVote(tx *types.Transaction, local bool) error {
 		return ErrValidPeriodTooLow
 	}
 	fromAccount := pool.currentState.GetStateObject(*tx.From()).RegularAccount()
-	if fromAccount.VoteAccount != (common.Address{}) && fromAccount.VoteAccount != *voteAddr {
-		return ErrInvalidCandidate
+	if fromAccount.VoteAccount != (common.Address{}) && fromAccount.VoteAccount != voteArgs.VoteAddress {
+		return errors.New("other candidates have been supported")
 	}
 	return pool.validateGas(tx, local)
 }
@@ -349,27 +339,22 @@ func (pool *TxPool) validateTxOfRedemption(tx *types.Transaction, local bool) er
 	if err := pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	voteAddr := new(common.Address)
-	err := rlp.DecodeBytes(tx.Data(), &voteAddr)
-	if err != nil {
+	voteArgs := new(common.VoteArgs)
+	if err := rlp.DecodeBytes(tx.Data(), &voteArgs); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(voteAddr, "authorize account"); err != nil {
-		return err
-	}
-	var voteAccount = pool.currentState.GetStateObject(*voteAddr)
+	var voteAccount = pool.currentState.GetStateObject(voteArgs.VoteAddress)
 	if voteAccount == nil {
 		return ErrAccountNotExists
 	}
 	if voteAccount.AccountType() != common.ACC_TYPE_OF_AUTHORIZE {
 		return ErrValidUnsupportedAccount
 	}
-	var fromAccount = pool.currentState.GetStateObject(*tx.From()).RegularAccount()
-	if voteAccount.AuthorizeAccount().Owner != *tx.From() && fromAccount.VoteAccount != *voteAddr {
-		return errors.New("wrong vote account")
+	if voteAccount.AuthorizeAccount().Owner != *tx.From() {
+		return errors.New("wrong owner")
 	}
 	if pool.chain.CurrentBlock().Number().Cmp(voteAccount.AuthorizeAccount().ValidPeriod) != 1 {
-		return errors.New("the voting cycle is not over")
+		return errors.New("this election is not over")
 	}
 	return pool.validateGas(tx, local)
 }
@@ -378,14 +363,7 @@ func (pool *TxPool) validateTxOfModifyPnsOwner(tx *types.Transaction, local bool
 		return err
 	}
 	args := new(common.PnsOwnerArgs)
-	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
-	if err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.PnsAddress, "pns account"); err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.OwnerAddress, "new owner account"); err != nil {
+	if err := rlp.DecodeBytes(tx.ExtArgs(), &args); err != nil {
 		return err
 	}
 	var pnsAccount = pool.currentState.GetStateObject(args.PnsAddress)
@@ -403,7 +381,7 @@ func (pool *TxPool) validateTxOfModifyPnsOwner(tx *types.Transaction, local bool
 		return ErrValidUnsupportedAccount
 	}
 	if pnsAccount.PnsAccount().Owner != *tx.From() {
-		return errors.New("wrong pns owner account")
+		return errors.New("wrong pns owner")
 	}
 	if pnsAccount.PnsAccount().Owner == args.OwnerAddress {
 		return errors.New("consistent with current owner")
@@ -415,11 +393,7 @@ func (pool *TxPool) validateTxOfModifyPnsContent(tx *types.Transaction, local bo
 		return err
 	}
 	args := new(common.PnsContentArgs)
-	err := rlp.DecodeBytes(tx.ExtArgs(), &args)
-	if err != nil {
-		return err
-	}
-	if err := common.ValidateNil(args.PnsAddress, "pns account"); err != nil {
+	if err := rlp.DecodeBytes(tx.ExtArgs(), &args); err != nil {
 		return err
 	}
 	var pnsAccount = pool.currentState.GetStateObject(args.PnsAddress)
@@ -430,7 +404,7 @@ func (pool *TxPool) validateTxOfModifyPnsContent(tx *types.Transaction, local bo
 		return ErrValidUnsupportedAccount
 	}
 	if pnsAccount.PnsAccount().Owner != *tx.From() {
-		return errors.New("wrong pns owner account")
+		return errors.New("wrong pns owner")
 	}
 	return pool.validateGas(tx, local)
 }

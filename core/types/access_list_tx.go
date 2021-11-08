@@ -121,6 +121,9 @@ func (tx *AccessListTx) extArgs() []byte { return tx.ExtArgs }
 func (tx *AccessListTx) setExtArgs(bytes []byte) {
 	tx.ExtArgs = bytes
 }
+func (tx *AccessListTx) setValue(value *big.Int) {
+	tx.Value = value
+}
 func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }

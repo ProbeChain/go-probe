@@ -276,6 +276,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	if err != nil {
 		panic(err)
 	}
+	var dPosHash common.Hash
 	if g.DposConfig != nil {
 		number := g.Number
 		epoch := g.DposConfig.Epoch
@@ -284,7 +285,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
 				log.Info("ToBlock roothash ", "hash", s.Hex())
 			}*/
-			dPosHash := state.BuildHashForDPos(g.DposConfig.DposList)
+			dPosHash = state.BuildHashForDPos(g.DposConfig.DposList)
 			statedb.UpdateDPosHash(dPosHash)
 			rawdb.WriteDPos(db, dposNo, g.DposConfig.DposList)
 			//data, _ := json.Marshal(g.DposConfig.DposList)
@@ -298,8 +299,11 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 							log.Crit("Failed to store dposNodesList", "err", err)
 						}
 						batch.Write()*/
+		} else {
+			dPosHash = state.BuildHashForDPos(rawdb.ReadDPos(db, dposNo))
 		}
 	}
+	dPosCandidateHash := state.BuildHashForDPosCandidate(rawdb.ReadDPosCandidate(db))
 	for addr, account := range g.Alloc {
 		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
@@ -311,23 +315,25 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	root := statedb.IntermediateRoot(false, nil)
 
 	head := &types.Header{
-		Number:           new(big.Int).SetUint64(g.Number),
-		Nonce:            types.EncodeNonce(g.Nonce),
-		Time:             g.Timestamp,
-		ParentHash:       g.ParentHash,
-		Extra:            g.ExtraData,
-		GasLimit:         g.GasLimit,
-		GasUsed:          g.GasUsed,
-		BaseFee:          g.BaseFee,
-		Difficulty:       g.Difficulty,
-		MixDigest:        g.Mixhash,
-		Coinbase:         g.Coinbase,
-		Root:             root,
-		DposSigAddr:      common.Address{},
-		DposAcksHash:     common.Hash{},
-		DposSig:          make([]byte, 65),
-		DposAckCountList: make([]*types.DposAckCount, 0),
-		PowAnswers:       make([]*types.PowAnswer, 0),
+		Number:            new(big.Int).SetUint64(g.Number),
+		Nonce:             types.EncodeNonce(g.Nonce),
+		Time:              g.Timestamp,
+		ParentHash:        g.ParentHash,
+		Extra:             g.ExtraData,
+		GasLimit:          g.GasLimit,
+		GasUsed:           g.GasUsed,
+		BaseFee:           g.BaseFee,
+		Difficulty:        g.Difficulty,
+		MixDigest:         g.Mixhash,
+		Coinbase:          g.Coinbase,
+		Root:              root,
+		DposSigAddr:       common.Address{},
+		DposAcksHash:      common.Hash{},
+		DposSig:           make([]byte, 65),
+		DposAckCountList:  make([]*types.DposAckCount, 0),
+		PowAnswers:        make([]*types.PowAnswer, 0),
+		DPoSRoot:          dPosHash,
+		DPoSCandidateRoot: dPosCandidateHash,
 	}
 
 	if g.GasLimit == 0 {

@@ -1335,7 +1335,7 @@ type RPCTransaction struct {
 	R                *hexutil.Big      `json:"r"`
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
-	NewAccount       *common.Address   `json:"new,omitempty"`
+	NewAddress       *common.Address   `json:"newAddress,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1377,7 +1377,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 	switch tx.BizType() {
 	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
 		newAccount := common.BytesToAddress(tx.ExtArgs())
-		result.NewAccount = &newAccount
+		result.NewAddress = &newAccount
 	}
 
 	switch tx.Type() {
@@ -1706,7 +1706,7 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	//不同业务类型展示不同字段
 	switch tx.BizType() {
 	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
-		fields["newAccount"] = common.BytesToAddress(tx.ExtArgs())
+		fields["newAddress"] = common.BytesToAddress(tx.ExtArgs())
 	}
 
 	// Assign the effective gas price paid

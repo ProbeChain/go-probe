@@ -118,6 +118,9 @@ func (tx *LegacyTx) extArgs() []byte { return tx.ExtArgs }
 func (tx *LegacyTx) setExtArgs(bytes []byte) {
 	tx.ExtArgs = bytes
 }
+func (tx *LegacyTx) setValue(value *big.Int) {
+	tx.Value = value
+}
 func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
