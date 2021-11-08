@@ -275,7 +275,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 		panic(err)
 	}
 	var dPosHash common.Hash
-	if g.DposConfig != nil {
+	if g.Config.Dpos != nil {
 		number := g.Number
 		epoch := g.Config.Dpos.Epoch
 		dposNo := number + 1 - (number+1)%epoch
@@ -283,7 +283,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
 				log.Info("ToBlock roothash ", "hash", s.Hex())
 			}*/
-			dPosHash = state.BuildHashForDPos(g.DposConfig.DposList)
+			dPosHash = state.BuildHashForDPos(g.Config.Dpos.DposList)
 			statedb.UpdateDPosHash(dPosHash)
 			rawdb.WriteDPos(db, dposNo, g.Config.Dpos.DposList)
 			//data, _ := json.Marshal(g.Dpos.DposList)

@@ -502,7 +502,7 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	//init Genesis from db
 	block := bc.genesisBlock
 	number := block.NumberU64()
-	epoch := chainConfig.DposConfig.Epoch
+	epoch := chainConfig.Dpos.Epoch
 	dposNo := number + 1 - (number+1)%epoch
 	//dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	dposAccountList := rawdb.ReadDPos(db, dposNo)
