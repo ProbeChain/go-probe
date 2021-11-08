@@ -520,5 +520,5 @@ type PnsOwnerArgs struct {
 type PnsContentArgs struct {
 	PnsAddress Address
 	PnsType    byte
-	PnsData    []byte
+	PnsData    string
 }

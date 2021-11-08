@@ -1,7 +1,6 @@
 package core
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/accounts"
@@ -100,14 +99,11 @@ func (pool *TxPool) validateTxOfTransfer(tx *types.Transaction, local bool) erro
 		if tx.Value().Cmp(new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR)) == -1 {
 			return errors.New("receiver not exists and will be created,but the deposit is not enough")
 		}
-		toAccount, _ = pool.currentState.GetOrNewStateObject(*tx.To())
-		pledgeAmount := make([]byte, 8)
-		binary.BigEndian.PutUint64(pledgeAmount, common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR)
-		tx.SetExtArgs(pledgeAmount)
-	}
-	if toAccount.AccountType() != common.ACC_TYPE_OF_GENERAL &&
-		toAccount.AccountType() != common.ACC_TYPE_OF_CONTRACT {
-		return errors.New("unsupported receiver")
+		tx.SetExtArgs([]byte{1})
+	} else {
+		if toAccount.AccountType() != common.ACC_TYPE_OF_GENERAL && toAccount.AccountType() != common.ACC_TYPE_OF_CONTRACT {
+			return errors.New("unsupported receiver")
+		}
 	}
 	return pool.validateGas(tx, local)
 }

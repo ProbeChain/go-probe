@@ -176,6 +176,7 @@ type RPCAccountInfo struct {
 	Data          string          `json:"data,omitempty"`
 	CodeHash      string          `json:"codeHash,omitempty"`
 	Info          string          `json:"info,omitempty"`
+	AccType       string          `json:"accType,omitempty"`
 }
 
 // DecodeRLP decode bytes to account
@@ -815,6 +816,7 @@ func (s *stateObject) Balance() *big.Int {
 
 func (s *stateObject) AccountInfo() *RPCAccountInfo {
 	accountInfo := new(RPCAccountInfo)
+	accountInfo.AccType = strconv.Itoa(int(s.accountType))
 	switch s.accountType {
 	case common.ACC_TYPE_OF_GENERAL:
 		accountInfo.VoteAccount = &s.regularAccount.VoteAccount

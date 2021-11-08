@@ -18,7 +18,6 @@
 package state
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/core/globalconfig"
@@ -672,8 +671,13 @@ func (s *StateDB) GetOrNewStateObject(addr common.Address) (*stateObject, bool) 
 // createObject creates a new state object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
 func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) {
-	prev = s.getDeletedStateObject(addr) // Note, prev might have been deleted, we need that!
+	return s.createObjectByAccType(addr, common.ACC_TYPE_OF_GENERAL)
+}
 
+// createObjectByAccType creates a new state object. If there is an existing account with
+// the given address, it is overwritten and returned as the second return value.
+func (s *StateDB) createObjectByAccType(addr common.Address, accType byte) (newobj, prev *stateObject) {
+	prev = s.getDeletedStateObject(addr) // Note, prev might have been deleted, we need that!
 	var prevdestruct bool
 	if s.snap != nil && prev != nil {
 		_, prevdestruct = s.snapDestructs[prev.addrHash]
@@ -682,7 +686,7 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 		}
 	}
 	//newobj = newRegularAccount(s, addr, RegularAccount{})
-	newobj, done := s.newAccountDataByAddr(addr, nil, common.ACC_TYPE_OF_GENERAL)
+	newobj, done := s.newAccountDataByAddr(addr, nil, accType)
 	if done {
 		return newobj, nil
 	}
@@ -1256,16 +1260,18 @@ func (s *StateDB) Vote(context vm.TxContext) {
 
 func (s *StateDB) Register(context vm.TxContext) {
 	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
-	obj, _ := s.createObject(common.BytesToAddress(context.ExtArgs))
+	newAddress := common.BytesToAddress(context.ExtArgs)
 	pledgeAmount := uint64(0)
 	switch context.BizType {
 	case common.REGISTER_PNS:
 		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_PNS)
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(0)
 	case common.REGISTER_AUTHORIZE:
 		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
+		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_AUTHORIZE)
 		obj.authorizeAccount.PledgeValue = context.Value
 		obj.authorizeAccount.VoteValue = context.Value
 		obj.authorizeAccount.Owner = context.From
@@ -1274,10 +1280,11 @@ func (s *StateDB) Register(context vm.TxContext) {
 		obj.authorizeAccount.ValidPeriod = &args.ValidPeriod
 	case common.REGISTER_LOSE:
 		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
+		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_LOSE)
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
 		//s.setMarkLossAccount(*context.New)
 	}
-	s.SubBalance(context.From, context.Value.Add(context.Value, new(big.Int).SetUint64(pledgeAmount)))
+	s.SubBalance(context.From, new(big.Int).Add(context.Value, new(big.Int).SetUint64(pledgeAmount)))
 }
 
 func (s *StateDB) Cancellation(context vm.TxContext) {
@@ -1289,12 +1296,12 @@ func (s *StateDB) Cancellation(context vm.TxContext) {
 
 func (s *StateDB) Transfer(context vm.TxContext) {
 	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s,isNew:%t\n", context.From.String(), context.To.String(), context.Value.String(), len(context.ExtArgs) > 0)
-	pledgeAmount := uint64(0)
+	actualValue := context.Value
 	if len(context.ExtArgs) > 0 {
-		pledgeAmount = binary.BigEndian.Uint64(context.ExtArgs)
+		actualValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR))
 	}
 	s.SubBalance(context.From, context.Value)
-	s.AddBalance(*context.To, context.Value.Sub(context.Value, new(big.Int).SetUint64(pledgeAmount)))
+	s.AddBalance(*context.To, actualValue)
 }
 
 //todo
@@ -1398,7 +1405,7 @@ func (s *StateDB) ModifyPnsContent(context vm.TxContext) {
 			data:    stateObj.pnsAccount.Data,
 		})
 		stateObj.pnsAccount.Type = pnsContentArgs.PnsType
-		stateObj.pnsAccount.Data = pnsContentArgs.PnsData
+		stateObj.pnsAccount.Data = []byte(pnsContentArgs.PnsData)
 	}
 }
 
