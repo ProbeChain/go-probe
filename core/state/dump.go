@@ -271,7 +271,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 		it := trie.NewIterator(t.NodeIterator(conf.Start))
 		for it.Next() {
 			if i == 0 {
-				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_GENERAL)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_REGULAR)
 				if err != nil {
 					continue
 				}
@@ -331,7 +331,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 5 {
-				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_LOSE)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_LOSS)
 				if err != nil {
 					continue
 				}

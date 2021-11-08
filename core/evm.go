@@ -73,10 +73,9 @@ func NewEVMTxContext(msg Message) vm.TxContext {
 		GasPrice: new(big.Int).Set(msg.GasPrice()),
 		From:     msg.From(),
 		To:       msg.To(),
-		BizType:  msg.BizType(),
+		Nonce:    msg.Nonce(),
 		Value:    msg.Value(),
 		Data:     msg.Data(),
-		ExtArgs:  msg.ExtArgs(),
 	}
 }
 
@@ -128,38 +127,40 @@ func ContractDeploy(db vm.StateDB, sender common.Address) {
 
 //CallDB call database for update operation
 func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
-	switch txContext.BizType {
-	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
-		db.Register(txContext)
-	case common.CANCELLATION:
-		db.Cancellation(txContext)
-	case common.TRANSFER:
-		db.Transfer(txContext)
-	case common.CONTRACT_DEPLOY:
+	if txContext.To == nil {
 		//ContractDeploy(db, txContext.From)
 		//todo
 		panic("ContractDeploy--------")
-	case common.SEND_LOSS_REPORT:
-		db.SendLossReport(blockNumber, txContext)
-	case common.REVEAL_LOSS_REPORT:
-		db.RevealLossReport(blockNumber, txContext)
-	case common.TRANSFER_LOST_ACCOUNT:
-		db.TransferLostAccount(txContext)
-	case common.REMOVE_LOSS_REPORT:
-		db.RemoveLossReport(txContext)
-	case common.REJECT_LOSS_REPORT:
-		db.RejectLossReport(txContext)
-	case common.VOTE:
-		db.Vote(txContext)
-	case common.APPLY_TO_BE_DPOS_NODE:
-		db.ApplyToBeDPoSNode(txContext)
-	case common.REDEMPTION:
-		db.Redemption(txContext)
-		/*	case common.ModifyLossType:
-			db.ModifyLossType(txContext)*/
-	case common.MODIFY_PNS_OWNER:
-		db.ModifyPnsOwner(txContext)
-	case common.MODIFY_PNS_CONTENT:
-		db.ModifyPnsContent(txContext)
+	} else {
+		switch txContext.To.Hex() {
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
+			common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
+			common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+			db.Register(txContext)
+		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
+			db.Cancellation(txContext)
+		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
+			db.SendLossReport(blockNumber, txContext)
+		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
+			db.RevealLossReport(blockNumber, txContext)
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
+			db.TransferLostAccount(txContext)
+		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
+			db.RemoveLossReport(txContext)
+		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
+			db.RejectLossReport(txContext)
+		case common.SPECIAL_ADDRESS_FOR_VOTE:
+			db.Vote(txContext)
+		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
+			db.ApplyToBeDPoSNode(txContext)
+		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
+			db.Redemption(txContext)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
+			db.ModifyPnsOwner(txContext)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
+			db.ModifyPnsContent(txContext)
+		default:
+			db.Transfer(txContext)
+		}
 	}
 }

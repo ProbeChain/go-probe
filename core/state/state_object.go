@@ -186,7 +186,7 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		err     error
 	)
 	switch accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		var data RegularAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.regularAccount = data
@@ -202,7 +202,7 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		var data AuthorizeAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.authorizeAccount = data
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		var data LossAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossAccount = data
@@ -238,12 +238,12 @@ func newRegularAccount(db *StateDB, address common.Address, data RegularAccount)
 	if data.Value == nil {
 		data.Value = new(big.Int)
 	}
-	data.AccType = common.ACC_TYPE_OF_GENERAL
+	data.AccType = common.ACC_TYPE_OF_REGULAR
 	return &stateObject{
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    common.ACC_TYPE_OF_GENERAL,
+		accountType:    common.ACC_TYPE_OF_REGULAR,
 		regularAccount: data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -310,12 +310,12 @@ func newAuthorizeAccount(db *StateDB, address common.Address, data AuthorizeAcco
 
 // newLossAccount creates a state object.
 func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stateObject {
-	data.AccType = common.ACC_TYPE_OF_LOSE
+	data.AccType = common.ACC_TYPE_OF_LOSS
 	return &stateObject{
 		db:             db,
 		address:        address,
 		addrHash:       crypto.Keccak256Hash(address[:]),
-		accountType:    common.ACC_TYPE_OF_LOSE,
+		accountType:    common.ACC_TYPE_OF_LOSS,
 		lossAccount:    data,
 		originStorage:  make(Storage),
 		pendingStorage: make(Storage),
@@ -326,7 +326,7 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 // EncodeRLP implements rlp.Encoder.
 func (s *stateObject) EncodeRLP(w io.Writer) error {
 	switch s.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		return rlp.Encode(w, s.regularAccount)
 	case common.ACC_TYPE_OF_PNS:
 		return rlp.Encode(w, s.pnsAccount)
@@ -334,7 +334,7 @@ func (s *stateObject) EncodeRLP(w io.Writer) error {
 		return rlp.Encode(w, s.assetAccount)
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		return rlp.Encode(w, s.authorizeAccount)
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		return rlp.Encode(w, s.lossAccount)
 	default:
 		return accounts.ErrUnknownAccount
@@ -658,7 +658,7 @@ func (s *stateObject) SubBalance(amount *big.Int) {
 }
 
 func (s *stateObject) SetBalance(amount *big.Int) {
-	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_CONTRACT {
+	if s.accountType == common.ACC_TYPE_OF_REGULAR || s.accountType == common.ACC_TYPE_OF_CONTRACT {
 		s.db.journal.append(balanceChange{
 			account: &s.address,
 			//prev:    new(big.Int).Set(s.regularAccount.Balance),
@@ -670,7 +670,7 @@ func (s *stateObject) SetBalance(amount *big.Int) {
 
 func (s *stateObject) setBalance(amount *big.Int) {
 	switch s.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		s.setValueForRegular(amount)
 	case common.ACC_TYPE_OF_CONTRACT:
 		s.setValueForAsset(amount)
@@ -698,7 +698,7 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, accountType byte) *st
 		state *stateObject
 	)
 	switch accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		state = newRegularAccount(db, s.address, s.regularAccount)
 	case common.ACC_TYPE_OF_PNS:
 		state = newPnsAccount(db, s.address, s.pnsAccount)
@@ -706,7 +706,7 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, accountType byte) *st
 		state = newContractAccount(db, s.address, s.assetAccount)
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		state = newLossAccount(db, s.address, s.lossAccount)
 	default:
 		state = nil
@@ -774,7 +774,7 @@ func (s *stateObject) setCode(codeHash common.Hash, code []byte) {
 }
 
 func (s *stateObject) SetNonce(nonce uint64) {
-	if s.accountType == common.ACC_TYPE_OF_GENERAL || s.accountType == common.ACC_TYPE_OF_CONTRACT {
+	if s.accountType == common.ACC_TYPE_OF_REGULAR || s.accountType == common.ACC_TYPE_OF_CONTRACT {
 		s.db.journal.append(nonceChange{
 			account: &s.address,
 			//prev:    s.regularAccount.Nonce,
@@ -787,7 +787,7 @@ func (s *stateObject) SetNonce(nonce uint64) {
 func (s *stateObject) setNonce(nonce uint64) {
 	//s.regularAccount.Nonce = nonce
 	switch s.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		s.regularAccount.Nonce = nonce
 	case common.ACC_TYPE_OF_CONTRACT:
 		s.assetAccount.Nonce = nonce
@@ -803,7 +803,7 @@ func (s *stateObject) CodeHash() []byte {
 func (s *stateObject) Balance() *big.Int {
 	//return s.regularAccount.Value
 	switch s.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		return s.regularAccount.Value
 	case common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Value
@@ -818,7 +818,7 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 	accountInfo := new(RPCAccountInfo)
 	accountInfo.AccType = strconv.Itoa(int(s.accountType))
 	switch s.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		accountInfo.VoteAccount = &s.regularAccount.VoteAccount
 		accountInfo.VoteValue = s.regularAccount.VoteValue.String()
 		accountInfo.LossType = strconv.Itoa(int(s.regularAccount.LossType))
@@ -844,7 +844,7 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		accountInfo.Info = string(s.authorizeAccount.Info)
 		accountInfo.ValidPeriod = s.authorizeAccount.ValidPeriod.String()
 		//accountInfo.State = strconv.Itoa(int(s.authorizeAccount.State))
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		accountInfo.State = strconv.Itoa(int(s.lossAccount.State))
 		accountInfo.LossAccount = &s.lossAccount.LossAccount
 		accountInfo.NewAccount = &s.lossAccount.NewAccount
@@ -858,7 +858,7 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 func (s *stateObject) Nonce() uint64 {
 	//return s.regularAccount.Nonce
 	switch s.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		return s.regularAccount.Nonce
 	case common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Nonce

@@ -69,7 +69,7 @@ func TestGenerate(t *testing.T) {
 
 }
 
-func TestCreateAddressForAccountType(t *testing.T) {
+func TestCreateAddress(t *testing.T) {
 	//Create an account
 	key, err := crypto.GenerateKey()
 	if err != nil {
@@ -93,7 +93,7 @@ func TestCreateAddressForAccountType(t *testing.T) {
 		fmt.Printf("failed GenerateKey with %s.", err2)
 	}
 	fmt.Printf("flag[%T][%X]\n", c, c)
-	address_02, _ := crypto.CreateAddressForAccountType(address, uint64(123456))
+	address_02 := crypto.CreateAddress(address, uint64(123456))
 	fmt.Printf("address2[%d][%v]\n", len(address_02), address_02)
 
 }
@@ -376,7 +376,7 @@ func TestAccounTypeFoGenrateSign(*testing.T) {
 	var testAddrHex = "007245ec242315371bA8E44BAA39e5c0AaC14De2620B6b8Cb4"
 	toAddress := common.HexToAddress(testAddrHex)
 	nonce := uint64(2)
-	contractAddr, _ := crypto.CreateAddressForAccountType(toAddress, nonce)
+	contractAddr := crypto.CreateAddress(toAddress, nonce)
 	//contractAddr = common.HexToAddress("03f112c97935863463bc34871f506A9A8c3741a1CE0f8F60c9")
 	fmt.Println("contractAddr", contractAddr.String())
 }

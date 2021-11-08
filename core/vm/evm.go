@@ -111,10 +111,9 @@ type TxContext struct {
 	GasPrice *big.Int       // Provides information for GASPRICE
 	From     common.Address
 	To       *common.Address
-	BizType  byte
+	Nonce    uint64
 	Value    *big.Int
 	Data     []byte
-	ExtArgs  []byte
 }
 
 // EVM is the Probeum Virtual Machine base object and provides
@@ -260,24 +259,22 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	//if isPrecompile {
 	//	ret, gas, err = RunPrecompiledContract(p, input, gas)
 	//} else {
-	if evm.TxContext.BizType == common.TRANSFER {
-		// Initialise a new contract and set the code that is to be used by the EVM.
-		// The contract is a scoped environment for this execution context only.
-		code := evm.StateDB.GetCode(to)
-		if len(code) == 0 {
-			ret, err = nil, nil // gas is unchanged
-		} else {
-			addrCopy := to
-			// If the account has no code, we can abort here
-			// The depth-check is already done, and precompiles handled above
-			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
-			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
-			ret, err = run(evm, contract, input, false)
-			if err != nil {
-				log.Error(fmt.Sprintf("call contract err:%s\n", err))
-			}
-			gas = contract.Gas
+	// Initialise a new contract and set the code that is to be used by the EVM.
+	// The contract is a scoped environment for this execution context only.
+	code := evm.StateDB.GetCode(to)
+	if len(code) == 0 {
+		ret, err = nil, nil // gas is unchanged
+	} else {
+		addrCopy := to
+		// If the account has no code, we can abort here
+		// The depth-check is already done, and precompiles handled above
+		contract := NewContract(caller, AccountRef(addrCopy), value, gas)
+		contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
+		ret, err = run(evm, contract, input, false)
+		if err != nil {
+			log.Error(fmt.Sprintf("call contract err:%s\n", err))
 		}
+		gas = contract.Gas
 	}
 	//}
 	// When an error was returned by the EVM or when setting the creation code
@@ -534,7 +531,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	contractAddr, _ = crypto.CreateAddressForAccountType(caller.Address(), evm.StateDB.GetNonce(caller.Address()))
+	contractAddr = crypto.CreateAddress(caller.Address(), evm.StateDB.GetNonce(caller.Address()))
 	if evm.StateDB.Exist(contractAddr) {
 		log.Error("Failed to create contract address", "err", ErrContractAddressCollision)
 		return nil, common.Address{}, gas, ErrContractAddressCollision

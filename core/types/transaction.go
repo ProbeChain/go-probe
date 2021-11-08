@@ -83,15 +83,10 @@ type TxData interface {
 	value() *big.Int
 	nonce() uint64
 	to() *common.Address
-	bizType() byte
 	rawSignatureValues() (v, r, s *big.Int)
 	setSignatureValues(chainID, v, r, s *big.Int)
 
 	from() *common.Address
-	//setFrom(from *common.Address)
-	extArgs() []byte
-	setExtArgs([]byte)
-	setValue(*big.Int)
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -288,8 +283,6 @@ func (tx *Transaction) Value() *big.Int { return new(big.Int).Set(tx.inner.value
 // Nonce returns the sender account nonce of the transaction.
 func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
-func (tx *Transaction) BizType() byte { return tx.inner.bizType() }
-
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
 func (tx *Transaction) To() *common.Address {
@@ -317,17 +310,19 @@ func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))
 	total.Add(total, tx.Value())
 	var pledgeAmount uint64
-	switch tx.BizType() {
-	case common.REGISTER_PNS:
-		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
-	case common.REGISTER_AUTHORIZE:
-		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
-	case common.REGISTER_LOSE:
-		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
-	case common.CONTRACT_DEPLOY:
+	if tx.To() == nil {
 		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
-	default:
-		pledgeAmount = uint64(0)
+	} else {
+		switch tx.To().Hex() {
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS
+		default:
+			pledgeAmount = uint64(0)
+		}
 	}
 	total.Add(total, new(big.Int).SetUint64(pledgeAmount))
 	return total
@@ -401,7 +396,9 @@ func (tx *Transaction) EffectiveGasTipIntCmp(other *big.Int, baseFee *big.Int) i
 // Hash returns the transaction hash.
 func (tx *Transaction) Hash() common.Hash {
 	if hash := tx.hash.Load(); hash != nil {
-		return hash.(common.Hash)
+		c := hash.(common.Hash)
+		fmt.Printf("c %x\n", c)
+		return c
 	}
 
 	var h common.Hash
@@ -411,6 +408,7 @@ func (tx *Transaction) Hash() common.Hash {
 		h = prefixedRlpHash(tx.Type(), tx.inner)
 	}
 	tx.hash.Store(h)
+	fmt.Printf("h %x\n", h)
 	return h
 }
 
@@ -436,21 +434,6 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	cpy := tx.inner.copy()
 	cpy.setSignatureValues(signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
-}
-
-// GasTipCapIntCmp compares the gasTipCap of the transaction against the given gasTipCap.
-func (tx *Transaction) ExtArgs() []byte {
-	return tx.inner.extArgs()
-}
-
-// SetExtArgs sets the inner transaction extArgs
-func (tx *Transaction) SetExtArgs(bytes []byte) {
-	tx.inner.setExtArgs(bytes)
-}
-
-// SetValue sets the inner transaction value
-func (tx *Transaction) SetValue(value *big.Int) {
-	tx.inner.setValue(value)
 }
 
 // Transactions implements DerivableList for transactions.
@@ -614,14 +597,13 @@ func (t *TransactionsByPriceAndNonce) Pop() {
 	heap.Pop(&t.heads)
 }
 
-func NewMessage(from common.Address, to *common.Address, bizType byte,
+func NewMessage(from common.Address, to *common.Address,
 	nonce uint64, amount *big.Int, gasLimit uint64,
 	gasPrice, gasFeeCap, gasTipCap *big.Int,
-	data []byte, accessList AccessList, checkNonce bool, extArgs []byte) Message {
+	data []byte, accessList AccessList, checkNonce bool) Message {
 	return Message{
 		from:       from,
 		to:         to,
-		bizType:    bizType,
 		nonce:      nonce,
 		amount:     amount,
 		gasLimit:   gasLimit,
@@ -631,7 +613,6 @@ func NewMessage(from common.Address, to *common.Address, bizType byte,
 		data:       data,
 		accessList: accessList,
 		checkNonce: checkNonce,
-		extArgs:    extArgs,
 	}
 }
 
@@ -648,8 +629,6 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		data:       tx.Data(),
 		accessList: tx.AccessList(),
 		checkNonce: true,
-		bizType:    tx.BizType(),
-		extArgs:    tx.ExtArgs(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {

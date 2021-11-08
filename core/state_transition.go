@@ -74,9 +74,6 @@ type Message interface {
 	CheckNonce() bool
 	Data() []byte
 	AccessList() types.AccessList
-
-	BizType() byte
-	ExtArgs() []byte
 }
 
 // ExecutionResult includes all output after executing given evm

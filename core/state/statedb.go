@@ -468,7 +468,7 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 		return false
 	}
 	switch obj.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		s.journal.append(regularSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
@@ -507,7 +507,7 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 			info:        obj.authorizeAccount.Info,
 			validPeriod: *obj.authorizeAccount.ValidPeriod,
 		})
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		s.journal.append(lossSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
@@ -671,7 +671,7 @@ func (s *StateDB) GetOrNewStateObject(addr common.Address) (*stateObject, bool) 
 // createObject creates a new state object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
 func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) {
-	return s.createObjectByAccType(addr, common.ACC_TYPE_OF_GENERAL)
+	return s.createObjectByAccType(addr, common.ACC_TYPE_OF_REGULAR)
 }
 
 // createObjectByAccType creates a new state object. If there is an existing account with
@@ -1260,17 +1260,19 @@ func (s *StateDB) Vote(context vm.TxContext) {
 
 func (s *StateDB) Register(context vm.TxContext) {
 	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
-	newAddress := common.BytesToAddress(context.ExtArgs)
+	var newAddress common.Address
 	pledgeAmount := uint64(0)
-	switch context.BizType {
-	case common.REGISTER_PNS:
+	switch context.To.Hex() {
+	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+		newAddress = crypto.CreatePNSAddress(context.From, context.Data)
 		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
 		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_PNS)
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(0)
-	case common.REGISTER_AUTHORIZE:
-		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_VOTING
+	case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
+		newAddress = crypto.CreateAddress(context.From, context.Nonce)
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
 		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_AUTHORIZE)
 		obj.authorizeAccount.PledgeValue = context.Value
 		obj.authorizeAccount.VoteValue = context.Value
@@ -1278,9 +1280,10 @@ func (s *StateDB) Register(context vm.TxContext) {
 		args := new(common.RegisterAuthorizeArgs)
 		rlp.DecodeBytes(context.Data, &args)
 		obj.authorizeAccount.ValidPeriod = &args.ValidPeriod
-	case common.REGISTER_LOSE:
-		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS_REPORT
-		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_LOSE)
+	case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+		newAddress = crypto.CreateAddress(context.From, context.Nonce)
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS
+		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_LOSS)
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
 		//s.setMarkLossAccount(*context.New)
 	}
@@ -1290,14 +1293,31 @@ func (s *StateDB) Register(context vm.TxContext) {
 func (s *StateDB) Cancellation(context vm.TxContext) {
 	cancellationArgs := new(common.CancellationArgs)
 	rlp.DecodeBytes(context.Data, &cancellationArgs)
-	s.AddBalance(cancellationArgs.BeneficiaryAddress, context.Value)
-	s.Suicide(cancellationArgs.CancelAddress)
+	cancelAccount := s.getStateObject(cancellationArgs.CancelAddress)
+	if cancelAccount != nil {
+		pledgeAmount := uint64(0)
+		switch cancelAccount.AccountType() {
+		case common.ACC_TYPE_OF_REGULAR:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
+		case common.ACC_TYPE_OF_PNS:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+		case common.ACC_TYPE_OF_CONTRACT:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
+		case common.ACC_TYPE_OF_AUTHORIZE:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
+		case common.ACC_TYPE_OF_LOSS:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS
+		}
+		s.AddBalance(cancellationArgs.BeneficiaryAddress, new(big.Int).SetUint64(pledgeAmount))
+		s.Suicide(cancellationArgs.CancelAddress)
+	}
 }
 
 func (s *StateDB) Transfer(context vm.TxContext) {
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s,isNew:%t\n", context.From.String(), context.To.String(), context.Value.String(), len(context.ExtArgs) > 0)
+	isNew := s.getStateObject(*context.To) == nil
+	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s,isNew:%t\n", context.From.String(), context.To.String(), context.Value.String(), isNew)
 	actualValue := context.Value
-	if len(context.ExtArgs) > 0 {
+	if isNew {
 		actualValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR))
 	}
 	s.SubBalance(context.From, context.Value)
@@ -1500,7 +1520,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountT
 	}
 
 	switch accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		data := new(RegularAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1536,7 +1556,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountT
 			}
 		}
 		return newAuthorizeAccount(s, addr, *data), false
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		data := new(LossAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {

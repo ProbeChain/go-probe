@@ -24,6 +24,7 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 		Logs              []*Log         `json:"logs"              gencodec:"required"`
 		TxHash            common.Hash    `json:"transactionHash" gencodec:"required"`
 		ContractAddress   common.Address `json:"contractAddress"`
+		NewAddress        common.Address `json:"newAddress"`
 		GasUsed           hexutil.Uint64 `json:"gasUsed" gencodec:"required"`
 		BlockHash         common.Hash    `json:"blockHash,omitempty"`
 		BlockNumber       *hexutil.Big   `json:"blockNumber,omitempty"`
@@ -38,10 +39,12 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 	enc.Logs = r.Logs
 	enc.TxHash = r.TxHash
 	enc.ContractAddress = r.ContractAddress
+	enc.NewAddress = r.NewAddress
 	enc.GasUsed = hexutil.Uint64(r.GasUsed)
 	enc.BlockHash = r.BlockHash
 	enc.BlockNumber = (*hexutil.Big)(r.BlockNumber)
 	enc.TransactionIndex = hexutil.Uint(r.TransactionIndex)
+
 	return json.Marshal(&enc)
 }
 
@@ -56,6 +59,7 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 		Logs              []*Log          `json:"logs"              gencodec:"required"`
 		TxHash            *common.Hash    `json:"transactionHash" gencodec:"required"`
 		ContractAddress   *common.Address `json:"contractAddress"`
+		NewAddress        *common.Address `json:"newAddress"`
 		GasUsed           *hexutil.Uint64 `json:"gasUsed" gencodec:"required"`
 		BlockHash         *common.Hash    `json:"blockHash,omitempty"`
 		BlockNumber       *hexutil.Big    `json:"blockNumber,omitempty"`
@@ -92,6 +96,9 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 	r.TxHash = *dec.TxHash
 	if dec.ContractAddress != nil {
 		r.ContractAddress = *dec.ContractAddress
+	}
+	if dec.NewAddress != nil {
+		r.NewAddress = *dec.NewAddress
 	}
 	if dec.GasUsed == nil {
 		return errors.New("missing required field 'gasUsed' for Receipt")

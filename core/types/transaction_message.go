@@ -11,7 +11,6 @@ import (
 type Message struct {
 	to         *common.Address
 	from       common.Address
-	bizType    byte
 	nonce      uint64
 	amount     *big.Int
 	gasLimit   uint64
@@ -21,7 +20,6 @@ type Message struct {
 	data       []byte
 	accessList AccessList
 	checkNonce bool
-	extArgs    []byte
 }
 
 func (m Message) From() common.Address   { return m.from }
@@ -35,5 +33,3 @@ func (m Message) Nonce() uint64          { return m.nonce }
 func (m Message) Data() []byte           { return m.data }
 func (m Message) AccessList() AccessList { return m.accessList }
 func (m Message) CheckNonce() bool       { return m.checkNonce }
-func (m Message) BizType() byte          { return m.bizType }
-func (m Message) ExtArgs() []byte        { return m.extArgs }

@@ -1325,7 +1325,6 @@ type RPCTransaction struct {
 	Input            hexutil.Bytes     `json:"input"`
 	Nonce            hexutil.Uint64    `json:"nonce"`
 	To               *common.Address   `json:"to"`
-	BizType          hexutil.Uint8     `json:"bizType"`
 	TransactionIndex *hexutil.Uint64   `json:"transactionIndex"`
 	Value            *hexutil.Big      `json:"value"`
 	Type             hexutil.Uint64    `json:"type"`
@@ -1335,7 +1334,6 @@ type RPCTransaction struct {
 	R                *hexutil.Big      `json:"r"`
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
-	NewAddress       *common.Address   `json:"newAddress,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1362,7 +1360,6 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		Hash:     tx.Hash(),
 		Input:    hexutil.Bytes(tx.Data()),
 		Nonce:    hexutil.Uint64(tx.Nonce()),
-		BizType:  hexutil.Uint8(tx.BizType()),
 		Value:    (*hexutil.Big)(tx.Value()),
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
@@ -1372,12 +1369,6 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.BlockHash = &blockHash
 		result.BlockNumber = (*hexutil.Big)(new(big.Int).SetUint64(blockNumber))
 		result.TransactionIndex = (*hexutil.Uint64)(&index)
-	}
-
-	switch tx.BizType() {
-	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
-		newAccount := common.BytesToAddress(tx.ExtArgs())
-		result.NewAddress = &newAccount
 	}
 
 	switch tx.Type() {
@@ -1489,10 +1480,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 	if args.To != nil {
 		to = *args.To
 	} else {
-		to, err = crypto.CreateAddressForAccountType(args.from(), uint64(*args.Nonce))
-		if err != nil {
-			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", args.toTransaction().Hash(), err)
-		}
+		to = crypto.CreateAddress(args.from(), uint64(*args.Nonce))
 	}
 	// Retrieve the precompiles since they don't need to be added to the access list
 	precompiles := vm.ActivePrecompiles(b.ChainConfig().Rules(header.Number))
@@ -1518,11 +1506,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		}
 		// Copy the original db so we don't modify it
 		statedb := db.Copy()
-		msg := types.NewMessage(
-			args.from(), args.To, args.BizType,
-			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
-			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
-			args.data(), accessList, false, args.ExtArgs)
+		msg := types.NewMessage(args.from(), args.To, uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas), args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0), args.data(), accessList, false)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1693,7 +1677,6 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"transactionIndex":  hexutil.Uint64(index),
 		"from":              from,
 		"to":                tx.To(),
-		"bizType":           hexutil.Uint8(tx.BizType()),
 		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
 		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
 		"contractAddress":   nil,
@@ -1701,12 +1684,6 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"logsBloom":         receipt.Bloom,
 		"type":              hexutil.Uint(tx.Type()),
 		"data":              hexutil.Bytes(tx.Data()),
-	}
-
-	//不同业务类型展示不同字段
-	switch tx.BizType() {
-	case common.REGISTER_PNS, common.REGISTER_AUTHORIZE, common.REGISTER_LOSE:
-		fields["newAddress"] = common.BytesToAddress(tx.ExtArgs())
 	}
 
 	// Assign the effective gas price paid
@@ -1732,6 +1709,10 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
 	if receipt.ContractAddress != (common.Address{}) {
 		fields["contractAddress"] = receipt.ContractAddress
+	}
+
+	if receipt.NewAddress != (common.Address{}) {
+		fields["newAddress"] = receipt.NewAddress
 	}
 	return fields, nil
 }
@@ -1770,8 +1751,8 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, err
 	}
 
-	if tx.To() == nil && tx.BizType() == common.CONTRACT_DEPLOY {
-		addr, _ := crypto.CreateAddressForAccountType(from, tx.Nonce())
+	if tx.To() == nil {
+		addr := crypto.CreateAddress(from, tx.Nonce())
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
 		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value())

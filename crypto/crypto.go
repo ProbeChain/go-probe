@@ -21,7 +21,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -117,17 +116,8 @@ func CreateAddress2(b common.Address, salt [32]byte, inithash []byte) common.Add
 	return common.BytesToAddress(Keccak256([]byte{0xff}, b.Bytes(), salt[:], inithash)[12:])
 }
 
-func CreateAddressForAccountType(address common.Address, nonce uint64) (add common.Address, err error) {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, nonce)
-	return common.BytesToAddress(Keccak256([]byte{0xff}, address.Bytes(), b[:])[12:]), nil
-}
-
-func CreatePNSAddress(address common.Address, pns []byte) (add common.Address, err error) {
-	if len(pns) <= 0 {
-		return address, errors.New("Creat PNSAddress error,PNS parameter is invalid")
-	}
-	return common.BytesToAddress(Keccak256([]byte{}, address.Bytes(), pns)[12:]), nil
+func CreatePNSAddress(address common.Address, pns []byte) common.Address {
+	return common.BytesToAddress(Keccak256([]byte{}, address.Bytes(), pns)[12:])
 }
 
 // ToECDSA creates a private key with the given D value.
