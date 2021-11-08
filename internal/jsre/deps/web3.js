@@ -2549,6 +2549,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
       this._requestManager = new RequestManager(provider);
       this.currentProvider = provider;
       this.probe = new Probe(this);
+      this.eth = this.probe
       this.db = new DB(this);
       this.shh = new Shh(this);
       this.net = new Net(this);
