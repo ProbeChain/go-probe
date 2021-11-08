@@ -124,14 +124,19 @@ func (pool *TxPool) validateTxOfContractDeploy(tx *types.Transaction, local bool
 }
 
 func (pool *TxPool) validateTxOfSendLossReport(tx *types.Transaction, local bool) error {
+	return errors.New("the current version does not support")
+
 	var sender *common.Address
 	var err error
 	if sender, err = pool.validateSender(tx, local); err != nil {
 		return err
 	}
+
 	return pool.validateGas(tx, local, sender)
 }
 func (pool *TxPool) validateTxOfRevealLossReport(tx *types.Transaction, local bool) error {
+	return errors.New("the current version does not support")
+
 	var sender *common.Address
 	var err error
 	if sender, err = pool.validateSender(tx, local); err != nil {
@@ -196,6 +201,8 @@ func (pool *TxPool) validateTxOfRevealLossReport(tx *types.Transaction, local bo
 	return pool.validateGas(tx, local, sender)
 }
 func (pool *TxPool) validateTxOfTransferLostAccount(tx *types.Transaction, local bool) error {
+	return errors.New("the current version does not support")
+
 	var sender *common.Address
 	var err error
 	if sender, err = pool.validateSender(tx, local); err != nil {
@@ -233,6 +240,8 @@ func (pool *TxPool) validateTxOfTransferLostAccount(tx *types.Transaction, local
 	return pool.validateGas(tx, local, sender)
 }
 func (pool *TxPool) validateTxOfRemoveLossReport(tx *types.Transaction, local bool) error {
+	return errors.New("the current version does not support")
+
 	var sender *common.Address
 	var err error
 	if sender, err = pool.validateSender(tx, local); err != nil {
@@ -263,6 +272,8 @@ func (pool *TxPool) validateTxOfRemoveLossReport(tx *types.Transaction, local bo
 	return pool.validateGas(tx, local, sender)
 }
 func (pool *TxPool) validateTxOfRejectLossReport(tx *types.Transaction, local bool) error {
+	return errors.New("the current version does not support")
+
 	var sender *common.Address
 	var err error
 	if sender, err = pool.validateSender(tx, local); err != nil {
