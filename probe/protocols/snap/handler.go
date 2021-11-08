@@ -320,7 +320,7 @@ func handleMessage(backend Backend, peer *Peer) error {
 					return p2p.Send(peer.rw, StorageRangesMsg, &StorageRangesPacket{ID: req.ID})
 				}
 				//var acc state.RegularAccount
-				var acc state.AssetAccount
+				var acc state.ContractAccount
 				if err := rlp.DecodeBytes(accTrie.Get(account[:]), &acc); err != nil {
 					return p2p.Send(peer.rw, StorageRangesMsg, &StorageRangesPacket{ID: req.ID})
 				}

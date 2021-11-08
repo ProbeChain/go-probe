@@ -18,7 +18,8 @@
 package main
 
 import (
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"crypto/ecdsa"
+	"github.com/probeum/go-probeum/crypto"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -48,9 +49,9 @@ func main() {
 	fdlimit.Raise(2048)
 
 	// Generate a batch of accounts to seal and fund with
-	faucets := make([]*probecrypto.PrivateKey, 128)
+	faucets := make([]*ecdsa.PrivateKey, 128)
 	for i := 0; i < len(faucets); i++ {
-		faucets[i], _ = probecrypto.GenerateKey()
+		faucets[i], _ = crypto.GenerateKey()
 	}
 	// Pre-generate the probeash mining DAG so we don't race
 	probeash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".probeash"))
@@ -105,7 +106,7 @@ func main() {
 		backend := nodes[index%len(nodes)]
 
 		// Create a self transaction and inject into the pool
-		tx, err := types.SignTx(types.NewTransaction(nonces[index], probecrypto.PubkeyToAddress(faucets[index].PublicKey), new(big.Int), 21000, big.NewInt(100000000000+rand.Int63n(65536)), nil), types.HomesteadSigner{}, faucets[index])
+		tx, err := types.SignTx(types.NewTransaction(nonces[index], crypto.PubkeyToAddress(faucets[index].PublicKey), new(big.Int), 21000, big.NewInt(100000000000+rand.Int63n(65536)), nil), types.HomesteadSigner{}, faucets[index])
 		if err != nil {
 			panic(err)
 		}
@@ -123,7 +124,7 @@ func main() {
 
 // makeGenesis creates a custom Probeash genesis block based on some pre-defined
 // faucet accounts.
-func makeGenesis(faucets []*probecrypto.PrivateKey) *core.Genesis {
+func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	genesis := core.DefaultRopstenGenesisBlock()
 	genesis.Difficulty = params.MinimumDifficulty
 	genesis.GasLimit = 25000000
@@ -133,7 +134,7 @@ func makeGenesis(faucets []*probecrypto.PrivateKey) *core.Genesis {
 
 	genesis.Alloc = core.GenesisAlloc{}
 	for _, faucet := range faucets {
-		genesis.Alloc[probecrypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
+		genesis.Alloc[crypto.PubkeyToAddress(faucet.PublicKey)] = core.GenesisAccount{
 			Balance: new(big.Int).Exp(big.NewInt(2), big.NewInt(128), nil),
 		}
 	}

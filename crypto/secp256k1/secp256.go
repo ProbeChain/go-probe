@@ -111,14 +111,13 @@ func RecoverPubkey(msg []byte, sig []byte) ([]byte, error) {
 	}
 
 	var (
-		pubkey  = make([]byte, 66)
+		pubkey  = make([]byte, 65)
 		sigdata = (*C.uchar)(unsafe.Pointer(&sig[0]))
 		msgdata = (*C.uchar)(unsafe.Pointer(&msg[0]))
 	)
 	if C.secp256k1_ext_ecdsa_recover(context, (*C.uchar)(unsafe.Pointer(&pubkey[0])), sigdata, msgdata) == 0 {
 		return nil, ErrRecoverFailed
 	}
-	pubkey[65] = sig[65]
 	return pubkey, nil
 }
 
@@ -154,9 +153,9 @@ func DecompressPubkey(pubkey []byte) (x, y *big.Int) {
 }
 
 // CompressPubkey encodes a public key to 33-byte compressed format.
-func CompressPubkey(x, y *big.Int, k byte) []byte {
+func CompressPubkey(x, y *big.Int) []byte {
 	var (
-		pubkey     = S256ByType(k).Marshal(x, y)
+		pubkey     = S256().Marshal(x, y)
 		pubkeydata = (*C.uchar)(unsafe.Pointer(&pubkey[0]))
 		pubkeylen  = C.size_t(len(pubkey))
 		out        = make([]byte, 33)
@@ -170,7 +169,7 @@ func CompressPubkey(x, y *big.Int, k byte) []byte {
 }
 
 func checkSignature(sig []byte) error {
-	if len(sig) != 66 {
+	if len(sig) != 65 {
 		return ErrInvalidSignatureLen
 	}
 	if sig[64] >= 4 {

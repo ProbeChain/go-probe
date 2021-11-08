@@ -170,17 +170,14 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 		state.GetDPosCandidates().AddDPosCandidate(candidate)
 	}
 	// Just commit the new block if there is no stored genesis block.
-	// 如果没有存储的genesis块，只需提交新块。
 	stored := rawdb.ReadCanonicalHash(db, 0)
 	if (stored == common.Hash{}) {
 		if genesis == nil {
-			// genesis和stored都为空，使用主网，获取默认区块信息
 			log.Info("Writing default main-net genesis block")
 			genesis = DefaultGenesisBlock()
 		} else {
 			log.Info("Writing custom genesis block")
 		}
-		// 提交入库
 		block, err := genesis.Commit(db)
 		if err != nil {
 			return genesis.Config, common.Hash{}, err
@@ -189,7 +186,6 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	}
 	// We have the genesis block in database(perhaps in ancient database)
 	// but the corresponding state is missing.
-	// 获取创世块的头部信息
 	header := rawdb.ReadHeader(db, stored, 0)
 	_, err := state.New(header.Root, state.NewDatabaseWithConfig(db, nil), nil)
 	if err != nil {
@@ -216,7 +212,6 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 		}
 	}
 	// Get the existing chain configuration.
-	// 获取当前区块链相关配置
 	newcfg := genesis.configOrDefault(stored)
 
 	if err := newcfg.CheckConfigForkOrder(); err != nil {
@@ -226,7 +221,6 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	globalconfig.Epoch = storedcfg.Dpos.Epoch
 	//state.GetDPosCandidates().ConvertToDPosCandidate(storedcfg.Dpos.DposList)
 	if storedcfg == nil {
-		// 读取失败，说明创世区块写入被中断
 		log.Warn("Found genesis block without chain config")
 		rawdb.WriteChainConfig(db, stored, newcfg)
 		return newcfg, stored, nil
@@ -239,7 +233,6 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	}
 	// Check config compatibility and write the config. Compatibility errors
 	// are returned to the caller unless we're already at block zero.
-	// 获取区块头信息
 	height := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
 	if height == nil {
 		return newcfg, stored, fmt.Errorf("missing block number for head header hash")
@@ -281,7 +274,8 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	if err != nil {
 		panic(err)
 	}
-	if g.Config.Dpos != nil {
+	var dPosHash common.Hash
+	if g.DposConfig != nil {
 		number := g.Number
 		epoch := g.Config.Dpos.Epoch
 		dposNo := number + 1 - (number+1)%epoch
@@ -289,7 +283,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
 				log.Info("ToBlock roothash ", "hash", s.Hex())
 			}*/
-			dPosHash := state.BuildHashForDPos(g.Config.Dpos.DposList)
+			dPosHash = state.BuildHashForDPos(g.DposConfig.DposList)
 			statedb.UpdateDPosHash(dPosHash)
 			rawdb.WriteDPos(db, dposNo, g.Config.Dpos.DposList)
 			//data, _ := json.Marshal(g.Dpos.DposList)
@@ -303,8 +297,11 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 							log.Crit("Failed to store dposNodesList", "err", err)
 						}
 						batch.Write()*/
+		} else {
+			dPosHash = state.BuildHashForDPos(rawdb.ReadDPos(db, dposNo))
 		}
 	}
+	dPosCandidateHash := state.BuildHashForDPosCandidate(rawdb.ReadDPosCandidate(db))
 	for addr, account := range g.Alloc {
 		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
@@ -315,28 +312,26 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	}
 	root := statedb.IntermediateRoot(false, nil)
 
-	// 更新所有
-	hash := statedb.GetStateDbTrie().GetTallHash()
-	rawdb.WriteAllStateRootHash(db, hash, root)
-
 	head := &types.Header{
-		Number:           new(big.Int).SetUint64(g.Number),
-		Nonce:            types.EncodeNonce(g.Nonce),
-		Time:             g.Timestamp,
-		ParentHash:       g.ParentHash,
-		Extra:            g.ExtraData,
-		GasLimit:         g.GasLimit,
-		GasUsed:          g.GasUsed,
-		BaseFee:          g.BaseFee,
-		Difficulty:       g.Difficulty,
-		MixDigest:        g.Mixhash,
-		Coinbase:         g.Coinbase,
-		Root:             root,
-		DposSigAddr:      common.Address{},
-		DposAcksHash:     common.Hash{},
-		DposSig:          make([]byte, 65),
-		DposAckCountList: make([]*types.DposAckCount, 0),
-		PowAnswers:       make([]*types.PowAnswer, 0),
+		Number:            new(big.Int).SetUint64(g.Number),
+		Nonce:             types.EncodeNonce(g.Nonce),
+		Time:              g.Timestamp,
+		ParentHash:        g.ParentHash,
+		Extra:             g.ExtraData,
+		GasLimit:          g.GasLimit,
+		GasUsed:           g.GasUsed,
+		BaseFee:           g.BaseFee,
+		Difficulty:        g.Difficulty,
+		MixDigest:         g.Mixhash,
+		Coinbase:          g.Coinbase,
+		Root:              root,
+		DposSigAddr:       common.Address{},
+		DposAcksHash:      common.Hash{},
+		DposSig:           make([]byte, 65),
+		DposAckCountList:  make([]*types.DposAckCount, 0),
+		PowAnswers:        make([]*types.PowAnswer, 0),
+		DPoSRoot:          dPosHash,
+		DPoSCandidateRoot: dPosCandidateHash,
 	}
 
 	if g.GasLimit == 0 {
@@ -360,8 +355,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	}*/
 
 	statedb.Commit(false)
-	//statedb.Database().TrieDB().Commit(hash[0], true, nil)
-	statedb.Database().TrieDB().CommitForNew(hash, true, nil)
+	statedb.Database().TrieDB().Commit(root, true, nil)
 
 	block := types.DposNewBlock(head, nil, nil, nil, nil,
 		trie.NewStackTrie(nil), types.BlockTypeEffect)

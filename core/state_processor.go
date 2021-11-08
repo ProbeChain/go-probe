@@ -19,7 +19,8 @@ package core
 import (
 	"fmt"
 	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/crypto"
+
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -124,10 +125,17 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	}
 	receipt.TxHash = tx.Hash()
 	receipt.GasUsed = result.UsedGas
-	receipt.BizType = msg.BizType()
 	// If the transaction created a contract, store the creation address in the receipt.
-	if msg.To() == nil && msg.BizType() == common.ContractCall {
-		receipt.ContractAddress, _ = probecrypto.CreateAddressForAccountType(evm.TxContext.Origin, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
+	if msg.To() == nil {
+		receipt.ContractAddress = crypto.CreateAddress(evm.TxContext.Origin, tx.Nonce())
+	} else {
+		switch msg.To().Hex() {
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+			receipt.NewAddress = crypto.CreatePNSAddress(evm.TxContext.Origin, tx.Data())
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
+			common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+			receipt.NewAddress = crypto.CreateAddress(evm.TxContext.Origin, tx.Nonce())
+		}
 	}
 
 	// Set the receipt logs and create the bloom filter.

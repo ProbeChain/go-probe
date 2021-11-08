@@ -20,46 +20,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/big"
-
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/hexutil"
 	"github.com/probeum/go-probeum/common/math"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/log"
+	"math/big"
 )
 
 // TransactionArgs represents the arguments to construct a new transaction
 // or a message call.
 type TransactionArgs struct {
-	From      *common.Address `json:"from"`
-	To        *common.Address `json:"to"`
-	Owner     *common.Address `json:"owner"`
-	Loss      *common.Address `json:"loss"`
-	Asset     *common.Address `json:"asset"`
-	Old       *common.Address `json:"old"`
-	New       *common.Address `json:"new"`
-	Initiator *common.Address `json:"initiator"`
-	Receiver  *common.Address `json:"receiver"`
-	BizType   *hexutil.Uint8  `json:"bizType"`
-
-	Gas                  *hexutil.Uint64 `json:"gas"`
-	GasPrice             *hexutil.Big    `json:"gasPrice"`
-	MaxFeePerGas         *hexutil.Big    `json:"maxFeePerGas"`
-	MaxPriorityFeePerGas *hexutil.Big    `json:"maxPriorityFeePerGas"`
-	Value                *hexutil.Big    `json:"value"`
-	Value2               *hexutil.Big    `json:"value2"`
-	Nonce                *hexutil.Uint64 `json:"nonce"`
-	Height               *hexutil.Big    `json:"height"`
-
-	Data       *hexutil.Bytes    `json:"data"`
-	Input      *hexutil.Bytes    `json:"input"`
-	Mark       *hexutil.Bytes    `json:"mark"`
-	AccType    *hexutil.Uint8    `json:"accType"`
-	LossType   *hexutil.Uint8    `json:"lossType"`
-	PnsType    *hexutil.Uint8    `json:"pnsType"`
-	AccessList *types.AccessList `json:"accessList,omitempty"`
-	ChainID    *hexutil.Big      `json:"chainId,omitempty"`
+	From                 *common.Address   `json:"from"`
+	To                   *common.Address   `json:"to"`
+	Gas                  *hexutil.Uint64   `json:"gas"`
+	GasPrice             *hexutil.Big      `json:"gasPrice"`
+	MaxFeePerGas         *hexutil.Big      `json:"maxFeePerGas"`
+	MaxPriorityFeePerGas *hexutil.Big      `json:"maxPriorityFeePerGas"`
+	Value                *hexutil.Big      `json:"value"`
+	Nonce                *hexutil.Uint64   `json:"nonce"`
+	Data                 *hexutil.Bytes    `json:"data"`
+	Input                *hexutil.Bytes    `json:"input"`
+	AccessList           *types.AccessList `json:"accessList,omitempty"`
+	ChainID              *hexutil.Big      `json:"chainId,omitempty"`
 }
 
 // from retrieves the transaction sender address.
@@ -77,27 +60,6 @@ func (args *TransactionArgs) data() []byte {
 	}
 	if args.Data != nil {
 		return *args.Data
-	}
-	return nil
-}
-
-func (args *TransactionArgs) mark() []byte {
-	if args.Mark != nil {
-		return *args.Mark
-	}
-	return nil
-}
-
-func (args *TransactionArgs) value2() *big.Int {
-	if args.Value2 != nil {
-		return args.Value2.ToInt()
-	}
-	return nil
-}
-
-func (args *TransactionArgs) height() *big.Int {
-	if args.Height != nil {
-		return args.Height.ToInt()
 	}
 	return nil
 }
@@ -143,44 +105,43 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		}
 	}
 	var err error
-	switch uint8(*args.BizType) {
-	case common.Register:
-		err = args.setDefaultsOfRegister(ctx, b)
-	case common.Cancellation:
-		err = args.setDefaultsOfCancellation(ctx, b)
-	case common.Transfer:
-		err = args.setDefaultsOfTransfer(ctx, b)
-	case common.ExchangeAsset:
-		err = args.setDefaultsOfExchangeAsset(ctx, b)
-	case common.ContractCall:
+	if args.To == nil {
 		err = args.setDefaultsOfContractCall(ctx, b)
-	case common.SendLossReport:
-		return args.setDefaultsOfSendLossReport(ctx, b)
-	case common.RevealLossReport:
-		return args.setDefaultsOfRevealLossReport(ctx, b)
-	case common.TransferLostAccount:
-		return args.setDefaultsOfTransferLostAccount(ctx, b)
-	case common.TransferLostAssetAccount:
-		return args.setDefaultsOfTransferLostAssetAccount(ctx, b)
-	case common.RemoveLossReport:
-		return args.setDefaultsOfRemoveLossReport(ctx, b)
-	case common.RejectLossReport:
-		return args.setDefaultsOfRejectLossReport(ctx, b)
-	case common.Vote:
-		return args.setDefaultsOfVote(ctx, b)
-	case common.ApplyToBeDPoSNode:
-		return args.setDefaultsOfApplyToBeDPoSNode(ctx, b)
-	case common.Redemption:
-		return args.setDefaultsOfRedemption(ctx, b)
-	case common.ModifyLossType:
-		return args.setDefaultsOfModifyLossType(ctx, b)
-	case common.ModifyPnsOwner:
-		return args.setDefaultsOfModifyPnsOwner(ctx, b)
-	case common.ModifyPnsContent:
-		return args.setDefaultsOfModifyPnsContent(ctx, b)
-	default:
-		err = errors.New("unsupported business type")
+	} else {
+		switch args.To.String() {
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+			err = args.setDefaultsOfRegisterPns(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
+			err = args.setDefaultsOfRegisterAuthorize(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+			err = args.setDefaultsOfRegisterLose(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
+			err = args.setDefaultsOfCancellation(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
+			err = args.setDefaultsOfSendLossReport(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
+			err = args.setDefaultsOfRevealLossReport(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
+			err = args.setDefaultsOfTransferLostAccount(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
+			err = args.setDefaultsOfRemoveLossReport(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
+			err = args.setDefaultsOfRejectLossReport(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_VOTE:
+			err = args.setDefaultsOfVote(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
+			err = args.setDefaultsOfApplyToBeDPoSNode(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
+			err = args.setDefaultsOfRedemption(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
+			err = args.setDefaultsOfModifyPnsOwner(ctx, b)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
+			err = args.setDefaultsOfModifyPnsContent(ctx, b)
+		default:
+			err = args.setDefaultsOfTransfer(ctx, b)
+		}
 	}
+
 	if err != nil {
 		log.Error("set defaults err ", err)
 		return err
@@ -259,59 +220,56 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (t
 	if args.AccessList != nil {
 		accessList = *args.AccessList
 	}
-	msg := types.NewMessage(
-		addr, args.To, uint8(*args.BizType),
-		0, value, gas,
-		gasPrice, gasFeeCap, gasTipCap,
-		data, accessList, false,
-		args.Owner, args.Loss, args.Asset,
-		args.Old, args.New, args.Initiator,
-		args.Receiver, args.mark(), args.value2(),
-		args.height(), args.AccType, args.LossType, args.PnsType)
+	msg := types.NewMessage(addr, args.To, 0, value, gas, gasPrice, gasFeeCap, gasTipCap, data, accessList, false)
 	return msg, nil
 }
 
 // toTransaction converts the arguments to a transaction.
 // This assumes that setDefaults has been called.
 func (args *TransactionArgs) toTransaction() *types.Transaction {
-	switch uint8(*args.BizType) {
-	case common.Register:
-		return args.transactionOfRegister()
-	case common.Cancellation:
-		return args.transactionOfCancellation()
-	case common.Transfer:
-		return args.transactionOfTransfer()
-	case common.ExchangeAsset:
-		return args.transactionOfExchangeAsset()
-	case common.ContractCall:
-		return args.transactionOfContractCall()
-	case common.SendLossReport:
-		return args.transactionOfSendLossReport()
-	case common.RevealLossReport:
-		return args.transactionOfRevealLossReport()
-	case common.TransferLostAccount:
-		return args.transactionOfTransferLostAccount()
-	case common.TransferLostAssetAccount:
-		return args.transactionOfTransferLostAssetAccount()
-	case common.RemoveLossReport:
-		return args.transactionOfRemoveLossReport()
-	case common.RejectLossReport:
-		return args.transactionOfRejectLossReport()
-	case common.Vote:
-		return args.transactionOfVote()
-	case common.ApplyToBeDPoSNode:
-		return args.transactionOfApplyToBeDPoSNode()
-	case common.Redemption:
-		return args.transactionOfRedemption()
-	case common.ModifyLossType:
-		return args.transactionOfModifyLossType()
-	case common.ModifyPnsOwner:
-		return args.transactionOfModifyPnsOwner()
-	case common.ModifyPnsContent:
-		return args.transactionOfModifyPnsContent()
+	var data types.TxData
+	switch {
+	case args.MaxFeePerGas != nil:
+		al := types.AccessList{}
+		if args.AccessList != nil {
+			al = *args.AccessList
+		}
+		data = &types.DynamicFeeTx{
+			From:       args.From,
+			To:         args.To,
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: al,
+		}
+	case args.AccessList != nil:
+		data = &types.AccessListTx{
+			From:       args.From,
+			To:         args.To,
+			ChainID:    (*big.Int)(args.ChainID),
+			Nonce:      uint64(*args.Nonce),
+			Gas:        uint64(*args.Gas),
+			GasPrice:   (*big.Int)(args.GasPrice),
+			Value:      (*big.Int)(args.Value),
+			Data:       args.data(),
+			AccessList: *args.AccessList,
+		}
 	default:
-		return nil
+		data = &types.LegacyTx{
+			From:     args.From,
+			To:       args.To,
+			Nonce:    uint64(*args.Nonce),
+			Gas:      uint64(*args.Gas),
+			GasPrice: (*big.Int)(args.GasPrice),
+			Value:    (*big.Int)(args.Value),
+			Data:     args.data(),
+		}
 	}
+	return types.NewTx(data)
 }
 
 // ToTransaction converts the arguments to a transaction.

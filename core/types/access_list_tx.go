@@ -17,7 +17,6 @@
 package types
 
 import (
-	"github.com/probeum/go-probeum/common/hexutil"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -54,24 +53,10 @@ type AccessListTx struct {
 	Value      *big.Int   // wei amount
 	Data       []byte     // contract invocation input data
 	AccessList AccessList // EIP-2930 access list
-	K          byte
-	V, R, S    *big.Int // signature values
+	V, R, S    *big.Int   // signature values
 
-	From      *common.Address `rlp:"nil"`
-	Owner     *common.Address `rlp:"nil"`
-	Vote      *common.Address `rlp:"nil"`
-	Loss      *common.Address `rlp:"nil"`
-	Asset     *common.Address `rlp:"nil"`
-	Old       *common.Address `rlp:"nil"`
-	New       *common.Address `rlp:"nil"`
-	Initiator *common.Address `rlp:"nil"`
-	Receiver  *common.Address `rlp:"nil"`
-	Value2    *big.Int
-	Mark      []byte
-	Height    *big.Int
-	AccType   *hexutil.Uint8
-	LossType  *hexutil.Uint8
-	PnsType   *hexutil.Uint8
+	From    *common.Address `rlp:"nil"`
+	ExtArgs []byte
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -89,17 +74,8 @@ func (tx *AccessListTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
-		K:          tx.K,
-		AccType:    tx.AccType,
 		BizType:    tx.BizType,
-		LossType:   tx.LossType,
-		PnsType:    tx.PnsType,
-		New:        tx.New,
-		Old:        tx.Old,
-		Loss:       tx.Loss,
-		Receiver:   tx.Receiver,
-		Mark:       common.CopyBytes(tx.Mark),
-		Height:     tx.Height,
+		ExtArgs:    common.CopyBytes(tx.ExtArgs),
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -138,28 +114,20 @@ func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
 func (tx *AccessListTx) bizType() uint8         { return tx.BizType }
 
-func (tx *AccessListTx) from() *common.Address        { return tx.From }
-func (tx *AccessListTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *AccessListTx) owner() *common.Address       { return tx.Owner }
-func (tx *AccessListTx) vote() *common.Address        { return tx.Vote }
-func (tx *AccessListTx) loss() *common.Address        { return tx.Loss }
-func (tx *AccessListTx) asset() *common.Address       { return tx.Asset }
-func (tx *AccessListTx) old() *common.Address         { return tx.Old }
-func (tx *AccessListTx) new() *common.Address         { return tx.New }
-func (tx *AccessListTx) initiator() *common.Address   { return tx.Initiator }
-func (tx *AccessListTx) receiver() *common.Address    { return tx.Receiver }
-func (tx *AccessListTx) value2() *big.Int             { return tx.Value2 }
-func (tx *AccessListTx) height() *big.Int             { return tx.Height }
-func (tx *AccessListTx) mark() []byte                 { return tx.Mark }
-func (tx *AccessListTx) accType() *hexutil.Uint8      { return tx.AccType }
-func (tx *AccessListTx) lossType() *hexutil.Uint8     { return tx.LossType }
-func (tx *AccessListTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
+func (tx *AccessListTx) from() *common.Address { return tx.From }
 
-func (tx *AccessListTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
-	return tx.K, tx.V, tx.R, tx.S
+//func (tx *AccessListTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *AccessListTx) extArgs() []byte { return tx.ExtArgs }
+func (tx *AccessListTx) setExtArgs(bytes []byte) {
+	tx.ExtArgs = bytes
+}
+func (tx *AccessListTx) setValue(value *big.Int) {
+	tx.Value = value
+}
+func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
+	return tx.V, tx.R, tx.S
 }
 
-func (tx *AccessListTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {
+func (tx *AccessListTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s
-	tx.K = k
 }

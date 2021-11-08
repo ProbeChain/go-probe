@@ -17,7 +17,6 @@
 package types
 
 import (
-	"github.com/probeum/go-probeum/common/hexutil"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -31,25 +30,11 @@ type LegacyTx struct {
 	To       *common.Address `rlp:"nil"` // nil means contract creation
 	Value    *big.Int        // wei amount
 	BizType  uint8
-	Data     []byte // contract invocation input data
-	K        byte
+	Data     []byte   // contract invocation input data
 	V, R, S  *big.Int // signature values
 
-	From      *common.Address `rlp:"nil"`
-	Owner     *common.Address `rlp:"nil"`
-	Vote      *common.Address `rlp:"nil"`
-	Loss      *common.Address `rlp:"nil"`
-	Asset     *common.Address `rlp:"nil"`
-	Old       *common.Address `rlp:"nil"`
-	New       *common.Address `rlp:"nil"`
-	Initiator *common.Address `rlp:"nil"`
-	Receiver  *common.Address `rlp:"nil"`
-	Value2    *big.Int
-	Mark      []byte
-	Height    *big.Int
-	AccType   *hexutil.Uint8
-	LossType  *hexutil.Uint8
-	PnsType   *hexutil.Uint8
+	From    *common.Address `rlp:"nil"`
+	ExtArgs []byte
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -91,17 +76,8 @@ func (tx *LegacyTx) copy() TxData {
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
-		K:        tx.K,
-		AccType:  tx.AccType,
-		LossType: tx.LossType,
-		PnsType:  tx.PnsType,
 		BizType:  tx.BizType,
-		New:      tx.New,
-		Old:      tx.Old,
-		Loss:     tx.Loss,
-		Receiver: tx.Receiver,
-		Mark:     common.CopyBytes(tx.Mark),
-		Height:   tx.Height,
+		ExtArgs:  common.CopyBytes(tx.ExtArgs),
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -135,28 +111,20 @@ func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
 func (tx *LegacyTx) bizType() uint8         { return tx.BizType }
 
-func (tx *LegacyTx) from() *common.Address        { return tx.From }
-func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *LegacyTx) owner() *common.Address       { return tx.Owner }
-func (tx *LegacyTx) vote() *common.Address        { return tx.Vote }
-func (tx *LegacyTx) loss() *common.Address        { return tx.Loss }
-func (tx *LegacyTx) asset() *common.Address       { return tx.Asset }
-func (tx *LegacyTx) old() *common.Address         { return tx.Old }
-func (tx *LegacyTx) new() *common.Address         { return tx.New }
-func (tx *LegacyTx) initiator() *common.Address   { return tx.Initiator }
-func (tx *LegacyTx) receiver() *common.Address    { return tx.Receiver }
-func (tx *LegacyTx) value2() *big.Int             { return tx.Value2 }
-func (tx *LegacyTx) height() *big.Int             { return tx.Height }
-func (tx *LegacyTx) mark() []byte                 { return tx.Mark }
-func (tx *LegacyTx) accType() *hexutil.Uint8      { return tx.AccType }
-func (tx *LegacyTx) lossType() *hexutil.Uint8     { return tx.LossType }
-func (tx *LegacyTx) pnsType() *hexutil.Uint8      { return tx.PnsType }
+func (tx *LegacyTx) from() *common.Address { return tx.From }
 
-func (tx *LegacyTx) rawSignatureValues() (k byte, v, r, s *big.Int) {
-	return tx.K, tx.V, tx.R, tx.S
+//func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
+func (tx *LegacyTx) extArgs() []byte { return tx.ExtArgs }
+func (tx *LegacyTx) setExtArgs(bytes []byte) {
+	tx.ExtArgs = bytes
+}
+func (tx *LegacyTx) setValue(value *big.Int) {
+	tx.Value = value
+}
+func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
+	return tx.V, tx.R, tx.S
 }
 
-func (tx *LegacyTx) setSignatureValues(k byte, chainID, v, r, s *big.Int) {
+func (tx *LegacyTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.V, tx.R, tx.S = v, r, s
-	tx.K = k
 }

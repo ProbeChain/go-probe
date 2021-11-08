@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"math/big"
 	"strings"
 	"time"
@@ -348,7 +348,7 @@ func fetchKeystore(am *accounts.Manager) (*keystore.KeyStore, error) {
 // ImportRawKey stores the given hex encoded ECDSA key into the key directory,
 // encrypting it with the passphrase.
 func (s *PrivateAccountAPI) ImportRawKey(privkey string, password string) (common.Address, error) {
-	key, err := probecrypto.HexToECDSA(privkey)
+	key, err := crypto.HexToECDSA(privkey)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -522,7 +522,7 @@ func (s *PrivateAccountAPI) EcRecover(ctx context.Context, data, sig hexutil.Byt
 	if err != nil {
 		return common.Address{}, err
 	}
-	return probecrypto.PubkeyToAddress(*rpk), nil
+	return crypto.PubkeyToAddress(*rpk), nil
 }
 
 // SignAndSendTransaction was renamed to SendTransaction. This method is deprecated
@@ -558,7 +558,7 @@ func (s *PrivateAccountAPI) InitializeWallet(ctx context.Context, url string) (s
 	}
 }
 
-// Unpair deletes a pairing between wallet and gprobecrypto.
+// Unpair deletes a pairing between wallet and gcrypto.
 func (s *PrivateAccountAPI) Unpair(ctx context.Context, url string, pin string) error {
 	wallet, err := s.am.Wallet(url)
 	if err != nil {
@@ -682,7 +682,7 @@ func (s *PublicBlockChainAPI) GetDPOSCandidate() (interface{}, error) {
 		data = append(data, "{"+
 			"Enode:"+account.Enode.String(),
 			"Owner:"+account.Owner.String(),
-			"Vote:"+account.Vote.String(),
+			"Vote:"+account.VoteAccount.String(),
 			"VoteValue:"+account.VoteValue.String(),
 			"}")
 	}
@@ -1325,7 +1325,6 @@ type RPCTransaction struct {
 	Input            hexutil.Bytes     `json:"input"`
 	Nonce            hexutil.Uint64    `json:"nonce"`
 	To               *common.Address   `json:"to"`
-	BizType          hexutil.Uint8     `json:"bizType"`
 	TransactionIndex *hexutil.Uint64   `json:"transactionIndex"`
 	Value            *hexutil.Big      `json:"value"`
 	Type             hexutil.Uint64    `json:"type"`
@@ -1335,20 +1334,6 @@ type RPCTransaction struct {
 	R                *hexutil.Big      `json:"r"`
 	S                *hexutil.Big      `json:"s"`
 	K                hexutil.Uint8     `json:"k"`
-
-	Owner     *common.Address `json:"owner,omitempty"`
-	Vote      *common.Address `json:"vote,omitempty"`
-	Loss      *common.Address `json:"loss,omitempty"`
-	Asset     *common.Address `json:"asset,omitempty"`
-	Old       *common.Address `json:"old,omitempty"`
-	New       *common.Address `json:"new,omitempty"`
-	Initiator *common.Address `json:"initiator,omitempty"`
-	Receiver  *common.Address `json:"receiver,omitempty"`
-	Value2    *hexutil.Big    `json:"value2,omitempty"`
-	Height    *hexutil.Uint64 `json:"height,omitempty"`
-	Mark      *hexutil.Bytes  `json:"mark,omitempty"`
-	AccType   *hexutil.Uint8  `json:"accType,omitempty"`
-	LossType  *hexutil.Uint8  `json:"lossType,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1365,7 +1350,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		signer = types.HomesteadSigner{}
 	}
 	from, _ := types.Sender(signer, tx)
-	k, v, r, s := tx.RawSignatureValues()
+	v, r, s := tx.RawSignatureValues()
 	result := &RPCTransaction{
 		Type:     hexutil.Uint64(tx.Type()),
 		From:     from,
@@ -1375,32 +1360,15 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		Hash:     tx.Hash(),
 		Input:    hexutil.Bytes(tx.Data()),
 		Nonce:    hexutil.Uint64(tx.Nonce()),
-		BizType:  hexutil.Uint8(tx.BizType()),
 		Value:    (*hexutil.Big)(tx.Value()),
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
-		K:        hexutil.Uint8(k),
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
 		result.BlockNumber = (*hexutil.Big)(new(big.Int).SetUint64(blockNumber))
 		result.TransactionIndex = (*hexutil.Uint64)(&index)
-	}
-
-	switch tx.BizType() {
-	case common.Register:
-		result.New = tx.New()
-		result.AccType = tx.AccType()
-	case common.Cancellation:
-		result.New = tx.New()
-	case common.Transfer:
-	case common.ContractCall:
-	case common.SendLossReport:
-		mark := hexutil.Bytes(tx.Mark())
-		result.Mark = &mark
-	case common.ModifyLossType:
-		result.LossType = tx.LossType()
 	}
 
 	switch tx.Type() {
@@ -1512,10 +1480,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 	if args.To != nil {
 		to = *args.To
 	} else {
-		to, err = probecrypto.CreateAddressForAccountType(args.from(), uint64(*args.Nonce), byte(*args.AccType))
-		if err != nil {
-			return nil, 0, nil, fmt.Errorf("failed to apply transaction: %v err: %v", args.toTransaction().Hash(), err)
-		}
+		to = crypto.CreateAddress(args.from(), uint64(*args.Nonce))
 	}
 	// Retrieve the precompiles since they don't need to be added to the access list
 	precompiles := vm.ActivePrecompiles(b.ChainConfig().Rules(header.Number))
@@ -1541,15 +1506,7 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		}
 		// Copy the original db so we don't modify it
 		statedb := db.Copy()
-		msg := types.NewMessage(
-			args.from(), args.To, uint8(*args.BizType),
-			uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas),
-			args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0),
-			args.data(), accessList, false,
-			args.Owner, args.Loss, args.Asset,
-			args.Old, args.New, args.Initiator,
-			args.Receiver, args.mark(), args.value2(),
-			args.height(), args.AccType, args.LossType, args.PnsType)
+		msg := types.NewMessage(args.from(), args.To, uint64(*args.Nonce), args.Value.ToInt(), uint64(*args.Gas), args.GasPrice.ToInt(), big.NewInt(0), big.NewInt(0), args.data(), accessList, false)
 
 		// Apply the transaction with the access list tracer
 		tracer := vm.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1720,7 +1677,6 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"transactionIndex":  hexutil.Uint64(index),
 		"from":              from,
 		"to":                tx.To(),
-		"bizType":           hexutil.Uint8(tx.BizType()),
 		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
 		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
 		"contractAddress":   nil,
@@ -1728,20 +1684,6 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 		"logsBloom":         receipt.Bloom,
 		"type":              hexutil.Uint(tx.Type()),
 		"data":              hexutil.Bytes(tx.Data()),
-	}
-
-	//不同业务类型展示不同字段
-	switch tx.BizType() {
-	case common.Register:
-		fields["new"] = tx.New()
-		fields["accType"] = tx.AccType()
-	case common.Cancellation:
-	case common.Transfer:
-	case common.ContractCall:
-	case common.SendLossReport:
-		fields["mark"] = hexutil.Bytes(tx.Mark())
-	case common.ModifyLossType:
-		fields["lossType"] = tx.LossType()
 	}
 
 	// Assign the effective gas price paid
@@ -1767,6 +1709,10 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	// If the ContractAddress is 20 0x0 bytes, assume it is not a contract creation
 	if receipt.ContractAddress != (common.Address{}) {
 		fields["contractAddress"] = receipt.ContractAddress
+	}
+
+	if receipt.NewAddress != (common.Address{}) {
+		fields["newAddress"] = receipt.NewAddress
 	}
 	return fields, nil
 }
@@ -1805,8 +1751,8 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, err
 	}
 
-	if tx.To() == nil && tx.BizType() == common.ContractCall {
-		addr, _ := probecrypto.CreateAddressForAccountType(from, tx.Nonce(), common.ACC_TYPE_OF_CONTRACT)
+	if tx.To() == nil {
+		addr := crypto.CreateAddress(from, tx.Nonce())
 		log.Info("Submitted contract creation", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "contract", addr.Hex(), "value", tx.Value())
 	} else {
 		log.Info("Submitted transaction", "hash", tx.Hash().Hex(), "from", from, "nonce", tx.Nonce(), "recipient", tx.To(), "value", tx.Value(), "gas", tx.Gas())

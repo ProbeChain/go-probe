@@ -502,31 +502,15 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	//init Genesis from db
 	block := bc.genesisBlock
 	number := block.NumberU64()
-	stateDB, _ := bc.StateAt(block.Root())
-
-	for _, s := range stateDB.GetStateDbTrie().GetTallHash() {
-		log.Info("NewBlockChain roothash ", "hash", s.Hex())
-	}
-	dposHash := stateDB.GetStateDbTrie().GetTallHash()[6]
-	log.Info("NewBlockChain dPosHash", "dPosHash", dposHash.Hex())
-	epoch := chainConfig.Dpos.Epoch
+	epoch := chainConfig.DposConfig.Epoch
 	dposNo := number + 1 - (number+1)%epoch
 	//dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	dposAccountList := rawdb.ReadDPos(db, dposNo)
-	//if nil != data {
-	/*	var dposAccountList []common.DPoSAccount
-
-		//json.Unmarshal(data, &dposAccountList)
-		if err := rlp.DecodeBytes(data, &dposAccountList); err != nil {
-			log.Crit("Invalid dposList for block number in database", "err", err)
-		}*/
 
 	chainConfig.Dpos = new(params.DposConfig)
 	chainConfig.Dpos.DposList = dposAccountList
 	chainConfig.Dpos.Epoch = epoch
 	log.Info("Initialised chain configuration AND DPOSNODES")
-	//bc.dposConfig.Epoch = epoch
-	//}
 
 	var nilBlock *types.Block
 	bc.currentBlock.Store(nilBlock)
@@ -1147,8 +1131,8 @@ func (bc *BlockChain) HasBlockAndState(hash common.Hash, number uint64) bool {
 		log.Debug("get no block", "number", number, "hash", hash)
 		return false
 	}
-	//return bc.HasState(block.Root())
-	return bc.HasSixState(block.Root())
+	return bc.HasState(block.Root())
+	//return bc.HasSixState(block.Root())
 }
 
 // GetBlock retrieves a block from the database by hash and number,
@@ -1736,6 +1720,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	// should be written atomically. BlockBatch is used for containing all components.
 	blockBatch := bc.db.NewBatch()
 	rawdb.WriteTd(blockBatch, block.Hash(), block.NumberU64(), externTd)
+	bc.writeDposNodes(state)
 	rawdb.WriteBlock(blockBatch, block)
 	rawdb.WriteReceipts(blockBatch, block.Hash(), block.NumberU64(), receipts)
 	rawdb.WritePreimages(blockBatch, state.Preimages())
@@ -1748,10 +1733,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	if err != nil {
 		return NonStatTy, err
 	}
-	bc.writeDposNodes(state)
 
-	hashes := state.GetStateDbTrie().GetTallHash()
-	rawdb.WriteAllStateRootHash(bc.db, hashes, root)
 	triedb := bc.stateCache.TrieDB()
 	//log.Info("Writing dPos nodes with block，root hash:%x")
 	//fmt.Printf("Writing dPos nodes with block，root hash:%x\n", root)
@@ -1761,15 +1743,14 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	// If we're running an archive node, always flush
 	//triedb.CommitForNew(hashes, false, nil)
 	if bc.cacheConfig.TrieDirtyDisabled {
-		//if err := triedb.Commit(root, false, nil); err != nil {
-		if err := triedb.CommitForNew(hashes, false, nil); err != nil {
+		if err := triedb.Commit(root, false, nil); err != nil {
 			return NonStatTy, err
 		}
 	} else {
 		// Full but not archive node, do proper garbage collection
 		triedb.Reference(root, common.Hash{}) // metadata reference to keep trie alive
 		bc.triegc.Push(root, -int64(block.NumberU64()))
-		triedb.CommitForNew(hashes, false, nil)
+		//triedb.CommitForNew(hashes, false, nil)
 		if current := block.NumberU64(); current > TriesInMemory {
 			// If we exceeded our memory allowance, flush matured singleton nodes to disk
 			var (
@@ -2325,8 +2306,8 @@ func (bc *BlockChain) insertSideChain(block *types.Block, it *insertIterator) (i
 		numbers []uint64
 	)
 	parent := it.previous()
-	//for parent != nil && !bc.HasState(parent.Root) {
-	for parent != nil && !bc.HasSixState(parent.Root) {
+	for parent != nil && !bc.HasState(parent.Root) {
+		//for parent != nil && !bc.HasSixState(parent.Root) {
 		hashes = append(hashes, parent.Hash())
 		numbers = append(numbers, parent.Number.Uint64())
 
@@ -2708,12 +2689,14 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 		factor := number + confirmBlockNum + epoch - 1
 		dPosNo := factor - factor%epoch
 		rawdb.WriteDPos(bc.db, dPosNo, presetDPosAccounts)
+		block.Header().DPoSRoot = state.BuildHashForDPos(presetDPosAccounts)
 		for _, presetDPos := range presetDPosAccounts {
 			log.Info(fmt.Sprintf("WriteDPos,dPosNo:%d,Owner:%s, Enode:%s\n", dPosNo, presetDPos.Owner, presetDPos.Enode.String()))
 		}
 	}
 	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
 	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
+	block.Header().DPoSCandidateRoot = state.BuildHashForDPosCandidate(dPosCandidateAccounts)
 	log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
 
 	/*	for _, presetDPos := range dPosCandidateAccounts {
@@ -3004,13 +2987,6 @@ func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscript
 // block processing has started while false means it has stopped.
 func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscription {
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
-}
-
-func (bc *BlockChain) HasSixState(root common.Hash) bool {
-	_, err := state.OpenTotalTrieForBMpt(root, bc.stateCache)
-	//_, err := state.OpenTotalTrieForMpt(root, bc.stateCache)
-
-	return err == nil
 }
 
 // CheckPowAnswerSketchy check a pow answer is legal (no check the MixDigest nonce is right)
