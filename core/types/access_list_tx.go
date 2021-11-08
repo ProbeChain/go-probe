@@ -49,14 +49,10 @@ type AccessListTx struct {
 	GasPrice   *big.Int        // wei per gas
 	Gas        uint64          // gas limit
 	To         *common.Address `rlp:"nil"` // nil means contract creation
-	BizType    uint8
-	Value      *big.Int   // wei amount
-	Data       []byte     // contract invocation input data
-	AccessList AccessList // EIP-2930 access list
-	V, R, S    *big.Int   // signature values
-
-	From    *common.Address `rlp:"nil"`
-	ExtArgs []byte
+	Value      *big.Int        // wei amount
+	Data       []byte          // contract invocation input data
+	AccessList AccessList      // EIP-2930 access list
+	V, R, S    *big.Int        // signature values
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -64,7 +60,6 @@ func (tx *AccessListTx) copy() TxData {
 	cpy := &AccessListTx{
 		Nonce:      tx.Nonce,
 		To:         tx.To,
-		From:       tx.From,
 		Data:       common.CopyBytes(tx.Data),
 		Gas:        tx.Gas,
 		AccessList: make(AccessList, len(tx.AccessList)),
@@ -74,8 +69,6 @@ func (tx *AccessListTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
-		BizType:    tx.BizType,
-		ExtArgs:    common.CopyBytes(tx.ExtArgs),
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -112,18 +105,6 @@ func (tx *AccessListTx) gasFeeCap() *big.Int    { return tx.GasPrice }
 func (tx *AccessListTx) value() *big.Int        { return tx.Value }
 func (tx *AccessListTx) nonce() uint64          { return tx.Nonce }
 func (tx *AccessListTx) to() *common.Address    { return tx.To }
-func (tx *AccessListTx) bizType() uint8         { return tx.BizType }
-
-func (tx *AccessListTx) from() *common.Address { return tx.From }
-
-//func (tx *AccessListTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *AccessListTx) extArgs() []byte { return tx.ExtArgs }
-func (tx *AccessListTx) setExtArgs(bytes []byte) {
-	tx.ExtArgs = bytes
-}
-func (tx *AccessListTx) setValue(value *big.Int) {
-	tx.Value = value
-}
 func (tx *AccessListTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }

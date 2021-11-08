@@ -235,7 +235,6 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 			al = *args.AccessList
 		}
 		data = &types.DynamicFeeTx{
-			From:       args.From,
 			To:         args.To,
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -248,7 +247,6 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		}
 	case args.AccessList != nil:
 		data = &types.AccessListTx{
-			From:       args.From,
 			To:         args.To,
 			ChainID:    (*big.Int)(args.ChainID),
 			Nonce:      uint64(*args.Nonce),
@@ -260,7 +258,6 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		}
 	default:
 		data = &types.LegacyTx{
-			From:     args.From,
 			To:       args.To,
 			Nonce:    uint64(*args.Nonce),
 			Gas:      uint64(*args.Gas),

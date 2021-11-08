@@ -85,8 +85,6 @@ type TxData interface {
 	to() *common.Address
 	rawSignatureValues() (v, r, s *big.Int)
 	setSignatureValues(chainID, v, r, s *big.Int)
-
-	from() *common.Address
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -288,16 +286,6 @@ func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 func (tx *Transaction) To() *common.Address {
 	// Copy the pointed-to address.
 	ito := tx.inner.to()
-	if ito == nil {
-		return nil
-	}
-	cpy := *ito
-	return &cpy
-}
-
-func (tx *Transaction) From() *common.Address {
-	// Copy the pointed-to address.
-	ito := tx.inner.from()
 	if ito == nil {
 		return nil
 	}
