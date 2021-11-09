@@ -186,6 +186,11 @@ func NewPowAnswerPool() *PowAnswerPool {
 }
 
 func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
+
+	if powAnswer == nil {
+		log.Error("powAnswer  is nil")
+		return true
+	}
 	powAnswers := pool.powAnswerMap[powAnswer.Number.Uint64()]
 	var count = 0
 	for _, answer := range powAnswers {
@@ -3165,39 +3170,37 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 	uncles := maxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
-	chainAns := make([]*types.PowAnswer, 0, uncles*2)
 	ret := make([]*types.PowAnswer, 0, uncles*2)
 
+	var used map[common.Hash]*types.PowAnswer
+	used = make(map[common.Hash]*types.PowAnswer)
+
 	for uncles >= 0 {
-		curNumber := big.NewInt(0).Sub(number, big.NewInt(int64(uncles)))
+		curNumber := big.NewInt(0).Sub(number, big.NewInt(int64(uncles)+1))
 		uncles -= 1
 		if curNumber.Int64() <= 0 {
 			continue
 		}
 		curBlock := bc.GetBlockByNumber(curNumber.Uint64())
-		curAns := curBlock.PowAnswers()
-		curUncleAns := curBlock.PowAnswerUncles()
-		chainAns = append(chainAns, curAns...)
-		chainAns = append(chainAns, curUncleAns...)
-		chainAns = append(chainAns, bc.GetLatestPowAnswer(number))
-
-		ans = append(ans, bc.powAnswers.List(curNumber)...)
-	}
-
-	for _, ans1 := range ans {
-		find := false
-		for _, ans2 := range chainAns {
-			if ans1.MixDigest == ans2.MixDigest {
-				find = true
-				break
+		for _, an := range curBlock.PowAnswers() {
+			if an != nil {
+				used[an.MixDigest] = an
 			}
 		}
-		if !find {
-			ret = append(ret, ans1)
+		for _, an := range curBlock.PowAnswerUncles() {
+			if an != nil {
+				used[an.MixDigest] = an
+			}
 		}
+		ans = append(ans, bc.GetPowAnswers(curNumber)...)
 	}
 
-	return bc.powAnswers.FilterList(ret)
+	for _, answer := range ans {
+		if answer != nil && used[answer.MixDigest] == nil {
+			ret = append(ret, answer)
+		}
+	}
+	return ret
 }
 
 // GetDposAck get a dpos ack list
