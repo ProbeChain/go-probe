@@ -1,18 +1,18 @@
-// Copyright 2020 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2020 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -26,8 +26,8 @@ import (
 	"sync"
 
 	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 )
 
@@ -54,11 +54,11 @@ func returnToPool(st *StackTrie) {
 // in order. Once it determines that a subtree will no longer be inserted
 // into, it will hash it and free up the memory it uses.
 type StackTrie struct {
-	nodeType  uint8                // node type (as in branch, ext, leaf)
-	val       []byte               // value contained by this node if it's a leaf
-	key       []byte               // key chunk covered by this (full|ext) node
-	keyOffset int                  // offset of the key chunk inside a full key
-	children  [16]*StackTrie       // list of children (for fullnodes and exts)
+	nodeType  uint8                  // node type (as in branch, ext, leaf)
+	val       []byte                 // value contained by this node if it's a leaf
+	key       []byte                 // key chunk covered by this (full|ext) node
+	keyOffset int                    // offset of the key chunk inside a full key
+	children  [16]*StackTrie         // list of children (for fullnodes and exts)
 	db        probedb.KeyValueWriter // Pointer to the commit db, can be nil
 }
 

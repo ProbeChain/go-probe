@@ -21,11 +21,11 @@ import (
 	"fmt"
 
 	"github.com/VictoriaMetrics/fastcache"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/trie"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -55,9 +55,6 @@ type Database interface {
 
 	// TrieDB retrieves the low level trie database used for data storage.
 	TrieDB() *trie.Database
-
-	// OpenTrie opens the main account trie.
-	OpenBinTrie(root common.Hash, path string, depth int) (Trie, error)
 }
 
 // Trie is a Probeum Merkle Patricia trie.
@@ -103,8 +100,6 @@ type Trie interface {
 	// nodes of the longest existing prefix of the key (at least the root), ending
 	// with the node that proves the absence of the key.
 	Prove(key []byte, fromLevel uint, proofDb probedb.KeyValueWriter) error
-
-	Print()
 }
 
 // NewDatabase creates a backing store for state. The returned database is safe for
@@ -155,8 +150,6 @@ func (db *cachingDB) CopyTrie(t Trie) Trie {
 	switch t := t.(type) {
 	case *trie.SecureTrie:
 		return t.Copy()
-	case *trie.Trie:
-		return t.Copy()
 	default:
 		panic(fmt.Errorf("unknown trie type %T", t))
 	}
@@ -204,13 +197,4 @@ func (db *cachingDB) ContractCodeSize(addrHash, codeHash common.Hash) (int, erro
 // TrieDB retrieves any intermediate trie-node caching layer.
 func (db *cachingDB) TrieDB() *trie.Database {
 	return db.db
-}
-
-// OpenBinTrie opens the main account trie at a specific root hash.
-func (db *cachingDB) OpenBinTrie(root common.Hash, path string, depth int) (Trie, error) {
-	tr, err := trie.NewBinary(root, db.db, path, depth)
-	if err != nil {
-		return nil, err
-	}
-	return tr, nil
 }
