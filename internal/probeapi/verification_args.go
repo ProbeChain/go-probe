@@ -21,6 +21,10 @@ func (args *TransactionArgs) setDefaultsOfRegisterPns(ctx context.Context, b Bac
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
+	decode := new(common.StringDecodeType)
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
+		return err
+	}
 	return args.DoEstimateGas(ctx, b)
 }
 
@@ -34,8 +38,7 @@ func (args *TransactionArgs) setDefaultsOfRegisterAuthorize(ctx context.Context,
 		return err
 	}
 	decode := new(common.IntDecodeType)
-	err := rlp.DecodeBytes(*args.Data, &decode)
-	if err != nil {
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
 		return err
 	}
 	if args.Value == nil || args.Value.ToInt().Sign() < 1 {
@@ -64,8 +67,7 @@ func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Ba
 		return err
 	}
 	decode := new(common.CancellationDecodeType)
-	err := rlp.DecodeBytes(*args.Data, &decode)
-	if err != nil {
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
 		return err
 	}
 	return args.DoEstimateGas(ctx, b)
@@ -111,8 +113,7 @@ func (args *TransactionArgs) setDefaultsOfVote(ctx context.Context, b Backend) e
 		return err
 	}
 	decode := new(common.AddressDecodeType)
-	err := rlp.DecodeBytes(*args.Data, &decode)
-	if err != nil {
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
 		return err
 	}
 	if err := common.ValidateNil(args.Value, "vote value"); err != nil {
@@ -132,8 +133,7 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 		return err
 	}
 	decode := new(common.ApplyDPosDecodeType)
-	err := rlp.DecodeBytes(*args.Data, &decode)
-	if err != nil {
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
 		return err
 	}
 	return args.DoEstimateGas(ctx, b)
@@ -146,7 +146,7 @@ func (args *TransactionArgs) setDefaultsOfSendLossReport(ctx context.Context, b 
 	/*	if err := common.ValidateNil(args.Mark, "mark"); err != nil {
 			return err
 		}
-		if err := common.ValidateNil(args.Data, "information digests data"); err != nil {
+		if err := common.ValidateNil(args.Text, "information digests data"); err != nil {
 			return err
 		}
 		if args.Nonce == nil {
@@ -182,7 +182,7 @@ func (args *TransactionArgs) setDefaultsOfRevealLossReport(ctx context.Context, 
 		if args.Value.ToInt().Sign() != 1 {
 			return errors.New("value must be greater than 0")
 		}
-		if err := common.ValidateNil(args.Data, "data"); err != nil {
+		if err := common.ValidateNil(args.Text, "data"); err != nil {
 			return err
 		}
 		if err := common.ValidateNil(args.From, "from account"); err != nil {
@@ -275,8 +275,7 @@ func (args *TransactionArgs) setDefaultsOfRedemption(ctx context.Context, b Back
 		return err
 	}
 	decode := new(common.AddressDecodeType)
-	err := rlp.DecodeBytes(*args.Data, &decode)
-	if err != nil {
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
 		return err
 	}
 	return args.DoEstimateGas(ctx, b)
@@ -290,8 +289,7 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 		return err
 	}
 	decode := new(common.PnsOwnerDecodeType)
-	err := rlp.DecodeBytes(*args.Data, &decode)
-	if err != nil {
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
 		return err
 	}
 	return args.DoEstimateGas(ctx, b)
@@ -304,8 +302,7 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 		return err
 	}
 	decode := new(common.PnsContentDecodeType)
-	err := rlp.DecodeBytes(*args.Data, &decode)
-	if err != nil {
+	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
 		return err
 	}
 	return args.DoEstimateGas(ctx, b)

@@ -503,7 +503,7 @@ type AddressDecodeType struct {
 }
 
 type StringDecodeType struct {
-	Data string
+	Text string
 }
 
 type CancellationDecodeType struct {
