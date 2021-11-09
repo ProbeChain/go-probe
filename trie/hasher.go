@@ -1,18 +1,18 @@
-// Copyright 2019 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2019 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -41,7 +41,7 @@ func (b *sliceBuffer) Reset() {
 type hasher struct {
 	sha      crypto.KeccakState
 	tmp      sliceBuffer
-	parallel bool // Whprobeer to use paralallel threads when hashing
+	parallel bool // Whether to use paralallel threads when hashing
 }
 
 // hasherPool holds pureHashers
@@ -211,10 +211,6 @@ func (h *hasher) HashData(data []byte) common.Hash {
 	if len(data) < 1 {
 		return common.Hash{}
 	}
-	//b, err := rlp.EncodeToBytes(deposList)
-	//if err != nil {
-	//	panic("encode error: " + err.Error())
-	//}
 	return common.BytesToHash(h.hashData(data))
 }
 

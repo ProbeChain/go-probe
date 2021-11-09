@@ -1,26 +1,24 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
 	"io"
-	"math/big"
 	"strings"
 
 	"github.com/probeum/go-probeum/common"
@@ -44,17 +42,8 @@ type (
 		Val   node
 		flags nodeFlag
 	}
-	binaryNode struct {
-		Key []byte
-		Val []byte
-	}
-	binaryHashNode struct {
-		Hash [32]byte
-		Num  uint32
-	}
-	hashNode   []byte
-	valueNode  []byte
-	binaryLeaf []binaryNode
+	hashNode  []byte
+	valueNode []byte
 )
 
 // nilValueNode is used when collapsing internal trie nodes for hashing, since
@@ -75,70 +64,25 @@ func (n *fullNode) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, nodes)
 }
 
-// Hash 计算一个叶子节点的哈希值
-// @todo 后续可拆分叶子节点里面的值，只有需要计算才去进行哈希计算，否则使用缓存的哈希值
-func (n *binaryLeaf) Hash() [32]byte {
-	num := big.NewInt(0) // 利用 x ⊕ 0 == x
-	for _, node := range *n {
-		// @todo 这里需要分别处理大端小端的问题
-		curNum := new(big.Int).SetBytes(crypto.Keccak256(append(node.Key, node.Val...)))
-		num = new(big.Int).Xor(curNum, num)
-	}
-	hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
-	hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
-
-	var ret [32]byte
-	copy(ret[:], hash[32:64])
-	return ret
-}
-
-func (n *binaryHashNode) CalcHash() common.Hash {
-	//hash := make([]byte, 32, 32+4)
-	//copy(hash, n.Hash[:])
-	//hash = crypto.Keccak256(concat(hash, intToBytes(n.Num)...))
-	//return common.BytesToHash(hash)
-	hash := make([]byte, 32, 32)
-	copy(hash, n.Hash[:])
-	return common.BytesToHash(hash)
-}
-
-func (n *binaryLeaf) Copy() binaryLeaf {
-	var leaf binaryLeaf
-
-	for _, node := range *n {
-		Val := make([]byte, len(node.Val), len(node.Val))
-		copy(Val, node.Val)
-		leaf = append(leaf, binaryNode{
-			node.Key,
-			Val,
-		})
-	}
-	return leaf
-}
-
 func (n *fullNode) copy() *fullNode   { copy := *n; return &copy }
 func (n *shortNode) copy() *shortNode { copy := *n; return &copy }
 
 // nodeFlag contains caching-related metadata about a node.
 type nodeFlag struct {
 	hash  hashNode // cached hash of the node (may be nil)
-	dirty bool     // whprobeer the node has changes that must be written to the database
+	dirty bool     // whether the node has changes that must be written to the database
 }
 
-func (n *fullNode) cache() (hashNode, bool)      { return n.flags.hash, n.flags.dirty }
-func (n *shortNode) cache() (hashNode, bool)     { return n.flags.hash, n.flags.dirty }
-func (n hashNode) cache() (hashNode, bool)       { return nil, true }
-func (n valueNode) cache() (hashNode, bool)      { return nil, true }
-func (n binaryLeaf) cache() (hashNode, bool)     { return nil, true }
-func (n binaryHashNode) cache() (hashNode, bool) { return nil, true }
+func (n *fullNode) cache() (hashNode, bool)  { return n.flags.hash, n.flags.dirty }
+func (n *shortNode) cache() (hashNode, bool) { return n.flags.hash, n.flags.dirty }
+func (n hashNode) cache() (hashNode, bool)   { return nil, true }
+func (n valueNode) cache() (hashNode, bool)  { return nil, true }
 
 // Pretty printing.
-func (n *fullNode) String() string      { return n.fstring("") }
-func (n *shortNode) String() string     { return n.fstring("") }
-func (n hashNode) String() string       { return n.fstring("") }
-func (n valueNode) String() string      { return n.fstring("") }
-func (n binaryLeaf) String() string     { return n.fstring("") }
-func (n binaryHashNode) String() string { return n.fstring("") }
+func (n *fullNode) String() string  { return n.fstring("") }
+func (n *shortNode) String() string { return n.fstring("") }
+func (n hashNode) String() string   { return n.fstring("") }
+func (n valueNode) String() string  { return n.fstring("") }
 
 func (n *fullNode) fstring(ind string) string {
 	resp := fmt.Sprintf("[\n%s  ", ind)
@@ -161,69 +105,12 @@ func (n valueNode) fstring(ind string) string {
 	return fmt.Sprintf("%x ", []byte(n))
 }
 
-func (n binaryLeaf) fstring(ind string) string {
-	var data []byte
-	for _, node := range n {
-		data = append(data, node.Key...)
-		data = append(data, 0x3a) // 0x3a == ":"
-		data = append(data, node.Val...)
-	}
-	return fmt.Sprintf("%x ", data)
-}
-
-func (n binaryHashNode) fstring(ind string) string {
-	return fmt.Sprintf("%d %x ", n.Num, n.Hash)
-}
-
 func mustDecodeNode(hash, buf []byte) node {
 	n, err := decodeNode(hash, buf)
 	if err != nil {
 		panic(fmt.Sprintf("node %x: %v", hash, err))
 	}
 	return n
-}
-
-func mustDecodeBinaryNode(hash, buf []byte) node {
-	elems, rest, err := rlp.SplitList(buf)
-	if err != nil {
-		return nil
-	}
-	cur := elems
-
-	if cur[0] < 0xC0 {
-		var node binaryHashNode
-		elems, rest, err = rlp.SplitString(cur)
-		copy(node.Hash[0:], elems)
-		num := make([]byte, len(rest), len(rest))
-		copy(num, rest)
-		node.Num = uint32(bytesToInt(num))
-		return node
-	} else {
-		var node binaryLeaf
-		for {
-			elems, rest, err = rlp.SplitList(cur)
-			cur = rest
-			if err != nil {
-				return nil
-			}
-			key, rest, err := rlp.SplitString(elems)
-			if err != nil {
-				return nil
-			}
-			value, _, err := rlp.SplitString(rest)
-			if err != nil {
-				return nil
-			}
-			node = append(node, binaryNode{
-				key,
-				value,
-			})
-			if len(cur) == 0 {
-				break
-			}
-		}
-		return node
-	}
 }
 
 // decodeNode parses the RLP encoding of a trie node.
