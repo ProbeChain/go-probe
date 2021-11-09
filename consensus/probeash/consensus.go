@@ -510,7 +510,9 @@ var DynamicDifficultyCalculator = makeDifficultyCalculator
 // verifySeal checks whprobeer a block satisfies the PoW difficulty requirements,
 // either using the usual probeash cache for it, or alternatively using a full DAG
 // to make remote mining fast.
-func (probeash *Probeash) PowVerifySeal(chain consensus.ChainHeaderReader, header *types.Header, fulldag bool, powAnwer *types.PowAnswer) error {
+func (probeash *Probeash) PowVerifySeal(chain consensus.ChainHeaderReader, fromHeader *types.Header, fulldag bool, powAnwer *types.PowAnswer) error {
+	header := types.CopyHeader(fromHeader)
+
 	// If we're running a fake PoW, accept any seal as valid
 	if probeash.config.PowMode == ModeFake || probeash.config.PowMode == ModeFullFake {
 		time.Sleep(probeash.fakeDelay)
