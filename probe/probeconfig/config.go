@@ -31,13 +31,13 @@ import (
 	"github.com/probeum/go-probeum/consensus/clique"
 	"github.com/probeum/go-probeum/consensus/probeash"
 	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/miner"
 	"github.com/probeum/go-probeum/node"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/probedb"
 )
 
 // FullNodeGPO contains default gasprice oracle settings for full node.
@@ -131,8 +131,8 @@ type Config struct {
 
 	// This can be set to list of enrtree:// URLs which will be queried for
 	// for nodes to connect to.
-	ProbeDiscoveryURLs  []string
-	SnapDiscoveryURLs []string
+	ProbeDiscoveryURLs []string
+	SnapDiscoveryURLs  []string
 
 	NoPruning  bool // Whprobeer to disable pruning and flush everything to disk
 	NoPrefetch bool // Whprobeer to disable prefetching and only load state on demand
@@ -221,9 +221,9 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 		return clique.New(chainConfig.Clique, db)
 	}
 
-	if chainConfig.DposConfig != nil {
+	if chainConfig.Dpos != nil {
 		log.Info("CreateConsensusEngine is dpos")
-		return greatri.New(chainConfig.Greatri, db)
+		return greatri.New(chainConfig.Dpos, db)
 	}
 
 	// Otherwise assume proof-of-work

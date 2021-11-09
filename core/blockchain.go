@@ -129,7 +129,8 @@ const (
 	// - Version 8
 	//  The following incompatible database changes were added:
 	//    * New scheme for contract code in order to separate the codes and trie nodes
-	BlockChainVersion uint64 = 8
+	BlockChainVersion      uint64 = 8
+	MaxHeightMinerPowCount        = 64
 )
 
 // CacheConfig contains the configuration values for the trie caching/pruning
@@ -186,8 +187,12 @@ func NewPowAnswerPool() *PowAnswerPool {
 
 func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
 	powAnswers := pool.powAnswerMap[powAnswer.Number.Uint64()]
+	var count = 0
 	for _, answer := range powAnswers {
 		if powAnswer.Miner == answer.Miner {
+			count++
+		}
+		if count > MaxHeightMinerPowCount || powAnswer.MixDigest == answer.MixDigest {
 			return true
 		}
 	}
@@ -497,14 +502,14 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	//init Genesis from db
 	block := bc.genesisBlock
 	number := block.NumberU64()
-	epoch := chainConfig.DposConfig.Epoch
+	epoch := chainConfig.Dpos.Epoch
 	dposNo := number + 1 - (number+1)%epoch
 	//dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
 	dposAccountList := rawdb.ReadDPos(db, dposNo)
 
-	chainConfig.DposConfig = new(params.DposConfig)
-	chainConfig.DposConfig.DposList = dposAccountList
-	chainConfig.DposConfig.Epoch = epoch
+	chainConfig.Dpos = new(params.DposConfig)
+	chainConfig.Dpos.DposList = dposAccountList
+	chainConfig.Dpos.Epoch = epoch
 	log.Info("Initialised chain configuration AND DPOSNODES")
 
 	var nilBlock *types.Block
@@ -2669,7 +2674,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 	if number == 0 {
 		return
 	}
-	epoch := bc.chainConfig.DposConfig.Epoch
+	epoch := bc.chainConfig.Dpos.Epoch
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
 		confirmBlockNum = confirmDpos
@@ -2702,7 +2707,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 func (bc *BlockChain) updateP2pDposNodes() {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	epoch := bc.chainConfig.DposConfig.Epoch
+	epoch := bc.chainConfig.Dpos.Epoch
 
 	confirmBlockNum := epoch / 2
 	if epoch > confirmDpos {
@@ -2763,7 +2768,7 @@ func (bc *BlockChain) updateP2pDposNodes() {
 
 // GetDposAccounts get latest dpos nodes
 func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
-	index := number / bc.chainConfig.DposConfig.Epoch
+	index := number / bc.chainConfig.Dpos.Epoch
 
 	accounts := bc.dposAccounts[index]
 	if len(accounts) != 0 {
@@ -2773,7 +2778,7 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
 	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
 	if block != nil {
-		epoch := bc.chainConfig.DposConfig.Epoch
+		epoch := bc.chainConfig.Dpos.Epoch
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
@@ -2791,7 +2796,7 @@ func (bc *BlockChain) GetDposAccountSize(number uint64) int {
 
 // GetNextDposAccounts get next dpos nodes
 func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
-	index := (number + confirmDpos) / bc.chainConfig.DposConfig.Epoch
+	index := (number + confirmDpos) / bc.chainConfig.Dpos.Epoch
 
 	accounts := bc.dposAccounts[index]
 	if accounts != nil {
@@ -2801,7 +2806,7 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 	// The blocks haven't been synchronized yet but we got the answers first
 	block := bc.GetBlockByNumber(number)
 	if block != nil {
-		epoch := bc.chainConfig.DposConfig.Epoch
+		epoch := bc.chainConfig.Dpos.Epoch
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
 		bc.dposAccounts[index] = accounts // cache it
@@ -2825,7 +2830,7 @@ func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
 	accounts := bc.GetDposAccounts(num)
 	if len(accounts) != 0 {
 		size := uint64(len(accounts))
-		return accounts[num%bc.chainConfig.DposConfig.Epoch%size]
+		return accounts[num%bc.chainConfig.Dpos.Epoch%size]
 	}
 	return nil
 }
@@ -3115,10 +3120,13 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 					curHash := bc.GetHeaderByNumber(dposAck.Number.Uint64()).Hash()
 					if curHash == dposAck.BlockHash {
 						return true
+					} else {
+						log.Debug("CheckDposAck Fail, hash not match", "signer", owner, "err", err)
 					}
 				}
 			}
 		}
+		log.Debug("CheckDposAck Fail, singer is not the dpos node", "signer", owner, "err", err)
 	}
 	log.Warn("CheckDposAck Fail", "owner", owner, "err", err, "accounts size", len(accounts))
 	for _, account := range accounts {
