@@ -78,12 +78,6 @@ func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backen
 	if err := args.checkNonce(ctx, b); err != nil {
 		return err
 	}
-	if err := common.ValidateNil(args.Value, "value"); err != nil {
-		return err
-	}
-	if args.Value.ToInt().Sign() != 1 {
-		return errors.New("value must be greater than 0")
-	}
 	if err := common.ValidateNil(args.To, "to"); err != nil {
 		return err
 	}
@@ -91,7 +85,7 @@ func (args *TransactionArgs) setDefaultsOfTransfer(ctx context.Context, b Backen
 }
 
 // setDefaultsOfContractCall set default parameters of contract call business type
-func (args *TransactionArgs) setDefaultsOfContractCall(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) setDefaultsOfContractDeploy(ctx context.Context, b Backend) error {
 	if err := args.checkNonce(ctx, b); err != nil {
 		return err
 	}

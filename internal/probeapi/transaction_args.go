@@ -106,7 +106,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 	}
 	var err error
 	if args.To == nil {
-		err = args.setDefaultsOfContractCall(ctx, b)
+		err = args.setDefaultsOfContractDeploy(ctx, b)
 	} else {
 		switch args.To.String() {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
