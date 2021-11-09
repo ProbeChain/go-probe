@@ -29,12 +29,8 @@ type LegacyTx struct {
 	Gas      uint64          // gas limit
 	To       *common.Address `rlp:"nil"` // nil means contract creation
 	Value    *big.Int        // wei amount
-	BizType  uint8
-	Data     []byte   // contract invocation input data
-	V, R, S  *big.Int // signature values
-
-	From    *common.Address `rlp:"nil"`
-	ExtArgs []byte
+	Data     []byte          // contract invocation input data
+	V, R, S  *big.Int        // signature values
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -66,7 +62,6 @@ func NewContractCreation(nonce uint64, amount *big.Int, gasLimit uint64, gasPric
 func (tx *LegacyTx) copy() TxData {
 	cpy := &LegacyTx{
 		Nonce: tx.Nonce,
-		From:  tx.From,
 		To:    tx.To,
 		Data:  common.CopyBytes(tx.Data),
 		Gas:   tx.Gas,
@@ -76,8 +71,6 @@ func (tx *LegacyTx) copy() TxData {
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
-		BizType:  tx.BizType,
-		ExtArgs:  common.CopyBytes(tx.ExtArgs),
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
@@ -109,17 +102,8 @@ func (tx *LegacyTx) gasFeeCap() *big.Int    { return tx.GasPrice }
 func (tx *LegacyTx) value() *big.Int        { return tx.Value }
 func (tx *LegacyTx) nonce() uint64          { return tx.Nonce }
 func (tx *LegacyTx) to() *common.Address    { return tx.To }
-func (tx *LegacyTx) bizType() uint8         { return tx.BizType }
-
-func (tx *LegacyTx) from() *common.Address { return tx.From }
-
-//func (tx *LegacyTx) setFrom(from *common.Address) { tx.From = from }
-func (tx *LegacyTx) extArgs() []byte { return tx.ExtArgs }
-func (tx *LegacyTx) setExtArgs(bytes []byte) {
-	tx.ExtArgs = bytes
-}
-func (tx *LegacyTx) setValue(value *big.Int) {
-	tx.Value = value
+func (tx *LegacyTx) from() *common.Address { //return tx.From
+	return nil
 }
 func (tx *LegacyTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S

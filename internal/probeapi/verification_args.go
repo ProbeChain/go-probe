@@ -33,15 +33,15 @@ func (args *TransactionArgs) setDefaultsOfRegisterAuthorize(ctx context.Context,
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	dataArgs := new(common.RegisterAuthorizeArgs)
-	err := rlp.DecodeBytes(*args.Data, &dataArgs)
+	decode := new(common.IntDecodeType)
+	err := rlp.DecodeBytes(*args.Data, &decode)
 	if err != nil {
 		return err
 	}
 	if args.Value == nil || args.Value.ToInt().Sign() < 1 {
 		return errors.New(`pledge amount must be specified and greater than 0`)
 	}
-	if dataArgs.ValidPeriod.Cmp(currentBlockNumber) < 1 {
+	if decode.Num.Cmp(currentBlockNumber) < 1 {
 		return errors.New(`valid period block number must be specified and greater than current block number`)
 	}
 	return args.DoEstimateGas(ctx, b)
@@ -63,8 +63,8 @@ func (args *TransactionArgs) setDefaultsOfCancellation(ctx context.Context, b Ba
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	cancellationArgs := new(common.CancellationArgs)
-	err := rlp.DecodeBytes(*args.Data, &cancellationArgs)
+	decode := new(common.CancellationDecodeType)
+	err := rlp.DecodeBytes(*args.Data, &decode)
 	if err != nil {
 		return err
 	}
@@ -110,8 +110,8 @@ func (args *TransactionArgs) setDefaultsOfVote(ctx context.Context, b Backend) e
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	voteArgs := new(common.VoteArgs)
-	err := rlp.DecodeBytes(*args.Data, &voteArgs)
+	decode := new(common.AddressDecodeType)
+	err := rlp.DecodeBytes(*args.Data, &decode)
 	if err != nil {
 		return err
 	}
@@ -131,8 +131,8 @@ func (args *TransactionArgs) setDefaultsOfApplyToBeDPoSNode(ctx context.Context,
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	applyDPosArgs := new(common.ApplyDPosArgs)
-	err := rlp.DecodeBytes(*args.Data, &applyDPosArgs)
+	decode := new(common.ApplyDPosDecodeType)
+	err := rlp.DecodeBytes(*args.Data, &decode)
 	if err != nil {
 		return err
 	}
@@ -274,8 +274,8 @@ func (args *TransactionArgs) setDefaultsOfRedemption(ctx context.Context, b Back
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	voteArgs := new(common.VoteArgs)
-	err := rlp.DecodeBytes(*args.Data, &voteArgs)
+	decode := new(common.AddressDecodeType)
+	err := rlp.DecodeBytes(*args.Data, &decode)
 	if err != nil {
 		return err
 	}
@@ -289,8 +289,8 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsOwner(ctx context.Context, b 
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	pnsOwnerArgs := new(common.PnsOwnerArgs)
-	err := rlp.DecodeBytes(*args.Data, &pnsOwnerArgs)
+	decode := new(common.PnsOwnerDecodeType)
+	err := rlp.DecodeBytes(*args.Data, &decode)
 	if err != nil {
 		return err
 	}
@@ -303,8 +303,8 @@ func (args *TransactionArgs) setDefaultsOfModifyPnsContent(ctx context.Context, 
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	pnsContentArgs := new(common.PnsContentArgs)
-	err := rlp.DecodeBytes(*args.Data, &pnsContentArgs)
+	decode := new(common.PnsContentDecodeType)
+	err := rlp.DecodeBytes(*args.Data, &decode)
 	if err != nil {
 		return err
 	}

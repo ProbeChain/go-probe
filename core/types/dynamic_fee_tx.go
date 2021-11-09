@@ -29,7 +29,6 @@ type DynamicFeeTx struct {
 	GasFeeCap  *big.Int
 	Gas        uint64
 	To         *common.Address `rlp:"nil"` // nil means contract creation
-	BizType    byte
 	Value      *big.Int
 	Data       []byte
 	AccessList AccessList
@@ -38,7 +37,7 @@ type DynamicFeeTx struct {
 	R *big.Int `json:"r" gencodec:"required"`
 	S *big.Int `json:"s" gencodec:"required"`
 
-	From *common.Address `rlp:"nil"`
+	//From *common.Address `rlp:"nil"`
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -46,7 +45,6 @@ func (tx *DynamicFeeTx) copy() TxData {
 	cpy := &DynamicFeeTx{
 		Nonce: tx.Nonce,
 		To:    tx.To,
-		From:  tx.From,
 		Data:  common.CopyBytes(tx.Data),
 		Gas:   tx.Gas,
 		// These are copied below.
@@ -58,7 +56,6 @@ func (tx *DynamicFeeTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
-		BizType:    tx.BizType,
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -98,17 +95,9 @@ func (tx *DynamicFeeTx) gasPrice() *big.Int     { return tx.GasFeeCap }
 func (tx *DynamicFeeTx) value() *big.Int        { return tx.Value }
 func (tx *DynamicFeeTx) nonce() uint64          { return tx.Nonce }
 func (tx *DynamicFeeTx) to() *common.Address    { return tx.To }
-func (tx *DynamicFeeTx) bizType() uint8         { return tx.BizType }
-
-func (tx *DynamicFeeTx) from() *common.Address { return tx.From }
-
-func (tx *DynamicFeeTx) setValue(value *big.Int) {
-	tx.Value = value
-}
 func (tx *DynamicFeeTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
-
 func (tx *DynamicFeeTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s
 }
