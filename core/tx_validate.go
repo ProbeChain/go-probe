@@ -25,11 +25,11 @@ func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, local bool) erro
 		newAccount = crypto.CreatePNSAddress(*sender, tx.Data())
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
 		newAccount = crypto.CreateAddress(*sender, tx.Nonce())
-		dataArgs := new(common.RegisterAuthorizeArgs)
-		if err := rlp.DecodeBytes(tx.Data(), &dataArgs); err != nil {
+		decode := new(common.IntDecodeType)
+		if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 			return err
 		}
-		if dataArgs.ValidPeriod.Cmp(pool.chain.CurrentBlock().Number()) < 1 {
+		if decode.Num.Cmp(pool.chain.CurrentBlock().Number()) < 1 {
 			return errors.New(`valid period block number must be specified and greater than current block number`)
 		}
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
@@ -47,15 +47,15 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 	if sender, err = pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	args := new(common.CancellationArgs)
-	if err := rlp.DecodeBytes(tx.Data(), &args); err != nil {
+	decode := new(common.CancellationDecodeType)
+	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
 	}
-	cancelAccount := pool.currentState.GetStateObject(args.CancelAddress)
+	cancelAccount := pool.currentState.GetStateObject(decode.CancelAddress)
 	if cancelAccount == nil {
 		return ErrAccountNotExists
 	}
-	beneficiaryAccount := pool.currentState.GetStateObject(args.BeneficiaryAddress)
+	beneficiaryAccount := pool.currentState.GetStateObject(decode.BeneficiaryAddress)
 	if beneficiaryAccount == nil {
 		return ErrAccountNotExists
 	}
@@ -67,7 +67,7 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, local bool) 
 		if cancelAccount.RegularAccount().VoteValue.Sign() > 0 {
 			return errors.New("some tickets were not redeemed")
 		}
-		if args.CancelAddress != *sender {
+		if decode.CancelAddress != *sender {
 			return errors.New("wrong owner")
 		}
 	case common.ACC_TYPE_OF_PNS:
@@ -307,11 +307,11 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 	if sender, err = pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	args := new(common.ApplyDPosArgs)
-	if err := rlp.DecodeBytes(tx.Data(), &args); err != nil {
+	decode := new(common.ApplyDPosDecodeType)
+	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
 	}
-	voteAccount := pool.currentState.GetStateObject(args.VoteAddress)
+	voteAccount := pool.currentState.GetStateObject(decode.VoteAddress)
 	if voteAccount == nil {
 		return ErrAccountNotExists
 	}
@@ -322,7 +322,7 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local b
 		return ErrValidPeriodTooLow
 	}
 	fromAccount := pool.currentState.GetStateObject(*sender)
-	if fromAccount.RegularAccount().VoteAccount != (common.Address{}) && fromAccount.RegularAccount().VoteAccount != args.VoteAddress {
+	if fromAccount.RegularAccount().VoteAccount != (common.Address{}) && fromAccount.RegularAccount().VoteAccount != decode.VoteAddress {
 		return ErrInvalidCandidateDPOS
 	}
 	limitMaxValue := big.NewInt(1)
@@ -339,11 +339,11 @@ func (pool *TxPool) validateTxOfVote(tx *types.Transaction, local bool) error {
 	if sender, err = pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	voteArgs := new(common.VoteArgs)
-	if err := rlp.DecodeBytes(tx.Data(), &voteArgs); err != nil {
+	decode := new(common.AddressDecodeType)
+	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
 	}
-	voteAccount := pool.currentState.GetStateObject(voteArgs.VoteAddress)
+	voteAccount := pool.currentState.GetStateObject(decode.Addr)
 	if voteAccount == nil {
 		return ErrAccountNotExists
 	}
@@ -354,7 +354,7 @@ func (pool *TxPool) validateTxOfVote(tx *types.Transaction, local bool) error {
 		return ErrValidPeriodTooLow
 	}
 	fromAccount := pool.currentState.GetStateObject(*sender).RegularAccount()
-	if fromAccount.VoteAccount != (common.Address{}) && fromAccount.VoteAccount != voteArgs.VoteAddress {
+	if fromAccount.VoteAccount != (common.Address{}) && fromAccount.VoteAccount != decode.Addr {
 		return errors.New("other candidates have been supported")
 	}
 	return pool.validateGas(tx, local, sender)
@@ -366,11 +366,11 @@ func (pool *TxPool) validateTxOfRedemption(tx *types.Transaction, local bool) er
 	if sender, err = pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	voteArgs := new(common.VoteArgs)
-	if err := rlp.DecodeBytes(tx.Data(), &voteArgs); err != nil {
+	decode := new(common.AddressDecodeType)
+	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
 	}
-	var voteAccount = pool.currentState.GetStateObject(voteArgs.VoteAddress)
+	var voteAccount = pool.currentState.GetStateObject(decode.Addr)
 	if voteAccount == nil {
 		return ErrAccountNotExists
 	}
@@ -391,18 +391,18 @@ func (pool *TxPool) validateTxOfModifyPnsOwner(tx *types.Transaction, local bool
 	if sender, err = pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	args := new(common.PnsOwnerArgs)
-	if err := rlp.DecodeBytes(tx.Data(), &args); err != nil {
+	decode := new(common.PnsOwnerDecodeType)
+	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
 	}
-	var pnsAccount = pool.currentState.GetStateObject(args.PnsAddress)
+	var pnsAccount = pool.currentState.GetStateObject(decode.PnsAddress)
 	if pnsAccount == nil {
 		return ErrAccountNotExists
 	}
 	if pnsAccount.AccountType() != common.ACC_TYPE_OF_PNS {
 		return ErrValidUnsupportedAccount
 	}
-	var ownerAccount = pool.currentState.GetStateObject(args.OwnerAddress)
+	var ownerAccount = pool.currentState.GetStateObject(decode.OwnerAddress)
 	if ownerAccount == nil {
 		return ErrAccountNotExists
 	}
@@ -412,7 +412,7 @@ func (pool *TxPool) validateTxOfModifyPnsOwner(tx *types.Transaction, local bool
 	if pnsAccount.PnsAccount().Owner != *sender {
 		return errors.New("wrong pns owner")
 	}
-	if pnsAccount.PnsAccount().Owner == args.OwnerAddress {
+	if pnsAccount.PnsAccount().Owner == decode.OwnerAddress {
 		return errors.New("consistent with current owner")
 	}
 	return pool.validateGas(tx, local, sender)
@@ -423,11 +423,11 @@ func (pool *TxPool) validateTxOfModifyPnsContent(tx *types.Transaction, local bo
 	if sender, err = pool.validateSender(tx, local); err != nil {
 		return err
 	}
-	args := new(common.PnsContentArgs)
-	if err := rlp.DecodeBytes(tx.Data(), &args); err != nil {
+	decode := new(common.PnsContentDecodeType)
+	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
 	}
-	var pnsAccount = pool.currentState.GetStateObject(args.PnsAddress)
+	var pnsAccount = pool.currentState.GetStateObject(decode.PnsAddress)
 	if pnsAccount == nil {
 		return ErrAccountNotExists
 	}

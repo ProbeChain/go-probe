@@ -494,30 +494,34 @@ func InetAtoN(ip string) *big.Int {
 	return ret
 }
 
-type RegisterAuthorizeArgs struct {
-	ValidPeriod big.Int
+type IntDecodeType struct {
+	Num big.Int
 }
 
-type VoteArgs struct {
-	VoteAddress Address
+type AddressDecodeType struct {
+	Addr Address
 }
 
-type CancellationArgs struct {
+type StringDecodeType struct {
+	Data string
+}
+
+type CancellationDecodeType struct {
 	CancelAddress      Address
 	BeneficiaryAddress Address
 }
 
-type ApplyDPosArgs struct {
+type ApplyDPosDecodeType struct {
 	VoteAddress Address
-	NodeInfo    DposEnode
+	NodeInfo    string
 }
 
-type PnsOwnerArgs struct {
+type PnsOwnerDecodeType struct {
 	PnsAddress   Address
 	OwnerAddress Address
 }
 
-type PnsContentArgs struct {
+type PnsContentDecodeType struct {
 	PnsAddress Address
 	PnsType    byte
 	PnsData    string
