@@ -468,7 +468,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	}
 	// Create a new account on the state
 	snapshot := evm.StateDB.Snapshot()
-	evm.StateDB.CreateAccount(address)
+	evm.StateDB.CreateContractAccount(address)
 	if evm.chainRules.IsEIP158 {
 		evm.StateDB.SetNonce(address, 1)
 	}
@@ -533,7 +533,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 func (evm *EVM) Create(caller ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	contractAddr = crypto.CreateAddress(caller.Address(), evm.StateDB.GetNonce(caller.Address()))
 	if evm.StateDB.Exist(contractAddr) {
-		log.Error("Failed to create contract address", "err", ErrContractAddressCollision)
+		log.Error("contract address already exists", "err", ErrContractAddressCollision)
 		return nil, common.Address{}, gas, ErrContractAddressCollision
 	}
 	return evm.create(caller, &codeAndHash{code: code}, gas, value, contractAddr)

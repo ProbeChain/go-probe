@@ -719,6 +719,13 @@ func (s *StateDB) CreateAccount(addr common.Address) {
 	}
 }
 
+func (s *StateDB) CreateContractAccount(addr common.Address) {
+	newObj, prev := s.createObjectByAccType(addr, common.ACC_TYPE_OF_CONTRACT)
+	if prev != nil {
+		newObj.setBalance(prev.Balance())
+	}
+}
+
 func (s *StateDB) setMarkLossAccount(address common.Address) {
 	var last12BytesToHash = address.Last12BytesToHash()
 	var arr = s.markLossAccounts[last12BytesToHash]
@@ -1233,7 +1240,6 @@ func (s *StateDB) ModifyLossType(context vm.TxContext) {
 func (s *StateDB) Vote(context vm.TxContext) {
 	decode := new(common.AddressDecodeType)
 	rlp.DecodeBytes(context.Data, &decode)
-	//fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
 	s.SubBalance(context.From, context.Value)
 	fromObj := s.getStateObject(context.From)
 	if fromObj != nil {
@@ -1261,7 +1267,6 @@ func (s *StateDB) Vote(context vm.TxContext) {
 }
 
 func (s *StateDB) Register(context vm.TxContext) {
-	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
 	var newAddress common.Address
 	pledgeAmount := uint64(0)
 	switch context.To.Hex() {
@@ -1317,7 +1322,6 @@ func (s *StateDB) Cancellation(context vm.TxContext) {
 
 func (s *StateDB) Transfer(context vm.TxContext) {
 	isNew := s.getStateObject(*context.To) == nil
-	fmt.Printf("Transfer, sender:%s,to:%s,amount:%s,isNew:%t\n", context.From.String(), context.To.String(), context.Value.String(), isNew)
 	actualValue := context.Value
 	if isNew {
 		actualValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR))
