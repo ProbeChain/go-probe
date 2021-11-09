@@ -829,7 +829,7 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		accountInfo.Owner = &s.pnsAccount.Owner
 		decode := new(common.StringDecodeType)
 		rlp.DecodeBytes(s.pnsAccount.Data, &decode)
-		accountInfo.Data = decode.Data
+		accountInfo.Data = decode.Text
 	case common.ACC_TYPE_OF_CONTRACT:
 		codeHash := hexutil.Bytes(s.assetAccount.CodeHash)
 		accountInfo.CodeHash = codeHash.String()

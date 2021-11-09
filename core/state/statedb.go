@@ -1270,9 +1270,6 @@ func (s *StateDB) Register(context vm.TxContext) {
 		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
 		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_PNS)
 		obj.pnsAccount.Owner = context.From
-		//pnsData := new(string)
-		//rlp.DecodeBytes(context.Data, &pnsData)
-		//hex.DecodeString()
 		obj.pnsAccount.Data = context.Data
 		obj.pnsAccount.Type = byte(0)
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
@@ -1421,7 +1418,6 @@ func (s *StateDB) ModifyPnsOwner(context vm.TxContext) {
 func (s *StateDB) ModifyPnsContent(context vm.TxContext) {
 	decode := new(common.PnsContentDecodeType)
 	rlp.DecodeBytes(context.Data, &decode)
-	//s.SubBalance(context.From, context.Value)
 	stateObj := s.getStateObject(decode.PnsAddress)
 	if stateObj != nil {
 		stateObj.db.journal.append(modifyPnsContentChange{
@@ -1430,7 +1426,9 @@ func (s *StateDB) ModifyPnsContent(context vm.TxContext) {
 			data:    stateObj.pnsAccount.Data,
 		})
 		stateObj.pnsAccount.Type = decode.PnsType
-		stateObj.pnsAccount.Data = []byte(decode.PnsData)
+		pnsData, _ := rlp.EncodeToBytes(common.StringDecodeType{Text: decode.PnsData})
+		stateObj.pnsAccount.Data = pnsData
+
 	}
 }
 
