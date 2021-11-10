@@ -1204,11 +1204,11 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 				return nil
 			}
 		}
+
+		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(currentEffectBlockNumber)
 	}
 
 	//process powAnswers and dposAcks
-	w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(currentEffectBlockNumber)
-
 	if newBlockNumber.Uint64()-currentEffectBlockNumber.Uint64() == 1 {
 		w.current.dposAcks = w.probe.BlockChain().GetDposAck(parentBlockNum, types.AckTypeAgree)
 	} else {
