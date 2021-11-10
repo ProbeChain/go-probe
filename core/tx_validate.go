@@ -123,181 +123,18 @@ func (pool *TxPool) validateTxOfContractDeploy(tx *types.Transaction, local bool
 
 func (pool *TxPool) validateTxOfSendLossReport(tx *types.Transaction, local bool) error {
 	return errors.New("the current version does not support")
-	/*
-		//var sender *common.Address
-		var err error
-		if _, err = pool.validateSender(tx); err != nil {
-			return err
-		}
-
-		return pool.validateGas(tx, local)*/
 }
 func (pool *TxPool) validateTxOfRevealLossReport(tx *types.Transaction, local bool) error {
 	return errors.New("the current version does not support")
-
-	//var sender *common.Address
-	/*	var err error
-		if _, err = pool.validateSender(tx); err != nil {
-			return err
-		}*/
-	/*	if err := pool.validateSender(tx, local); err != nil {
-			return err
-		}
-		if err := common.ValidateNil(tx.Value, "value"); err != nil {
-			return err
-		}
-		if tx.Value().Sign() != 1 {
-			return errors.New("value must be greater than 0")
-		}
-		if err := common.ValidateNil(tx.Data, "data"); err != nil {
-			return err
-		}
-		if err := common.ValidateNil(tx.To, "loss account"); err != nil {
-			return err
-		}
-		if err := common.ValidateNil(tx.Old, "lost account"); err != nil {
-			return err
-		}
-		if err := common.ValidateNil(tx.New, "new account "); err != nil {
-			return err
-		}
-		if err := common.ValidateAccType(tx.To(), common.ACC_TYPE_OF_LOSS, "to"); err != nil {
-			return err
-		}
-		if err := common.ValidateAccType(tx.Old(), common.ACC_TYPE_OF_REGULAR, "old"); err != nil {
-			return err
-		}
-		if err := common.ValidateAccType(tx.New(), common.ACC_TYPE_OF_REGULAR, "new"); err != nil {
-			return err
-		}
-		oldAccount := pool.currentState.GetRegular(*tx.Old())
-		if oldAccount == nil {
-			return errors.New("old account no exists")
-		}
-		newAccount := pool.currentState.GetRegular(*tx.New())
-		if newAccount == nil {
-			return errors.New("new account no exists")
-		}
-		minMultipleAmount := new(big.Int).Mul(tx.Value(), new(big.Int).SetUint64(common.MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT))
-		if minMultipleAmount.Cmp(oldAccount.Value) == -1 {
-			return errors.New("insufficient pledge amount")
-		}
-		lossAccount := pool.currentState.GetLoss(*tx.To())
-		if lossAccount == nil {
-			return errors.New("loss account no exists")
-		}
-		if lossAccount.State != common.LOSS_STATE_OF_APPLY {
-			return errors.New("loss account has been revealed")
-		}
-		if !common.ByteSliceEqual(lossAccount.InfoDigest[:], tx.Data()) {
-			return errors.New("wrong information digest")
-		}
-		markLossAccounts := pool.currentState.GetMarkLossAccounts(tx.To().Last12BytesToHash())
-		if markLossAccounts == nil || len(markLossAccounts) == 0 {
-			return errors.New("mark information no exists")
-		}*/
-	/*	return pool.validateGas(tx, local)*/
 }
 func (pool *TxPool) validateTxOfTransferLostAccount(tx *types.Transaction, local bool) error {
 	return errors.New("the current version does not support")
-
-	//var sender *common.Address
-	/*	var err error
-		if _, err = pool.validateSender(tx); err != nil {
-			return err
-		}
-		if err := common.ValidateNil(tx.To, "loss account"); err != nil {
-			return err
-		}*/
-	/*	if err := common.ValidateAccType(tx.To(), common.ACC_TYPE_OF_LOSS, "to"); err != nil {
-		return err
-	}*/
-	/*	if !pool.currentState.Exist(*tx.To()) {
-			return ErrAccountNotExists
-		}
-		lossAccount := pool.currentState.GetLoss(*tx.To())
-		if lossAccount == nil {
-			return errors.New("loss account no exists")
-		}
-		if lossAccount.State != common.LOSS_STATE_OF_NOTICE {
-			return errors.New("loss account no revealed")
-		}
-		currentBlockNumber := pool.chain.CurrentBlock().Number()
-		lossReportAccount := pool.currentState.GetRegular(lossAccount.LossAccount)
-		if lossReportAccount == nil {
-			return errors.New("the loss report account no exists")
-		}
-		if lossReportAccount.LossType == 0 {
-			return errors.New("account loss reporting is not allowed")
-		}
-		difference := new(big.Int).Sub(currentBlockNumber, lossAccount.Height)
-		lossTypeConfigHeight := new(big.Int).Mul(new(big.Int).SetUint64(uint64(lossReportAccount.LossType)), new(big.Int).SetUint64(common.CYCLE_HEIGHT_OF_LOSS_TYPE))
-		if difference.Cmp(lossTypeConfigHeight) == -1 {
-			return errors.New("the loss reporting time is not over")
-		}
-		return pool.validateGas(tx, local)*/
 }
 func (pool *TxPool) validateTxOfRemoveLossReport(tx *types.Transaction, local bool) error {
 	return errors.New("the current version does not support")
-
-	//var sender *common.Address
-	/*	var err error
-		if _, err = pool.validateSender(tx); err != nil {
-			return err
-		}
-		if err := common.ValidateNil(tx.To, "loss account"); err != nil {
-			return err
-		}*/
-	/*	if err := common.ValidateAccType(tx.To(), common.ACC_TYPE_OF_LOSS, "to"); err != nil {
-		return err
-	}*/
-	/*	lossAccount := pool.currentState.GetLoss(*tx.To())
-		if lossAccount == nil {
-			return errors.New("loss account no exists")
-		}
-		if lossAccount.State != common.LOSS_STATE_OF_APPLY {
-			return errors.New("loss reporting status is not allowed")
-		}
-		currentBlockNumber := pool.chain.CurrentBlock().Number()
-		thresholdBlockNumber := new(big.Int).Add(lossAccount.Height, new(big.Int).SetUint64(common.THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT))
-		if currentBlockNumber.Cmp(thresholdBlockNumber) < 1 {
-			return errors.New("current block number less than threshold")
-		}
-		pledgeAmount := new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS)
-		if tx.Value().Cmp(pledgeAmount) != 0 {
-			return errors.New("wrong value")
-		}
-		return pool.validateGas(tx, local)*/
 }
 func (pool *TxPool) validateTxOfRejectLossReport(tx *types.Transaction, local bool) error {
 	return errors.New("the current version does not support")
-
-	/*	var sender *common.Address
-		var err error
-		if sender, err = pool.validateSender(tx); err != nil {
-			return err
-		}
-		if err := common.ValidateNil(tx.To, "loss account"); err != nil {
-			return err
-		}*/
-	/*	if err := common.ValidateAccType(tx.To(), common.ACC_TYPE_OF_LOSS, "to"); err != nil {
-		return err
-	}*/
-	/*	lossAccount := pool.currentState.GetLoss(*tx.To())
-		if lossAccount == nil {
-			return errors.New("loss account no exists")
-		}
-		if *sender != lossAccount.LossAccount {
-			return errors.New("illegal operation")
-		}
-		if lossAccount.State == common.LOSS_STATE_OF_SUCCESS {
-			return errors.New("the account has been retrieved. operation is not allowed")
-		}
-		pledgeAmount := new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS)
-		if tx.Value().Cmp(pledgeAmount) != 0 {
-			return errors.New("wrong value")
-		}
-		return pool.validateGas(tx, local)*/
 }
 func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, local bool) error {
 	var sender *common.Address
