@@ -245,7 +245,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 	probe.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
 	coinbase, err := probe.Probeerbase()
-	if err != nil {
+	if err == nil {
 		probe.SetProbeerbase(coinbase)
 	}
 

@@ -21,7 +21,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"io"
 	"math/big"
 	"math/rand"
@@ -160,8 +160,8 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 	if err != nil {
 		return common.Address{}, err
 	}
-	pubKey, _ := probecrypto.UnmarshalPubkey(pubkey[:len(pubkey)-1])
-	signer := probecrypto.PubkeyToAddress(*pubKey)
+	pubKey, _ := crypto.UnmarshalPubkey(pubkey[:len(pubkey)-1])
+	signer := crypto.PubkeyToAddress(*pubKey)
 	// signer common.Address
 	//copy(signer[:], crypto.Keccak256(pubkey[1:])[12:])
 

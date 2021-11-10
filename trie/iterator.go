@@ -1,18 +1,18 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -112,7 +112,7 @@ type NodeIterator interface {
 	// reading from disk. In those cases, this resolver allows short circuiting
 	// accesses and returning them from memory.
 	//
-	// Before adding a similar mechanism to any other place in Gprobe, consider
+	// Before adding a similar mechanism to any other place in Geth, consider
 	// making trie.Database an interface and wrapping at that level. It's a huge
 	// refactor, but it could be worth it if another occurrence arises.
 	AddResolver(probedb.KeyValueStore)
@@ -234,7 +234,7 @@ func (it *nodeIterator) Error() error {
 	return it.err
 }
 
-// Next moves the iterator to the next node, returning whprobeer there are any
+// Next moves the iterator to the next node, returning whether there are any
 // further nodes. In case of an internal error this method returns false and
 // sets the Error field to the encountered failure. If `descend` is false,
 // skips iterating over any subnodes of the current node.

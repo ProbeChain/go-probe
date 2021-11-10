@@ -17,9 +17,10 @@
 package les
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"io"
 	"math/big"
 
@@ -257,7 +258,7 @@ func (a *announceData) sanityCheck() error {
 }
 
 // sign adds a signature to the block announcement by the given privKey
-func (a *announceData) sign(privKey *probecrypto.PrivateKey) {
+func (a *announceData) sign(privKey *ecdsa.PrivateKey) {
 	rlp, _ := rlp.EncodeToBytes(blockInfo{a.Hash, a.Number, a.Td})
 	sig, _ := crypto.Sign(crypto.Keccak256(rlp), privKey)
 	a.Update = a.Update.add("sign", sig)

@@ -120,17 +120,6 @@ func (z *Int) Bytes20() [20]byte {
 	return b
 }
 
-// Bytes25 returns the value of z as a 25-byte big-endian array.
-func (z *Int) Bytes25() [25]byte {
-	// The PutUint64()s are inlined and we get 4x (load, bswap, store) instructions.
-	var b [25]byte
-	binary.BigEndian.PutUint32(b[0:1], uint32(z[3]))
-	binary.BigEndian.PutUint64(b[1:9], z[2])
-	binary.BigEndian.PutUint64(b[9:17], z[1])
-	binary.BigEndian.PutUint64(b[17:25], z[0])
-	return b
-}
-
 // Bytes returns the value of z as a big-endian byte slice.
 func (z *Int) Bytes() []byte {
 	b := z.Bytes32()

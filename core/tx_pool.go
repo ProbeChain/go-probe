@@ -85,9 +85,6 @@ var (
 	// making the transaction invalid, rather a DOS protection.
 	ErrOversizedData = errors.New("oversized data")
 
-	// ErrInvalidCandidate is returned if vote other candidate
-	ErrInvalidCandidate = errors.New("invalid candidate")
-
 	ErrInvalidCandidateDPOS = errors.New("invalid candidateDPOS")
 
 	// ErrNoVote is returned if no vote
@@ -560,48 +557,40 @@ func (pool *TxPool) local() map[common.Address]types.Transactions {
 // validateTx checks whprobeer a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
-	bizType := tx.BizType()
-	if !common.CheckBizType(bizType) {
-		return ErrBizTypeNotSupported
-	}
 	var err error
-	switch bizType {
-	case common.Register:
-		err = pool.validateTxOfRegister(tx, local)
-	case common.Cancellation:
-		err = pool.validateTxOfCancellation(tx, local)
-	case common.Transfer:
-		err = pool.validateTxOfTransfer(tx, local)
-	case common.ExchangeAsset:
-		err = pool.validateTxOfExchangeAsset(tx, local)
-	case common.ContractCall:
-		err = pool.validateTxOfContractCall(tx, local)
-	case common.SendLossReport:
-		err = pool.validateTxOfSendLossReport(tx, local)
-	case common.RevealLossReport:
-		return pool.validateTxOfRevealLossReport(tx, local)
-	case common.TransferLostAccount:
-		return pool.validateTxOfTransferLostAccount(tx, local)
-	case common.TransferLostAssetAccount:
-		return pool.validateTxOfTransferLostAssetAccount(tx, local)
-	case common.RemoveLossReport:
-		return pool.validateTxOfRemoveLossReport(tx, local)
-	case common.RejectLossReport:
-		return pool.validateTxOfRejectLossReport(tx, local)
-	case common.Vote:
-		err = pool.validateTxOfVote(tx, local)
-	case common.ApplyToBeDPoSNode:
-		err = pool.validateTxOfApplyToBeDPoSNode(tx, local)
-	case common.Redemption:
-		err = pool.validateTxOfRedemption(tx, local)
-	case common.ModifyLossType:
-		return pool.validateTxOfModifyLossType(tx, local)
-	case common.ModifyPnsOwner:
-		return pool.validateTxOfModifyPnsOwner(tx, local)
-	case common.ModifyPnsContent:
-		return pool.validateTxOfModifyPnsContent(tx, local)
-	default:
-		err = ErrBizTypeNotSupported
+	if tx.To() == nil {
+		err = pool.validateTxOfContractDeploy(tx, local)
+	} else {
+		switch tx.To().Hex() {
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
+			common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
+			common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+			err = pool.validateTxOfRegister(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
+			err = pool.validateTxOfCancellation(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
+			err = pool.validateTxOfSendLossReport(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
+			err = pool.validateTxOfRevealLossReport(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
+			err = pool.validateTxOfTransferLostAccount(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
+			err = pool.validateTxOfRemoveLossReport(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
+			err = pool.validateTxOfRejectLossReport(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_VOTE:
+			err = pool.validateTxOfVote(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
+			err = pool.validateTxOfApplyToBeDPoSNode(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
+			err = pool.validateTxOfRedemption(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
+			err = pool.validateTxOfModifyPnsOwner(tx, local)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
+			err = pool.validateTxOfModifyPnsContent(tx, local)
+		default:
+			err = pool.validateTxOfTransfer(tx, local)
+		}
 	}
 	if err != nil {
 		return err

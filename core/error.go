@@ -88,9 +88,6 @@ var (
 	// the base fee of the block.
 	ErrFeeCapTooLow = errors.New("max fee per gas less than block base fee")
 
-	// ErrBizTypeNotSupported is returned if a business transaction type is not supported
-	ErrBizTypeNotSupported = errors.New("business transaction type not supported")
-
 	// ErrAccountAlreadyExists is returned if an account attempted to import is
 	ErrAccountAlreadyExists = errors.New("account already exists")
 
@@ -101,4 +98,6 @@ var (
 	ErrValidPeriodTooLow = errors.New("valid period too low")
 
 	ErrValidCandidateDPOSValue = errors.New("valid apply candidate dposAccout value too large")
+
+	ErrValidUnsupportedAccount = errors.New("unsupported account")
 )

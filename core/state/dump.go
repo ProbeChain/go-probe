@@ -72,7 +72,7 @@ type DumpAccount struct {
 	CodeHash    hexutil.Bytes   `json:"codeHash"`
 	StorageRoot common.Hash     `json:"storageRoot"`
 	Info        hexutil.Bytes   `json:"info"`
-	InfoDigest  hexutil.Bytes   `json:"infoDigest"`
+	InfoDigest  common.Hash     `json:"infoDigest"`
 	State       hexutil.Uint8   `json:"lossState"`
 	Type        hexutil.Uint8   `json:"type"`
 	Ip          hexutil.Bytes   `json:"ip"`
@@ -264,15 +264,14 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 		wrapper          *Wrapper
 		err              error
 	)
-	trieArr := [6]Trie{s.trie.regularTrie, s.trie.pnsTrie, s.trie.digitalTrie, s.trie.contractTrie, s.trie.authorizeTrie, s.trie.lossTrie}
-	//trieArr := [1]Trie{s.trie}
+	trieArr := [1]Trie{s.trie}
 	for i, t := range trieArr {
 		log.Info("Trie dumping started", "root", t.Hash())
 		c.OnRoot(t.Hash())
 		it := trie.NewIterator(t.NodeIterator(conf.Start))
 		for it.Next() {
 			if i == 0 {
-				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_GENERAL)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_REGULAR)
 				if err != nil {
 					continue
 				}
@@ -304,12 +303,11 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 			}
 			if i == 2 || i == 3 {
-				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_ASSET)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_CONTRACT)
 				if err != nil {
 					continue
 				}
 				account = DumpAccount{
-					Type:        hexutil.Uint8(wrapper.assetAccount.Type),
 					CodeHash:    wrapper.assetAccount.CodeHash,
 					StorageRoot: wrapper.assetAccount.StorageRoot,
 					Value:       hexutil.Big(*wrapper.assetAccount.Value),
@@ -329,12 +327,11 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 					VoteValue:   hexutil.Big(*wrapper.authorizeAccount.VoteValue),
 					Info:        wrapper.authorizeAccount.Info,
 					ValidPeriod: hexutil.Big(*wrapper.authorizeAccount.ValidPeriod),
-					Weight:      hexutil.Big(*wrapper.authorizeAccount.Weight),
 					//Nonce:			wrapper.authorizeAccount.Nonce,
 				}
 			}
 			if i == 5 {
-				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_LOSE)
+				wrapper, err = DecodeRLP(it.Value, common.ACC_TYPE_OF_LOSS)
 				if err != nil {
 					continue
 				}

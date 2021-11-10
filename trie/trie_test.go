@@ -1,25 +1,24 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
@@ -27,11 +26,7 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
-	"os/user"
-	"path"
-	"path/filepath"
 	"reflect"
-	"sync"
 	"testing"
 	"testing/quick"
 
@@ -56,11 +51,6 @@ func newEmpty() *Trie {
 	return trie
 }
 
-func newEmptyBinary(path string, depth int) *Trie {
-	trie, _ := NewBinary(common.Hash{}, NewDatabase(memorydb.New()), path, depth)
-	return trie
-}
-
 func TestEmptyTrie(t *testing.T) {
 	var trie Trie
 	res := trie.Hash()
@@ -68,56 +58,6 @@ func TestEmptyTrie(t *testing.T) {
 	if res != exp {
 		t.Errorf("expected %x got %x", exp, res)
 	}
-}
-
-func TestEmptyBinaryTrie(t *testing.T) {
-	dir := os.TempDir()
-	path1 := path.Join(dir, "t1.bin")
-	path2 := path.Join(dir, "t2.bin")
-	depth1 := 2
-	depth2 := 5
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	trie1 := newEmptyBinary(path1, depth1)
-	println("trie1 bt = ", trie1.bt)
-	go func() {
-		count := 1
-		for count <= 10 {
-			trie := newEmptyBinary(path1, depth1)
-			println("trie r1  bt = ", trie.bt, count)
-			if trie.bt != trie1.bt {
-				t.Logf("Error occurred")
-			}
-			count++
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		count := 11
-		for count <= 20 {
-			trie := newEmptyBinary(path1, depth1)
-			println("trie r2  bt = ", trie.bt, count)
-			if trie.bt != trie1.bt {
-				t.Logf("Error occurred")
-			}
-			count++
-		}
-		wg.Done()
-	}()
-
-	trie2 := newEmptyBinary(path2, depth2)
-	println("trie2 bt = ", trie2.bt)
-	if trie1.bt == trie2.bt {
-		t.Fatal("trie1.bt must not the trie2.bt")
-	}
-
-	defer os.Remove(path1)
-	defer os.Remove(path2)
-	defer trie1.Close()
-	defer trie2.Close()
-	wg.Wait()
 }
 
 func TestNull(t *testing.T) {
@@ -241,198 +181,6 @@ func TestInsert(t *testing.T) {
 	}
 }
 
-func TestTrie(t *testing.T) {
-	db := NewDatabase(memorydb.New())
-	trie1, _ := New(common.Hash{}, db)
-	key := []byte("lang")
-	value := make([]byte, 0, 0)
-	trie1.Update(key, []byte("go"))
-	root := trie1.Hash()
-	trie1.Commit(nil)
-
-	trie1.Update(key, []byte("javascript"))
-
-	trie2, err := New(root, db)
-	if err != nil {
-		value, _ = trie2.TryGet(key)
-		t.Logf("value %s", value)
-	} else {
-		t.Log("err", err)
-	}
-
-}
-
-func TestDecodeAlters(t *testing.T) {
-	//[
-	//	"0x5a013a87733553966400242399dee3760877fead2cd87287747155e47a854acb",
-	//	"0x50fe07922f57ae3b4553201bfd7c11aca85e1541f91db8e62dca9c418dc5feae",
-	//	[
-	//	[
-	//	"0x02",
-	//	[
-	//	[
-	//	"0xb44719dc13fc46773e8cfcf79fa2f1ef2e8dcc57",
-	//	"0xf86409a0fffffffffffffffffffffffffffffffffffffffffffffffd8f7f84c48f42a3efa056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	//	],
-	//	[
-	//	"0xc1f8965475f457d5803a871092152a01fbe32ecc",
-	//	"0xf84c80884563918244f40000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	//	],
-	//	[
-	//	"0xc6ea4cf137b925f16c02cf6a7c044fb94cebd963",
-	//	"0xf84c80887ce66c50e2840000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	//	],
-	//	[
-	//	"0xf1eead1c64b2b858c75058b1a3a31a2ea78b5084",
-	//	"0xf84c80883782dace9d900000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	//	]
-	//	]
-	//	],
-	//	[
-	//	"0x01",
-	//	[
-	//	[
-	//	"0x084539534e555b53a933c62920ea6a1dc75a2577",
-	//	"0xf84c80886f05b59d3b200000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	//	],
-	//	[
-	//	"0x1ebed080b002d2cc76f43fc3ef28ed06902e5545",
-	//	"0xf84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	//	],
-	//	[
-	//	"0x6e90e8cbf72b09fe182086c21d7a9a963f2099af",
-	//	"0xf84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	//	]
-	//	]
-	//	]
-	//	]
-	//]
-	hexString := "f9033ca05a013a87733553966400242399dee3760877fead2cd87287747155e47a854acba050fe07922f57ae3b4553201bfd7c11aca85e1541f91db8e62dca9c418dc5feaef902f7f901b802f901b4f87d94b44719dc13fc46773e8cfcf79fa2f1ef2e8dcc57b866f86409a0fffffffffffffffffffffffffffffffffffffffffffffffd8f7f84c48f42a3efa056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f86594c1f8965475f457d5803a871092152a01fbe32eccb84ef84c80884563918244f40000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f86594c6ea4cf137b925f16c02cf6a7c044fb94cebd963b84ef84c80887ce66c50e2840000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f86594f1eead1c64b2b858c75058b1a3a31a2ea78b5084b84ef84c80883782dace9d900000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f9013901f90135f86594084539534e555b53a933c62920ea6a1dc75a2577b84ef84c80886f05b59d3b200000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f865941ebed080b002d2cc76f43fc3ef28ed06902e5545b84ef84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470f865946e90e8cbf72b09fe182086c21d7a9a963f2099afb84ef84c80886124fee993bc0000a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
-	cur, _ := hex.DecodeString(hexString)
-	alter := Alter{}
-
-	elems, rest, err := rlp.SplitList(cur)
-	if err != nil {
-	}
-
-	cur = elems
-	elems, rest, err = rlp.SplitString(cur)
-	copy(alter.PreRoot[0:], elems)
-
-	cur = rest
-	elems, rest, _ = rlp.SplitString(cur)
-	copy(alter.CurRoot[0:], elems)
-
-	cur = rest
-	elems, rest, err = rlp.SplitList(cur)
-
-	cur = elems
-	for {
-		var diffLeaf DiffLeaf
-		index := make([]byte, 0, 0)
-		next := make([]byte, 0, 0)
-
-		elems, rest, err = rlp.SplitList(cur)
-		next = append(next, rest...)
-		cur = next
-
-		index, rest, err = rlp.SplitString(elems)
-		diffLeaf.Index = uint32(bytesToInt(index))
-
-		elems, rest, err = rlp.SplitList(rest)
-
-		leaf := make([]binaryNode, 0, 0) // 如果叶子节点是空的，默认为空数组
-		cur := elems
-		for {
-			var node binaryNode
-			key := make([]byte, 0, 0)
-			val := make([]byte, 0, 0)
-
-			elems, rest, err = rlp.SplitList(cur)
-			next := rest
-			cur = rest
-
-			if len(elems) > 0 {
-				elems, rest, err = rlp.SplitList(elems)
-				key, rest, err = rlp.SplitString(rest)
-				val, rest, err = rlp.SplitString(rest)
-				node.Key = key
-				node.Val = val
-				leaf = append(leaf, node)
-			}
-
-			if len(next) == 0 {
-				break
-			}
-		}
-		diffLeaf.Leaf = leaf
-		alter.DiffLeafs = append(alter.DiffLeafs, diffLeaf)
-
-		if len(next) == 0 {
-			break
-		}
-	}
-}
-
-func TestBinaryInsert(t *testing.T) {
-	depth := 2
-	path := "./trie.bin"
-	trie := newEmptyBinary(path, depth)
-	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
-	trie.TryUpdate(key, []byte("000000000"))
-	trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0xff}, []byte("111111111"))
-	trie.TryUpdate([]byte{0x7f, 0x6f, 0xbb, 0x54, 0xf7}, []byte("222222222"))
-
-	// 获取一个存在的值
-	value, _ := trie.TryGet(key)
-	t.Logf("value %s", value)
-
-	// 获取一个不存在的值
-	value, _ = trie.TryGet(append(key, 0xff))
-	t.Logf("value %s", value)
-
-	// 删除值
-	trie.TryDelete(key)
-	value, _ = trie.TryGet(key)
-	t.Logf("value %s", value)
-
-	stateRoot := trie.Hash()
-	t.Logf("value %s", stateRoot)
-
-	hash := trie.Hash()
-	trie.Commit(nil)
-	trie.db.Commit(hash, true, nil)
-	trie.Close()
-
-	os.RemoveAll(path)
-}
-
-func TestBinaryWriteToDB(t *testing.T) {
-	usr, _ := user.Current()
-	dir := filepath.Join(usr.HomeDir, "AppData", "Local", "Trie", "DB")
-	diskdb, _ := leveldb.New(dir, 256, 0, "", false)
-	depth := 2
-	path := "./trie.bin"
-
-	trie, _ := NewBinary(common.Hash{}, NewDatabase(diskdb), path, depth)
-	key := []byte{0xf7, 0x6f, 0xff, 0x54, 0x00}
-	//trie.TryUpdate(key, []byte("000000000"))
-	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0xff}, []byte("111111111"))
-	//trie.TryUpdate([]byte{0x7f, 0x6f, 0xbb, 0x54, 0xf7}, []byte("222222222"))
-	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0x1f}, []byte("333333333"))
-	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0x2f}, []byte("444444444"))
-	//trie.TryUpdate([]byte{0xf7, 0x6f, 0x0b, 0x54, 0x3f}, []byte("555555555"))
-	value, _ := trie.TryGet(key)
-	t.Logf("value = %s", value)
-
-	rootHash, _ := trie.Commit(nil)
-	trie.db.Commit(rootHash, true, nil)
-	ldb := trie.db.diskdb.(*leveldb.Database)
-	ldb.Close()
-	os.RemoveAll(path)
-	os.RemoveAll(ldb.Path())
-}
-
 func TestGet(t *testing.T) {
 	trie := newEmpty()
 	updateString(trie, "doe", "reindeer")
@@ -461,11 +209,11 @@ func TestDelete(t *testing.T) {
 	trie := newEmpty()
 	vals := []struct{ k, v string }{
 		{"do", "verb"},
-		{"probeer", "wookiedoo"},
+		{"ether", "wookiedoo"},
 		{"horse", "stallion"},
 		{"shaman", "horse"},
 		{"doge", "coin"},
-		{"probeer", ""},
+		{"ether", ""},
 		{"dog", "puppy"},
 		{"shaman", ""},
 	}
@@ -489,11 +237,11 @@ func TestEmptyValues(t *testing.T) {
 
 	vals := []struct{ k, v string }{
 		{"do", "verb"},
-		{"probeer", "wookiedoo"},
+		{"ether", "wookiedoo"},
 		{"horse", "stallion"},
 		{"shaman", "horse"},
 		{"doge", "coin"},
-		{"probeer", ""},
+		{"ether", ""},
 		{"dog", "puppy"},
 		{"shaman", ""},
 	}
@@ -512,12 +260,12 @@ func TestReplication(t *testing.T) {
 	trie := newEmpty()
 	vals := []struct{ k, v string }{
 		{"do", "verb"},
-		{"probeer", "wookiedoo"},
+		{"ether", "wookiedoo"},
 		{"horse", "stallion"},
 		{"shaman", "horse"},
 		{"doge", "coin"},
 		{"dog", "puppy"},
-		{"somprobeingveryoddindeedthis is", "myothernodedata"},
+		{"somethingveryoddindeedthis is", "myothernodedata"},
 	}
 	for _, val := range vals {
 		updateString(trie, val.k, val.v)
@@ -528,7 +276,7 @@ func TestReplication(t *testing.T) {
 	}
 
 	// create a new trie on top of the database and check that lookups work.
-	trie2, err := New(exp, trie.db.Origin())
+	trie2, err := New(exp, trie.db)
 	if err != nil {
 		t.Fatalf("can't recreate trie at %x: %v", exp, err)
 	}
@@ -548,13 +296,13 @@ func TestReplication(t *testing.T) {
 	// perform some insertions on the new trie.
 	vals2 := []struct{ k, v string }{
 		{"do", "verb"},
-		{"probeer", "wookiedoo"},
+		{"ether", "wookiedoo"},
 		{"horse", "stallion"},
 		// {"shaman", "horse"},
 		// {"doge", "coin"},
-		// {"probeer", ""},
+		// {"ether", ""},
 		// {"dog", "puppy"},
-		// {"somprobeingveryoddindeedthis is", "myothernodedata"},
+		// {"somethingveryoddindeedthis is", "myothernodedata"},
 		// {"shaman", ""},
 	}
 	for _, val := range vals2 {
@@ -860,7 +608,7 @@ func TestTinyTrie(t *testing.T) {
 	if exp, root := common.HexToHash("0608c1d1dc3905fa22204c7a0e43644831c3b6d3def0f274be623a948197e64a"), trie.Hash(); exp != root {
 		t.Errorf("3: got %x, exp %x", root, exp)
 	}
-	checktr, _ := New(common.Hash{}, trie.db.Origin())
+	checktr, _ := New(common.Hash{}, trie.db)
 	it := NewIterator(trie.NodeIterator(nil))
 	for it.Next() {
 		checktr.Update(it.Key, it.Value)
@@ -932,7 +680,7 @@ type spongeDb struct {
 func (s *spongeDb) Has(key []byte) (bool, error)             { panic("implement me") }
 func (s *spongeDb) Get(key []byte) ([]byte, error)           { return nil, errors.New("no such elem") }
 func (s *spongeDb) Delete(key []byte) error                  { panic("implement me") }
-func (s *spongeDb) NewBatch() probedb.Batch                    { return &spongeBatch{s} }
+func (s *spongeDb) NewBatch() probedb.Batch                  { return &spongeBatch{s} }
 func (s *spongeDb) Stat(property string) (string, error)     { panic("implement me") }
 func (s *spongeDb) Compact(start []byte, limit []byte) error { panic("implement me") }
 func (s *spongeDb) Close() error                             { return nil }
@@ -957,16 +705,16 @@ func (b *spongeBatch) Put(key, value []byte) error {
 	b.db.Put(key, value)
 	return nil
 }
-func (b *spongeBatch) Delete(key []byte) error             { panic("implement me") }
-func (b *spongeBatch) ValueSize() int                      { return 100 }
-func (b *spongeBatch) Write() error                        { return nil }
-func (b *spongeBatch) Reset()                              {}
+func (b *spongeBatch) Delete(key []byte) error               { panic("implement me") }
+func (b *spongeBatch) ValueSize() int                        { return 100 }
+func (b *spongeBatch) Write() error                          { return nil }
+func (b *spongeBatch) Reset()                                {}
 func (b *spongeBatch) Replay(w probedb.KeyValueWriter) error { return nil }
 
 // TestCommitSequence tests that the trie.Commit operation writes the elements of the trie
 // in the expected order, and calls the callbacks in the expected order.
 // The test data was based on the 'master' code, and is basically random. It can be used
-// to check whprobeer changes to the trie modifies the write order or data in any way.
+// to check whether changes to the trie modifies the write order or data in any way.
 func TestCommitSequence(t *testing.T) {
 	for i, tc := range []struct {
 		count              int

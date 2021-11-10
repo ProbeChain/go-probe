@@ -18,13 +18,10 @@
 package state
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/core/globalconfig"
 	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/probedb"
 	"math/big"
 	"net"
 	"sort"
@@ -51,21 +48,6 @@ var (
 	emptyRoot = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 )
 
-const (
-	GENERAL_TRIE_DEPTH    = 20
-	PNS_TRIE_DEPTH        = 15
-	ASSET_TRIE_DEPTH      = 15
-	CONTRACT_TRIE_DEPTH   = 15
-	AUTHORIZES_TRIE_DEPTH = 15
-	LOSE_TRIE_DEPTH       = 15
-	GENERAL_TRIE_PATH     = "/trie/generalStateTrie"
-	PNS_TRIE_PATH         = "/trie/pnsStateTrie"
-	ASSET_TRIE_PATH       = "/trie/assetStateTrie"
-	CONTRACT_TRIE_PATH    = "/trie/contractStateTrie"
-	AUTHORIZES_TRIE_PATH  = "/trie/authorizesSateTrie"
-	LOSE_TRIE_PATH        = "/trie/loseStateTrie"
-)
-
 type proofList [][]byte
 
 func (n *proofList) Put(key []byte, value []byte) error {
@@ -77,240 +59,6 @@ func (n *proofList) Delete(key []byte) error {
 	panic("not supported")
 }
 
-type TotalTrie struct {
-	//trie          Trie // storage trie, which becomes non-nil on first access
-	regularTrie       Trie // storage trie, which becomes non-nil on first access
-	pnsTrie           Trie // storage trie, which becomes non-nil on first access
-	digitalTrie       Trie // storage trie, which becomes non-nil on first access
-	contractTrie      Trie // storage trie, which becomes non-nil on first access
-	authorizeTrie     Trie // storage trie, which becomes non-nil on first access
-	lossTrie          Trie // storage trie, which becomes non-nil on first access
-	dPosHash          common.Hash
-	dPosCandidateHash common.Hash
-}
-
-func (t *TotalTrie) GetKey(key []byte) []byte {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return nil
-	}
-	shaKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.GetKey(shaKey)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.GetKey(shaKey)
-	default:
-		return nil
-	}
-}
-
-func (t *TotalTrie) TryGet(key []byte) ([]byte, error) {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return nil, err
-	}
-	newKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryGet(newKey)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryGet(newKey)
-	default:
-		return nil, fmt.Errorf("trieType no exsist")
-	}
-}
-
-func (t *TotalTrie) TryUpdate(key, value []byte) error {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return err
-	}
-	newKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryUpdate(newKey, value)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryUpdate(newKey, value)
-	default:
-		return fmt.Errorf("trieType no exsist")
-	}
-}
-
-func (t *TotalTrie) TryDelete(key []byte) error {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return err
-	}
-	newKey := common.ReBuildAddress(key)
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.TryDelete(newKey)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.TryDelete(newKey)
-	default:
-		return fmt.Errorf("trieType no exsist")
-	}
-}
-
-func (t *TotalTrie) Hash() common.Hash {
-	hashes := t.GetTallHash()
-	return BuildHash(hashes)
-}
-
-func (t *TotalTrie) GetTallHash() []common.Hash {
-	hashes := []common.Hash{t.regularTrie.Hash(),
-		t.pnsTrie.Hash(),
-		t.digitalTrie.Hash(),
-		t.contractTrie.Hash(),
-		t.authorizeTrie.Hash(),
-		t.lossTrie.Hash(),
-		t.dPosHash,
-		t.dPosCandidateHash,
-	}
-	return hashes
-}
-
-//func (s *StateDB) GetTallHash() []common.Hash {
-//	hashes := []common.Hash{s.trie.regularTrie.Hash(),
-//		s.trie.pnsTrie.Hash(),
-//		s.trie.digitalTrie.Hash(),
-//		s.trie.contractTrie.Hash(),
-//		s.trie.authorizeTrie.Hash(),
-//		s.trie.lossTrie.Hash()}
-//	return hashes
-//}
-
-func BuildHash(hashes []common.Hash) common.Hash {
-	num := big.NewInt(0) // 利用 x ⊕ 0 == x
-	for _, hash := range hashes {
-		curNum := new(big.Int).SetBytes(crypto.Keccak256(hash.Bytes()))
-		num = new(big.Int).Xor(curNum, num)
-	}
-	hash := make([]byte, 32, 64)        // 哈希出来的长度为32byte
-	hash = append(hash, num.Bytes()...) // 前面不足的补0，一共返回32位
-
-	var ret [32]byte
-	copy(ret[:], hash[32:64])
-
-	return common.BytesToHash(ret[:])
-}
-
-func (t *TotalTrie) Commit(onleaf trie.LeafCallback) (root common.Hash, err error) {
-	root0, err0 := t.regularTrie.Commit(onleaf)
-	root1, err1 := t.pnsTrie.Commit(onleaf)
-	if err1 != nil {
-		err0 = err1
-	}
-	root2, err2 := t.digitalTrie.Commit(onleaf)
-	if err2 != nil {
-		err0 = err2
-	}
-	root3, err3 := t.contractTrie.Commit(onleaf)
-	if err3 != nil {
-		err0 = err3
-	}
-	root4, err4 := t.authorizeTrie.Commit(onleaf)
-	if err4 != nil {
-		err0 = err4
-	}
-	root5, err5 := t.lossTrie.Commit(onleaf)
-	if err5 != nil {
-		err0 = err5
-	}
-	root6 := t.dPosHash
-	root7 := t.dPosCandidateHash
-
-	hashes := []common.Hash{root0, root1, root2, root3, root4, root5, root6, root7}
-	//hashes := []common.Hash{root0, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-
-	return BuildHash(hashes), err0
-}
-
-//func (t *TotalTrie) NodeIterator(start []byte) trie.NodeIterator {
-//	trieType, err := common.ValidAddress(common.BytesToAddress(start))
-//	if err != nil {
-//		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-//		return nil
-//	}
-//	switch trieType {
-//	case common.General:
-//		return t.regularTrie.NodeIterator(start)
-//	case common.Pns:
-//		return t.pnsTrie.NodeIterator(start)
-//	case common.Asset:
-//		return t.digitalTrie.NodeIterator(start)
-//	case common.Contract:
-//		return t.contractTrie.NodeIterator(start)
-//	case common.Authorize:
-//		return t.authorizeTrie.NodeIterator(start)
-//	case common.Lose:
-//		return t.lossTrie.NodeIterator(start)
-//	default:
-//		return nil
-//	}
-//}
-
-func (t *TotalTrie) Prove(key []byte, fromLevel uint, proofDb probedb.KeyValueWriter) error {
-	trieType, err := common.ValidAddress(common.BytesToAddress(key))
-	if err != nil {
-		log.Error("Failed to ValidAddress", "trieType", trieType, "err", err)
-		return err
-	}
-	switch trieType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return t.regularTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_PNS:
-		return t.pnsTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_ASSET:
-		return t.digitalTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_CONTRACT:
-		return t.contractTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return t.authorizeTrie.Prove(key, fromLevel, proofDb)
-	case common.ACC_TYPE_OF_LOSE:
-		return t.lossTrie.Prove(key, fromLevel, proofDb)
-	default:
-		return nil
-	}
-}
-
 // StateDB structs within the probeum protocol are used to store anything
 // within the merkle trie. StateDBs take care of caching and storing
 // nested states. It's the general query interface to retrieve:
@@ -320,8 +68,7 @@ type StateDB struct {
 	db           Database
 	prefetcher   *triePrefetcher
 	originalRoot common.Hash // The pre-state root, before any changes were made
-	//trie         Trie
-	trie TotalTrie
+	trie         Trie
 
 	hasher crypto.KeccakState
 
@@ -379,31 +126,15 @@ type StateDB struct {
 	SnapshotCommits      time.Duration
 }
 
-func GetHash(root common.Hash, db Database) []common.Hash {
-	if root == (common.Hash{}) || root == emptyRoot {
-		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	}
-	hash := rawdb.ReadRootHashForNew(db.TrieDB().DiskDB(), root)
-	if hash == nil {
-		return []common.Hash{emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	}
-	return hash
-}
-
 // New creates a new state from a given trie.
 func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) {
-	// 根据 root 获取六棵树hash数组
-	totalTrie, err := OpenTotalTrieForBMpt(root, db)
-	//totalTrie, err := OpenTotalTrieForMpt(root, db)
-	//tr, err := db.OpenTrie(root)
-	//fmt.Printf("OpenTrieRoot: %s,isErr:%t\n",root.String(),err != nil)
+	tr, err := db.OpenTrie(root)
 	if err != nil {
 		return nil, err
 	}
 	sdb := &StateDB{
-		db: db,
-		//trie:                tr,
-		trie:                totalTrie,
+		db:                  db,
+		trie:                tr,
 		originalRoot:        root,
 		snaps:               snaps,
 		stateObjects:        make(map[common.Address]*stateObject),
@@ -424,82 +155,6 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 	//	}
 	//}
 	return sdb, nil
-}
-
-func OpenTotalTrieForBMpt(root common.Hash, db Database) (TotalTrie, error) {
-	hash := GetHash(root, db)
-	trGeneral, err := db.OpenBinTrie(hash[0], globalconfig.DataDir+GENERAL_TRIE_PATH, GENERAL_TRIE_DEPTH)
-	trPns, err1 := db.OpenBinTrie(hash[1], globalconfig.DataDir+PNS_TRIE_PATH, PNS_TRIE_DEPTH)
-	if err1 != nil {
-		err = err1
-	}
-	trAsset, err2 := db.OpenBinTrie(hash[2], globalconfig.DataDir+ASSET_TRIE_PATH, ASSET_TRIE_DEPTH)
-	if err2 != nil {
-		err = err2
-	}
-	trContract, err3 := db.OpenBinTrie(hash[3], globalconfig.DataDir+CONTRACT_TRIE_PATH, CONTRACT_TRIE_DEPTH)
-	if err3 != nil {
-		err = err3
-	}
-	trAuthorize, err4 := db.OpenBinTrie(hash[4], globalconfig.DataDir+AUTHORIZES_TRIE_PATH, AUTHORIZES_TRIE_DEPTH)
-	if err4 != nil {
-		err = err4
-	}
-	trLose, err5 := db.OpenBinTrie(hash[5], globalconfig.DataDir+LOSE_TRIE_PATH, LOSE_TRIE_DEPTH)
-	if err5 != nil {
-		err = err5
-	}
-	totalTrie := TotalTrie{
-		regularTrie:       trGeneral,
-		pnsTrie:           trPns,
-		digitalTrie:       trAsset,
-		contractTrie:      trContract,
-		authorizeTrie:     trAuthorize,
-		lossTrie:          trLose,
-		dPosHash:          hash[6],
-		dPosCandidateHash: hash[7],
-	}
-	if err != nil {
-		log.Error("OpenTotalTrieForBMpt", "err", err)
-	}
-	return totalTrie, err
-}
-
-//OpenTotalTrie use mpt
-func OpenTotalTrieForMpt(root common.Hash, db Database) (TotalTrie, error) {
-	hash := GetHash(root, db)
-	trGeneral, err := db.OpenTrie(hash[0])
-	trPns, err1 := db.OpenTrie(hash[1])
-	if err1 != nil {
-		err = err1
-	}
-	trAsset, err2 := db.OpenTrie(hash[2])
-	if err2 != nil {
-		err = err2
-	}
-	trContract, err3 := db.OpenTrie(hash[3])
-	if err3 != nil {
-		err = err3
-	}
-	trAuthorize, err4 := db.OpenTrie(hash[4])
-	if err4 != nil {
-		err = err4
-	}
-	trLose, err5 := db.OpenTrie(hash[5])
-	if err5 != nil {
-		err = err5
-	}
-	totalTrie := TotalTrie{
-		regularTrie:       trGeneral,
-		pnsTrie:           trPns,
-		digitalTrie:       trAsset,
-		contractTrie:      trContract,
-		authorizeTrie:     trAuthorize,
-		lossTrie:          trLose,
-		dPosHash:          hash[6],
-		dPosCandidateHash: hash[7],
-	}
-	return totalTrie, err
 }
 
 // StartPrefetcher initializes a new trie prefetcher to pull in nodes from the
@@ -751,7 +406,7 @@ func (s *StateDB) HasSuicided(addr common.Address) bool {
 
 // AddBalance adds amount to the account associated with addr.
 func (s *StateDB) AddBalance(addr common.Address, amount *big.Int) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.AddBalance(amount)
 	}
@@ -759,35 +414,35 @@ func (s *StateDB) AddBalance(addr common.Address, amount *big.Int) {
 
 // SubBalance subtracts amount from the account associated with addr.
 func (s *StateDB) SubBalance(addr common.Address, amount *big.Int) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SubBalance(amount)
 	}
 }
 
 func (s *StateDB) SetBalance(addr common.Address, amount *big.Int) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetBalance(amount)
 	}
 }
 
 func (s *StateDB) SetNonce(addr common.Address, nonce uint64) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetNonce(nonce)
 	}
 }
 
 func (s *StateDB) SetCode(addr common.Address, code []byte) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetCode(crypto.Keccak256Hash(code), code)
 	}
 }
 
 func (s *StateDB) SetState(addr common.Address, key, value common.Hash) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetState(s.db, key, value)
 	}
@@ -796,7 +451,7 @@ func (s *StateDB) SetState(addr common.Address, key, value common.Hash) {
 // SetStorage replaces the entire storage for the specified account with given
 // storage. This function should only be used for debugging.
 func (s *StateDB) SetStorage(addr common.Address, storage map[common.Hash]common.Hash) {
-	stateObject := s.GetOrNewStateObject(addr)
+	stateObject, _ := s.GetOrNewStateObject(addr)
 	if stateObject != nil {
 		stateObject.SetStorage(storage)
 	}
@@ -813,51 +468,54 @@ func (s *StateDB) Suicide(addr common.Address) bool {
 		return false
 	}
 	switch obj.accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		s.journal.append(regularSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			voteAccount: obj.regularAccount.VoteAccount,
-			voteValue:   obj.regularAccount.VoteValue,
+			voteValue:   *obj.regularAccount.VoteValue,
 			lossType:    obj.regularAccount.LossType,
-			value:       obj.regularAccount.Value,
+			value:       *obj.regularAccount.Value,
 		})
 	case common.ACC_TYPE_OF_PNS:
 		s.journal.append(pnsSuicideChange{
 			account: &addr,
 			suicide: obj.suicided,
+			accType: obj.accountType,
 			pnsType: obj.pnsAccount.Type,
 			owner:   obj.pnsAccount.Owner,
 			data:    obj.pnsAccount.Data,
 		})
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
+	case common.ACC_TYPE_OF_CONTRACT:
 		s.journal.append(assetSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			voteAccount: obj.assetAccount.VoteAccount,
-			voteValue:   obj.assetAccount.VoteValue,
-			assetType:   obj.assetAccount.Type,
-			value:       obj.assetAccount.Value,
+			voteValue:   *obj.assetAccount.VoteValue,
+			value:       *obj.assetAccount.Value,
 		})
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		s.journal.append(authorizeSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			owner:       obj.authorizeAccount.Owner,
-			pledgeValue: obj.authorizeAccount.PledgeValue,
-			voteValue:   obj.authorizeAccount.VoteValue,
+			pledgeValue: *obj.authorizeAccount.PledgeValue,
+			voteValue:   *obj.authorizeAccount.VoteValue,
 			info:        obj.authorizeAccount.Info,
-			validPeriod: obj.authorizeAccount.ValidPeriod,
-			weight:      obj.authorizeAccount.Weight,
+			validPeriod: *obj.authorizeAccount.ValidPeriod,
 		})
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		s.journal.append(lossSuicideChange{
 			account:     &addr,
 			suicide:     obj.suicided,
+			accType:     obj.accountType,
 			state:       obj.lossAccount.State,
 			lossAccount: obj.lossAccount.LossAccount,
 			newAccount:  obj.lossAccount.NewAccount,
-			height:      obj.lossAccount.Height,
+			height:      *obj.lossAccount.Height,
 			infoDigest:  obj.lossAccount.InfoDigest,
 		})
 	default:
@@ -920,6 +578,10 @@ func (s *StateDB) getStateObject(addr common.Address) *stateObject {
 	return nil
 }
 
+func (s *StateDB) GetStateObject(addr common.Address) *stateObject {
+	return s.getStateObject(addr)
+}
+
 // getDeletedStateObject is similar to getStateObject, but instead of returning
 // nil for a deleted state object, it returns the actual object with the deleted
 // flag set. This is needed by the state journal to revert to the correct s-
@@ -980,7 +642,7 @@ func (s *StateDB) getDeletedStateObject(addr common.Address) *stateObject {
 	//// Insert into the live set
 	//obj := newRegularAccount(s, addr, *data)
 
-	obj, done := s.newAccountDataByAddr(addr, enc)
+	obj, done := s.newAccountDataByAddr(addr, enc, common.ACC_TYPE_OF_UNKNOWN)
 	if done {
 		return obj
 	}
@@ -997,19 +659,25 @@ func (s *StateDB) setStateObject(object *stateObject) {
 }
 
 // GetOrNewStateObject retrieves a state object or create a new state object if nil.
-func (s *StateDB) GetOrNewStateObject(addr common.Address) *stateObject {
+func (s *StateDB) GetOrNewStateObject(addr common.Address) (*stateObject, bool) {
+	isNew := false
 	stateObject := s.getStateObject(addr)
-	if stateObject == nil {
+	if isNew = stateObject == nil; isNew {
 		stateObject, _ = s.createObject(addr)
 	}
-	return stateObject
+	return stateObject, isNew
 }
 
 // createObject creates a new state object. If there is an existing account with
 // the given address, it is overwritten and returned as the second return value.
 func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) {
-	prev = s.getDeletedStateObject(addr) // Note, prev might have been deleted, we need that!
+	return s.createObjectByAccType(addr, common.ACC_TYPE_OF_REGULAR)
+}
 
+// createObjectByAccType creates a new state object. If there is an existing account with
+// the given address, it is overwritten and returned as the second return value.
+func (s *StateDB) createObjectByAccType(addr common.Address, accType byte) (newobj, prev *stateObject) {
+	prev = s.getDeletedStateObject(addr) // Note, prev might have been deleted, we need that!
 	var prevdestruct bool
 	if s.snap != nil && prev != nil {
 		_, prevdestruct = s.snapDestructs[prev.addrHash]
@@ -1018,7 +686,7 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 		}
 	}
 	//newobj = newRegularAccount(s, addr, RegularAccount{})
-	newobj, done := s.newAccountDataByAddr(addr, nil)
+	newobj, done := s.newAccountDataByAddr(addr, nil, accType)
 	if done {
 		return newobj, nil
 	}
@@ -1047,7 +715,13 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 func (s *StateDB) CreateAccount(addr common.Address) {
 	newObj, prev := s.createObject(addr)
 	if prev != nil {
-		//newObj.setBalance(prev.regularAccount.Balance)
+		newObj.setBalance(prev.Balance())
+	}
+}
+
+func (s *StateDB) CreateContractAccount(addr common.Address) {
+	newObj, prev := s.createObjectByAccType(addr, common.ACC_TYPE_OF_CONTRACT)
+	if prev != nil {
 		newObj.setBalance(prev.Balance())
 	}
 }
@@ -1118,41 +792,12 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 // Snapshots of the copied state cannot be applied to the copy.
 func (s *StateDB) Copy() *StateDB {
 	// Copy all the basic fields, initialize the memory ones
-	var regularTrie, pnsTrie, digitalTrie, contractTrie, authorizeTrie, lossTrie Trie
-	if s.trie.regularTrie != nil {
-		regularTrie = s.db.CopyTrie(s.trie.regularTrie)
-	}
-	if s.trie.pnsTrie != nil {
-		pnsTrie = s.db.CopyTrie(s.trie.pnsTrie)
-	}
-	if s.trie.digitalTrie != nil {
-		digitalTrie = s.db.CopyTrie(s.trie.digitalTrie)
-	}
-	if s.trie.contractTrie != nil {
-		contractTrie = s.db.CopyTrie(s.trie.contractTrie)
-	}
-	if s.trie.authorizeTrie != nil {
-		authorizeTrie = s.db.CopyTrie(s.trie.authorizeTrie)
-	}
-	if s.trie.lossTrie != nil {
-		lossTrie = s.db.CopyTrie(s.trie.lossTrie)
-	}
 	/*	if s.dposList != nil {
 		dbDposList = s.copyDposList()
 	}*/
 	state := &StateDB{
-		db: s.db,
-		//trie:                s.db.CopyTrie(s.trie),
-		trie: TotalTrie{
-			regularTrie:       regularTrie,
-			pnsTrie:           pnsTrie,
-			digitalTrie:       digitalTrie,
-			contractTrie:      contractTrie,
-			authorizeTrie:     authorizeTrie,
-			lossTrie:          lossTrie,
-			dPosHash:          s.trie.dPosHash,
-			dPosCandidateHash: s.trie.dPosCandidateHash,
-		},
+		db:                  s.db,
+		trie:                s.db.CopyTrie(s.trie),
 		stateObjects:        make(map[common.Address]*stateObject, len(s.journal.dirties)),
 		stateObjectsPending: make(map[common.Address]struct{}, len(s.stateObjectsPending)),
 		stateObjectsDirty:   make(map[common.Address]struct{}, len(s.journal.dirties)),
@@ -1441,7 +1086,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 	}
 	// The onleaf func is called _serially_, so we can reuse the same account
 	// for unmarshalling every time.
-	var account AssetAccount
+	var account ContractAccount
 	root, err := s.trie.Commit(func(_ [][]byte, _ []byte, leaf []byte, parent common.Hash) error {
 		if err := rlp.DecodeBytes(leaf, &account); err != nil {
 			return nil
@@ -1539,7 +1184,6 @@ func (s *StateDB) SlotInAccessList(addr common.Address, slot common.Hash) (addre
 	return s.accessList.Contains(addr, slot)
 }
 
-// GetRegular 获取普通账户
 func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1548,7 +1192,6 @@ func (s *StateDB) GetRegular(addr common.Address) *RegularAccount {
 	return nil
 }
 
-// GetPns PNS账号
 func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1557,25 +1200,14 @@ func (s *StateDB) GetPns(addr common.Address) *PnsAccount {
 	return nil
 }
 
-// GetAsset 资产账户
-func (s *StateDB) GetAsset(addr common.Address) AssetAccount {
+func (s *StateDB) GetContract(addr common.Address) ContractAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
 		return stateObject.assetAccount
 	}
-	return AssetAccount{}
+	return ContractAccount{}
 }
 
-// GetContract 合约账户
-func (s *StateDB) GetContract(addr common.Address) AssetAccount {
-	stateObject := s.getStateObject(addr)
-	if stateObject != nil {
-		return stateObject.assetAccount
-	}
-	return AssetAccount{}
-}
-
-// GetAuthorize 授权账户
 func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1584,7 +1216,6 @@ func (s *StateDB) GetAuthorize(addr common.Address) *AuthorizeAccount {
 	return nil
 }
 
-// GetLoss 挂失账户
 func (s *StateDB) GetLoss(addr common.Address) *LossAccount {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {
@@ -1601,11 +1232,14 @@ func (s *StateDB) ModifyLossType(context vm.TxContext) {
 			account: &stateObject.address,
 			prev:    stateObject.regularAccount.LossType,
 		})
-		stateObject.regularAccount.LossType = uint8(*context.LossType)
+		var lossType uint8
+		rlp.DecodeBytes(context.Data, &lossType)
+		stateObject.regularAccount.LossType = lossType
 	}
 }
 func (s *StateDB) Vote(context vm.TxContext) {
-	//fmt.Printf("Vote, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
+	decode := new(common.AddressDecodeType)
+	rlp.DecodeBytes(context.Data, &decode)
 	s.SubBalance(context.From, context.Value)
 	fromObj := s.getStateObject(context.From)
 	if fromObj != nil {
@@ -1616,57 +1250,84 @@ func (s *StateDB) Vote(context vm.TxContext) {
 		fromObj.db.journal.append(voteForRegularChange{
 			account:     &fromObj.address,
 			voteAccount: fromObj.regularAccount.VoteAccount,
-			voteValue:   lastVoteValue,
+			voteValue:   *lastVoteValue,
 		})
-		fromObj.regularAccount.VoteAccount = *context.To
+		fromObj.regularAccount.VoteAccount = decode.Addr
 		fromObj.regularAccount.VoteValue = new(big.Int).Add(context.Value, lastVoteValue)
 	}
 
-	toObj := s.getStateObject(*context.To)
-	if toObj != nil {
-		toObj.db.journal.append(voteValueForAuthorizeChange{
-			account: &toObj.address,
-			prev:    toObj.authorizeAccount.VoteValue,
+	authorizeObj := s.getStateObject(decode.Addr)
+	if authorizeObj != nil {
+		authorizeObj.db.journal.append(voteValueForAuthorizeChange{
+			account: &authorizeObj.address,
+			prev:    *authorizeObj.authorizeAccount.VoteValue,
 		})
-		toObj.authorizeAccount.VoteValue = new(big.Int).Add(toObj.authorizeAccount.VoteValue, context.Value)
+		authorizeObj.authorizeAccount.VoteValue = new(big.Int).Add(authorizeObj.authorizeAccount.VoteValue, context.Value)
 	}
 }
 
 func (s *StateDB) Register(context vm.TxContext) {
-	//fmt.Printf("Register, sender:%s,new:%s,pledge:%s\n", context.From.String(), context.New.String(), context.Value.String())
-	s.SubBalance(context.From, context.Value)
-	obj, _ := s.createObject(*context.New)
-	switch byte(*context.AccType) {
-	case common.ACC_TYPE_OF_PNS:
+	var newAddress common.Address
+	pledgeAmount := uint64(0)
+	switch context.To.Hex() {
+	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+		newAddress = crypto.CreatePNSAddress(context.From, context.Data)
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_PNS)
 		obj.pnsAccount.Owner = context.From
 		obj.pnsAccount.Data = context.Data
-		obj.pnsAccount.Type = byte(*context.PnsType)
-	case common.ACC_TYPE_OF_ASSET:
-	//case common.ACC_TYPE_OF_CONTRACT:
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		createAccountFee := common.AmountOfPledgeForCreateAccount(uint8(*context.AccType))
-		pledgeValue := new(big.Int).Sub(context.Value, new(big.Int).SetUint64(createAccountFee))
-		obj.authorizeAccount.PledgeValue = pledgeValue
+		obj.pnsAccount.Type = byte(0)
+	case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
+		newAddress = crypto.CreateAddress(context.From, context.Nonce)
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
+		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_AUTHORIZE)
+		obj.authorizeAccount.PledgeValue = context.Value
+		obj.authorizeAccount.VoteValue = context.Value
 		obj.authorizeAccount.Owner = context.From
-		obj.authorizeAccount.ValidPeriod = context.Height
-		obj.authorizeAccount.VoteValue = pledgeValue
-		obj.authorizeAccount.Weight = new(big.Int).SetUint64(0)
-	case common.ACC_TYPE_OF_LOSE:
+		decode := new(common.IntDecodeType)
+		rlp.DecodeBytes(context.Data, &decode)
+		obj.authorizeAccount.ValidPeriod = &decode.Num
+	case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+		newAddress = crypto.CreateAddress(context.From, context.Nonce)
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS
+		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_LOSS)
 		obj.lossAccount.State = common.LOSS_STATE_OF_INIT
-		s.setMarkLossAccount(*context.New)
+		//s.setMarkLossAccount(*context.New)
 	}
+	s.SubBalance(context.From, new(big.Int).Add(context.Value, new(big.Int).SetUint64(pledgeAmount)))
 }
 
 func (s *StateDB) Cancellation(context vm.TxContext) {
-	//fmt.Printf("Cancellation, sender:%s,to:%s,new:%s,value:%s\n", context.From, context.To, context.New, context.Value)
-	s.AddBalance(*context.New, context.Value)
-	s.Suicide(*context.To)
+	decode := new(common.CancellationDecodeType)
+	rlp.DecodeBytes(context.Data, &decode)
+	cancelAccount := s.getStateObject(decode.CancelAddress)
+	if cancelAccount != nil {
+		pledgeAmount := uint64(0)
+		switch cancelAccount.AccountType() {
+		case common.ACC_TYPE_OF_REGULAR:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
+		case common.ACC_TYPE_OF_PNS:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+		case common.ACC_TYPE_OF_CONTRACT:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
+		case common.ACC_TYPE_OF_AUTHORIZE:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
+		case common.ACC_TYPE_OF_LOSS:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS
+		}
+		s.AddBalance(decode.BeneficiaryAddress, new(big.Int).SetUint64(pledgeAmount))
+		s.Suicide(decode.CancelAddress)
+	}
 }
 
 func (s *StateDB) Transfer(context vm.TxContext) {
-	//fmt.Printf("Transfer, sender:%s,to:%s,amount:%s\n", context.From.String(), context.To.String(), context.Value.String())
+	isNew := s.getStateObject(*context.To) == nil
+	actualValue := context.Value
+	if isNew {
+		actualValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR))
+	}
 	s.SubBalance(context.From, context.Value)
-	s.AddBalance(*context.To, context.Value)
+	s.AddBalance(*context.To, actualValue)
 }
 
 //todo
@@ -1674,9 +1335,8 @@ func (s *StateDB) ExchangeAsset(context vm.TxContext) {
 
 }
 func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
-	//fmt.Printf("SendLossReport, sender:%s,mark:%s,infoDigest:%s\n", context.From, context.Mark, context.Data)
 	s.SubBalance(context.From, context.Value)
-	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Mark))
+	var addrs = s.GetMarkLossAccounts(common.BytesToHash(context.Data))
 	if len(addrs) > 0 {
 		for _, addr := range addrs {
 			stateObject := s.getStateObject(addr)
@@ -1685,9 +1345,9 @@ func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 					account:    &stateObject.address,
 					infoDigest: stateObject.lossAccount.InfoDigest,
 					state:      stateObject.lossAccount.State,
-					height:     stateObject.lossAccount.Height,
+					height:     *stateObject.lossAccount.Height,
 				})
-				stateObject.lossAccount.InfoDigest = context.Data
+				stateObject.lossAccount.InfoDigest = common.BytesToHash(context.Data)
 				stateObject.lossAccount.State = common.LOSS_STATE_OF_APPLY
 				stateObject.lossAccount.Height = blockNumber
 			}
@@ -1696,22 +1356,22 @@ func (s *StateDB) SendLossReport(blockNumber *big.Int, context vm.TxContext) {
 }
 
 func (s *StateDB) RevealLossReport(blockNumber *big.Int, context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
-	s.AddBalance(*context.Old, context.Value)
-	stateObject := s.getStateObject(*context.To)
-	if stateObject != nil && stateObject.lossAccount.State == common.LOSS_STATE_OF_APPLY {
-		stateObject.db.journal.append(revealLossReportChange{
-			account:     &stateObject.address,
-			lossAccount: stateObject.lossAccount.LossAccount,
-			newAccount:  stateObject.lossAccount.NewAccount,
-			height:      stateObject.lossAccount.Height,
-			state:       stateObject.lossAccount.State,
-		})
-		stateObject.lossAccount.LossAccount = *context.Old
-		stateObject.lossAccount.NewAccount = *context.New
-		stateObject.lossAccount.State = common.LOSS_STATE_OF_NOTICE
-		stateObject.lossAccount.Height = blockNumber
-	}
+	/*	s.SubBalance(context.From, context.Value)
+		s.AddBalance(*context.Old, context.Value)
+		stateObject := s.getStateObject(*context.To)
+		if stateObject != nil && stateObject.lossAccount.State == common.LOSS_STATE_OF_APPLY {
+			stateObject.db.journal.append(revealLossReportChange{
+				account:     &stateObject.address,
+				lossAccount: stateObject.lossAccount.LossAccount,
+				newAccount:  stateObject.lossAccount.NewAccount,
+				height:      stateObject.lossAccount.Height,
+				state:       stateObject.lossAccount.State,
+			})
+			stateObject.lossAccount.LossAccount = *context.Old
+			stateObject.lossAccount.NewAccount = *context.New
+			stateObject.lossAccount.State = common.LOSS_STATE_OF_NOTICE
+			stateObject.lossAccount.Height = blockNumber
+		}*/
 }
 
 func (s *StateDB) TransferLostAccount(context vm.TxContext) {
@@ -1746,28 +1406,33 @@ func (s *StateDB) RejectLossReport(context vm.TxContext) {
 }
 
 func (s *StateDB) ModifyPnsOwner(context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
-	stateObject := s.getStateObject(*context.To)
-	if stateObject != nil {
-		stateObject.db.journal.append(modifyPnsOwnerChange{
-			account: &stateObject.address,
-			owner:   stateObject.pnsAccount.Owner,
+	decode := new(common.PnsOwnerDecodeType)
+	rlp.DecodeBytes(context.Data, &decode)
+	//s.SubBalance(context.From, context.Value)
+	stateObj := s.getStateObject(decode.PnsAddress)
+	if stateObj != nil {
+		stateObj.db.journal.append(modifyPnsOwnerChange{
+			account: &stateObj.address,
+			owner:   stateObj.pnsAccount.Owner,
 		})
-		stateObject.pnsAccount.Owner = *context.New
+		stateObj.pnsAccount.Owner = decode.OwnerAddress
 	}
 }
 
 func (s *StateDB) ModifyPnsContent(context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
-	stateObject := s.getStateObject(*context.To)
-	if stateObject != nil {
-		stateObject.db.journal.append(modifyPnsContentChange{
-			account: &stateObject.address,
-			pnsType: stateObject.pnsAccount.Type,
-			data:    stateObject.pnsAccount.Data,
+	decode := new(common.PnsContentDecodeType)
+	rlp.DecodeBytes(context.Data, &decode)
+	stateObj := s.getStateObject(decode.PnsAddress)
+	if stateObj != nil {
+		stateObj.db.journal.append(modifyPnsContentChange{
+			account: &stateObj.address,
+			pnsType: stateObj.pnsAccount.Type,
+			data:    stateObj.pnsAccount.Data,
 		})
-		stateObject.pnsAccount.Type = byte(*context.PnsType)
-		stateObject.pnsAccount.Data = context.Data
+		stateObj.pnsAccount.Type = decode.PnsType
+		pnsData, _ := rlp.EncodeToBytes(common.StringDecodeType{Text: decode.PnsData})
+		stateObj.pnsAccount.Data = pnsData
+
 	}
 }
 
@@ -1779,8 +1444,8 @@ func (s *StateDB) RedemptionForRegular(addr common.Address) (common.Address, *bi
 		stateObject.db.journal.append(redemptionForRegularChange{
 			account:     &stateObject.address,
 			voteAccount: stateObject.regularAccount.VoteAccount,
-			voteValue:   stateObject.regularAccount.VoteValue,
-			value:       stateObject.regularAccount.Value,
+			voteValue:   *stateObject.regularAccount.VoteValue,
+			value:       *stateObject.regularAccount.Value,
 		})
 		VoteAccount = stateObject.regularAccount.VoteAccount
 		voteValue = stateObject.regularAccount.VoteValue
@@ -1795,8 +1460,8 @@ func (s *StateDB) RedemptionForAuthorize(addr common.Address, voteValue *big.Int
 	if stateObject != nil {
 		stateObject.db.journal.append(redemptionForAuthorizeChange{
 			account:     &stateObject.address,
-			pledgeValue: stateObject.authorizeAccount.PledgeValue,
-			voteValue:   stateObject.authorizeAccount.VoteValue,
+			pledgeValue: *stateObject.authorizeAccount.PledgeValue,
+			voteValue:   *stateObject.authorizeAccount.VoteValue,
 		})
 		if voteValue == nil {
 			stateObject.authorizeAccount.VoteValue = new(big.Int).Sub(stateObject.authorizeAccount.VoteValue, stateObject.authorizeAccount.PledgeValue)
@@ -1808,75 +1473,61 @@ func (s *StateDB) RedemptionForAuthorize(addr common.Address, voteValue *big.Int
 }
 
 func (s *StateDB) Redemption(context vm.TxContext) {
-	s.SubBalance(context.From, context.Value)
+	voteAddr := new(common.Address)
+	rlp.DecodeBytes(context.Data, &voteAddr)
+	//s.SubBalance(context.From, context.Value)
 	s1 := s.getStateObject(context.From)
 	if s1 != nil {
 		regularAccount := s1.regularAccount
-		s2 := s.getStateObject(*context.To)
+		s2 := s.getStateObject(*voteAddr)
 		if s2 != nil {
 			authorizeAccount := s2.authorizeAccount
 			if context.From == authorizeAccount.Owner {
-				s.RedemptionForAuthorize(*context.To, nil)
+				s.RedemptionForAuthorize(*voteAddr, nil)
 			}
-			if *context.To == regularAccount.VoteAccount {
+			if *voteAddr == regularAccount.VoteAccount {
 				s.RedemptionForRegular(context.From)
-				s.RedemptionForAuthorize(*context.To, regularAccount.VoteValue)
+				s.RedemptionForAuthorize(*voteAddr, regularAccount.VoteValue)
 			}
 		}
 	}
 }
 
 func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
-	stateObj := s.getStateObject(*context.To)
+	decode := new(common.ApplyDPosDecodeType)
+	rlp.DecodeBytes(context.Data, &decode)
+	stateObj := s.getStateObject(decode.VoteAddress)
 	if nil == stateObj {
 		return
 	}
 	authorizeAccount := stateObj.authorizeAccount
-	var dPosMap map[string]interface{}
-	err := json.Unmarshal(context.Data, &dPosMap)
-	if err != nil {
-		s.setError(fmt.Errorf("getDeleteStateObject (%x) error: %v", context.To.Bytes(), err))
-		return
-	}
-	remoteEnode := dPosMap["enode"].(string)
-	remoteIp := dPosMap["ip"].(string)
-	remotePort := dPosMap["port"].(string)
-	var enode bytes.Buffer
-	enode.WriteString("enode://")
-	enode.WriteString(remoteEnode)
-	enode.WriteString("@")
-	enode.WriteString(remoteIp)
-	enode.WriteString(":")
-	enode.WriteString(remotePort)
-
 	stateObj.db.journal.append(dPosCandidateForAuthorizeChange{
 		account:   &stateObj.address,
 		info:      authorizeAccount.Info,
 		voteValue: *authorizeAccount.VoteValue,
-		weight:    *authorizeAccount.Weight,
 	})
 
-	authorizeAccount.Info = []byte(enode.String())
-	authorizeAccount.Weight = common.InetAtoN(remoteIp)
-
 	dPosCandidateAccount := common.DPoSCandidateAccount{
-		Enode:     common.BytesToDposEnode(authorizeAccount.Info),
-		Owner:     authorizeAccount.Owner,
-		Vote:      *context.To,
-		Weight:    authorizeAccount.Weight,
-		VoteValue: authorizeAccount.VoteValue,
+		Enode:       common.BytesToDposEnode([]byte(decode.NodeInfo)),
+		Owner:       authorizeAccount.Owner,
+		VoteAccount: decode.VoteAddress,
+		VoteValue:   authorizeAccount.VoteValue,
 	}
 	GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)
 }
 
-func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateObject, bool) {
-	accountType, err := common.ValidAddress(addr)
-	if err != nil {
-		log.Error("Failed to ValidAddress", "addr", addr, "err", err)
-		return nil, true
+func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountType byte) (*stateObject, bool) {
+	if accountType == common.ACC_TYPE_OF_UNKNOWN {
+		b, err := rlp.ParseTypeByEnd(enc)
+		if err != nil {
+			log.Error("Failed to ParseTypeByEnd", "addr", addr, "err", err)
+			return nil, true
+		}
+		accountType = b
 	}
+
 	switch accountType {
-	case common.ACC_TYPE_OF_GENERAL:
+	case common.ACC_TYPE_OF_REGULAR:
 		data := new(RegularAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1894,15 +1545,15 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newPnsAccount(s, addr, *data), false
-	case common.ACC_TYPE_OF_ASSET, common.ACC_TYPE_OF_CONTRACT:
-		data := new(AssetAccount)
+	case common.ACC_TYPE_OF_CONTRACT:
+		data := new(ContractAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
 				log.Error("Failed to decode state object", "addr", addr, "err", err)
 				return nil, true
 			}
 		}
-		return newAssetAccount(s, addr, *data), false
+		return newContractAccount(s, addr, *data), false
 	case common.ACC_TYPE_OF_AUTHORIZE:
 		data := new(AuthorizeAccount)
 		if enc != nil {
@@ -1912,7 +1563,7 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 			}
 		}
 		return newAuthorizeAccount(s, addr, *data), false
-	case common.ACC_TYPE_OF_LOSE:
+	case common.ACC_TYPE_OF_LOSS:
 		data := new(LossAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
@@ -1926,32 +1577,13 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte) (*stateO
 	}
 }
 
-// getStateObjectTireByAccountType return stateObject's tire
-func (s *StateDB) getStateObjectTireByAccountType(accountType byte) *Trie {
-	switch accountType {
-	case common.ACC_TYPE_OF_GENERAL:
-		return &s.trie.regularTrie
-	case common.ACC_TYPE_OF_PNS:
-		return &s.trie.pnsTrie
-	case common.ACC_TYPE_OF_ASSET:
-		return &s.trie.digitalTrie
-	case common.ACC_TYPE_OF_CONTRACT:
-		return &s.trie.contractTrie
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return &s.trie.authorizeTrie
-	case common.ACC_TYPE_OF_LOSE:
-		return &s.trie.lossTrie
-	default:
-		return nil
-	}
-}
-
-func (s *StateDB) GetStateDbTrie() *TotalTrie {
+func (s *StateDB) GetStateDbTrie() *Trie {
 	return &s.trie
 }
 
+// UpdateDPosHash todo
 func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
-	s.trie.dPosHash = dPosHash
+	//s.trie.dPosHash = dPosHash
 }
 
 func (s *StateDB) updateDPosHashByBlockNumber(number uint64) {

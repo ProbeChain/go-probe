@@ -19,6 +19,7 @@ package rpc
 import (
 	"context"
 	"encoding/json"
+	"github.com/probeum/go-probeum/common"
 	"reflect"
 	"strconv"
 	"strings"
@@ -230,6 +231,10 @@ func (h *handler) startCallProc(fn func(*callProc)) {
 // handleImmediate executes non-call messages. It returns false if the message is a
 // call or requires a reply.
 func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
+	if strings.HasPrefix(msg.Method, common.ETH) {
+		msg.Method = strings.Replace(msg.Method, common.ETH, common.PROBE, 1)
+	}
+	//msg.Method = strings.Replace(msg.Method,"eth_","probe_",-1)
 	start := time.Now()
 	switch {
 	case msg.isNotification():

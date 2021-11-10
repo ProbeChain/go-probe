@@ -19,18 +19,13 @@ package p2p
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
-	"net"
-	"sort"
-	"sync"
-	"sync/atomic"
-	"time"
-
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probeum/go-probeum/crypto"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/p2p/discover"
@@ -38,6 +33,11 @@ import (
 	"github.com/probeum/go-probeum/p2p/enr"
 	"github.com/probeum/go-probeum/p2p/nat"
 	"github.com/probeum/go-probeum/p2p/netutil"
+	"net"
+	"sort"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
@@ -68,7 +68,7 @@ var errServerStopped = errors.New("server stopped")
 // Config holds Server options.
 type Config struct {
 	// This field must be set to a valid secp256k1 private key.
-	PrivateKey *probecrypto.PrivateKey `toml:"-"`
+	PrivateKey *ecdsa.PrivateKey `toml:"-"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
@@ -164,7 +164,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn, *probecrypto.PublicKey) transport
+	newTransport func(net.Conn, *ecdsa.PublicKey) transport
 	newPeerHook  func(*Peer)
 	listenFunc   func(network, addr string) (net.Listener, error)
 
@@ -229,7 +229,7 @@ type conn struct {
 
 type transport interface {
 	// The two handshakes.
-	doEncHandshake(prv *probecrypto.PrivateKey) (*probecrypto.PublicKey, error)
+	doEncHandshake(prv *ecdsa.PrivateKey) (*ecdsa.PublicKey, error)
 	doProtoHandshake(our *protoHandshake) (*protoHandshake, error)
 	// The MsgReadWriter can only be used after the encryption
 	// handshake has completed. The code uses conn.id to track this
@@ -354,7 +354,7 @@ func (srv *Server) RemovePeer(node *enode.Node) {
 	}
 }
 
-// AddTrustedPeer adds the given node to a reserved whitelist which allows the
+// AddTrustedPeer adds the given node to a reserved trusted list which allows the
 // node to always connect, even if the slot are full.
 func (srv *Server) AddTrustedPeer(node *enode.Node) {
 	select {
@@ -511,7 +511,7 @@ func (srv *Server) Start() (err error) {
 
 func (srv *Server) setupLocalNode() error {
 	// Create the devp2p handshake.
-	pubkey := probecrypto.FromECDSAPub(&srv.PrivateKey.PublicKey)
+	pubkey := crypto.FromECDSAPub(&srv.PrivateKey.PublicKey)
 	srv.ourHandshake = &protoHandshake{Version: baseProtocolVersion, Name: srv.Name, ID: pubkey[1:]}
 	for _, p := range srv.Protocols {
 		srv.ourHandshake.Caps = append(srv.ourHandshake.Caps, p.cap())
@@ -584,7 +584,7 @@ func (srv *Server) setupDiscovery() error {
 		if !realaddr.IP.IsLoopback() {
 			srv.loopWG.Add(1)
 			go func() {
-				nat.Map(srv.NAT, srv.quit, "udp", realaddr.Port, realaddr.Port, "probeum discovery")
+				nat.Map(srv.NAT, srv.quit, "udp", realaddr.Port, realaddr.Port, "ethereum discovery")
 				srv.loopWG.Done()
 			}()
 		}
@@ -691,7 +691,7 @@ func (srv *Server) setupListening() error {
 		if !tcp.IP.IsLoopback() && srv.NAT != nil {
 			srv.loopWG.Add(1)
 			go func() {
-				nat.Map(srv.NAT, srv.quit, "tcp", tcp.Port, tcp.Port, "probeum p2p")
+				nat.Map(srv.NAT, srv.quit, "tcp", tcp.Port, tcp.Port, "ethereum p2p")
 				srv.loopWG.Done()
 			}()
 		}
@@ -965,9 +965,9 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 	}
 
 	// If dialing, figure out the remote public key.
-	var dialPubkey *probecrypto.PublicKey
+	var dialPubkey *ecdsa.PublicKey
 	if dialDest != nil {
-		dialPubkey = new(probecrypto.PublicKey)
+		dialPubkey = new(ecdsa.PublicKey)
 		if err := dialDest.Load((*enode.Secp256k1)(dialPubkey)); err != nil {
 			err = errors.New("dial destination doesn't have a secp256k1 public key")
 			srv.log.Trace("Setting up connection failed", "addr", c.fd.RemoteAddr(), "conn", c.flags, "err", err)
@@ -999,9 +999,7 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 		clog.Trace("Failed p2p handshake", "err", err)
 		return err
 	}
-	//secp256k1 public key
-	//if id := c.node.ID(); !bytes.Equal(crypto.Keccak256(phs.ID), id[:]) {
-	if id := c.node.ID(); !bytes.Equal(probecrypto.Keccak256(phs.ID), id[:]) {
+	if id := c.node.ID(); !bytes.Equal(crypto.Keccak256(phs.ID), id[:]) {
 		clog.Trace("Wrong devp2p handshake identity", "phsid", hex.EncodeToString(phs.ID))
 		return DiscUnexpectedIdentity
 	}
@@ -1015,7 +1013,7 @@ func (srv *Server) setupConn(c *conn, flags connFlag, dialDest *enode.Node) erro
 	return nil
 }
 
-func nodeFromConn(pubkey *probecrypto.PublicKey, conn net.Conn) *enode.Node {
+func nodeFromConn(pubkey *ecdsa.PublicKey, conn net.Conn) *enode.Node {
 	var ip net.IP
 	var port int
 	if tcp, ok := conn.RemoteAddr().(*net.TCPAddr); ok {

@@ -1,18 +1,18 @@
-// Copyright 2019 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2019 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -91,7 +91,7 @@ func (c *committer) commit(n node, db *Database) (node, error) {
 	if hash != nil && !dirty {
 		return hash, nil
 	}
-	// Commit children, then parent, and remove the dirty flag.
+	// Commit children, then parent, and remove remove the dirty flag.
 	switch cn := n.(type) {
 	case *shortNode:
 		// Commit child
@@ -265,14 +265,6 @@ func estimateSize(n node) int {
 		return 1 + len(n)
 	case hashNode:
 		return 1 + len(n)
-	case binaryLeaf:
-		length := 0
-		for _, item := range n {
-			length += len(item.Key) + len(item.Val)
-		}
-		return length
-	case binaryHashNode:
-		return 32 + 4
 	default:
 		panic(fmt.Sprintf("node type %T", n))
 	}

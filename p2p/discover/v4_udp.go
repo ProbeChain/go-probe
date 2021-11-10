@@ -20,10 +20,11 @@ import (
 	"bytes"
 	"container/list"
 	"context"
+	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"io"
 	"net"
 	"sync"
@@ -68,7 +69,7 @@ type UDPv4 struct {
 	conn        UDPConn
 	log         log.Logger
 	netrestrict *netutil.Netlist
-	priv        *probecrypto.PrivateKey
+	priv        *ecdsa.PrivateKey
 	localNode   *enode.LocalNode
 	db          *enode.DB
 	tab         *Table
@@ -189,7 +190,7 @@ func (t *UDPv4) Resolve(n *enode.Node) *enode.Node {
 	if n.Load(&key) != nil {
 		return n // no secp256k1 key
 	}
-	result := t.LookupPubkey((*probecrypto.PublicKey)(&key))
+	result := t.LookupPubkey((*ecdsa.PublicKey)(&key))
 	for _, rn := range result {
 		if rn.ID() == n.ID() {
 			if rn, err := t.RequestENR(rn); err == nil {
@@ -257,7 +258,7 @@ func (t *UDPv4) makePing(toaddr *net.UDPAddr) *v4wire.Ping {
 }
 
 // LookupPubkey finds the closest nodes to the given public key.
-func (t *UDPv4) LookupPubkey(key *probecrypto.PublicKey) []*enode.Node {
+func (t *UDPv4) LookupPubkey(key *ecdsa.PublicKey) []*enode.Node {
 	if t.tab.len() == 0 {
 		// All nodes were dropped, refresh. The very first query will hit this
 		// case and run the bootstrapping logic.
@@ -595,7 +596,7 @@ func (t *UDPv4) nodeFromRPC(sender *net.UDPAddr, rn v4wire.Node) (*node, error) 
 }
 
 func nodeToRPC(n *node) v4wire.Node {
-	var key probecrypto.PublicKey
+	var key ecdsa.PublicKey
 	var ekey v4wire.Pubkey
 	if err := n.Load((*enode.Secp256k1)(&key)); err == nil {
 		ekey = v4wire.EncodePubkey(&key)
@@ -630,7 +631,7 @@ func (t *UDPv4) wrapPacket(p v4wire.Packet) *packetHandlerV4 {
 // packetHandlerV4 wraps a packet with handler functions.
 type packetHandlerV4 struct {
 	v4wire.Packet
-	senderKey *probecrypto.PublicKey // used for ping
+	senderKey *ecdsa.PublicKey // used for ping
 
 	// preverify checks whprobeer the packet is valid and should be handled at all.
 	preverify func(p *packetHandlerV4, from *net.UDPAddr, fromID enode.ID, fromKey v4wire.Pubkey) error

@@ -20,7 +20,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/crypto"
+
 	"io"
 	"math/big"
 	"unsafe"
@@ -67,13 +68,10 @@ type Receipt struct {
 
 	// Inclusion information: These fields provide information about the inclusion of the
 	// transaction corresponding to this receipt.
-	BlockHash        common.Hash `json:"blockHash,omitempty"`
-	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
-	TransactionIndex uint        `json:"transactionIndex"`
-	BizType          uint8       `json:"bizType"`
-	AccType          uint8       `json:"accType,omitempty"`
-	LossType         uint8       `json:"lossType,omitempty"`
-	PnsType          uint8       `json:"pnsType,omitempty"`
+	BlockHash        common.Hash    `json:"blockHash,omitempty"`
+	BlockNumber      *big.Int       `json:"blockNumber,omitempty"`
+	TransactionIndex uint           `json:"transactionIndex"`
+	NewAddress       common.Address `json:"NewAddress"`
 }
 
 type receiptMarshaling struct {
@@ -293,11 +291,19 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 		r[i].BlockNumber = blockNumber
 		r[i].TransactionIndex = uint(i)
 
+		from, _ := Sender(signer, txs[i])
 		// The contract address can be derived from the transaction itself
-		if txs[i].To() == nil && txs[i].BizType() == common.ContractCall {
+		if txs[i].To() == nil {
 			// Deriving the signer is expensive, only do if it's actually needed
-			from, _ := Sender(signer, txs[i])
-			r[i].ContractAddress, _ = probecrypto.CreateAddressForAccountType(from, txs[i].Nonce(), common.ACC_TYPE_OF_CONTRACT)
+			r[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
+		} else {
+			switch txs[i].To().Hex() {
+			case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+				r[i].NewAddress = crypto.CreatePNSAddress(from, txs[i].Data())
+			case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
+				common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+				r[i].NewAddress = crypto.CreateAddress(from, txs[i].Nonce())
+			}
 		}
 		// The used gas can be calculated based on previous r
 		if i == 0 {
@@ -314,7 +320,6 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 			r[i].Logs[j].Index = logIndex
 			logIndex++
 		}
-		r[i].BizType = txs[i].BizType()
 	}
 	return nil
 }
