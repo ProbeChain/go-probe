@@ -1473,21 +1473,21 @@ func (s *StateDB) RedemptionForAuthorize(addr common.Address, voteValue *big.Int
 }
 
 func (s *StateDB) Redemption(context vm.TxContext) {
-	voteAddr := new(common.Address)
-	rlp.DecodeBytes(context.Data, &voteAddr)
+	decode := new(common.AddressDecodeType)
+	rlp.DecodeBytes(context.Data, &decode)
 	//s.SubBalance(context.From, context.Value)
 	s1 := s.getStateObject(context.From)
 	if s1 != nil {
 		regularAccount := s1.regularAccount
-		s2 := s.getStateObject(*voteAddr)
+		s2 := s.getStateObject(decode.Addr)
 		if s2 != nil {
 			authorizeAccount := s2.authorizeAccount
 			if context.From == authorizeAccount.Owner {
-				s.RedemptionForAuthorize(*voteAddr, nil)
+				s.RedemptionForAuthorize(decode.Addr, nil)
 			}
-			if *voteAddr == regularAccount.VoteAccount {
+			if decode.Addr == regularAccount.VoteAccount {
 				s.RedemptionForRegular(context.From)
-				s.RedemptionForAuthorize(*voteAddr, regularAccount.VoteValue)
+				s.RedemptionForAuthorize(decode.Addr, regularAccount.VoteValue)
 			}
 		}
 	}
