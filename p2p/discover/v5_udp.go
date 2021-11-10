@@ -19,10 +19,11 @@ package discover
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"io"
 	"math"
 	"net"
@@ -65,7 +66,7 @@ type UDPv5 struct {
 	conn         UDPConn
 	tab          *Table
 	netrestrict  *netutil.Netlist
-	priv         *probecrypto.PrivateKey
+	priv         *ecdsa.PrivateKey
 	localNode    *enode.LocalNode
 	db           *enode.DB
 	log          log.Logger

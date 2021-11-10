@@ -24,7 +24,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
 
 	"github.com/google/uuid"
 	"github.com/probeum/go-probeum/accounts"
@@ -87,11 +86,11 @@ func decryptPreSaleKey(fileContent []byte, password string) (key *Key, err error
 		return nil, err
 	}
 	probePriv := crypto.Keccak256(plainText)
-	ecKey := probecrypto.ToECDSAUnsafe(probePriv)
+	ecKey := crypto.ToECDSAUnsafe(probePriv)
 
 	key = &Key{
 		Id:         uuid.UUID{},
-		Address:    probecrypto.PubkeyToAddress(ecKey.PublicKey),
+		Address:    crypto.PubkeyToAddress(ecKey.PublicKey),
 		PrivateKey: ecKey,
 	}
 	derivedAddr := hex.EncodeToString(key.Address.Bytes()) // needed because .Hex() gives leading "0x"

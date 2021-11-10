@@ -21,7 +21,6 @@ import (
 	"container/heap"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common/hexutil"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -84,25 +83,8 @@ type TxData interface {
 	value() *big.Int
 	nonce() uint64
 	to() *common.Address
-	bizType() uint8
-	rawSignatureValues() (k byte, v, r, s *big.Int)
-	setSignatureValues(k byte, chainID, v, r, s *big.Int)
-
-	from() *common.Address
-	setFrom(from *common.Address)
-	owner() *common.Address
-	loss() *common.Address
-	asset() *common.Address
-	old() *common.Address
-	new() *common.Address
-	initiator() *common.Address
-	receiver() *common.Address
-	value2() *big.Int
-	height() *big.Int
-	mark() []byte
-	accType() *hexutil.Uint8
-	lossType() *hexutil.Uint8
-	pnsType() *hexutil.Uint8
+	rawSignatureValues() (v, r, s *big.Int)
+	setSignatureValues(chainID, v, r, s *big.Int)
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -299,13 +281,6 @@ func (tx *Transaction) Value() *big.Int { return new(big.Int).Set(tx.inner.value
 // Nonce returns the sender account nonce of the transaction.
 func (tx *Transaction) Nonce() uint64 { return tx.inner.nonce() }
 
-func (tx *Transaction) BizType() uint8 { return tx.inner.bizType() }
-
-func (tx *Transaction) AccType() *hexutil.Uint8 { return tx.inner.accType() }
-
-func (tx *Transaction) LossType() *hexutil.Uint8 { return tx.inner.lossType() }
-func (tx *Transaction) PnsType() *hexutil.Uint8  { return tx.inner.pnsType() }
-
 // To returns the recipient address of the transaction.
 // For contract-creation transactions, To returns nil.
 func (tx *Transaction) To() *common.Address {
@@ -318,26 +293,32 @@ func (tx *Transaction) To() *common.Address {
 	return &cpy
 }
 
-func (tx *Transaction) From() *common.Address {
-	// Copy the pointed-to address.
-	ito := tx.inner.from()
-	if ito == nil {
-		return nil
-	}
-	cpy := *ito
-	return &cpy
-}
-
 // Cost returns gas * gasPrice + value.
 func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))
 	total.Add(total, tx.Value())
+	var pledgeAmount uint64
+	if tx.To() == nil {
+		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
+	} else {
+		switch tx.To().Hex() {
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS
+		default:
+			pledgeAmount = uint64(0)
+		}
+	}
+	total.Add(total, new(big.Int).SetUint64(pledgeAmount))
 	return total
 }
 
 // RawSignatureValues returns the V, R, S signature values of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) RawSignatureValues() (k byte, v, r, s *big.Int) {
+func (tx *Transaction) RawSignatureValues() (v, r, s *big.Int) {
 	return tx.inner.rawSignatureValues()
 }
 
@@ -431,12 +412,12 @@ func (tx *Transaction) Size() common.StorageSize {
 // WithSignature returns a New transaction with the given signature.
 // This signature needs to be in the [R || S || V] format where V is 0 or 1.
 func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, error) {
-	k, r, s, v, err := signer.SignatureValues(tx, sig)
+	r, s, v, err := signer.SignatureValues(tx, sig)
 	if err != nil {
 		return nil, err
 	}
 	cpy := tx.inner.copy()
-	cpy.setSignatureValues(k, signer.ChainID(), v, r, s)
+	cpy.setSignatureValues(signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 
@@ -457,17 +438,6 @@ func (s Transactions) EncodeIndex(i int, w *bytes.Buffer) {
 		tx.encodeTyped(w)
 	}
 }
-
-func (tx *Transaction) Owner() *common.Address     { return tx.inner.owner() }
-func (tx *Transaction) Loss() *common.Address      { return tx.inner.loss() }
-func (tx *Transaction) Asset() *common.Address     { return tx.inner.asset() }
-func (tx *Transaction) Old() *common.Address       { return tx.inner.old() }
-func (tx *Transaction) New() *common.Address       { return tx.inner.new() }
-func (tx *Transaction) Initiator() *common.Address { return tx.inner.initiator() }
-func (tx *Transaction) Receiver() *common.Address  { return tx.inner.receiver() }
-func (tx *Transaction) Value2() *big.Int           { return tx.inner.value2() }
-func (tx *Transaction) Height() *big.Int           { return tx.inner.height() }
-func (tx *Transaction) Mark() []byte               { return tx.inner.mark() }
 
 // TxDifference returns a New set which is the difference between a and b.
 func TxDifference(a, b Transactions) Transactions {
@@ -612,20 +582,13 @@ func (t *TransactionsByPriceAndNonce) Pop() {
 	heap.Pop(&t.heads)
 }
 
-func NewMessage(from common.Address, to *common.Address, bizType uint8,
+func NewMessage(from common.Address, to *common.Address,
 	nonce uint64, amount *big.Int, gasLimit uint64,
 	gasPrice, gasFeeCap, gasTipCap *big.Int,
-	data []byte, accessList AccessList, checkNonce bool,
-	owner *common.Address,
-	loss *common.Address, asset *common.Address,
-	old *common.Address, new *common.Address, initiator *common.Address,
-	receiver *common.Address, mark []byte,
-	amount2 *big.Int, height *big.Int, accType *hexutil.Uint8,
-	lossType *hexutil.Uint8, pnsType *hexutil.Uint8) Message {
+	data []byte, accessList AccessList, checkNonce bool) Message {
 	return Message{
 		from:       from,
 		to:         to,
-		bizType:    bizType,
 		nonce:      nonce,
 		amount:     amount,
 		gasLimit:   gasLimit,
@@ -635,20 +598,6 @@ func NewMessage(from common.Address, to *common.Address, bizType uint8,
 		data:       data,
 		accessList: accessList,
 		checkNonce: checkNonce,
-
-		owner:     owner,
-		loss:      loss,
-		asset:     asset,
-		old:       old,
-		new:       new,
-		initiator: initiator,
-		receiver:  receiver,
-		mark:      mark,
-		amount2:   amount2,
-		height:    height,
-		accType:   accType,
-		lossType:  lossType,
-		pnsType:   pnsType,
 	}
 }
 
@@ -665,19 +614,6 @@ func (tx *Transaction) AsMessage(s Signer, baseFee *big.Int) (Message, error) {
 		data:       tx.Data(),
 		accessList: tx.AccessList(),
 		checkNonce: true,
-		bizType:    tx.BizType(),
-		accType:    tx.AccType(),
-		lossType:   tx.LossType(),
-		pnsType:    tx.PnsType(),
-		new:        tx.New(),
-		old:        tx.Old(),
-		asset:      tx.Asset(),
-		loss:       tx.Loss(),
-		initiator:  tx.Initiator(),
-		receiver:   tx.Receiver(),
-		height:     tx.Height(),
-		amount2:    tx.Value2(),
-		mark:       tx.Mark(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {

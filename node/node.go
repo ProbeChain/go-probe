@@ -19,6 +19,7 @@ package node
 import (
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/common"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -28,10 +29,10 @@ import (
 
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/p2p"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rpc"
 	"github.com/prometheus/tsdb/fileutil"
 )
@@ -406,6 +407,11 @@ func (n *Node) stopRPC() {
 // startInProc registers all RPC APIs on the inproc server.
 func (n *Node) startInProc() error {
 	for _, api := range n.rpcAPIs {
+		if api.Namespace == common.PROBE {
+			if err := n.inprocHandler.RegisterName(common.ETH, api.Service); err != nil {
+				return err
+			}
+		}
 		if err := n.inprocHandler.RegisterName(api.Namespace, api.Service); err != nil {
 			return err
 		}

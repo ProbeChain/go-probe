@@ -20,7 +20,6 @@ package probeum
 import (
 	"context"
 	"errors"
-	"github.com/probeum/go-probeum/common/hexutil"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -114,33 +113,15 @@ type ChainSyncReader interface {
 
 // CallMsg contains parameters for contract calls.
 type CallMsg struct {
-	From      common.Address  // the sender of the 'transaction'
-	To        *common.Address // the destination contract (nil for contract creation)
-	Gas       uint64          // if 0, the call executes with near-infinite gas
-	GasPrice  *big.Int        // wei <-> gas exchange ratio
-	GasFeeCap *big.Int        // EIP-1559 fee cap per gas.
-	GasTipCap *big.Int        // EIP-1559 tip per gas.
-	Value     *big.Int        // amount of wei sent along with the call
-	Data      []byte          // input data, usually an ABI-encoded contract method invocation
-
+	From       common.Address   // the sender of the 'transaction'
+	To         *common.Address  // the destination contract (nil for contract creation)
+	Gas        uint64           // if 0, the call executes with near-infinite gas
+	GasPrice   *big.Int         // wei <-> gas exchange ratio
+	GasFeeCap  *big.Int         // EIP-1559 fee cap per gas.
+	GasTipCap  *big.Int         // EIP-1559 tip per gas.
+	Value      *big.Int         // amount of wei sent along with the call
+	Data       []byte           // input data, usually an ABI-encoded contract method invocation
 	AccessList types.AccessList // EIP-2930 access list.
-
-	BizType  uint8
-	New      *common.Address
-	AccType  *hexutil.Uint8
-	LossType *hexutil.Uint8
-	PnsType  *hexutil.Uint8
-
-	Owner     *common.Address
-	Vote      *common.Address
-	Loss      *common.Address
-	Asset     *common.Address
-	Old       *common.Address
-	Initiator *common.Address
-	Receiver  *common.Address
-	Value2    *big.Int
-	Height    *big.Int
-	Mark      []byte
 }
 
 // A ContractCaller provides contract calls, essentially transactions that are executed by

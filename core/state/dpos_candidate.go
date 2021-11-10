@@ -2,9 +2,9 @@ package state
 
 import (
 	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
 	"github.com/probeum/go-probeum/log"
-	"math/big"
+	"github.com/probeum/go-probeum/rlp"
+	"github.com/probeum/go-probeum/trie"
 	"sort"
 	"sync"
 )
@@ -88,7 +88,7 @@ func (d *DPosCandidate) AddDPosCandidate(curNode common.DPoSCandidateAccount) {
 	exist := false
 	if d.dPosCandidateAccounts.Len() > 0 {
 		for i, node := range d.dPosCandidateAccounts {
-			if node.Vote == curNode.Vote {
+			if node.VoteAccount == curNode.VoteAccount {
 				d.dPosCandidateAccounts[i] = curNode
 				exist = true
 				break
@@ -105,7 +105,7 @@ func (d *DPosCandidate) UpdateDPosCandidate(curNode common.DPoSCandidateAccount)
 	defer d.lock.Unlock()
 	if d.dPosCandidateAccounts.Len() > 0 {
 		for i, node := range d.dPosCandidateAccounts {
-			if node.Vote == curNode.Vote {
+			if node.VoteAccount == curNode.VoteAccount {
 				d.dPosCandidateAccounts[i] = curNode
 				break
 			}
@@ -119,7 +119,7 @@ func (d *DPosCandidate) DeleteDPosCandidate(curNode common.DPoSCandidateAccount)
 	deleteIndex := -1
 	if d.dPosCandidateAccounts.Len() > 0 {
 		for i, node := range d.dPosCandidateAccounts {
-			if node.Vote == curNode.Vote {
+			if node.VoteAccount == curNode.VoteAccount {
 				deleteIndex = i
 				break
 			}
@@ -131,10 +131,31 @@ func (d *DPosCandidate) DeleteDPosCandidate(curNode common.DPoSCandidateAccount)
 }
 
 func BuildHashForDPos(accounts []common.DPoSAccount) common.Hash {
-	num := big.NewInt(0)
-	for _, account := range accounts {
-		curNum := new(big.Int).SetBytes(crypto.Keccak512(append(account.Enode[:], account.Owner.Bytes()...)))
-		num = new(big.Int).Xor(curNum, num)
+	if len(accounts) < 1 {
+		return emptyRoot
 	}
-	return crypto.Keccak256Hash(num.Bytes())
+
+	data, err := rlp.EncodeToBytes(accounts)
+	if err != nil {
+		panic("BuildHashForDPos encode error: " + err.Error())
+	}
+	return buildHashData(data)
+}
+
+func BuildHashForDPosCandidate(accounts []common.DPoSCandidateAccount) common.Hash {
+	if len(accounts) < 1 {
+		return emptyRoot
+	}
+
+	data, err := rlp.EncodeToBytes(accounts)
+	if err != nil {
+		panic("BuildHashForDPos encode error: " + err.Error())
+	}
+	return buildHashData(data)
+}
+
+func buildHashData(data []byte) common.Hash {
+	h := trie.NewHasher(false)
+
+	return h.HashData(data)
 }

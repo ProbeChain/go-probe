@@ -173,8 +173,8 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Greatri is the proof-of-authority consensus engine proposed to support the
 // Probeum testnet following the Ropsten attacks.
 type Greatri struct {
-	config *params.GreatriConfig // Consensus engine configuration parameters
-	db     probedb.Database      // Database to store and retrieve snapshot checkpoints
+	config *params.DposConfig // Consensus engine configuration parameters
+	db     probedb.Database   // Database to store and retrieve snapshot checkpoints
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -191,7 +191,7 @@ type Greatri struct {
 
 // New creates a Greatri proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
-func New(config *params.GreatriConfig, db probedb.Database) *Greatri {
+func New(config *params.DposConfig, db probedb.Database) *Greatri {
 	// Set any missing consensus parameters to their defaults
 	conf := *config
 	if conf.Epoch == 0 {

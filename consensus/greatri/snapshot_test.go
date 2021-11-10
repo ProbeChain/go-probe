@@ -407,11 +407,11 @@ func TestGreatri(t *testing.T) {
 
 		// Assemble a chain of headers from the cast votes
 		config := *params.TestChainConfig
-		config.Greatri = &params.GreatriConfig{
+		config.Dpos = &params.DposConfig{
 			Period: 1,
 			Epoch:  tt.epoch,
 		}
-		engine := New(config.Greatri, db)
+		engine := New(config.Dpos, db)
 		engine.fakeDiff = true
 
 		blocks, _ := core.GenerateChain(&config, genesis.ToBlock(db), engine, db, len(tt.votes), func(j int, gen *core.BlockGen) {

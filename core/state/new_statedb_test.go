@@ -72,7 +72,7 @@ func TestDeleteData(t *testing.T) {
 	s := newStateNewTest()
 	//address := common.BytesToAddress([]byte{0x01})
 	address := common.BytesToAddress(common.Hex2Bytes("0x006F0452548E1607836D06C7B2Be28576a076698bF59e47760"))
-	obj1 := s.state.GetOrNewStateObject(address)
+	obj1, _ := s.state.GetOrNewStateObject(address)
 	obj1.setValueForRegular(big.NewInt(20))
 	fmt.Printf(" before DeleteStateObjectByAddr：%v \n", s.state.GetRegular(address))
 	s.state.updateStateObject(obj1)
@@ -112,12 +112,10 @@ func TestRlp1(t *testing.T) {
 	s := newStateNewTest()
 	//address := common.BytesToAddress([]byte{0x01})
 	address := common.HexToAddress("0x0085c9ef121fbdcb1bf8d0a7c606c363c0b3f172068cc3507b")
-	address1 := common.Hash{1}
 	result, _ := s.state.trie.TryGet(address.Bytes())
 	fmt.Printf("result：%v \n", result)
 	//arrdata, _ := rlp.EncodeToBytes([]common.Hash{common.Hash{}, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot})
 	arrdata := []common.Hash{common.Hash{}, emptyRoot, emptyRoot, emptyRoot, emptyRoot, emptyRoot}
-	rawdb.WriteAllStateRootHash1(s.db, arrdata, address1)
 	fmt.Printf("arrdata：%v \n", arrdata)
 	//var b []byte
 	//for _, d := range hash {
@@ -126,8 +124,6 @@ func TestRlp1(t *testing.T) {
 	//rawdb.WriteRootHash(db, root, b)
 
 	//rootHash := rawdb.ReadRootHash(db, root)
-	rootHash := rawdb.ReadRootHashForNew(s.db, address1)
-	fmt.Printf("rootHash：%v \n", rootHash)
 	//s.db.Put(address1.Bytes(), arrdata)
 	//if err != nil {
 	//	log.Crit("Failed to EncodeToBytes", "err", err,result)

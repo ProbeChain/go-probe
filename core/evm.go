@@ -17,6 +17,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/probeum/go-probeum/core/types"
 	"math/big"
 
@@ -52,16 +53,16 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		baseFee = new(big.Int).Set(header.BaseFee)
 	}
 	return vm.BlockContext{
-		CanTransfer:      CanTransfer,
-		GetHash:          GetHashFn(header, chain),
-		Coinbase:         beneficiary,
-		BlockNumber:      new(big.Int).Set(header.Number),
-		Time:             new(big.Int).SetUint64(header.Time),
-		Difficulty:       new(big.Int).Set(header.Difficulty),
-		BaseFee:          baseFee,
-		GasLimit:         header.GasLimit,
-		ContractTransfer: ContractTransfer,
-		CallDB:           CallDB,
+		CanTransfer:    CanTransfer,
+		GetHash:        GetHashFn(header, chain),
+		Coinbase:       beneficiary,
+		BlockNumber:    new(big.Int).Set(header.Number),
+		Time:           new(big.Int).SetUint64(header.Time),
+		Difficulty:     new(big.Int).Set(header.Difficulty),
+		BaseFee:        baseFee,
+		GasLimit:       header.GasLimit,
+		ContractDeploy: ContractDeploy,
+		CallDB:         CallDB,
 	}
 }
 
@@ -70,26 +71,11 @@ func NewEVMTxContext(msg Message) vm.TxContext {
 	return vm.TxContext{
 		Origin:   msg.From(),
 		GasPrice: new(big.Int).Set(msg.GasPrice()),
-
-		From:      msg.From(),
-		To:        msg.To(),
-		Owner:     msg.Owner(),
-		Loss:      msg.Loss(),
-		Asset:     msg.Asset(),
-		Old:       msg.Old(),
-		New:       msg.New(),
-		Initiator: msg.Initiator(),
-		Receiver:  msg.Receiver(),
-
-		BizType:  msg.BizType(),
+		From:     msg.From(),
+		To:       msg.To(),
+		Nonce:    msg.Nonce(),
 		Value:    msg.Value(),
-		Value2:   msg.Value2(),
-		Height:   msg.Height(),
 		Data:     msg.Data(),
-		Mark:     msg.Mark(),
-		AccType:  msg.AccType(),
-		LossType: msg.LossType(),
-		PnsType:  msg.PnsType(),
 	}
 }
 
@@ -133,49 +119,48 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 	return db.GetBalance(addr).Cmp(amount) >= 0
 }
 
-// ContractTransfer subtracts amount from sender and adds amount to recipient using the given Db
-func ContractTransfer(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {
-	//fmt.Printf("ContractTransfer, sender:%s,to:%s,amount:%s\n", sender.String(), recipient.String(), amount.String())
-	db.SubBalance(sender, amount)
-	//db.AddBalance(recipient, amount)
+// ContractDeploy subtracts amount from sender and adds amount to recipient using the given Db
+func ContractDeploy(db vm.StateDB, sender common.Address) {
+	fmt.Printf("ContractDeploy, sender:%s,pledgeAmount:%d\n", sender.String(), common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
+	db.SubBalance(sender, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT))
 }
 
 //CallDB call database for update operation
 func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
-	switch txContext.BizType {
-	case common.Register:
-		db.Register(txContext)
-	case common.Cancellation:
-		db.Cancellation(txContext)
-	case common.Transfer:
-		db.Transfer(txContext)
-	case common.ExchangeAsset:
-		db.ExchangeAsset(txContext)
-	case common.ContractCall:
-		ContractTransfer(db, txContext.From, *txContext.To, txContext.Value)
-	case common.SendLossReport:
-		db.SendLossReport(blockNumber, txContext)
-	case common.RevealLossReport:
-		db.RevealLossReport(blockNumber, txContext)
-	case common.TransferLostAccount:
-		db.TransferLostAccount(txContext)
-	case common.TransferLostAssetAccount:
-		db.TransferLostAssetAccount(txContext)
-	case common.RemoveLossReport:
-		db.RemoveLossReport(txContext)
-	case common.RejectLossReport:
-		db.RejectLossReport(txContext)
-	case common.Vote:
-		db.Vote(txContext)
-	case common.ApplyToBeDPoSNode:
-		db.ApplyToBeDPoSNode(txContext)
-	case common.Redemption:
-		db.Redemption(txContext)
-	case common.ModifyLossType:
-		db.ModifyLossType(txContext)
-	case common.ModifyPnsOwner:
-		db.ModifyPnsOwner(txContext)
-	case common.ModifyPnsContent:
-		db.ModifyPnsContent(txContext)
+	if txContext.To == nil {
+		//ContractDeploy(db, txContext.From)
+		//todo
+		panic("ContractDeploy--------")
+	} else {
+		switch txContext.To.Hex() {
+		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
+			common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
+			common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+			db.Register(txContext)
+		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
+			db.Cancellation(txContext)
+		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
+			db.SendLossReport(blockNumber, txContext)
+		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
+			db.RevealLossReport(blockNumber, txContext)
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
+			db.TransferLostAccount(txContext)
+		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
+			db.RemoveLossReport(txContext)
+		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
+			db.RejectLossReport(txContext)
+		case common.SPECIAL_ADDRESS_FOR_VOTE:
+			db.Vote(txContext)
+		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
+			db.ApplyToBeDPoSNode(txContext)
+		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
+			db.Redemption(txContext)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
+			db.ModifyPnsOwner(txContext)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
+			db.ModifyPnsContent(txContext)
+		default:
+			db.Transfer(txContext)
+		}
 	}
 }

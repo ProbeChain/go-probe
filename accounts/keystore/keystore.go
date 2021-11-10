@@ -21,9 +21,9 @@
 package keystore
 
 import (
+	"crypto/ecdsa"
 	crand "crypto/rand"
 	"errors"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -224,7 +224,7 @@ func (ks *KeyStore) updater() {
 	}
 }
 
-// HasAddress reports whprobeer a key with the given address is present.
+// HasAddress reports whether a key with the given address is present.
 func (ks *KeyStore) HasAddress(addr common.Address) bool {
 	return ks.cache.hasAddress(addr)
 }
@@ -454,7 +454,7 @@ func (ks *KeyStore) Import(keyJSON []byte, passphrase, newPassphrase string) (ac
 }
 
 // ImportECDSA stores the given key into the key directory, encrypting it with the passphrase.
-func (ks *KeyStore) ImportECDSA(priv *probecrypto.PrivateKey, passphrase string) (accounts.Account, error) {
+func (ks *KeyStore) ImportECDSA(priv *ecdsa.PrivateKey, passphrase string) (accounts.Account, error) {
 	ks.importMu.Lock()
 	defer ks.importMu.Unlock()
 
@@ -499,7 +499,7 @@ func (ks *KeyStore) ImportPreSaleKey(keyJSON []byte, passphrase string) (account
 }
 
 // zeroKey zeroes a private key in memory.
-func zeroKey(k *probecrypto.PrivateKey) {
+func zeroKey(k *ecdsa.PrivateKey) {
 	b := k.D.Bits()
 	for i := range b {
 		b[i] = 0

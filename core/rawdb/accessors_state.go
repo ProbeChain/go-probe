@@ -116,56 +116,6 @@ func DeleteTrieNode(db probedb.KeyValueWriter, hash common.Hash) {
 	}
 }
 
-func WriteRootHash(db probedb.KeyValueWriter, hash common.Hash, code []byte) {
-	//if err := db.Put(hash.Bytes(), code); err != nil {
-	//	log.Crit("Failed to store RootHash", "err", err)
-	//}
-	if err := db.Put(StateRootKey(hash), code); err != nil {
-		log.Crit("Failed to store RootHash", "err", err)
-	}
-}
-
-func WriteAllStateRootHash1(db probedb.Database, hashes []common.Hash, root common.Hash) {
-	blockBatch := db.NewBatch()
-	// add trie root
-	arrdata, err := rlp.EncodeToBytes(hashes)
-	if err != nil {
-		log.Crit("Failed to EncodeToBytes", "err", err)
-	}
-	key := StateRootKey(root)
-	//fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
-	if err := blockBatch.Put(key, arrdata); err != nil {
-		log.Crit("Failed to store RootHash", "err", err)
-	}
-}
-
-func WriteAllStateRootHash(db probedb.KeyValueWriter, hashes []common.Hash, root common.Hash) {
-	// add trie root
-	arrdata, err := rlp.EncodeToBytes(hashes)
-	if err != nil {
-		log.Crit("Failed to EncodeToBytes", "err", err)
-	}
-	key := StateRootKey(root)
-	//fmt.Printf("WriteAllStateRootHash-key：%v \n", key)
-	if err := db.Put(key, arrdata); err != nil {
-		log.Crit("Failed to store RootHash", "err", err)
-	}
-}
-
-func ReadRootHash(db probedb.KeyValueReader, hash common.Hash) []byte {
-	data, _ := db.Get(StateRootKey(hash))
-	return data
-}
-func ReadRootHashForNew(db probedb.KeyValueReader, hash common.Hash) []common.Hash {
-	var intarray []common.Hash
-	//hash := rawdb.ReadRootHash(db.TrieDB().DiskDB(), root)
-	key := StateRootKey(hash)
-	//	fmt.Printf("ReadRootHashForNew-key：%v \n", key)
-	data, _ := db.Get(key)
-	rlp.DecodeBytes(data, &intarray)
-	return intarray
-}
-
 func WriteDPos(db probedb.KeyValueWriter, dPosNo uint64, list []common.DPoSAccount) {
 	// add trie root
 	arr, err := rlp.EncodeToBytes(list)

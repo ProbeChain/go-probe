@@ -33,11 +33,11 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/state/snapshot"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/light"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/p2p/msgrate"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/trie"
 	"golang.org/x/crypto/sha3"
@@ -127,7 +127,7 @@ type accountResponse struct {
 
 	hashes []common.Hash // Account hashes in the returned range
 	//accounts []*state.RegularAccount // Expanded accounts in the returned range
-	accounts []*state.AssetAccount // Expanded accounts in the returned range
+	accounts []*state.ContractAccount // Expanded accounts in the returned range
 
 	cont bool // Whprobeer the account range has a continuation
 }
@@ -296,7 +296,7 @@ type accountTask struct {
 	codeTasks  map[common.Hash]struct{}    // Code hashes that need retrieval
 	stateTasks map[common.Hash]common.Hash // Account hashes->roots that need full state retrieval
 
-	genBatch probedb.Batch     // Batch used by the node generator
+	genBatch probedb.Batch   // Batch used by the node generator
 	genTrie  *trie.StackTrie // Node generator from storage slots
 
 	done bool // Flag whprobeer the task can be removed
@@ -311,7 +311,7 @@ type storageTask struct {
 	root common.Hash     // Storage root hash for this instance
 	req  *storageRequest // Pending request to fill this task
 
-	genBatch probedb.Batch     // Batch used by the node generator
+	genBatch probedb.Batch   // Batch used by the node generator
 	genTrie  *trie.StackTrie // Node generator from storage slots
 
 	done bool // Flag whprobeer the task can be removed
@@ -435,7 +435,7 @@ type Syncer struct {
 	bytecodeHealDups   uint64             // Number of bytecodes already processed
 	bytecodeHealNops   uint64             // Number of bytecodes not requested
 
-	stateWriter        probedb.Batch        // Shared batch writer used for persisting raw states
+	stateWriter        probedb.Batch      // Shared batch writer used for persisting raw states
 	accountHealed      uint64             // Number of accounts downloaded during the healing stage
 	accountHealedBytes common.StorageSize // Number of raw account bytes persisted to disk during the healing stage
 	storageHealed      uint64             // Number of storage slots downloaded during the healing stage
@@ -2285,10 +2285,10 @@ func (s *Syncer) OnAccounts(peer SyncPeer, id uint64, hashes []common.Hash, acco
 		return err
 	}
 	//accs := make([]*state.RegularAccount, len(accounts))
-	accs := make([]*state.AssetAccount, len(accounts))
+	accs := make([]*state.ContractAccount, len(accounts))
 	for i, account := range accounts {
 		//acc := new(state.RegularAccount)
-		acc := new(state.AssetAccount)
+		acc := new(state.ContractAccount)
 		if err := rlp.DecodeBytes(account, acc); err != nil {
 			panic(err) // We created these blobs, we must be able to decode them
 		}
@@ -2753,7 +2753,7 @@ func (s *Syncer) onHealByteCodes(peer SyncPeer, id uint64, bytecodes [][]byte) e
 func (s *Syncer) onHealState(paths [][]byte, value []byte) error {
 	if len(paths) == 1 {
 		//var account state.RegularAccount
-		var account state.AssetAccount
+		var account state.ContractAccount
 		if err := rlp.DecodeBytes(value, &account); err != nil {
 			return nil
 		}

@@ -17,9 +17,10 @@
 package les
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probecrypto"
+
 	"math/big"
 	"math/rand"
 	"net"
@@ -1286,7 +1287,7 @@ type clientPeerSet struct {
 	lock   sync.RWMutex
 	closed bool
 
-	privateKey                   *probecrypto.PrivateKey
+	privateKey                   *ecdsa.PrivateKey
 	lastAnnounce, signedAnnounce announceData
 }
 
@@ -1358,7 +1359,7 @@ func (ps *clientPeerSet) len() int {
 
 // setSignerKey sets the signer key for signed announcements. Should be called before
 // starting the protocol handler.
-func (ps *clientPeerSet) setSignerKey(privateKey *probecrypto.PrivateKey) {
+func (ps *clientPeerSet) setSignerKey(privateKey *ecdsa.PrivateKey) {
 	ps.privateKey = privateKey
 }
 

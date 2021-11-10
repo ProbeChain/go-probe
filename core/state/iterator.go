@@ -74,8 +74,7 @@ func (it *NodeIterator) step() error {
 	}
 	// Initialize the iterator if we've just started
 	if it.stateIt == nil {
-		//it.stateIt = it.state.trie.NodeIterator(nil)
-		it.stateIt = it.state.trie.regularTrie.NodeIterator(nil)
+		it.stateIt = it.state.trie.NodeIterator(nil)
 	}
 	// If we had data nodes previously, we surely have at least state nodes
 	if it.dataIt != nil {
@@ -106,7 +105,7 @@ func (it *NodeIterator) step() error {
 	}
 	// Otherwise we've reached an account node, initiate data iteration
 	//var account RegularAccount
-	var account AssetAccount
+	var account ContractAccount
 	if err := rlp.Decode(bytes.NewReader(it.stateIt.LeafBlob()), &account); err != nil {
 		return err
 	}

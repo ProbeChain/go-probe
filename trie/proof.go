@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The go-ethereum Authors
+// This file is part of the go-ethereum library.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The go-ethereum library is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package trie
 
@@ -22,9 +22,9 @@ import (
 	"fmt"
 
 	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/probedb/memorydb"
-	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/rlp"
 )
 
@@ -405,7 +405,7 @@ func unset(parent node, child node, key []byte, pos int, removeLeft bool) error 
 	}
 }
 
-// hasRightElement returns the indicator whprobeer there exists more elements
+// hasRightElement returns the indicator whether there exists more elements
 // in the right side of the given path. The given path can point to an existent
 // key or a non-existent one. This function has the assumption that the whole
 // path should already be resolved.
@@ -434,7 +434,7 @@ func hasRightElement(node node, key []byte) bool {
 	return false
 }
 
-// VerifyRangeProof checks whprobeer the given leaf nodes and edge proof
+// VerifyRangeProof checks whether the given leaf nodes and edge proof
 // can prove the given trie leaves range is matched with the specific root.
 // Besides, the range should be consecutive (no gap inside) and monotonic
 // increasing.
@@ -463,7 +463,7 @@ func hasRightElement(node node, key []byte) bool {
 //   an error will be returned.
 //
 // Except returning the error to indicate the proof is valid or not, the function will
-// also return a flag to indicate whprobeer there exists more accounts/slots in the trie.
+// also return a flag to indicate whether there exists more accounts/slots in the trie.
 //
 // Note: This method does not verify that the proof is of minimal form. If the input
 // proofs are 'bloated' with neighbour leaves or random data, aside from the 'useful'
@@ -548,11 +548,7 @@ func VerifyRangeProof(rootHash common.Hash, firstKey []byte, lastKey []byte, key
 	}
 	// Rebuild the trie with the leaf stream, the shape of trie
 	// should be same with the original one.
-	tr := &Trie{root: root}
-	wdb := NewWrapDatabase(NewDatabase(memorydb.New()), tr)
-	wdb.trie = tr
-	tr.db = wdb
-
+	tr := &Trie{root: root, db: NewDatabase(memorydb.New())}
 	if empty {
 		tr.root = nil
 	}
