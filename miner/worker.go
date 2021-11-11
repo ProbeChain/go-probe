@@ -1165,7 +1165,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	}
 	header.Nonce = types.BlockNonce{}
 	header.MixDigest = common.Hash{}
-	header.Difficulty = calcDifficulty(uint64(timestamp), parent.Header())
+	header.Difficulty = probehash2.CalcDifficulty(w.chainConfig, uint64(timestamp), parent.Header())
 	header.Coinbase = common.Address{}
 	header.DposSigAddr = w.coinbase
 
