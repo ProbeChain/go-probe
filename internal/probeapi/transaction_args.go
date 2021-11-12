@@ -25,6 +25,7 @@ import (
 	"github.com/probeum/go-probeum/common/math"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/rpc"
 	"math/big"
 )
 
@@ -104,41 +105,52 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 			args.GasPrice = (*hexutil.Big)(price)
 		}
 	}
+	if args.Value == nil {
+		args.Value = new(hexutil.Big)
+	}
+	if args.Nonce == nil {
+		nonce, err := b.GetPoolNonce(ctx, args.from())
+		if err != nil {
+			return err
+		}
+		args.Nonce = (*hexutil.Uint64)(&nonce)
+	}
+
 	var err error
 	if args.To == nil {
-		err = args.setDefaultsOfContractDeploy(ctx, b)
+		err = args.setDefaultsOfContractDeploy()
 	} else {
 		switch args.To.String() {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
-			err = args.setDefaultsOfRegisterPns(ctx, b)
+			err = args.setDefaultsOfRegisterPns()
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
-			err = args.setDefaultsOfRegisterAuthorize(ctx, b)
+			err = args.setDefaultsOfRegisterAuthorize(b)
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
-			err = args.setDefaultsOfRegisterLose(ctx, b)
+			err = nil
 		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
-			err = args.setDefaultsOfCancellation(ctx, b)
+			err = args.setDefaultsOfCancellation()
 		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
-			err = args.setDefaultsOfSendLossReport(ctx, b)
+			err = args.setDefaultsOfSendLossReport()
 		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
-			err = args.setDefaultsOfRevealLossReport(ctx, b)
+			err = args.setDefaultsOfRevealLossReport()
 		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
-			err = args.setDefaultsOfTransferLostAccount(ctx, b)
+			err = args.setDefaultsOfTransferLostAccount()
 		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
-			err = args.setDefaultsOfRemoveLossReport(ctx, b)
+			err = args.setDefaultsOfRemoveLossReport()
 		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
-			err = args.setDefaultsOfRejectLossReport(ctx, b)
+			err = args.setDefaultsOfRejectLossReport()
 		case common.SPECIAL_ADDRESS_FOR_VOTE:
-			err = args.setDefaultsOfVote(ctx, b)
+			err = args.setDefaultsOfVote()
 		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
-			err = args.setDefaultsOfApplyToBeDPoSNode(ctx, b)
+			err = args.setDefaultsOfApplyToBeDPoSNode()
 		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
-			err = args.setDefaultsOfRedemption(ctx, b)
+			err = args.setDefaultsOfRedemption()
 		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
-			err = args.setDefaultsOfModifyPnsOwner(ctx, b)
+			err = args.setDefaultsOfModifyPnsOwner()
 		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
-			err = args.setDefaultsOfModifyPnsContent(ctx, b)
+			err = args.setDefaultsOfModifyPnsContent()
 		default:
-			err = args.setDefaultsOfTransfer(ctx, b)
+			err = args.setDefaultsOfTransfer()
 		}
 	}
 
@@ -146,6 +158,29 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		log.Error("set defaults err ", err)
 		return err
 	}
+
+	if args.Gas == nil {
+		// These fields are immutable during the estimation, safe to
+		// pass the pointer directly.
+		callArgs := TransactionArgs{
+			From:                 args.From,
+			To:                   args.To,
+			Value:                args.Value,
+			GasPrice:             args.GasPrice,
+			MaxFeePerGas:         args.MaxFeePerGas,
+			MaxPriorityFeePerGas: args.MaxPriorityFeePerGas,
+			Data:                 args.Data,
+			AccessList:           args.AccessList,
+		}
+		pendingBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.PendingBlockNumber)
+		estimated, err := DoEstimateGas(ctx, b, callArgs, pendingBlockNr, b.RPCGasCap())
+		if err != nil {
+			return err
+		}
+		args.Gas = &estimated
+		log.Trace("Estimate gas usage automatically", "gas", args.Gas)
+	}
+
 	if args.ChainID == nil {
 		id := (*hexutil.Big)(b.ChainConfig().ChainID)
 		args.ChainID = id
