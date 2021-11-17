@@ -275,23 +275,24 @@ func (c *Greatri) VerifyHeader(chain consensus.ChainHeaderReader, header *types.
 	if chain.GetHeader(header.Hash(), number) != nil {
 		return nil
 	}
-	parent, err := c.FindRealParentHeader(chain, header, nil, -1)
+	parent, err, diff := c.FindRealParentHeader(chain, header, nil, -1)
 	if err != nil {
 		return err
 	}
 	// Sanity checks passed, do a proper verification
-	return c.verifyHeader(chain, header, parent, false, seal, time.Now().Unix())
+	return c.verifyHeader(chain, header, parent, false, seal, time.Now().Unix(), diff)
 }
 
-func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header *types.Header, headers []*types.Header, index int) (*types.Header, error) {
+func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header *types.Header, headers []*types.Header, index int) (*types.Header, error, int64) {
 	var parent = header
+	var diff int64 = 1
 	for {
 		log.Debug("", "index: ", index)
 		if index > 0 && headers != nil {
 			parent = headers[index-1]
 			if parent.Hash() != headers[index].ParentHash || new(big.Int).Sub(headers[index].Number, parent.Number).Cmp(common.Big1) != 0 {
 				log.Debug("parent hash not equal : ", "num:", parent.Number.Uint64(), "diff:", new(big.Int).Sub(headers[index].Number, parent.Number), "parent:", parent.Hash().String(), "next:", headers[index].ParentHash.String())
-				return nil, consensus.ErrUnknownAncestor
+				return nil, consensus.ErrUnknownAncestor, diff
 			}
 			index--
 		} else if index == 0 {
@@ -302,13 +303,14 @@ func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header
 		}
 		if parent == nil {
 			log.Error("", "consensus.ErrUnknownAncestor: ", header.Difficulty.String())
-			return nil, consensus.ErrUnknownAncestor
+			return nil, consensus.ErrUnknownAncestor, diff
 		}
 		if !parent.IsVisual() {
-			return parent, nil
-		} else {
-			log.Debug("this is a visual block ", "num:", parent.Number.String())
+			return parent, nil, diff
 		}
+
+		log.Debug("this is a visual block ", "num:", parent.Number.String())
+		diff++
 
 	}
 }
@@ -380,18 +382,18 @@ func (c *Greatri) VerifyHeaders(chain consensus.ChainHeaderReader, headers []*ty
 }
 
 func (c *Greatri) verifyHeaderWorker(chain consensus.ChainHeaderReader, headers []*types.Header, seals []bool, index int, unixNow int64) error {
-	parent, err := c.FindRealParentHeader(chain, headers[index], headers, index)
+	parent, err, diff := c.FindRealParentHeader(chain, headers[index], headers, index)
 	if err != nil {
 		return err
 	}
-	return c.verifyHeader(chain, headers[index], parent, false, seals[index], unixNow)
+	return c.verifyHeader(chain, headers[index], parent, false, seals[index], unixNow, diff)
 }
 
 // verifyHeader checks whprobeer a header conforms to the consensus rules.The
 // caller may optionally pass in a batch of parents (ascending order) to avoid
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
-func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent *types.Header, uncle bool, seal bool, unixNow int64) error {
+func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent *types.Header, uncle bool, seal bool, unixNow int64, diff int64) error {
 	log.Trace("enter verifyHeader", "block number", header.Number, "seal", seal)
 	//return nil
 	// Ensure that the header's extra-data section is of a reasonable size
@@ -445,9 +447,8 @@ func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent
 		return err
 	}
 	// Verify that the block number is parent's +1
-	if diff := new(big.Int).Sub(header.Number, parent.Number); diff.Cmp(big.NewInt(1)) != 0 {
-		log.Info(" ErrInvalidNumber  ")
-		//return consensus.ErrInvalidNumber
+	if new(big.Int).Sub(header.Number, parent.Number).Cmp(big.NewInt(diff)) != 0 {
+		return consensus.ErrInvalidNumber
 	}
 	// Verify the engine specific seal securing the block
 	if seal {
