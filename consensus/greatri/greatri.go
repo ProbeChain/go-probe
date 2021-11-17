@@ -22,6 +22,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/crypto/secp256k1"
+
 	//"github.com/probeum/go-probeum/crypto/probecrypto"
 	//"github.com/probeum/go-probeum/crypto/secp256k1"
 	"github.com/probeum/go-probeum/log"
@@ -273,12 +275,42 @@ func (c *Greatri) VerifyHeader(chain consensus.ChainHeaderReader, header *types.
 	if chain.GetHeader(header.Hash(), number) != nil {
 		return nil
 	}
-	parent := chain.GetHeader(header.ParentHash, number-1)
-	if parent == nil {
-		return consensus.ErrUnknownAncestor
+	parent, err := c.FindRealParentHeader(chain, header, nil, -1)
+	if err != nil {
+		return err
 	}
 	// Sanity checks passed, do a proper verification
 	return c.verifyHeader(chain, header, parent, false, seal, time.Now().Unix())
+}
+
+func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header *types.Header, headers []*types.Header, index int) (*types.Header, error) {
+	var parent = header
+	for {
+		log.Debug("", "index: ", index)
+		if index > 0 && headers != nil {
+			parent = headers[index-1]
+			if parent.Hash() != headers[index].ParentHash || new(big.Int).Sub(headers[index].Number, parent.Number).Cmp(common.Big1) != 0 {
+				log.Debug("parent hash not equal : ", "num:", parent.Number.Uint64(), "diff:", new(big.Int).Sub(headers[index].Number, parent.Number), "parent:", parent.Hash().String(), "next:", headers[index].ParentHash.String())
+				return nil, consensus.ErrUnknownAncestor
+			}
+			index--
+		} else if index == 0 {
+			parent = chain.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
+			index--
+		} else {
+			parent = chain.GetHeader(parent.ParentHash, parent.Number.Uint64()-1)
+		}
+		if parent == nil {
+			log.Error("", "consensus.ErrUnknownAncestor: ", header.Difficulty.String())
+			return nil, consensus.ErrUnknownAncestor
+		}
+		if !parent.IsVisual() {
+			return parent, nil
+		} else {
+			log.Debug("this is a visual block ", "num:", parent.Number.String())
+		}
+
+	}
 }
 
 // VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers. The
@@ -348,14 +380,9 @@ func (c *Greatri) VerifyHeaders(chain consensus.ChainHeaderReader, headers []*ty
 }
 
 func (c *Greatri) verifyHeaderWorker(chain consensus.ChainHeaderReader, headers []*types.Header, seals []bool, index int, unixNow int64) error {
-	var parent *types.Header
-	if index == 0 {
-		parent = chain.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
-	} else if headers[index-1].Hash() == headers[index].ParentHash {
-		parent = headers[index-1]
-	}
-	if parent == nil {
-		return consensus.ErrUnknownAncestor
+	parent, err := c.FindRealParentHeader(chain, headers[index], headers, index)
+	if err != nil {
+		return err
 	}
 	return c.verifyHeader(chain, headers[index], parent, false, seals[index], unixNow)
 }
@@ -368,9 +395,16 @@ func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent
 	log.Trace("enter verifyHeader", "block number", header.Number, "seal", seal)
 	//return nil
 	// Ensure that the header's extra-data section is of a reasonable size
+
+	addr, err := c.RecoverOwner(header)
+	if err != nil || addr != header.DposSigAddr {
+		return fmt.Errorf("DposSigAddr err : %s > %s", addr.String(), header.DposSigAddr.String())
+	}
+
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
+
 	// Verify the header's timestamp
 	if !uncle {
 		if header.Time > uint64(unixNow+allowedFutureBlockTimeSeconds) {
@@ -401,7 +435,9 @@ func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent
 		if header.BaseFee != nil {
 			return fmt.Errorf("invalid baseFee before fork: have %d, expected 'nil'", header.BaseFee)
 		}
-		if err := misc.VerifyGaslimit(parent.GasLimit, header.GasLimit); err != nil {
+		err := misc.VerifyGaslimit(parent.GasLimit, header.GasLimit)
+		if err != nil {
+			log.Info("", err)
 			return err
 		}
 	} else if err := misc.VerifyEip1559Header(chain.Config(), parent, header); err != nil {
@@ -410,7 +446,8 @@ func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent
 	}
 	// Verify that the block number is parent's +1
 	if diff := new(big.Int).Sub(header.Number, parent.Number); diff.Cmp(big.NewInt(1)) != 0 {
-		return consensus.ErrInvalidNumber
+		log.Info(" ErrInvalidNumber  ")
+		//return consensus.ErrInvalidNumber
 	}
 	// Verify the engine specific seal securing the block
 	if seal {
@@ -632,13 +669,13 @@ func (c *Greatri) verifySeal(chain consensus.ChainHeaderReader, header *types.He
 	return nil
 }
 func (c *Greatri) RecoverOwner(header *types.Header) (common.Address, error) {
-	//pubkey, err := secp256k1.RecoverPubkey(crypto.Keccak256(GreatriRLP(header)), header.DposSig)
-	//if err == nil {
-	//	publicKey, err := probecrypto.UnmarshalPubkey(pubkey)
-	//	if err == nil {
-	//		return probecrypto.PubkeyToAddress(*publicKey), nil
-	//	}
-	//}
+	pubkey, err := secp256k1.RecoverPubkey(crypto.Keccak256(GreatriRLP(header)), header.DposSig)
+	if err == nil {
+		publicKey, err := crypto.UnmarshalPubkey(pubkey)
+		if err == nil {
+			return crypto.PubkeyToAddress(*publicKey), nil
+		}
+	}
 	return common.Address{}, nil
 }
 

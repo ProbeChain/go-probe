@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/params"
 
 	"github.com/probeum/go-probeum/crypto/secp256k1"
 	"io"
@@ -180,6 +181,24 @@ type Header struct {
 	LossState         [1024]byte  `json:"lossState" rlp:"optional"`
 }
 
+func (h *Header) String() string {
+	return "{" + "\n" +
+		"DposSigAddr" + h.DposSigAddr.String() + "\n" +
+		"DposSig" + common.Bytes2Hex(h.DposSig) + "\n" +
+		"DposAcksHash" + h.DposAcksHash.String() + "\n" +
+		"ParentHash" + h.ParentHash.String() + "\n" +
+		"UncleHash" + h.UncleHash.String() + "\n" +
+		"Coinbase" + h.Coinbase.String() + "\n" +
+		"Root" + h.Root.String() + "\n" +
+		"TxHash" + h.TxHash.String() + "\n" +
+		"ReceiptHash" + h.ReceiptHash.String() + "\n" +
+		"TxHash" + h.TxHash.String() + "\n" +
+		"Extra" + common.Bytes2Hex(h.Extra) + "\n" +
+		"MixDigest" + h.MixDigest.String() + "\n" +
+		"NUmber:" + h.Number.String() + "\n" +
+		"}"
+}
+
 // field type overrides for gencodec
 type headerMarshaling struct {
 	Difficulty *hexutil.Big
@@ -196,6 +215,10 @@ type headerMarshaling struct {
 // RLP encoding.
 func (h *Header) Hash() common.Hash {
 	return rlpHash(h)
+}
+
+func (h *Header) IsVisual() bool {
+	return bytes.Equal(h.Extra, params.VisualBlockExtra.Bytes())
 }
 
 var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size())

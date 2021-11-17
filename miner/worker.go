@@ -714,7 +714,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					w.delaySealBlockNumber.Add(w.effectBlockNumber, common.Big1)
 					log.Debug("received powAnswer, but not enough dposAck, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber)
+						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
 				} else {
 					log.Trace("i'm producer, but nothing to do", "timerDelaySealSetFlag", timerDelaySealSetFlag, "answer check", ret,
 						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
@@ -730,7 +730,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					timerSealDealine.Reset(consensus.Time2SealDeadline * time.Second)
 					log.Debug("received powAnswer, not my turn to produce, setup a timer to wait new block", "addr", w.coinbase,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber)
+						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
 				} else {
 					log.Trace("i'm dpos node, but nothing to do", "timerSealDealineSetFlag", timerSealDealineSetFlag, "answer check", ret,
 						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
@@ -1151,6 +1151,9 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 
 	parentBlockNum := new(big.Int).SetUint64(newBlockNumber.Uint64() - 1)
 	parent := w.chain.GetBlockByNumber(parentBlockNum.Uint64())
+
+	realParent := w.chain.GetRealBlockByNumber(parentBlockNum.Uint64())
+
 	timestamp := time.Now().Unix()
 	if parent.Time() >= uint64(timestamp) {
 		timestamp = int64(parent.Time() + 1)
@@ -1159,13 +1162,18 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	header := &types.Header{
 		ParentHash: parent.Hash(),
 		Number:     newBlockNumber,
-		GasLimit:   core.CalcGasLimit(parent.GasUsed(), parent.GasLimit(), w.config.GasFloor, w.config.GasCeil),
+		GasLimit:   core.CalcGasLimit(realParent.GasUsed(), realParent.GasLimit(), w.config.GasFloor, w.config.GasCeil),
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
 	}
+	if newBlockType == types.BlockTypeVisual {
+		header.Extra = params.VisualBlockExtra.Bytes()
+	}
 	header.Nonce = types.BlockNonce{}
 	header.MixDigest = common.Hash{}
-	header.Difficulty = probehash2.CalcDifficulty(w.chainConfig, uint64(timestamp), parent.Header())
+	header.Difficulty = probehash2.CalcDifficulty(w.chainConfig, uint64(timestamp), realParent.Header())
+
+	log.Info("", "calc Difficulty :  ", header.Difficulty)
 	header.Coinbase = common.Address{}
 	header.DposSigAddr = w.coinbase
 
@@ -1205,7 +1213,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 			}
 		}
 
-		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(currentEffectBlockNumber)
+		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(realParent.Number())
 	}
 
 	//process powAnswers and dposAcks
@@ -1224,7 +1232,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	}
 	w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, &ackCount)
 
-	answers := w.probe.BlockChain().GetLatestPowAnswer(currentEffectBlockNumber)
+	answers := w.probe.BlockChain().GetLatestPowAnswer(realParent.Number())
 	if answers == nil {
 		log.Error("Refusing to mine without PowAnswers, something error, need to check")
 		return nil
@@ -1246,6 +1254,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 
 	select {
 	case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now()}:
+		log.Info("", "extra： ", common.Bytes2Hex(block.Extra()))
 		log.Debug("Commit new block", "number", block.Number(), "blockHash", block.Hash(), "blockType", newBlockType,
 			"txs", w.current.tcount, "gas", block.GasUsed(), "fees", totalFees(block, receipts))
 		return block
