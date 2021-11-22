@@ -305,14 +305,15 @@ func (pool *TxPool) validateTxOfRedemption(tx *types.Transaction, sender *common
 		return err
 	}
 	var voteAccount = pool.currentState.GetStateObject(decode.Addr)
+	var senderAccount = pool.currentState.GetStateObject(*sender)
 	if voteAccount == nil {
 		return ErrAccountNotExists
 	}
 	if voteAccount.AccountType() != common.ACC_TYPE_OF_AUTHORIZE {
 		return ErrValidUnsupportedAccount
 	}
-	if voteAccount.AuthorizeAccount().Owner != *sender {
-		return errors.New("invalid owner")
+	if voteAccount.AuthorizeAccount().Owner != *sender && senderAccount.RegularAccount().VoteAccount != decode.Addr {
+		return errors.New("no voting records found")
 	}
 	if pool.chain.CurrentBlock().Number().Cmp(voteAccount.AuthorizeAccount().ValidPeriod) != 1 {
 		return errors.New("this election is not over")

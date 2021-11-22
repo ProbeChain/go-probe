@@ -1522,41 +1522,20 @@ func (s *StateDB) ModifyPnsContent(context vm.TxContext) {
 	}
 }
 
-//RedemptionForRegular redemption vote when target account is regular
-func (s *StateDB) RedemptionForRegular(addr common.Address) (common.Address, *big.Int) {
-	stateObj := s.getStateObject(addr)
-	var voteAccount common.Address
-	var voteValue *big.Int
-	if stateObj != nil {
-		stateObj.db.journal.append(redemptionForRegularChange{
-			account:     &stateObj.address,
-			voteAccount: stateObj.regularAccount.VoteAccount,
-			voteValue:   *stateObj.regularAccount.VoteValue,
-			value:       *stateObj.regularAccount.Value,
-		})
-		voteAccount = stateObj.regularAccount.VoteAccount
-		voteValue = stateObj.regularAccount.VoteValue
-		stateObj.regularAccount.Value = new(big.Int).Add(stateObj.regularAccount.Value, voteValue)
-		stateObj.regularAccount.VoteAccount = common.Address{}
-		stateObj.regularAccount.VoteValue = new(big.Int).SetUint64(0)
-	}
-	return voteAccount, voteValue
-}
-
 //RedemptionForAuthorize redemption vote when target account is authorize
-func (s *StateDB) RedemptionForAuthorize(addr common.Address, voteValue *big.Int) {
-	stateObj := s.getStateObject(addr)
-	if stateObj != nil {
-		stateObj.db.journal.append(redemptionForAuthorizeChange{
-			account:     &stateObj.address,
-			pledgeValue: *stateObj.authorizeAccount.PledgeValue,
-			voteValue:   *stateObj.authorizeAccount.VoteValue,
+func (s *StateDB) RedemptionForAuthorize(voteAddr common.Address, voteValue *big.Int) {
+	voteObj := s.getStateObject(voteAddr)
+	if voteObj != nil {
+		voteObj.db.journal.append(redemptionForAuthorizeChange{
+			account:     &voteObj.address,
+			pledgeValue: *voteObj.authorizeAccount.PledgeValue,
+			voteValue:   *voteObj.authorizeAccount.VoteValue,
 		})
 		if voteValue == nil {
-			stateObj.authorizeAccount.VoteValue = new(big.Int).Sub(stateObj.authorizeAccount.VoteValue, stateObj.authorizeAccount.PledgeValue)
-			stateObj.authorizeAccount.PledgeValue = new(big.Int).SetUint64(0)
+			voteObj.authorizeAccount.VoteValue = new(big.Int).Sub(voteObj.authorizeAccount.VoteValue, voteObj.authorizeAccount.PledgeValue)
+			voteObj.authorizeAccount.PledgeValue = new(big.Int).SetUint64(0)
 		} else {
-			stateObj.authorizeAccount.VoteValue = new(big.Int).Sub(stateObj.authorizeAccount.VoteValue, voteValue)
+			voteObj.authorizeAccount.VoteValue = new(big.Int).Sub(voteObj.authorizeAccount.VoteValue, voteValue)
 		}
 	}
 }
@@ -1573,8 +1552,17 @@ func (s *StateDB) Redemption(context vm.TxContext) {
 					s.RedemptionForAuthorize(decode.Addr, nil)
 				}
 				if decode.Addr == fromObj.regularAccount.VoteAccount {
-					s.RedemptionForRegular(context.From)
-					s.RedemptionForAuthorize(decode.Addr, fromObj.regularAccount.VoteValue)
+					fromObj.db.journal.append(redemptionForRegularChange{
+						account:     &fromObj.address,
+						voteAccount: fromObj.regularAccount.VoteAccount,
+						voteValue:   *fromObj.regularAccount.VoteValue,
+						value:       *fromObj.regularAccount.Value,
+					})
+					voteValue := fromObj.regularAccount.VoteValue
+					fromObj.regularAccount.Value = new(big.Int).Add(fromObj.regularAccount.Value, voteValue)
+					fromObj.regularAccount.VoteAccount = common.Address{}
+					fromObj.regularAccount.VoteValue = new(big.Int).SetUint64(0)
+					s.RedemptionForAuthorize(decode.Addr, voteValue)
 				}
 			}
 		}
