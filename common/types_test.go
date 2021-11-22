@@ -627,19 +627,6 @@ func TestBigToAddress5(t *testing.T) {
 	fmt.Println("get 1023：", a.GetMark(1023))
 }
 func TestBigToAddress6(t *testing.T) {
-	/*	a := byte(0)
-		fmt.Println("原始：", biu.ToBinaryString([]byte{a}))
-		flag := new(big.Int).SetUint64(1)
-
-		b := new(big.Int).SetBytes([]byte{a})
-		c := new(big.Int).Or(b, new(big.Int).Lsh(flag, uint(3)))
-		fmt.Println("设置1：", biu.ToBinaryString(c.Bytes()))
-		d := new(big.Int).SetBytes(c.Bytes())
-		fmt.Println("d：", d)
-
-		e := new(big.Int).Rsh(d, uint(1))
-		fmt.Println("e：", e)
-		fmt.Println("设置2：", biu.ToBinaryString(e.Bytes()))*/
 	c := LossType(0)
 	fmt.Println("start ", c)
 	fmt.Println("state", c.GetState())

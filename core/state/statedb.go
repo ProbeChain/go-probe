@@ -1340,7 +1340,7 @@ func (s *StateDB) RevealLossReport(blockNumber *big.Int, context vm.TxContext) {
 		lossStateObj.lossAccount.State = common.LOSS_STATE_OF_REVEAL
 		lossStateObj.lossAccount.Height = blockNumber
 		s.updateLossMark(lossStateObj.lossAccount.LastBits, false)
-		s.setRegularLossType(decode.OldAccount, common.LOSS_MARK_OF_LOSS_TYPE)
+		s.setRegularLossState(decode.OldAccount, common.LOSS_MARK_OF_LOSS_TYPE)
 		s.SubBalance(context.From, context.Value)
 		s.AddBalance(decode.OldAccount, context.Value)
 	}
@@ -1429,7 +1429,7 @@ func (s *StateDB) RejectLossReport(context vm.TxContext) {
 	if err := rlp.DecodeBytes(context.Data, &decode); err == nil {
 		lossStateObj := s.getStateObject(decode.Addr)
 		s.updateLossMark(lossStateObj.lossAccount.LastBits, false)
-		s.setRegularLossType(context.From, common.UNSUPPORTED_OF_LOSS_TYPE)
+		s.setRegularLossState(context.From, !common.LOSS_MARK_OF_LOSS_TYPE)
 		s.AddBalance(context.From, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS))
 		s.Suicide(decode.Addr)
 	}
@@ -1458,6 +1458,18 @@ func (s *StateDB) setRegularLossType(addr common.Address, lossType uint8) {
 			lossType: regularObj.regularAccount.LossType,
 		})
 		regularObj.regularAccount.LossType = regularObj.regularAccount.LossType.SetType(lossType)
+	}
+}
+
+//setRegularLossState set regular account loss state
+func (s *StateDB) setRegularLossState(addr common.Address, lossSate bool) {
+	regularObj := s.getStateObject(addr)
+	if regularObj != nil {
+		regularObj.db.journal.append(lossTypeChange{
+			account:  &regularObj.address,
+			lossType: regularObj.regularAccount.LossType,
+		})
+		regularObj.regularAccount.LossType = regularObj.regularAccount.LossType.SetState(lossSate)
 	}
 }
 

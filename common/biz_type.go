@@ -55,12 +55,12 @@ const (
 	AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_LOSS      uint64 = 1000000000000000000  //1 PRO
 
 	// loss reporing
-	MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT uint8  = 10  //min percentage of pledge for retrieve lost account
-	UNSUPPORTED_OF_LOSS_TYPE                           uint8  = 0   //loss reporting is not supported
-	MAX_CYCLE_HEIGHT_OF_LOSS_TYPE                      uint8  = 127 //max cycle height
-	LOSS_MARK_OF_LOSS_TYPE                             uint8  = 1   //loss reporting mark
-	CYCLE_HEIGHT_BLOCKS_OF_LOSS_TYPE                   uint64 = 100 //1 loss cycle height: (5760/day)*30day=172800 blocks  todo
-	THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT             uint64 = 50  //threshold height of remove loss report when loss report not reveal todo 两天的高度
+	MIN_PERCENTAGE_OF_PLEDGE_FOR_RETRIEVE_LOST_ACCOUNT uint8  = 10   //min percentage of pledge for retrieve lost account
+	UNSUPPORTED_OF_LOSS_TYPE                           uint8  = 0    //loss reporting is not supported
+	MAX_CYCLE_HEIGHT_OF_LOSS_TYPE                      uint8  = 127  //max cycle height
+	LOSS_MARK_OF_LOSS_TYPE                             bool   = true //loss reporting mark
+	CYCLE_HEIGHT_BLOCKS_OF_LOSS_TYPE                   uint64 = 100  //1 loss cycle height: (5760/day)*30day=172800 blocks  todo
+	THRESHOLD_HEIGHT_OF_REMOVE_LOSS_REPORT             uint64 = 50   //threshold height of remove loss report when loss report not reveal todo 两天的高度
 
 	//loss state
 	LOSS_STATE_OF_APPLY   uint8 = 0
