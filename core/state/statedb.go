@@ -1357,6 +1357,7 @@ func (s *StateDB) TransferLostAccount(context vm.TxContext) {
 			if lostObj != nil && benefitObj != nil {
 				if lostObj.Balance().Sign() > 0 {
 					s.AddBalance(benefitObj.Address(), lostObj.Balance())
+					s.SetBalance(lostObj.Address(), new(big.Int).SetUint64(0))
 				}
 				if lostObj.regularAccount.VoteValue.Sign() > 0 && lostObj.regularAccount.VoteAccount != (common.Address{}) {
 					if benefitObj.regularAccount.VoteValue.Sign() < 1 {

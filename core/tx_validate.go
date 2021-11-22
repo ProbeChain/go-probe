@@ -197,7 +197,7 @@ func (pool *TxPool) validateTxOfTransferLostAccount(tx *types.Transaction) error
 	}
 	currentBlockNumber := pool.chain.CurrentBlock().Number()
 	intervalHeight := new(big.Int).Sub(currentBlockNumber, lossStateObj.LossAccount().Height)
-	lossTypeHeight := new(big.Int).Mul(new(big.Int).SetUint64(uint64(lostStateObj.RegularAccount().LossType)), new(big.Int).SetUint64(common.CYCLE_HEIGHT_BLOCKS_OF_LOSS_TYPE))
+	lossTypeHeight := new(big.Int).Mul(new(big.Int).SetUint64(uint64(lossType.GetType())), new(big.Int).SetUint64(common.CYCLE_HEIGHT_BLOCKS_OF_LOSS_TYPE))
 	if intervalHeight.Cmp(lossTypeHeight) == -1 {
 		return errors.New("loss reporting cycle is not over")
 	}
