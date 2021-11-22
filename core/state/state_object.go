@@ -165,29 +165,29 @@ type Wrapper struct {
 }
 
 type RPCAccountInfo struct {
-	Owner         *common.Address  `json:"owner,omitempty"`
-	LostAccount   *common.Address  `json:"lostAccount,omitempty"`
-	NewAccount    *common.Address  `json:"newAccount,omitempty"`
-	VoteAccount   *common.Address  `json:"voteAccount,omitempty"`
-	LossMark      *common.LossMark `json:"lossMark,omitempty"`
-	VoteValue     string           `json:"voteValue,omitempty"`
-	PledgeValue   string           `json:"pledgeValue,omitempty"`
-	Value         string           `json:"value,omitempty"`
-	ValidPeriod   string           `json:"validPeriod,omitempty"`
-	Height        string           `json:"height,omitempty"`
-	Weight        string           `json:"weight,omitempty"`
-	DelegateValue string           `json:"delegateValue,omitempty"`
-	LossType      string           `json:"lossType,omitempty"`
-	LossState     string           `json:"lossState,omitempty"`
-	Nonce         string           `json:"nonce,omitempty"`
-	Type          string           `json:"type,omitempty"`
-	State         string           `json:"state,omitempty"`
-	Data          string           `json:"data,omitempty"`
-	InfoDigest    *common.Hash     `json:"infoDigest,omitempty"`
-	CodeHash      string           `json:"codeHash,omitempty"`
-	Info          string           `json:"info,omitempty"`
-	AccType       string           `json:"accType,omitempty"`
-	LastBits      string           `json:"lastBits,omitempty"`
+	Owner           *common.Address `json:"owner,omitempty"`
+	LostAccount     *common.Address `json:"lostAccount,omitempty"`
+	NewAccount      *common.Address `json:"newAccount,omitempty"`
+	VoteAccount     *common.Address `json:"voteAccount,omitempty"`
+	LossMarkedIndex *[]uint16       `json:"lossMarkedIndex,omitempty"`
+	VoteValue       string          `json:"voteValue,omitempty"`
+	PledgeValue     string          `json:"pledgeValue,omitempty"`
+	Value           string          `json:"value,omitempty"`
+	ValidPeriod     string          `json:"validPeriod,omitempty"`
+	Height          string          `json:"height,omitempty"`
+	Weight          string          `json:"weight,omitempty"`
+	DelegateValue   string          `json:"delegateValue,omitempty"`
+	LossType        string          `json:"lossType,omitempty"`
+	LossState       string          `json:"lossState,omitempty"`
+	Nonce           string          `json:"nonce,omitempty"`
+	Type            string          `json:"type,omitempty"`
+	State           string          `json:"state,omitempty"`
+	Data            string          `json:"data,omitempty"`
+	InfoDigest      *common.Hash    `json:"infoDigest,omitempty"`
+	CodeHash        string          `json:"codeHash,omitempty"`
+	Info            string          `json:"info,omitempty"`
+	AccType         string          `json:"accType,omitempty"`
+	LastBits        string          `json:"lastBits,omitempty"`
 }
 
 // DecodeRLP decode bytes to account
@@ -893,7 +893,8 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		accountInfo.InfoDigest = &s.lossAccount.InfoDigest
 		accountInfo.LastBits = strconv.Itoa(int(s.lossAccount.LastBits))
 	case common.ACC_TYPE_OF_LOSS_MARK:
-		accountInfo.LossMark = &s.lossMarkAccount.LossMark
+		lossMarkedIndex := s.lossMarkAccount.LossMark.GetMarkedIndex()
+		accountInfo.LossMarkedIndex = &lossMarkedIndex
 	}
 	return accountInfo
 }

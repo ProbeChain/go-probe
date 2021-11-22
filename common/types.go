@@ -501,13 +501,6 @@ func (enode *DposEnode) String() string {
 	return string([]byte(s)[i:])
 }
 
-func (a *LossMark) SetBytes(b []byte) {
-	if len(b) > len(a) {
-		b = b[len(b)-LossMarkLength:]
-	}
-	copy(a[LossMarkLength-len(b):], b)
-}
-
 //SetMark set the value of the specified index
 func (a *LossMark) SetMark(index uint, flag bool) error {
 	if index > (LossMarkBitLength - 1) {
@@ -521,7 +514,10 @@ func (a *LossMark) SetMark(index uint, flag bool) error {
 	} else {
 		b = new(big.Int).AndNot(num, new(big.Int).Lsh(mark, index))
 	}
-	a.SetBytes(b.Bytes())
+	dst := make([]byte, LossMarkLength)
+	src := b.Bytes()
+	copy(dst[LossMarkLength-len(src):], src)
+	copy(a[:], dst)
 	return nil
 }
 
@@ -531,6 +527,18 @@ func (a *LossMark) GetMark(index uint) bool {
 		return false
 	}
 	return new(big.Int).SetBytes(a[:]).Bit(int(index)) > 0
+}
+
+// GetMarkedIndex return the value of the marked index
+func (a *LossMark) GetMarkedIndex() []uint16 {
+	markInt := new(big.Int).SetBytes(a[:])
+	var ret []uint16
+	for i := 0; i < LossMarkBitLength; i++ {
+		if markInt.Bit(i) > 0 {
+			ret = append(ret, uint16(i))
+		}
+	}
+	return ret
 }
 
 //GetState return loss reporting status

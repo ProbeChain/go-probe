@@ -596,19 +596,20 @@ func TestBigToAddress3(t *testing.T) {
 }
 
 func TestBigToAddress4(t *testing.T) {
-	var a [4]byte
+	var a [128]byte
 	a[0] = 1
 	fmt.Println("start：", biu.ToBinaryString(a[:]))
 	b := new(big.Int).SetBytes(a[:])
 	//c := b|(1<<20)
 	flag := new(big.Int).SetUint64(1)
-	c := new(big.Int).Or(b, new(big.Int).Lsh(flag, 0))
-	fmt.Println("set loc[1], 0 -> 1：", biu.ToBinaryString(c.Bytes()))
-	fmt.Println("get loc[1]", c.Bit(0))
+	index := uint(0)
+	c := new(big.Int).Or(b, new(big.Int).Lsh(flag, index))
+	fmt.Printf("set loc[%d]:%s\n", index, biu.ToBinaryString(c.Bytes()))
+	fmt.Printf("get loc[%d]:%d\n", index, c.Bit(0))
 	d := new(big.Int).SetBytes(c.Bytes())
-	e := new(big.Int).AndNot(d, new(big.Int).Lsh(flag, 0)) //z = x &^ y
-	fmt.Println("set loc[1], 1 -> 0：", biu.ToBinaryString(e.Bytes()))
-	fmt.Println("get loc[1]", c.Bit(0))
+	e := new(big.Int).AndNot(d, new(big.Int).Lsh(flag, index)) //z = x &^ y
+	fmt.Printf("set loc[%d]:%s\n", index, biu.ToBinaryString(e.Bytes()))
+	fmt.Printf("get loc[%d]:%d\n", index, e.Bit(int(index)))
 	f := new(big.Int).SetBytes(e.Bytes())
 	//d:=(a<<4)>>7
 	fmt.Println(f.Bit(3))
@@ -617,14 +618,17 @@ func TestBigToAddress4(t *testing.T) {
 
 func TestBigToAddress5(t *testing.T) {
 	a := new(LossMark)
+	a[0] = 1
 	fmt.Println("start：", biu.ToBinaryString(a[:]))
-	a.SetMark(0, true)
+	a.SetMark(0, false)
+	fmt.Println(a.GetMarkedIndex())
 	fmt.Println("update 0：", biu.ToBinaryString(a[:]))
-	a.SetMark(1, true)
+	a.SetMark(0, true)
+	fmt.Println(a.GetMarkedIndex())
 	fmt.Println("update 1：", biu.ToBinaryString(a[:]))
-	fmt.Println("get 0：", a.GetMark(0))
-	fmt.Println("get 1：", a.GetMark(1))
-	fmt.Println("get 1023：", a.GetMark(1023))
+	a.SetMark(0, false)
+	fmt.Println(a.GetMarkedIndex())
+	fmt.Println("update 0：", biu.ToBinaryString(a[:]))
 }
 func TestBigToAddress6(t *testing.T) {
 	c := LossType(0)
