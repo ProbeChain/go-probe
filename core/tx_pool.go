@@ -558,44 +558,53 @@ func (pool *TxPool) local() map[common.Address]types.Transactions {
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	var err error
-	if tx.To() == nil {
-		err = pool.validateTxOfContractDeploy(tx, local)
-	} else {
+	var sender *common.Address
+	if sender, err = pool.validateSender(tx); err != nil {
+		return err
+	}
+	if tx.To() != nil {
 		switch tx.To().Hex() {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
 			common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
 			common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
-			err = pool.validateTxOfRegister(tx, local)
+			err = pool.validateTxOfRegister(tx, sender)
 		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
-			err = pool.validateTxOfCancellation(tx, local)
-		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
-			err = pool.validateTxOfSendLossReport(tx, local)
+			err = pool.validateTxOfCancellation(tx, sender)
 		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
-			err = pool.validateTxOfRevealLossReport(tx, local)
-		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
-			err = pool.validateTxOfTransferLostAccount(tx, local)
+			err = pool.validateTxOfRevealLossReport(tx)
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_BALANCE:
+			err = pool.validateTxOfTransferLostAccount(tx)
 		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
-			err = pool.validateTxOfRemoveLossReport(tx, local)
+			err = pool.validateTxOfRemoveLossReport(tx)
 		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
-			err = pool.validateTxOfRejectLossReport(tx, local)
+			err = pool.validateTxOfRejectLossReport(tx, sender)
 		case common.SPECIAL_ADDRESS_FOR_VOTE:
-			err = pool.validateTxOfVote(tx, local)
+			err = pool.validateTxOfVote(tx, sender)
 		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
-			err = pool.validateTxOfApplyToBeDPoSNode(tx, local)
+			err = pool.validateTxOfApplyToBeDPoSNode(tx, sender)
 		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
-			err = pool.validateTxOfRedemption(tx, local)
+			err = pool.validateTxOfRedemption(tx, sender)
 		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
-			err = pool.validateTxOfModifyPnsOwner(tx, local)
+			err = pool.validateTxOfModifyPnsOwner(tx, sender)
 		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
-			err = pool.validateTxOfModifyPnsContent(tx, local)
+			err = pool.validateTxOfModifyPnsContent(tx, sender)
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_LOSS_TYPE:
+			err = pool.validateTxOfModifyLossType(tx)
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_PNS,
+			common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_AUTHORIZE:
+			err = pool.validateTxOfTransferLostAssociatedAccount(tx)
+		case common.SPECIAL_ADDRESS_FOR_CANCELLATION_LOST_ACCOUNT:
+			err = pool.validateTxOfCancellationLossAccount(tx)
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_ASSET:
+			err = common.ErrReservedAddress
 		default:
-			err = pool.validateTxOfTransfer(tx, local)
+			err = pool.validateTxOfTransfer(tx)
 		}
 	}
 	if err != nil {
 		return err
 	}
-	return nil
+	return pool.validateGas(tx, local)
 }
 
 // add validates a transaction and inserts it into the non-executable queue for later

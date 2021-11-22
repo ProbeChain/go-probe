@@ -41,6 +41,10 @@ const (
 	//DposEnodeLength is the cheche length of dpos node
 	DposEnodeLength = 256
 	DposNodeLength  = 7
+	//LossMarkLength is the length of loss mark
+	LossMarkLength = 128
+	//LossMarkBitLength is the length of loss mark bits
+	LossMarkBitLength = LossMarkLength * 8
 )
 
 var (
@@ -205,6 +209,11 @@ type Address [AddressLength]byte
 
 type DposEnode [DposEnodeLength]byte
 
+type LossMark [LossMarkLength]byte
+
+//LossType loss reporting type bits[0]: loss reporting status,bits[1~7]:loss reporting period
+type LossType byte
+
 type DPoSAccount struct {
 	Enode DposEnode `json:"enode,omitempty"`
 	Owner Address   `json:"owner,omitempty"`
@@ -214,8 +223,7 @@ type DPoSCandidateAccount struct {
 	Enode       DposEnode
 	Owner       Address
 	VoteAccount Address
-	//Weight    *big.Int
-	VoteValue *big.Int
+	VoteValue   *big.Int
 }
 
 func BytesToAddress(b []byte) Address {
@@ -250,9 +258,14 @@ func IsHexAddress(s string) bool {
 // Bytes gets the string representation of the underlying address.
 func (a Address) Bytes() []byte { return a[:] }
 
-// Last12Bytes gets the string representation of the underlying address.
-func (a Address) Last12BytesToHash() Hash {
-	return BytesToHash(a[len(a.Bytes())-12:])
+// Last10BitsToUint intercepts last 10 bits to convert uint64
+func (a Address) Last10BitsToUint() uint64 {
+	last2Bytes := a.Bytes()[18:]
+	b := new(big.Int).SetBytes(last2Bytes)
+	c := new(big.Int).Lsh(b, 6)
+	d := new(big.Int).SetBytes(c.Bytes()[1:])
+	e := new(big.Int).Rsh(d, 6)
+	return e.Uint64()
 }
 
 // Hash converts an address to a hash by left-padding it with zeros.
@@ -488,6 +501,74 @@ func (enode *DposEnode) String() string {
 	return string([]byte(s)[i:])
 }
 
+func (a *LossMark) SetBytes(b []byte) {
+	if len(b) > len(a) {
+		b = b[len(b)-LossMarkLength:]
+	}
+	copy(a[LossMarkLength-len(b):], b)
+}
+
+//SetMark set the value of the specified index
+func (a *LossMark) SetMark(index uint, flag bool) error {
+	if index > (LossMarkBitLength - 1) {
+		return ErrIndexOutOfBounds
+	}
+	var b *big.Int
+	mark := new(big.Int).SetUint64(1)
+	num := new(big.Int).SetBytes(a[:])
+	if flag {
+		b = new(big.Int).Or(num, new(big.Int).Lsh(mark, index))
+	} else {
+		b = new(big.Int).AndNot(num, new(big.Int).Lsh(mark, index))
+	}
+	a.SetBytes(b.Bytes())
+	return nil
+}
+
+// GetMark return the value of the specified index
+func (a *LossMark) GetMark(index uint) bool {
+	if index > (LossMarkBitLength - 1) {
+		return false
+	}
+	return new(big.Int).SetBytes(a[:]).Bit(int(index)) > 0
+}
+
+//GetState return loss reporting status
+func (a *LossType) GetState() bool {
+	b := new(big.Int).SetUint64(uint64(*a))
+	return b.Bit(0) > 0
+}
+
+//SetState set loss reporting status
+func (a *LossType) SetState(flag bool) LossType {
+	var c *big.Int
+	mark := new(big.Int).SetUint64(1)
+	b := new(big.Int).SetUint64(uint64(*a))
+	if flag {
+		c = new(big.Int).Or(b, new(big.Int).Lsh(mark, 0))
+	} else {
+		c = new(big.Int).AndNot(b, new(big.Int).Lsh(mark, 0))
+	}
+	return LossType(c.Bytes()[0])
+}
+
+//GetType return loss reporting cycle time
+func (a *LossType) GetType() byte {
+	bytes := new(big.Int).Rsh(new(big.Int).SetUint64(uint64(*a)), 1).Bytes()
+	if len(bytes) == 0 {
+		return 0
+	}
+	return bytes[0]
+}
+
+//SetType set loss reporting cycle time
+func (a *LossType) SetType(period byte) LossType {
+	flag := a.GetState()
+	b := new(big.Int).Lsh(new(big.Int).SetUint64(uint64(period)), 1)
+	c := LossType(b.Bytes()[0])
+	return c.SetState(flag)
+}
+
 func InetAtoN(ip string) *big.Int {
 	ret := big.NewInt(0)
 	ret.SetBytes(net.ParseIP(ip).To4())
@@ -496,6 +577,10 @@ func InetAtoN(ip string) *big.Int {
 
 type IntDecodeType struct {
 	Num big.Int
+}
+
+type ByteDecodeType struct {
+	Num byte
 }
 
 type AddressDecodeType struct {
@@ -525,4 +610,21 @@ type PnsContentDecodeType struct {
 	PnsAddress Address
 	PnsType    byte
 	PnsData    string
+}
+
+type RegisterLossDecodeType struct {
+	LastBitsMark uint32
+	InfoDigest   Hash
+}
+
+type RevealLossReportDecodeType struct {
+	LossAccount Address //loss reporting address
+	OldAccount  Address //lost address
+	NewAccount  Address //beneficiary address
+	RandomNum   uint32  //random number
+}
+
+type AssociatedAccountDecodeType struct {
+	LossAccount       Address //loss reporting address
+	AssociatedAccount Address //associated address
 }

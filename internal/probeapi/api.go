@@ -17,6 +17,7 @@
 package probeapi
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -634,6 +635,20 @@ func (s *PublicBlockChainAPI) GetAccountInfo(ctx context.Context, address common
 		return nil, err
 	}
 	return stateDB.GetAccountInfo(address), stateDB.Error()
+}
+
+//GetAddressLastBitsToUint return address last 10 bits convert to uint64
+func (s *PublicBlockChainAPI) GetAddressLastBitsToUint(address common.Address) uint64 {
+	return address.Last10BitsToUint()
+}
+
+//CalcLossInfoDigests calculation loss reporting information digests
+func (s *PublicBlockChainAPI) CalcLossInfoDigests(lost, benefit common.Address, random uint32) common.Hash {
+	var buffer bytes.Buffer
+	buffer.Write(lost.Bytes())
+	buffer.Write(benefit.Bytes())
+	buffer.Write(new(big.Int).SetUint64(uint64(random)).Bytes())
+	return crypto.Keccak256Hash(buffer.Bytes())
 }
 
 func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*DPoSRpcData, error) {

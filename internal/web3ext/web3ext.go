@@ -593,6 +593,18 @@ web3._extend({
 			params: 2,
             inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
+        new web3._extend.Method({
+			name: 'getAddressLastBitsToUint',
+			call: 'probe_getAddressLastBitsToUint',
+			params: 1,
+            inputFormatter: [web3._extend.formatters.inputAddressFormatter]
+		}),
+        new web3._extend.Method({
+			name: 'calcLossInfoDigests',
+			call: 'probe_calcLossInfoDigests',
+			params: 3,
+            inputFormatter: [web3._extend.formatters.inputAddressFormatter, web3._extend.formatters.inputAddressFormatter, null]
+		}),
        new web3._extend.Method({
 			name: 'getDPOSList',
 			call: 'probe_getDPOSList',

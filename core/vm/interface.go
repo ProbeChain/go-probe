@@ -76,11 +76,15 @@ type StateDB interface {
 
 	ForEachStorage(common.Address, func(common.Hash, common.Hash) bool) error
 
+	CanLossMark(lastBitsMark uint32) error
+
 	Vote(context TxContext)
 
-	Register(context TxContext)
+	Register(blockNumber *big.Int, context TxContext)
 
 	Cancellation(context TxContext)
+
+	CancellationLoss(context TxContext)
 
 	Transfer(context TxContext)
 
@@ -90,13 +94,11 @@ type StateDB interface {
 
 	ModifyLossType(context TxContext)
 
-	SendLossReport(blockNumber *big.Int, context TxContext)
-
 	RevealLossReport(blockNumber *big.Int, context TxContext)
 
 	TransferLostAccount(context TxContext)
 
-	TransferLostAssetAccount(context TxContext)
+	TransferLostAssociatedAccount(context TxContext)
 
 	RemoveLossReport(context TxContext)
 

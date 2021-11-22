@@ -337,7 +337,7 @@ func (s *StateDB) DumpToCollector(c DumpCollector, conf *DumpConfig) (nextKey []
 				}
 				account = DumpAccount{
 					State:       hexutil.Uint8(wrapper.lossAccount.State),
-					LossAccount: &wrapper.lossAccount.LossAccount,
+					LossAccount: &wrapper.lossAccount.LostAccount,
 					NewAccount:  &wrapper.lossAccount.NewAccount,
 					Height:      hexutil.Big(*wrapper.lossAccount.Height),
 					InfoDigest:  wrapper.lossAccount.InfoDigest,

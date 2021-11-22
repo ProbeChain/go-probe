@@ -44,7 +44,7 @@ func TestDPosCandidate(t *testing.T) {
 	}
 	dPosCandidateAccounts := GetDPosCandidates().GetDPosCandidateAccounts()
 	for i, aa := range dPosCandidateAccounts {
-		fmt.Printf("%d, Owner:%s,Vote:%s,VoteValue:%d,Enode:%s\n", i+1, aa.Owner, aa.Vote, aa.VoteValue, parseIp(aa.Enode))
+		fmt.Printf("%d, Owner:%s,Vote:%s,VoteValue:%d,Enode:%s\n", i+1, aa.Owner, aa.VoteAccount, aa.VoteValue, parseIp(aa.Enode))
 	}
 
 	fmt.Println("---------presetDPosAccounts-----------")
@@ -80,7 +80,7 @@ func TestDPosCandidate2(t *testing.T) {
 
 	presetDPosAccounts3 := GetDPosCandidates().GetDPosCandidateAccounts()
 	for i, aa := range presetDPosAccounts3 {
-		fmt.Printf("%d, Owner:%s,Vote:%s,VoteValue:%d,Enode:%s\n", i+1, aa.Owner, aa.Vote, aa.VoteValue, parseIp(aa.Enode))
+		fmt.Printf("%d, Owner:%s,Vote:%s,VoteValue:%d,Enode:%s\n", i+1, aa.Owner, aa.VoteAccount, aa.VoteValue, parseIp(aa.Enode))
 	}
 }
 
@@ -98,6 +98,25 @@ func TestDPosCandidate3(t *testing.T) {
 	if adr1.Hash().Big().Cmp(adr2.Hash().Big()) == 1 {
 		fmt.Println("dfsfs")
 	}
+
+}
+
+func TestDPosCandidate4(t *testing.T) {
+	adr := common.HexToAddress("0x28fd633B72cA9828542A7dA8E3426E11C831D4Bd")
+	bytes := adr.Bytes()
+	fmt.Println(bytes) //[40 253 99 59 114 202 152 40 84 42 125 168 227 66 110 17 200 49 212 189]
+	last10Bytes := bytes[10:]
+	fmt.Println(last10Bytes) //[125 168 227 66 110 17 200 49 212 189]
+	a := new(big.Int).SetBytes(last10Bytes)
+	fmt.Println(a.Uint64())
+	fmt.Println(a.Uint64() % 1024)
+
+	bytes2 := []byte{255, 255, 255, 255, 255, 255, 255, 255}
+	str2 := new(big.Int).SetBytes(bytes2)
+	fmt.Println(str2.String())
+	fmt.Println(str2.Uint64()) //18446744073709551615
+	//18446744073709551615
+	fmt.Println(str2.Uint64() % 1024)
 
 }
 

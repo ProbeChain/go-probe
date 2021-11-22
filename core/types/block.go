@@ -177,7 +177,7 @@ type Header struct {
 
 	DPoSCandidateRoot common.Hash `json:"dPoSCandidateRoot"  rlp:"optional"`
 	DPoSRoot          common.Hash `json:"dPoSRoot" rlp:"optional"`
-	LossState         [1024]byte  `json:"lossState" rlp:"optional"`
+	//LossMark          common.LossMark `json:"lossState" rlp:"optional"`
 }
 
 // field type overrides for gencodec

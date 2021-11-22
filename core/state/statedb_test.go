@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	probe "github.com/probeum/go-probeum/crypto/probecrypto"
 	"math"
 	"math/big"
 	"math/rand"
@@ -90,14 +89,14 @@ func TestIntermediateLeaks(t *testing.T) {
 	}
 	var accountMap map[byte]common.Address
 	accountMap = make(map[byte]common.Address)
-	for i := byte(0); i < 5; i++ {
-		key, err := probe.GenerateKeyByType(0x00)
+	/*	for i := byte(0); i < 5; i++ {
+		key, err := crypto.GenerateKeyByType(0x00)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 		}
-		address := probe.PubkeyToAddress(key.PublicKey)
+		address := crypto.PubkeyToAddress(key.PublicKey)
 		accountMap[i] = address
-	}
+	}*/
 	// Modify the transient state.
 	for i := byte(0); i < 5; i++ {
 		modify(transState, accountMap[i], i, 0)

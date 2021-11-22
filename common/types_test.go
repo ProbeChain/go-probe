@@ -21,6 +21,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/imroc/biu"
 	"math/big"
 	"reflect"
 	"strings"
@@ -536,4 +537,120 @@ func TestHash_Format(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBigToAddress(t *testing.T) {
+	addr := HexToAddress("0x73a852B3A0f63397f9f0DA7b8A0f7FF72d790b08")
+	fmt.Println(addr.Bytes()) //[115 168 82 179 160 246 51 151 249 240 218 123 138 15 127 247 45 121 11 8]
+	last10Bytes := addr[10:]
+	fmt.Println(last10Bytes) //[218 123 138 15 127 247 45 121 11 8]
+	addr1 := BytesToAddress(last10Bytes)
+	fmt.Println("last10BytesToAddress:", addr1)
+	a := new(big.Int).SetBytes(last10Bytes)
+	fmt.Println(a.Uint64())
+	fmt.Println(a.Uint64() % 1024)
+	addr2 := BigToAddress(a)
+	fmt.Println("BigToAddress:", addr2)
+	//first10Bytes := addr2[:10]
+	first10Bytes := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	fmt.Println(first10Bytes)
+	fmt.Println(new(big.Int).SetBytes(first10Bytes))
+	fmt.Println(addr2[10:])
+}
+
+func TestBigToAddress2(t *testing.T) {
+	addr := HexToAddress("0x897638B555Fa1584965A1E1c4d4302264ac9432b")
+	fmt.Println(addr.Bytes()) //[115 168 82 179 160 246 51 151 249 240 218 123 138 15 127 247 45 121 11 8]
+	last10Bytes := addr[19:]
+	fmt.Println(last10Bytes) //[218 123 138 15 127 247 45 121 11 8]
+	addr1 := BytesToAddress(last10Bytes)
+	fmt.Println("last10BytesToAddress:", addr1)
+	a := new(big.Int).SetBytes(last10Bytes)
+	addr2 := BigToAddress(a)
+	fmt.Println("BigToAddress:", addr2)
+
+}
+
+func TestBigToAddress3(t *testing.T) {
+	lost := HexToAddress("0x897638B555Fa1584965A1E1c4d4302264ac9432b")
+
+	//beni := HexToAddress("0x28fd633B72cA9828542A7dA8E3426E11C831D4Bd")
+	/*	var buffer bytes.Buffer
+		buffer.WriteString(lost.String())
+		buffer.WriteString(beni.String())
+		buffer.WriteString(strconv.Itoa(int(uint32(123456))))
+		h := md5.New()
+		h.Write([]byte(buffer.String()))
+		fmt.Println(buffer.String())
+		fmt.Println(hex.EncodeToString(h.Sum(nil)))*/
+	//flag := new(big.Int).SetUint64(1)
+	bytes := lost.Bytes()[18:]
+	fmt.Println("start：", biu.ToBinaryString(bytes)) //[01000011 00101011]
+	a := new(big.Int).SetBytes(bytes)
+	b := new(big.Int).Lsh(a, 6)
+	c := new(big.Int).SetBytes(b.Bytes()[1:])
+	fmt.Println(biu.ToBinaryString(c.Bytes())) //[11001010 11000000]
+	d := new(big.Int).Rsh(c, 6)
+	fmt.Println(biu.ToBinaryString(d.Bytes()))
+	fmt.Println(d.String())
+}
+
+func TestBigToAddress4(t *testing.T) {
+	var a [4]byte
+	a[0] = 1
+	fmt.Println("start：", biu.ToBinaryString(a[:]))
+	b := new(big.Int).SetBytes(a[:])
+	//c := b|(1<<20)
+	flag := new(big.Int).SetUint64(1)
+	c := new(big.Int).Or(b, new(big.Int).Lsh(flag, 0))
+	fmt.Println("set loc[1], 0 -> 1：", biu.ToBinaryString(c.Bytes()))
+	fmt.Println("get loc[1]", c.Bit(0))
+	d := new(big.Int).SetBytes(c.Bytes())
+	e := new(big.Int).AndNot(d, new(big.Int).Lsh(flag, 0)) //z = x &^ y
+	fmt.Println("set loc[1], 1 -> 0：", biu.ToBinaryString(e.Bytes()))
+	fmt.Println("get loc[1]", c.Bit(0))
+	f := new(big.Int).SetBytes(e.Bytes())
+	//d:=(a<<4)>>7
+	fmt.Println(f.Bit(3))
+	//new(big.Int).Lsh(f, uint(1023)).
+}
+
+func TestBigToAddress5(t *testing.T) {
+	a := new(LossMark)
+	fmt.Println("start：", biu.ToBinaryString(a[:]))
+	a.SetMark(0, true)
+	fmt.Println("update 0：", biu.ToBinaryString(a[:]))
+	a.SetMark(1, true)
+	fmt.Println("update 1：", biu.ToBinaryString(a[:]))
+	fmt.Println("get 0：", a.GetMark(0))
+	fmt.Println("get 1：", a.GetMark(1))
+	fmt.Println("get 1023：", a.GetMark(1023))
+}
+func TestBigToAddress6(t *testing.T) {
+	/*	a := byte(0)
+		fmt.Println("原始：", biu.ToBinaryString([]byte{a}))
+		flag := new(big.Int).SetUint64(1)
+
+		b := new(big.Int).SetBytes([]byte{a})
+		c := new(big.Int).Or(b, new(big.Int).Lsh(flag, uint(3)))
+		fmt.Println("设置1：", biu.ToBinaryString(c.Bytes()))
+		d := new(big.Int).SetBytes(c.Bytes())
+		fmt.Println("d：", d)
+
+		e := new(big.Int).Rsh(d, uint(1))
+		fmt.Println("e：", e)
+		fmt.Println("设置2：", biu.ToBinaryString(e.Bytes()))*/
+	c := LossType(0)
+	fmt.Println("start ", c)
+	fmt.Println("state", c.GetState())
+	d := c.SetState(true)
+	fmt.Println("state", d.GetState())
+	fmt.Println("start ", d)
+	fmt.Println("type d", d.GetType(), "num", d)
+	e := d.SetType(2)
+	fmt.Println("type e", e.GetType(), "num", e)
+	f := d.SetType(127)
+	fmt.Println("type f", f.GetType(), "num", f)
+	g := f.SetState(false)
+	fmt.Println("type g", g.GetType(), "num", g)
 }
