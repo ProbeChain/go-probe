@@ -1368,6 +1368,14 @@ func (s *StateDB) TransferLostAccount(context vm.TxContext) {
 						})
 						benefitObj.regularAccount.VoteAccount = lostObj.regularAccount.VoteAccount
 						benefitObj.regularAccount.VoteValue = lostObj.regularAccount.VoteValue
+
+						lostObj.db.journal.append(lostAccountVoteChange{
+							account:     &lostObj.address,
+							voteAccount: lostObj.regularAccount.VoteAccount,
+							voteValue:   *lostObj.regularAccount.VoteValue,
+						})
+						lostObj.regularAccount.VoteAccount = common.Address{}
+						lostObj.regularAccount.VoteValue = new(big.Int).SetUint64(0)
 					}
 				}
 			}

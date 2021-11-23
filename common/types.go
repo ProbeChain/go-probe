@@ -557,7 +557,10 @@ func (a *LossType) SetState(flag bool) LossType {
 	} else {
 		c = new(big.Int).AndNot(b, new(big.Int).Lsh(mark, 0))
 	}
-	return LossType(c.Bytes()[0])
+	if c.Sign() > 0 {
+		return LossType(c.Bytes()[0])
+	}
+	return LossType(0)
 }
 
 //GetType return loss reporting cycle time
@@ -573,7 +576,12 @@ func (a *LossType) GetType() byte {
 func (a *LossType) SetType(period byte) LossType {
 	flag := a.GetState()
 	b := new(big.Int).Lsh(new(big.Int).SetUint64(uint64(period)), 1)
-	c := LossType(b.Bytes()[0])
+	var c LossType
+	if b.Sign() > 0 {
+		c = LossType(b.Bytes()[0])
+	} else {
+		c = LossType(0)
+	}
 	return c.SetState(flag)
 }
 
