@@ -2710,6 +2710,7 @@ func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
 
 }
 func (bc *BlockChain) updateP2pDposNodes() {
+	return;
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
 	epoch := bc.chainConfig.Dpos.Epoch
