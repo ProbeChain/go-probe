@@ -642,6 +642,9 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				}
 			}
 
+		case sideChainBlock := <-w.chainSideCh:
+			log.Trace("new side block", "block number", sideChainBlock.Block.Number())
+
 		case ack := <-w.dposAckCh:
 			log.Trace("receive ack", "blockNumber", ack.DposAck.Number, "type", ack.DposAck.AckType, "sig", hex.EncodeToString(ack.DposAck.WitnessSig))
 			if w.visualBlockNumber.Uint64() != ack.DposAck.Number.Uint64() {
