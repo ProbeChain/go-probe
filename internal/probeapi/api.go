@@ -21,8 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/core/rawdb"
-
 	"math/big"
 	"strings"
 	"time"
@@ -585,17 +583,24 @@ func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 	return &PublicBlockChainAPI{b}
 }
 
-type DPoSRpcData struct {
+type DPosRpcData struct {
 	Enode string
 	Owner common.Address
 }
 
+type DPosCandidateRpcData struct {
+	Enode       string
+	Owner       common.Address
+	VoteAccount common.Address
+	VoteValue   *big.Int
+}
+
 // DposAccounts the chain dpos nodes
-func (api *PublicBlockChainAPI) DposAccounts(number rpc.BlockNumber) []*DPoSRpcData {
+func (api *PublicBlockChainAPI) DposAccounts(number rpc.BlockNumber) []*DPosRpcData {
 	dposAccounts := api.b.DposAccounts(number)
-	data := make([]*DPoSRpcData, 0, len(dposAccounts))
+	data := make([]*DPosRpcData, 0, len(dposAccounts))
 	for _, account := range dposAccounts {
-		data = append(data, &DPoSRpcData{
+		data = append(data, &DPosRpcData{
 			Enode: string(account.Enode[:]),
 			Owner: account.Owner,
 		})
@@ -651,38 +656,22 @@ func (s *PublicBlockChainAPI) CalcLossInfoDigests(lost, benefit common.Address, 
 	return crypto.Keccak256Hash(buffer.Bytes())
 }
 
-func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*DPoSRpcData, error) {
-	state, _, err := s.b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
+//GetDPOSList return dPos node list
+func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*DPosRpcData, error) {
+	header, err := s.b.HeaderByNumberOrHash(ctx, blockNrOrHash)
+	if err != nil {
+		return nil, err
+	}
+	epoch := s.b.ChainConfig().Dpos.Epoch
+	confirmNumber := common.GetLastConfirmPoint(header.Number.Uint64(), epoch)
+	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.BlockNumber(confirmNumber))
 	if state == nil || err != nil {
 		return nil, err
 	}
-	block := s.b.CurrentBlock()
-	number := block.NumberU64()
-	var epoch uint64
-	if s.b.ChainConfig().Dpos == nil {
-		log.Crit("Failed to writ dpos on write block", "err", s.b.ChainConfig().Dpos)
-	} else {
-		epoch = s.b.ChainConfig().Dpos.Epoch
-	}
-	dposNo := number - 1 - (number-1)%epoch
-	dposAccounts := rawdb.ReadDPos(state.Database().TrieDB().DiskDB(), dposNo)
-	data := make([]*DPoSRpcData, 0, len(dposAccounts))
-	for _, account := range dposAccounts {
-		s := string(account.Enode[:])
-		i := strings.Index(s, "enode://")
-		data = append(data, &DPoSRpcData{
-			Enode: string([]byte(s)[i:]),
-			Owner: account.Owner,
-		})
-	}
-	return data, nil
-}
-
-func (s *PublicBlockChainAPI) GetDPOSByBlockNumber(blockNumber rpc.BlockNumber) ([]*DPoSRpcData, error) {
-	dposAccounts := s.b.GetDPOSByBlockNumber(blockNumber)
-	data := make([]*DPoSRpcData, 0, len(dposAccounts))
-	for _, account := range dposAccounts {
-		data = append(data, &DPoSRpcData{
+	dPosAccounts := state.GetDPosAccounts(common.CalcDPosNodeRoundId(confirmNumber, epoch))
+	data := make([]*DPosRpcData, 0, len(dPosAccounts))
+	for _, account := range dPosAccounts {
+		data = append(data, &DPosRpcData{
 			Enode: account.Enode.String(),
 			Owner: account.Owner,
 		})
@@ -690,16 +679,22 @@ func (s *PublicBlockChainAPI) GetDPOSByBlockNumber(blockNumber rpc.BlockNumber) 
 	return data, nil
 }
 
-func (s *PublicBlockChainAPI) GetDPOSCandidate() (interface{}, error) {
-	dposCandidateAccounts := s.b.GetDPOSCandidate()
-	data := make([]string, 0, len(dposCandidateAccounts))
-	for _, account := range dposCandidateAccounts {
-		data = append(data, "{"+
-			"Enode:"+account.Enode.String(),
-			"Owner:"+account.Owner.String(),
-			"VoteAddress:"+account.VoteAccount.String(),
-			"VoteValue:"+account.VoteValue.String(),
-			"}")
+//GetDPOSCandidate return dPos candidate node list
+func (s *PublicBlockChainAPI) GetDPOSCandidate(ctx context.Context) ([]*DPosCandidateRpcData, error) {
+	curBlockNumber := s.b.CurrentBlock().Header().Number.Uint64()
+	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.BlockNumber(curBlockNumber))
+	if state == nil || err != nil {
+		return nil, err
+	}
+	dPosAccounts := state.GetDPosCandidateAccounts(common.CalcDPosNodeRoundId(curBlockNumber, s.b.ChainConfig().Dpos.Epoch))
+	data := make([]*DPosCandidateRpcData, 0, len(dPosAccounts))
+	for _, account := range dPosAccounts {
+		data = append(data, &DPosCandidateRpcData{
+			Enode:       account.Enode.String(),
+			Owner:       account.Owner,
+			VoteAccount: account.VoteAccount,
+			VoteValue:   account.VoteValue,
+		})
 	}
 	return data, nil
 }

@@ -80,7 +80,7 @@ type StateDB interface {
 
 	Vote(context TxContext)
 
-	Register(blockNumber *big.Int, context TxContext)
+	Register(context TxContext)
 
 	Cancellation(context TxContext)
 
@@ -94,7 +94,7 @@ type StateDB interface {
 
 	ModifyLossType(context TxContext)
 
-	RevealLossReport(blockNumber *big.Int, context TxContext)
+	RevealLossReport(context TxContext)
 
 	TransferLostAccount(context TxContext)
 

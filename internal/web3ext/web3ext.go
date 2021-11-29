@@ -609,13 +609,7 @@ web3._extend({
 			name: 'getDPOSList',
 			call: 'probe_getDPOSList',
 			params: 1,
-            inputFormatter: [null]
-		}),
-       new web3._extend.Method({
-			name: 'getDPOSByBlockNumber',
-			call: 'probe_getDPOSByBlockNumber',
-			params: 1,
-            inputFormatter: [null]
+            inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
 		}),
        new web3._extend.Method({
 			name: 'getDPOSCandidate',

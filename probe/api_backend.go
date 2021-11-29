@@ -358,19 +358,3 @@ func (b *ProbeAPIBackend) StateAtTransaction(ctx context.Context, block *types.B
 func (b *ProbeAPIBackend) Exist(addr common.Address) bool {
 	return b.TxPool().Exist(addr)
 }
-
-func (b *ProbeAPIBackend) GetDPOSByBlockNumber(blockNumber rpc.BlockNumber) []*common.DPoSAccount {
-	var epoch = b.probe.blockchain.Config().Dpos.Epoch
-	var number = uint64(blockNumber.Int64())
-	dposNo := number - 1 - (number-1)%epoch
-	nodes := rawdb.ReadDPos(b.ChainDb(), dposNo)
-	data := make([]*common.DPoSAccount, 0, len(nodes))
-	for index, _ := range nodes {
-		data = append(data, &nodes[index])
-	}
-	return data
-}
-
-func (b *ProbeAPIBackend) GetDPOSCandidate() []common.DPoSCandidateAccount {
-	return state.GetDPosCandidates().GetDPosCandidateAccounts()
-}

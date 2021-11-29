@@ -645,3 +645,35 @@ func TestBigToAddress6(t *testing.T) {
 	g := f.SetState(false)
 	fmt.Println("type g", g.GetType(), "num", g)
 }
+
+func TestDpos(t *testing.T) {
+	epoch := uint64(60)
+	number := uint64(1)
+	/*	fmt.Println("lastPoint:", GetLastConfirmPoint(number, epoch))
+		fmt.Println("currPoint:", GetCurrentConfirmPoint(number, epoch))
+		fmt.Println("roundId:", CalcDPosNodeRoundId(number, epoch))*/
+
+	lastConfirmNumber := GetLastConfirmPoint(number, epoch)
+	lastRoundId := CalcDPosNodeRoundId(lastConfirmNumber, epoch)
+	fmt.Printf("current block beblog dPos：confirmNumber：%d，roundId：%d\n", lastConfirmNumber, lastRoundId)
+
+	confirmNumber := GetCurrentConfirmPoint(number, epoch)
+	confirmRoundId := CalcDPosNodeRoundId(confirmNumber, epoch)
+	//confirmRoundId2 := CalcDPosNodeRoundId(number, epoch)
+	fmt.Printf("confirmNumber：%d，roundId：%d\n", confirmNumber, confirmRoundId)
+	//fmt.Printf("confirmNumber：%d，roundId2：%d\n", confirmNumber, confirmRoundId2)
+	if number >= confirmNumber {
+		fmt.Printf("next block beblog dPos：confirmNumber：%d，roundId：%d\n", confirmNumber, confirmRoundId)
+	} else {
+		fmt.Printf("next block beblog dPos：confirmNumber：%s，roundId：%d\n", "nil", confirmRoundId)
+	}
+
+	/*	if number <= confirmNumber {
+			fmt.Printf("next block beblog dPos candidate：confirmNumber：%d，roundId：%d\n", number, confirmRoundId2)
+		} else {
+			fmt.Printf("next block beblog dPos candidate：confirmNumber：%d，roundId：%d\n", number, confirmRoundId2)
+		}*/
+
+	//if number
+
+}

@@ -54,7 +54,7 @@ func TestUpdateLeaks(t *testing.T) {
 		}
 	}
 
-	root := state.IntermediateRoot(false, nil)
+	root := state.IntermediateRoot(false)
 	if err := state.Database().TrieDB().Commit(root, false, nil); err != nil {
 		t.Errorf("can not commit trie %v to persistent database", root.Hex())
 	}
@@ -102,7 +102,7 @@ func TestIntermediateLeaks(t *testing.T) {
 		modify(transState, accountMap[i], i, 0)
 	}
 	// Write modifications to trie.
-	transState.IntermediateRoot(false, nil)
+	transState.IntermediateRoot(false)
 
 	// Overwrite all the data with new values in the transient database.
 	for i := byte(0); i < 5; i++ {

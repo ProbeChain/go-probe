@@ -99,7 +99,6 @@ const (
 	maxChainPowAnswers  = 256
 	maxChainDposAcks    = 256
 	maxUnclePowAnswer   = 5
-	confirmDpos         = 64
 	powAnswerUncheck    = 0
 	powAnswerLegal      = 1
 	powAnswerIllegal    = 2
@@ -503,19 +502,6 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	if bc.genesisBlock == nil {
 		return nil, ErrNoGenesis
 	}
-
-	//init Genesis from db
-	block := bc.genesisBlock
-	number := block.NumberU64()
-	epoch := chainConfig.Dpos.Epoch
-	dposNo := number + 1 - (number+1)%epoch
-	//dposNodesKey := common.GetDposNodesKey(dposNo, dposHash)
-	dposAccountList := rawdb.ReadDPos(db, dposNo)
-
-	chainConfig.Dpos = new(params.DposConfig)
-	chainConfig.Dpos.DposList = dposAccountList
-	chainConfig.Dpos.Epoch = epoch
-	log.Info("Initialised chain configuration AND DPOSNODES")
 
 	var nilBlock *types.Block
 	bc.currentBlock.Store(nilBlock)
@@ -1725,7 +1711,6 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	// should be written atomically. BlockBatch is used for containing all components.
 	blockBatch := bc.db.NewBatch()
 	rawdb.WriteTd(blockBatch, block.Hash(), block.NumberU64(), externTd)
-	bc.writeDposNodes(state)
 	rawdb.WriteBlock(blockBatch, block)
 	rawdb.WriteReceipts(blockBatch, block.Hash(), block.NumberU64(), receipts)
 	rawdb.WritePreimages(blockBatch, state.Preimages())
@@ -1740,10 +1725,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	}
 
 	triedb := bc.stateCache.TrieDB()
-	//log.Info("Writing dPos nodes with block，root hash:%x")
-	//fmt.Printf("Writing dPos nodes with block，root hash:%x\n", root)
 
-	bc.updateP2pDposNodes()
+	bc.updateP2pDposNodes(state)
 
 	// If we're running an archive node, always flush
 	//triedb.CommitForNew(hashes, false, nil)
@@ -2673,55 +2656,16 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 	return 0, err
 }
 
-func (bc *BlockChain) writeDposNodes(stateDB *state.StateDB) {
-	block := bc.CurrentBlock()
-	number := block.NumberU64()
-	if number == 0 {
-		return
-	}
-	epoch := bc.chainConfig.Dpos.Epoch
-	confirmBlockNum := epoch / 2
-	if epoch > confirmDpos {
-		confirmBlockNum = confirmDpos
-	}
-	arrivedRound := number%((number/epoch+1)*epoch-confirmBlockNum) == 0
-	if arrivedRound {
-		presetDPosAccounts := state.GetDPosCandidates().GetPresetDPosAccounts()
-		if presetDPosAccounts == nil {
-			log.Error("No candidate was elected")
-			return
-		}
-		factor := number + confirmBlockNum + epoch - 1
-		dPosNo := factor - factor%epoch
-		rawdb.WriteDPos(bc.db, dPosNo, presetDPosAccounts)
-		block.Header().DPoSRoot = state.BuildHashForDPos(presetDPosAccounts)
-		for _, presetDPos := range presetDPosAccounts {
-			log.Info(fmt.Sprintf("WriteDPos,dPosNo:%d,Owner:%s, Enode:%s\n", dPosNo, presetDPos.Owner, presetDPos.Enode.String()))
-		}
-	}
-	dPosCandidateAccounts := state.GetDPosCandidates().GetDPosCandidateAccounts()
-	rawdb.WriteDPosCandidate(bc.db, dPosCandidateAccounts)
-	block.Header().DPoSCandidateRoot = state.BuildHashForDPosCandidate(dPosCandidateAccounts)
-	log.Info(fmt.Sprintf("WriteDPosCandidate, size:%d\n", len(dPosCandidateAccounts)))
-
-	/*	for _, presetDPos := range dPosCandidateAccounts {
-		fmt.Printf("WriteDPosCandidate,Owner:%s,Vote:%s, VoteValue:%d,Enode:%s\n", presetDPos.Owner, presetDPos.Vote, presetDPos.VoteValue, presetDPos.Enode.String())
-	}*/
-
-}
-func (bc *BlockChain) updateP2pDposNodes() {
+func (bc *BlockChain) updateP2pDposNodes(stateDB *state.StateDB) {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
 	epoch := bc.chainConfig.Dpos.Epoch
-
 	confirmBlockNum := epoch / 2
-	if epoch > confirmDpos {
-		confirmBlockNum = confirmDpos
+	if epoch > common.DPosNodeIntervalConfirmPoint {
+		confirmBlockNum = common.DPosNodeIntervalConfirmPoint
 	}
-
 	if number > 0 {
-		arrivedRound := number%((number/epoch+1)*epoch-confirmBlockNum) == 0
-		if arrivedRound {
+		if common.IsConfirmPoint(block.NumberU64(), epoch) {
 			curDposAccounts := bc.GetDposAccounts(number)
 			nextDposAccounts := bc.GetNextDposAccounts(number)
 			for _, da1 := range nextDposAccounts {
@@ -2733,7 +2677,7 @@ func (bc *BlockChain) updateP2pDposNodes() {
 					}
 				}
 				if !find {
-					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", string(da1.Enode[:]))
+					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", da1.Enode.String())
 					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
 					if err != nil {
 						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
@@ -2773,24 +2717,21 @@ func (bc *BlockChain) updateP2pDposNodes() {
 
 // GetDposAccounts get latest dpos nodes
 func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
-	index := number / bc.chainConfig.Dpos.Epoch
-
-	accounts := bc.dposAccounts[index]
+	epoch := bc.chainConfig.Dpos.Epoch
+	confirmPointNumber := common.GetLastConfirmPoint(number, epoch)
+	accounts := bc.dposAccounts[confirmPointNumber]
 	if len(accounts) != 0 {
 		return accounts
 	}
-
 	// The blocks haven't been synchronized yet but we got the answers first
-	block := bc.GetBlockByNumber(number)
+	block := bc.GetBlockByNumber(confirmPointNumber)
 	if block != nil {
-		epoch := bc.chainConfig.Dpos.Epoch
 		stateDB, _ := bc.StateAt(block.Root())
-		accounts = stateDB.GetDposAccounts(block.Root(), number, epoch)
-		bc.dposAccounts[index] = accounts // cache it
+		accounts = stateDB.GetDPosAccounts(common.CalcDPosNodeRoundId(confirmPointNumber, epoch))
+		bc.dposAccounts[confirmPointNumber] = accounts // cache it
 	} else {
 		log.Debug("DPoSAccount", "blockNumber is nil", number)
 	}
-
 	return accounts
 }
 
@@ -2801,22 +2742,17 @@ func (bc *BlockChain) GetDposAccountSize(number uint64) int {
 
 // GetNextDposAccounts get next dpos nodes
 func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
-	index := (number + confirmDpos) / bc.chainConfig.Dpos.Epoch
-
-	accounts := bc.dposAccounts[index]
-	if accounts != nil {
-		return accounts
+	epoch := bc.chainConfig.Dpos.Epoch
+	confirmPointNumber := common.GetCurrentConfirmPoint(number, epoch)
+	if confirmPointNumber <= number {
+		// The blocks haven't been synchronized yet but we got the answers first
+		block := bc.GetBlockByNumber(confirmPointNumber)
+		if block != nil {
+			stateDB, _ := bc.StateAt(block.Root())
+			return stateDB.GetDPosAccounts(common.CalcDPosNodeRoundId(confirmPointNumber, epoch))
+		}
 	}
-
-	// The blocks haven't been synchronized yet but we got the answers first
-	block := bc.GetBlockByNumber(number)
-	if block != nil {
-		epoch := bc.chainConfig.Dpos.Epoch
-		stateDB, _ := bc.StateAt(block.Root())
-		accounts = stateDB.GetNextDposAccounts(block.Root(), number, epoch)
-		bc.dposAccounts[index] = accounts // cache it
-	}
-	return accounts
+	return nil
 }
 
 // GetNextDposAccountSize get next dpos nodes size
@@ -2826,16 +2762,10 @@ func (bc *BlockChain) GetNextDposAccountSize(number uint64) int {
 
 // GetSealDposAccount get seal dpos account
 func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
-	var num uint64
-	if number == 0 {
-		num = 0
-	} else {
-		num = number - 1
-	}
-	accounts := bc.GetDposAccounts(num)
+	accounts := bc.GetDposAccounts(number)
 	if len(accounts) != 0 {
 		size := uint64(len(accounts))
-		return accounts[num%bc.chainConfig.Dpos.Epoch%size]
+		return accounts[number%bc.chainConfig.Dpos.Epoch%size]
 	}
 	return nil
 }

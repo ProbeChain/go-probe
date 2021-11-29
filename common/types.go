@@ -27,23 +27,25 @@ import (
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
-	"net"
 	"reflect"
 	"strings"
 )
 
 // Lengths of hashes and addresses in bytes.
 const (
-	// HashLength is the expected length of the hash
+	//HashLength is the expected length of the hash
 	HashLength = 32
-	// AddressLength is the expected length of the address
+	//AddressLength is the expected length of the address
 	AddressLength = 20
-	//DposEnodeLength is the cheche length of dpos node
-	DposEnodeLength = 256
-	DposNodeLength  = 7
-	//LossMarkLength is the length of loss mark
+	//DPosEnodeLength is the expected length of dPos enode
+	DPosEnodeLength = 256
+	//DPosNodeLength is the expected length of dPos node
+	DPosNodeLength = 7
+	//DPosNodeIntervalConfirmPoint is the dPos node confirm point
+	DPosNodeIntervalConfirmPoint = 64
+	//LossMarkLength is the expected length of loss mark
 	LossMarkLength = 128
-	//LossMarkBitLength is the length of loss mark bits
+	//LossMarkBitLength is the expected length of loss mark bits
 	LossMarkBitLength = LossMarkLength * 8
 )
 
@@ -207,7 +209,7 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 // Address represents the 25 byte address of an Probeum account.
 type Address [AddressLength]byte
 
-type DposEnode [DposEnodeLength]byte
+type DposEnode [DPosEnodeLength]byte
 
 type LossMark [LossMarkLength]byte
 
@@ -348,9 +350,9 @@ func (a *Address) SetBytes(b []byte) {
 
 func (n *DposEnode) SetBytes(b []byte) {
 	if len(b) > len(n) {
-		b = b[len(b)-DposEnodeLength:]
+		b = b[len(b)-DPosEnodeLength:]
 	}
-	copy(n[DposEnodeLength-len(b):], b)
+	copy(n[DPosEnodeLength-len(b):], b)
 }
 
 // MarshalText returns the hex representation of a.
@@ -572,7 +574,7 @@ func (a *LossType) GetType() byte {
 	return bytes[0]
 }
 
-//SetType set loss reporting cycle time
+//SetType set loss reporting cycle period time
 func (a *LossType) SetType(period byte) LossType {
 	flag := a.GetState()
 	b := new(big.Int).Lsh(new(big.Int).SetUint64(uint64(period)), 1)
@@ -585,10 +587,57 @@ func (a *LossType) SetType(period byte) LossType {
 	return c.SetState(flag)
 }
 
-func InetAtoN(ip string) *big.Int {
-	ret := big.NewInt(0)
-	ret.SetBytes(net.ParseIP(ip).To4())
-	return ret
+//CalcDPosNodeRoundId calculation DPos node round id
+func CalcDPosNodeRoundId(blockNumber, dPosEpoch uint64) uint64 {
+	if blockNumber == 0 {
+		return blockNumber
+	}
+	confirmBlockNum := dPosEpoch / 2
+	if dPosEpoch > DPosNodeIntervalConfirmPoint {
+		confirmBlockNum = DPosNodeIntervalConfirmPoint
+	}
+	factor := blockNumber + confirmBlockNum + dPosEpoch - 1
+	return factor - factor%dPosEpoch
+}
+
+//IsConfirmPoint calculation DPos node confirm point
+func IsConfirmPoint(blockNumber, dPosEpoch uint64) bool {
+	confirmBlockNum := dPosEpoch / 2
+	if dPosEpoch > DPosNodeIntervalConfirmPoint {
+		confirmBlockNum = DPosNodeIntervalConfirmPoint
+	}
+	return blockNumber%((blockNumber/dPosEpoch+1)*dPosEpoch-confirmBlockNum) == 0
+}
+
+//GetLastConfirmPoint returns the dPos last confirmation point at the specified height
+func GetLastConfirmPoint(blockNumber, dPosEpoch uint64) uint64 {
+	if blockNumber <= dPosEpoch {
+		return 0
+	}
+	confirmBlockNum := dPosEpoch / 2
+	if dPosEpoch > DPosNodeIntervalConfirmPoint {
+		confirmBlockNum = DPosNodeIntervalConfirmPoint
+	}
+	return (blockNumber-1)/dPosEpoch*dPosEpoch - confirmBlockNum
+}
+
+//GetCurrentConfirmPoint returns the dPos current confirmation point at the specified height
+func GetCurrentConfirmPoint(blockNumber, dPosEpoch uint64) uint64 {
+	lastConfirmPoint := GetLastConfirmPoint(blockNumber, dPosEpoch)
+	var currConfirmPoint uint64
+	if lastConfirmPoint == 0 {
+		confirmBlockNum := dPosEpoch / 2
+		if dPosEpoch > DPosNodeIntervalConfirmPoint {
+			confirmBlockNum = DPosNodeIntervalConfirmPoint
+		}
+		currConfirmPoint = dPosEpoch - confirmBlockNum
+	} else {
+		currConfirmPoint = lastConfirmPoint + dPosEpoch
+	}
+	/*	if currConfirmPoint > blockNumber {
+		currConfirmPoint = blockNumber
+	}*/
+	return currConfirmPoint
 }
 
 type IntDecodeType struct {

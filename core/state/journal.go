@@ -266,6 +266,12 @@ type (
 		info      []byte
 		voteValue big.Int
 	}
+
+	dPosCandidateChange struct {
+		account               *common.Address
+		dPosCandidateAccounts dPosCandidateAccounts
+		roundId               uint64
+	}
 )
 
 func (i sendLossReportChange) revert(db *StateDB) {
@@ -523,24 +529,22 @@ func (ch redemptionForAuthorizeChange) dirtied() *common.Address {
 
 func (ch dPosCandidateForAuthorizeChange) revert(s *StateDB) {
 	authorizeAccount := s.getStateObject(*ch.account).authorizeAccount
-
-	dPosCandidateAccount := common.DPoSCandidateAccount{}
-	dPosCandidateAccount.Owner = authorizeAccount.Owner
-	dPosCandidateAccount.VoteAccount = *ch.account
-	dPosCandidateAccount.VoteValue = &ch.voteValue
-	if len(ch.info) == 0 {
-		dPosCandidateAccount.Enode = common.BytesToDposEnode(authorizeAccount.Info)
-		GetDPosCandidates().DeleteDPosCandidate(dPosCandidateAccount)
-	} else {
-		dPosCandidateAccount.Enode = common.BytesToDposEnode(ch.info)
-		GetDPosCandidates().UpdateDPosCandidate(dPosCandidateAccount)
-	}
 	authorizeAccount.VoteValue = &ch.voteValue
 	authorizeAccount.Info = ch.info
 
 }
 
 func (ch dPosCandidateForAuthorizeChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch dPosCandidateChange) revert(s *StateDB) {
+	dPosListAccount := s.getStateObject(*ch.account).dPosListAccount
+	dPosListAccount.DPosCandidateAccounts = ch.dPosCandidateAccounts
+	dPosListAccount.RoundId = ch.roundId
+}
+
+func (ch dPosCandidateChange) dirtied() *common.Address {
 	return ch.account
 }
 

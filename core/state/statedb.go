@@ -20,7 +20,6 @@ package state
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/core/globalconfig"
 	"github.com/probeum/go-probeum/core/vm"
 	"math/big"
 	"net"
@@ -352,22 +351,22 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 	return common.Hash{}
 }
 
-// GetDposAccounts retrieves a dpos list
-func (s *StateDB) GetDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
-	//dposHash := GetHash(root, s.Database())[6]
-	dposNo := number + 1 - (number+1)%epoch
-	log.Info(fmt.Sprintf("GetDposAccounts,number:%d, epoch:%d, dposNo:%d\n", number, epoch, dposNo))
-	nodes := rawdb.ReadDPos(s.db.TrieDB().DiskDB(), dposNo)
-	data := make([]*common.DPoSAccount, 0, len(nodes))
-	for index, _ := range nodes {
-		data = append(data, &nodes[index])
+// GetDPosAccounts return dPos node list
+func (s *StateDB) GetDPosAccounts(roundId uint64) []*common.DPoSAccount {
+	dPosListAccount := s.GetDPosListAccountStateObj().dPosListAccount
+	if roundId == dPosListAccount.RoundId {
+		return dPosListAccount.DPosCandidateAccounts.GetPresetDPosAccounts()
 	}
-	return data
+	return nil
 }
 
-// GetNextDposAccounts retrieves a dpos list todo
-func (s *StateDB) GetNextDposAccounts(root common.Hash, number uint64, epoch uint64) []*common.DPoSAccount {
-	return s.GetDposAccounts(root, number+epoch, epoch)
+// GetDPosCandidateAccounts return dPos candidate node list
+func (s *StateDB) GetDPosCandidateAccounts(roundId uint64) dPosCandidateAccounts {
+	dPosListAccount := s.GetDPosListAccountStateObj().dPosListAccount
+	if roundId == dPosListAccount.RoundId {
+		return dPosListAccount.DPosCandidateAccounts
+	}
+	return nil
 }
 
 // Database retrieves the low level database supporting the lower level trie ops.
@@ -932,7 +931,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 // IntermediateRoot computes the current root hash of the state trie.
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.
-func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool, blockNumber *big.Int) common.Hash {
+func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	// Finalise all the dirty storage states and write them into the tries
 	s.Finalise(deleteEmptyObjects)
 
@@ -987,9 +986,6 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool, blockNumber *big.Int
 	if metrics.EnabledExpensive {
 		defer func(start time.Time) { s.AccountHashes += time.Since(start) }(time.Now())
 	}
-	if blockNumber != nil {
-		s.updateDPosHashByBlockNumber(blockNumber.Uint64())
-	}
 	return s.trie.Hash()
 }
 
@@ -1015,7 +1011,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (common.Hash, error) {
 		return common.Hash{}, fmt.Errorf("commit aborted due to earlier error: %v", s.dbErr)
 	}
 	// Finalize any pending changes and merge everything into the tries
-	s.IntermediateRoot(deleteEmptyObjects, nil)
+	s.IntermediateRoot(deleteEmptyObjects)
 
 	// Commit objects to the trie, measuring the elapsed time
 	codeWriter := s.db.TrieDB().DiskDB().NewBatch()
@@ -1190,6 +1186,16 @@ func (s *StateDB) GetLoss(addr common.Address) *LossAccount {
 	return nil
 }
 
+//GetDPosListAccountStateObj get dPos list account state object
+func (s *StateDB) GetDPosListAccountStateObj() *stateObject {
+	addr := common.HexToAddress(common.SPECIAL_ADDRESS_FOR_DPOS)
+	stateObject := s.getStateObject(addr)
+	if stateObject == nil {
+		stateObject, _ = s.createObjectByAccType(addr, common.ACC_TYPE_OF_DPOS)
+	}
+	return stateObject
+}
+
 //ModifyLossType modify regular account loss type
 func (s *StateDB) ModifyLossType(context vm.TxContext) {
 	decode := new(common.ByteDecodeType)
@@ -1230,7 +1236,7 @@ func (s *StateDB) Vote(context vm.TxContext) {
 }
 
 //Register register account
-func (s *StateDB) Register(blockNumber *big.Int, context vm.TxContext) {
+func (s *StateDB) Register(context vm.TxContext) {
 	var newAddress common.Address
 	pledgeAmount := uint64(0)
 	switch context.To.Hex() {
@@ -1258,7 +1264,7 @@ func (s *StateDB) Register(blockNumber *big.Int, context vm.TxContext) {
 		rlp.DecodeBytes(context.Data, &decode)
 		obj, _ := s.createObjectByAccType(newAddress, common.ACC_TYPE_OF_LOSS)
 		obj.lossAccount.State = common.LOSS_STATE_OF_APPLY
-		obj.lossAccount.Height = blockNumber
+		obj.lossAccount.Height = context.BlockNumber
 		obj.lossAccount.InfoDigest = decode.InfoDigest
 		obj.lossAccount.LastBits = decode.LastBitsMark
 		s.updateLossMark(obj.lossAccount.LastBits, true)
@@ -1324,7 +1330,7 @@ func (s *StateDB) CanLossMark(lastBitsMark uint32) error {
 }
 
 //RevealLossReport reveal loss reporting
-func (s *StateDB) RevealLossReport(blockNumber *big.Int, context vm.TxContext) {
+func (s *StateDB) RevealLossReport(context vm.TxContext) {
 	decode := new(common.RevealLossReportDecodeType)
 	if err := rlp.DecodeBytes(context.Data, &decode); err == nil {
 		lossStateObj := s.getStateObject(decode.LossAccount)
@@ -1338,7 +1344,7 @@ func (s *StateDB) RevealLossReport(blockNumber *big.Int, context vm.TxContext) {
 		lossStateObj.lossAccount.LostAccount = decode.OldAccount
 		lossStateObj.lossAccount.NewAccount = decode.NewAccount
 		lossStateObj.lossAccount.State = common.LOSS_STATE_OF_REVEAL
-		lossStateObj.lossAccount.Height = blockNumber
+		lossStateObj.lossAccount.Height = context.BlockNumber
 		s.updateLossMark(lossStateObj.lossAccount.LastBits, false)
 		s.setRegularLossState(decode.OldAccount, common.LOSS_MARK_OF_LOSS_TYPE)
 		s.SubBalance(context.From, context.Value)
@@ -1596,9 +1602,36 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 				VoteAccount: decode.VoteAddress,
 				VoteValue:   authorizeAccount.VoteValue,
 			}
-			GetDPosCandidates().AddDPosCandidate(dPosCandidateAccount)
+
+			dPosListAccountStateObj := s.GetDPosListAccountStateObj()
+			dPosListAccountStateObj.db.journal.append(dPosCandidateChange{
+				account:               &dPosListAccountStateObj.address,
+				dPosCandidateAccounts: dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts,
+				roundId:               dPosListAccountStateObj.dPosListAccount.RoundId,
+			})
+			roundId := common.CalcDPosNodeRoundId(context.BlockNumber.Uint64(), context.DPosEpoch)
+			if roundId != dPosListAccountStateObj.dPosListAccount.RoundId {
+				dPosListAccountStateObj.dPosListAccount.RoundId = roundId
+				dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts = *new(dPosCandidateAccounts)
+			}
+			dPosListAccountStateObj.dPosListAccount.AddDPosCandidate(dPosCandidateAccount)
 		}
 	}
+}
+
+//InitDPosListAccount initialization DPos list account
+func (s *StateDB) InitDPosListAccount(accounts []common.DPoSAccount) {
+	log.Info(fmt.Sprintf("initialization DPos list account"))
+	dPosListAccountStateObj := s.GetDPosListAccountStateObj()
+	dPosCandidateAccounts := make([]common.DPoSCandidateAccount, len(accounts))
+	for i, v := range accounts {
+		dPosCandidateAccounts[i] = common.DPoSCandidateAccount{
+			Enode: v.Enode,
+			Owner: v.Owner,
+		}
+	}
+	dPosListAccountStateObj.dPosListAccount.RoundId = uint64(0)
+	dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts = dPosCandidateAccounts
 }
 
 //newAccountDataByAddr create new account by account type
@@ -1667,6 +1700,15 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountT
 			}
 		}
 		return newLossMarkAccount(s, addr, *data), false
+	case common.ACC_TYPE_OF_DPOS:
+		data := new(DPosListAccount)
+		if enc != nil {
+			if err := rlp.DecodeBytes(enc, data); err != nil {
+				log.Error("Failed to decode state object", "addr", addr, "err", err)
+				return nil, true
+			}
+		}
+		return newDPoSListAccount(s, addr, *data), false
 	default:
 		return nil, true
 	}
@@ -1674,24 +1716,4 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountT
 
 func (s *StateDB) GetStateDbTrie() *Trie {
 	return &s.trie
-}
-
-//UpdateDPosHash todo
-func (s *StateDB) UpdateDPosHash(dPosHash common.Hash) {
-	//s.trie.dPosHash = dPosHash
-}
-
-func (s *StateDB) updateDPosHashByBlockNumber(number uint64) {
-	epoch := globalconfig.Epoch
-	// update dPos hash when first block of per round
-	if number > epoch && (number-1)%epoch == 0 {
-		accounts := s.GetDposAccounts(common.Hash{}, number, epoch)
-		curDPosAccounts := make([]common.DPoSAccount, len(accounts))
-		for i, account := range accounts {
-			curDPosAccounts[i] = *account
-		}
-		dPosHash := BuildHashForDPos(curDPosAccounts)
-		//fmt.Printf("writeDPosNodes: %d, %x\n", number, dPosHash)
-		s.UpdateDPosHash(dPosHash)
-	}
 }

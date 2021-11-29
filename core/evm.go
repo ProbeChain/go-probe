@@ -126,18 +126,18 @@ func ContractDeploy(db vm.StateDB, sender common.Address) {
 }
 
 //CallDB call database for update operation
-func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
+func CallDB(db vm.StateDB, txContext vm.TxContext) {
 	switch txContext.To.Hex() {
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
 		common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
 		common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
-		db.Register(blockNumber, txContext)
+		db.Register(txContext)
 	case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
 		db.Cancellation(txContext)
 	case common.SPECIAL_ADDRESS_FOR_CANCELLATION_LOST_ACCOUNT:
 		db.CancellationLoss(txContext)
 	case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
-		db.RevealLossReport(blockNumber, txContext)
+		db.RevealLossReport(txContext)
 	case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_BALANCE:
 		db.TransferLostAccount(txContext)
 	case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:

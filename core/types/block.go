@@ -174,10 +174,6 @@ type Header struct {
 
 	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
 	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
-
-	DPoSCandidateRoot common.Hash `json:"dPoSCandidateRoot"  rlp:"optional"`
-	DPoSRoot          common.Hash `json:"dPoSRoot" rlp:"optional"`
-	//LossMark          common.LossMark `json:"lossState" rlp:"optional"`
 }
 
 // field type overrides for gencodec

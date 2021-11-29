@@ -269,7 +269,7 @@ func runCmd(ctx *cli.Context) error {
 
 	if ctx.GlobalBool(DumpFlag.Name) {
 		statedb.Commit(true)
-		statedb.IntermediateRoot(true, runtimeConfig.BlockNumber)
+		statedb.IntermediateRoot(true)
 		fmt.Println(string(statedb.Dump(nil)))
 	}
 
