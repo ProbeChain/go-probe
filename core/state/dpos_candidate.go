@@ -4,12 +4,16 @@ import (
 	"github.com/probeum/go-probeum/common"
 )
 
+//dPosCandidateAccounts  dPos candidate account definition of array
 type dPosCandidateAccounts []common.DPoSCandidateAccount
 
+//Swap swap element
 func (d dPosCandidateAccounts) Swap(i, j int) { d[i], d[j] = d[j], d[i] }
 
+//Len return the element length
 func (d dPosCandidateAccounts) Len() int { return len(d) }
 
+//Less compare element
 func (d dPosCandidateAccounts) Less(i, j int) bool {
 	if d[i].VoteValue == nil && d[j].VoteValue != nil {
 		return false
@@ -24,6 +28,7 @@ func (d dPosCandidateAccounts) Less(i, j int) bool {
 	return cmpRet > 0
 }
 
+//GetPresetDPosAccounts return preset dPos node information
 func (d dPosCandidateAccounts) GetPresetDPosAccounts() []*common.DPoSAccount {
 	flag := byte(0)
 	presetDPoSAccountMap := make(map[common.DposEnode]*byte)
