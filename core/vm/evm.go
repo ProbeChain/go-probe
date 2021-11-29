@@ -235,17 +235,19 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	}
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(to)
-	/*	if !common.IsSpecialAddress(to.Hex()) && !evm.StateDB.Exist(to) {
-		if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
-			// Calling a non existing account, don't do anything, but ping the tracer
-			if evm.Config.Debug && evm.depth == 0 {
-				evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
-				evm.Config.Tracer.CaptureEnd(ret, 0, 0, nil)
-			}
-			return nil, gas, nil
+	if !common.IsSpecialAddress(to.Hex()) && !evm.StateDB.Exist(to) {
+		/*		if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
+				// Calling a non existing account, don't do anything, but ping the tracer
+				if evm.Config.Debug && evm.depth == 0 {
+					evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
+					evm.Config.Tracer.CaptureEnd(ret, 0, 0, nil)
+				}
+				return nil, gas, nil
+			}*/
+		if isPrecompile {
+			evm.StateDB.CreateContractAccount(to)
 		}
-		evm.StateDB.CreateAccount(to)
-	}*/
+	}
 
 	evm.TxContext.BlockNumber = evm.Context.BlockNumber
 	evm.TxContext.DPosEpoch = evm.chainConfig.Dpos.Epoch
