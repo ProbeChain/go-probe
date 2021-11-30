@@ -43,6 +43,8 @@ const (
 	DPosNodeLength = 64
 	//DPosNodeIntervalConfirmPoint is the dPos node confirm point
 	DPosNodeIntervalConfirmPoint = 64
+	//DPosNodePrefix the prefix of dPos node connection information
+	DPosNodePrefix = "enode://"
 	//LossMarkLength is the expected length of loss mark
 	LossMarkLength = 128
 	//LossMarkBitLength is the expected length of loss mark bits
@@ -499,7 +501,7 @@ func (enode *DposEnode) MarshalJSON() ([]byte, error) {
 
 func (enode *DposEnode) String() string {
 	s := string(enode[:])
-	i := strings.Index(s, "enode://")
+	i := strings.Index(s, DPosNodePrefix)
 	if i == -1 {
 		return ""
 	}

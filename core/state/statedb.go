@@ -1609,8 +1609,6 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 				VoteAccount: decode.VoteAddress,
 				VoteValue:   authorizeAccount.VoteValue,
 			}
-			log.Debug("NodeInfo", decode.NodeInfo, "Enode", dPosCandidateAccount.Enode)
-
 			dPosListAccountStateObj := s.GetDPosListAccountStateObj()
 			dPosListAccountStateObj.db.journal.append(dPosCandidateChange{
 				account:               &dPosListAccountStateObj.address,

@@ -11,6 +11,7 @@ import (
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/rlp"
 	"math/big"
+	"strings"
 )
 
 //validateTxOfRegister validate transaction for register PNS、authorize、lose account
@@ -253,6 +254,9 @@ func (pool *TxPool) validateTxOfApplyToBeDPoSNode(tx *types.Transaction, sender 
 	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
 	}
+	if len(decode.NodeInfo) == 0 || strings.Index(decode.NodeInfo, common.DPosNodePrefix) == -1 {
+		return errors.New("illegal node info format")
+	}
 	voteAccount := pool.currentState.GetStateObject(decode.VoteAddress)
 	if voteAccount == nil {
 		return ErrAccountNotExists
@@ -355,6 +359,9 @@ func (pool *TxPool) validateTxOfModifyPnsContent(tx *types.Transaction, sender *
 	decode := new(common.PnsContentDecodeType)
 	if err := rlp.DecodeBytes(tx.Data(), &decode); err != nil {
 		return err
+	}
+	if len(decode.PnsData) == 0 {
+		return errors.New("pns data cannot be empty")
 	}
 	var pnsAccount = pool.currentState.GetStateObject(decode.PnsAddress)
 	if pnsAccount == nil {
