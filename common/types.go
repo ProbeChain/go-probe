@@ -498,6 +498,9 @@ func (enode *DposEnode) MarshalJSON() ([]byte, error) {
 }
 
 func (enode *DposEnode) String() string {
+	if enode == nil {
+		return ""
+	}
 	s := string(enode[:])
 	i := strings.Index(s, "enode://")
 	return string([]byte(s)[i:])

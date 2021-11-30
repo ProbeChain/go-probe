@@ -678,12 +678,11 @@ func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context) ([]*DPosRpcData, 
 
 //GetDPOSCandidate return dPos candidate node list
 func (s *PublicBlockChainAPI) GetDPOSCandidate(ctx context.Context) ([]*DPosCandidateRpcData, error) {
-	curBlockNumber := s.b.CurrentBlock().Header().Number.Uint64()
-	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.BlockNumber(curBlockNumber))
+	state, header, err := s.b.StateAndHeaderByNumber(ctx, rpc.LatestBlockNumber)
 	if state == nil || err != nil {
 		return nil, err
 	}
-	dPosAccounts := state.GetDPosCandidateAccounts(common.CalcDPosNodeRoundId(curBlockNumber, s.b.ChainConfig().Dpos.Epoch))
+	dPosAccounts := state.GetDPosCandidateAccounts(common.CalcDPosNodeRoundId(header.Number.Uint64(), s.b.ChainConfig().Dpos.Epoch))
 	data := make([]*DPosCandidateRpcData, 0, len(dPosAccounts))
 	for _, account := range dPosAccounts {
 		data = append(data, &DPosCandidateRpcData{
