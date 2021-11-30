@@ -1638,7 +1638,7 @@ func (s *StateDB) InitDPosListAccount(accounts []common.DPoSAccount) {
 	dPosListAccountStateObj := s.GetDPosListAccountStateObj()
 	var dPosAccounts = make([]*common.DPoSAccount, len(accounts))
 	for i, v := range accounts {
-		dPosAccounts[i] = &v
+		dPosAccounts[i] = &common.DPoSAccount{Enode: v.Enode, Owner: v.Owner}
 	}
 	dPosListAccountStateObj.dPosListAccount.RoundId = uint64(0)
 	dPosListAccountStateObj.dPosListAccount.DPosAccounts = dPosAccounts
