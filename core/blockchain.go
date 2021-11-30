@@ -2724,13 +2724,17 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
 		return accounts
 	}
 	// The blocks haven't been synchronized yet but we got the answers first
-	block := bc.GetBlockByNumber(confirmPointNumber)
+	lastBlockNumberOfLastRound := number
+	if number > epoch {
+		lastBlockNumberOfLastRound = number / epoch * epoch
+	}
+	block := bc.GetBlockByNumber(lastBlockNumberOfLastRound)
 	if block != nil {
 		stateDB, _ := bc.StateAt(block.Root())
 		accounts = stateDB.GetDPosAccounts(common.CalcDPosNodeRoundId(confirmPointNumber, epoch))
 		bc.dposAccounts[confirmPointNumber] = accounts // cache it
 	} else {
-		log.Debug("DPoSAccount", "blockNumber is nil", number)
+		log.Warn("DPoSAccount", "blockNumber is nil", lastBlockNumberOfLastRound)
 	}
 	return accounts
 }
@@ -2744,20 +2748,18 @@ func (bc *BlockChain) GetDposAccountSize(number uint64) int {
 func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 	epoch := bc.chainConfig.Dpos.Epoch
 	confirmPointNumber := common.GetCurrentConfirmPoint(number, epoch)
-	if confirmPointNumber <= number {
+	if confirmPointNumber == number {
 		// The blocks haven't been synchronized yet but we got the answers first
 		block := bc.GetBlockByNumber(confirmPointNumber)
 		if block != nil {
 			stateDB, _ := bc.StateAt(block.Root())
-			return stateDB.GetDPosAccounts(common.CalcDPosNodeRoundId(confirmPointNumber, epoch))
+			dPosCandidateAccounts := stateDB.GetDPosCandidateAccounts(common.CalcDPosNodeRoundId(confirmPointNumber, epoch))
+			if dPosCandidateAccounts != nil {
+				return dPosCandidateAccounts.GetPresetDPosAccounts()
+			}
 		}
 	}
 	return nil
-}
-
-// GetNextDposAccountSize get next dpos nodes size
-func (bc *BlockChain) GetNextDposAccountSize(number uint64) int {
-	return len(bc.GetNextDposAccounts(number))
 }
 
 // GetSealDposAccount get seal dpos account

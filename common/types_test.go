@@ -648,7 +648,7 @@ func TestBigToAddress6(t *testing.T) {
 
 func TestDpos(t *testing.T) {
 	epoch := uint64(60)
-	number := uint64(1)
+	number := uint64(61)
 	/*	fmt.Println("lastPoint:", GetLastConfirmPoint(number, epoch))
 		fmt.Println("currPoint:", GetCurrentConfirmPoint(number, epoch))
 		fmt.Println("roundId:", CalcDPosNodeRoundId(number, epoch))*/

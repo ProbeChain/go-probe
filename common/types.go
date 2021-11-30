@@ -40,7 +40,7 @@ const (
 	//DPosEnodeLength is the expected length of dPos enode
 	DPosEnodeLength = 256
 	//DPosNodeLength is the expected length of dPos node
-	DPosNodeLength = 7
+	DPosNodeLength = 64
 	//DPosNodeIntervalConfirmPoint is the dPos node confirm point
 	DPosNodeIntervalConfirmPoint = 64
 	//LossMarkLength is the expected length of loss mark
@@ -597,7 +597,7 @@ func CalcDPosNodeRoundId(blockNumber, dPosEpoch uint64) uint64 {
 		confirmBlockNum = DPosNodeIntervalConfirmPoint
 	}
 	factor := blockNumber + confirmBlockNum + dPosEpoch - 1
-	return factor - factor%dPosEpoch
+	return (factor - factor%dPosEpoch) / dPosEpoch
 }
 
 //IsConfirmPoint calculation DPos node confirm point
@@ -634,9 +634,6 @@ func GetCurrentConfirmPoint(blockNumber, dPosEpoch uint64) uint64 {
 	} else {
 		currConfirmPoint = lastConfirmPoint + dPosEpoch
 	}
-	/*	if currConfirmPoint > blockNumber {
-		currConfirmPoint = blockNumber
-	}*/
 	return currConfirmPoint
 }
 

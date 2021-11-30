@@ -608,8 +608,7 @@ web3._extend({
        new web3._extend.Method({
 			name: 'getDPOSList',
 			call: 'probe_getDPOSList',
-			params: 1,
-            inputFormatter: [web3._extend.formatters.inputBlockNumberFormatter]
+			params: 0
 		}),
        new web3._extend.Method({
 			name: 'getDPOSCandidate',

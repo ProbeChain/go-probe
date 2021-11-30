@@ -657,13 +657,10 @@ func (s *PublicBlockChainAPI) CalcLossInfoDigests(lost, benefit common.Address, 
 }
 
 //GetDPOSList return dPos node list
-func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*DPosRpcData, error) {
-	header, err := s.b.HeaderByNumberOrHash(ctx, blockNrOrHash)
-	if err != nil {
-		return nil, err
-	}
+func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context) ([]*DPosRpcData, error) {
+	curBlockNumber := s.b.CurrentBlock().Header().Number.Uint64()
 	epoch := s.b.ChainConfig().Dpos.Epoch
-	confirmNumber := common.GetLastConfirmPoint(header.Number.Uint64(), epoch)
+	confirmNumber := common.GetLastConfirmPoint(curBlockNumber, epoch)
 	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.BlockNumber(confirmNumber))
 	if state == nil || err != nil {
 		return nil, err
