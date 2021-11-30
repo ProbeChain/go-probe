@@ -384,7 +384,7 @@ func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 		return false
 	}
 
-	log.Debug(" producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " current:", account.Owner, " current:", account.Enode.String(), " re:", account.Owner == w.coinbase)
+	log.Warn(" producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " current:", account.Owner, " current:", account.Enode, " re:", account.Owner == w.coinbase)
 
 	return account.Owner == w.coinbase
 }
