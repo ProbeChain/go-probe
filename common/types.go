@@ -217,8 +217,8 @@ type LossMark [LossMarkLength]byte
 type LossType byte
 
 type DPoSAccount struct {
-	Enode DposEnode `json:"enode,omitempty"`
-	Owner Address   `json:"owner,omitempty"`
+	Enode DposEnode
+	Owner Address
 }
 
 type DPoSCandidateAccount struct {
@@ -498,11 +498,11 @@ func (enode *DposEnode) MarshalJSON() ([]byte, error) {
 }
 
 func (enode *DposEnode) String() string {
-	if enode == nil {
-		return ""
-	}
 	s := string(enode[:])
 	i := strings.Index(s, "enode://")
+	if i == -1 {
+		return ""
+	}
 	return string([]byte(s)[i:])
 }
 

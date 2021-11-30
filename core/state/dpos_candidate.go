@@ -33,7 +33,7 @@ func (d dPosCandidateAccounts) GetPresetDPosAccounts() []*common.DPoSAccount {
 	if d.Len() > 0 {
 		presetDPoSAccounts := make([]*common.DPoSAccount, d.Len())
 		for i, dPosCandidate := range d {
-			presetDPoSAccounts[i] = &common.DPoSAccount{dPosCandidate.Enode, dPosCandidate.Owner}
+			presetDPoSAccounts[i] = &common.DPoSAccount{Enode: dPosCandidate.Enode, Owner: dPosCandidate.Owner}
 		}
 		return presetDPoSAccounts
 	}
