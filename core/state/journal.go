@@ -269,7 +269,6 @@ type (
 
 	dPosCandidateChange struct {
 		account               *common.Address
-		dPosAccounts          []*common.DPoSAccount
 		dPosCandidateAccounts dPosCandidateAccounts
 		roundId               uint64
 	}
@@ -541,7 +540,6 @@ func (ch dPosCandidateForAuthorizeChange) dirtied() *common.Address {
 
 func (ch dPosCandidateChange) revert(s *StateDB) {
 	dPosListAccount := s.getStateObject(*ch.account).dPosListAccount
-	dPosListAccount.DPosAccounts = ch.dPosAccounts
 	dPosListAccount.DPosCandidateAccounts = ch.dPosCandidateAccounts
 	dPosListAccount.RoundId = ch.roundId
 }

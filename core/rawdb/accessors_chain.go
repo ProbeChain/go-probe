@@ -25,9 +25,9 @@ import (
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
 )
 
@@ -850,4 +850,27 @@ func ReadHeadBlock(db probedb.Reader) *types.Block {
 		return nil
 	}
 	return ReadBlock(db, headBlockHash, *headBlockNumber)
+}
+
+func WriteDPos(db probedb.KeyValueWriter, roundId uint64, list []common.DPoSAccount) {
+	// add trie root
+	arr, err := rlp.EncodeToBytes(list)
+	if err != nil {
+		log.Crit("Failed to EncodeToBytes dPos", "err", err)
+	}
+	key := DPosKey(roundId)
+	if err := db.Put(key, arr); err != nil {
+		log.Crit("Failed to store dPos", "err", err)
+	}
+}
+
+func ReadDPos(db probedb.KeyValueReader, roundId uint64) []common.DPoSAccount {
+	var arr []common.DPoSAccount
+	key := DPosKey(roundId)
+	data, _ := db.Get(key)
+	err := rlp.DecodeBytes(data, &arr)
+	if err != nil {
+		log.Warn("Failed to get dPos", "err", err)
+	}
+	return arr
 }

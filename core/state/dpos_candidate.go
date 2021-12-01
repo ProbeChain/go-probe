@@ -29,11 +29,11 @@ func (d dPosCandidateAccounts) Less(i, j int) bool {
 }
 
 //GetPresetDPosAccounts return preset dPos node information
-func (d dPosCandidateAccounts) GetPresetDPosAccounts() []*common.DPoSAccount {
+func (d dPosCandidateAccounts) GetPresetDPosAccounts() []common.DPoSAccount {
 	if d.Len() > 0 {
-		presetDPoSAccounts := make([]*common.DPoSAccount, d.Len())
+		presetDPoSAccounts := make([]common.DPoSAccount, d.Len())
 		for i, dPosCandidate := range d {
-			presetDPoSAccounts[i] = &common.DPoSAccount{Enode: dPosCandidate.Enode, Owner: dPosCandidate.Owner}
+			presetDPoSAccounts[i] = common.DPoSAccount{Enode: dPosCandidate.Enode, Owner: dPosCandidate.Owner}
 		}
 		return presetDPoSAccounts
 	}

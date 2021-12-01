@@ -154,7 +154,6 @@ type LossMarkAccount struct {
 }
 
 type DPosListAccount struct {
-	DPosAccounts          []*common.DPoSAccount //dPos accounts, max length 64,see common.DPosNodeLength
 	DPosCandidateAccounts dPosCandidateAccounts //dPoS candidate accounts, max length 64,see common.DPosNodeLength
 	RoundId               uint64                //round id
 	AccType               byte                  //Account type
@@ -215,7 +214,6 @@ type RPCAccountInfo struct {
 	Info                  string                 `json:"info,omitempty"`
 	AccType               string                 `json:"accType,omitempty"`
 	LastBits              string                 `json:"lastBits,omitempty"`
-	DPosAccounts          []*common.DPoSAccount  `json:"dPosAccounts,omitempty"`
 	DPosCandidateAccounts *dPosCandidateAccounts `json:"dPosCandidateAccounts,omitempty"`
 	RoundId               uint64                 `json:"roundId,omitempty"`
 }
@@ -950,7 +948,6 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		lossMarkedIndex := s.lossMarkAccount.LossMark.GetMarkedIndex()
 		accountInfo.LossMarkedIndex = &lossMarkedIndex
 	case common.ACC_TYPE_OF_DPOS:
-		accountInfo.DPosAccounts = s.dPosListAccount.DPosAccounts
 		accountInfo.DPosCandidateAccounts = &s.dPosListAccount.DPosCandidateAccounts
 		accountInfo.RoundId = s.dPosListAccount.RoundId
 	}

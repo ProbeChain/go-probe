@@ -24,7 +24,6 @@ import (
 	"math/big"
 	"net"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/probeum/go-probeum/common"
@@ -121,8 +120,6 @@ type StateDB struct {
 	SnapshotAccountReads time.Duration
 	SnapshotStorageReads time.Duration
 	SnapshotCommits      time.Duration
-	//Lock used when updating candidate nodes
-	dPosCandidateLock *sync.RWMutex
 }
 
 // New creates a new state from a given trie.
@@ -144,7 +141,6 @@ func New(root common.Hash, db Database, snaps *snapshot.Tree) (*StateDB, error) 
 		journal:             newJournal(),
 		accessList:          newAccessList(),
 		hasher:              crypto.NewKeccakState(),
-		dPosCandidateLock:   new(sync.RWMutex),
 	}
 	//if sdb.snaps != nil {
 	//	if sdb.snap = sdb.snaps.Snapshot(root); sdb.snap != nil {
@@ -353,17 +349,6 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 		return stateObject.GetCommittedState(s.db, hash)
 	}
 	return common.Hash{}
-}
-
-// GetDPosAccounts return dPos node list
-func (s *StateDB) GetDPosAccounts(roundId uint64) []*common.DPoSAccount {
-	dPosListAccount := s.GetDPosListAccountStateObj().dPosListAccount
-	if roundId == 0 || roundId+1 == dPosListAccount.RoundId {
-		return dPosListAccount.DPosAccounts
-	} else if roundId == dPosListAccount.RoundId {
-		return dPosListAccount.DPosCandidateAccounts.GetPresetDPosAccounts()
-	}
-	return nil
 }
 
 // GetDPosCandidateAccounts return dPos candidate node list
@@ -775,7 +760,6 @@ func (s *StateDB) Copy() *StateDB {
 		preimages:           make(map[common.Hash][]byte, len(s.preimages)),
 		journal:             newJournal(),
 		hasher:              crypto.NewKeccakState(),
-		dPosCandidateLock:   s.dPosCandidateLock,
 	}
 	// Copy the dirty states, logs, and preimages
 	for addr := range s.journal.dirties {
@@ -1612,17 +1596,11 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 			dPosListAccountStateObj := s.GetDPosListAccountStateObj()
 			dPosListAccountStateObj.db.journal.append(dPosCandidateChange{
 				account:               &dPosListAccountStateObj.address,
-				dPosAccounts:          dPosListAccountStateObj.dPosListAccount.DPosAccounts,
 				dPosCandidateAccounts: dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts,
 				roundId:               dPosListAccountStateObj.dPosListAccount.RoundId,
 			})
 			roundId := common.CalcDPosNodeRoundId(context.BlockNumber.Uint64(), context.DPosEpoch)
-			s.dPosCandidateLock.Lock()
-			defer s.dPosCandidateLock.Unlock()
 			if roundId != dPosListAccountStateObj.dPosListAccount.RoundId {
-				if roundId > 1 {
-					dPosListAccountStateObj.dPosListAccount.DPosAccounts = dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts.GetPresetDPosAccounts()
-				}
 				dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts = *new(dPosCandidateAccounts)
 				dPosListAccountStateObj.dPosListAccount.RoundId = roundId
 			}
@@ -1634,13 +1612,9 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 //InitDPosListAccount initialization DPos list account
 func (s *StateDB) InitDPosListAccount(accounts []common.DPoSAccount) {
 	log.Info(fmt.Sprintf("initialization DPos list account"))
+	rawdb.WriteDPos(s.db.TrieDB().DiskDB(), uint64(0), accounts)
 	dPosListAccountStateObj := s.GetDPosListAccountStateObj()
-	var dPosAccounts = make([]*common.DPoSAccount, len(accounts))
-	for i, v := range accounts {
-		dPosAccounts[i] = &common.DPoSAccount{Enode: v.Enode, Owner: v.Owner}
-	}
 	dPosListAccountStateObj.dPosListAccount.RoundId = uint64(0)
-	dPosListAccountStateObj.dPosListAccount.DPosAccounts = dPosAccounts
 	dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts = nil
 }
 

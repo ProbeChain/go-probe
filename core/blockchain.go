@@ -2667,24 +2667,27 @@ func (bc *BlockChain) updateP2pDposNodes(stateDB *state.StateDB) {
 	if number > 0 {
 		if common.IsConfirmPoint(block.NumberU64(), epoch) {
 			curDposAccounts := bc.GetDposAccounts(number)
-			nextDposAccounts := bc.GetNextDposAccounts(number)
-			for _, da1 := range nextDposAccounts {
-				find := false
-				for _, da2 := range curDposAccounts {
-					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
-						find = true
-						break
+			nextDposAccounts, roundId := bc.GetNextDposAccounts(number)
+			if len(nextDposAccounts) > 0 {
+				rawdb.WriteDPos(bc.db, roundId, nextDposAccounts)
+				for _, da1 := range nextDposAccounts {
+					find := false
+					for _, da2 := range curDposAccounts {
+						if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
+							find = true
+							break
+						}
 					}
-				}
-				if !find {
-					log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", da1.Enode.String())
-					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
-					if err != nil {
-						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
-						continue
+					if !find {
+						log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", da1.Enode.String())
+						dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
+						if err != nil {
+							log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
+							continue
+						}
+						log.Info("updateP2pDposNodes", "number", number, "dposEnode", dposEnode)
+						bc.p2pServer.AddDposPeer(dposEnode)
 					}
-					log.Info("updateP2pDposNodes", "number", number, "dposEnode", dposEnode)
-					bc.p2pServer.AddDposPeer(dposEnode)
 				}
 			}
 		}
@@ -2723,18 +2726,14 @@ func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
 	if len(accounts) != 0 {
 		return accounts
 	}
-	// The blocks haven't been synchronized yet but we got the answers first
-	lastBlockNumberOfLastRound := number
-	if number > epoch {
-		lastBlockNumberOfLastRound = number / epoch * epoch
-	}
-	block := bc.GetBlockByNumber(lastBlockNumberOfLastRound)
-	if block != nil {
-		stateDB, _ := bc.StateAt(block.Root())
-		accounts = stateDB.GetDPosAccounts(common.CalcDPosNodeRoundId(confirmPointNumber, epoch))
-		bc.dposAccounts[confirmPointNumber] = accounts // cache it
-	} else {
-		log.Warn("DPoSAccount", "blockNumber is nil", lastBlockNumberOfLastRound)
+	roundId := common.CalcDPosNodeRoundId(confirmPointNumber, epoch)
+	dPosList := rawdb.ReadDPos(bc.db, roundId)
+	if len(dPosList) > 0 {
+		accounts = make([]*common.DPoSAccount, len(dPosList))
+		for i, dPos := range dPosList {
+			accounts[i] = &common.DPoSAccount{Enode: dPos.Enode, Owner: dPos.Owner}
+		}
+		bc.dposAccounts[confirmPointNumber] = accounts
 	}
 	return accounts
 }
@@ -2745,7 +2744,8 @@ func (bc *BlockChain) GetDposAccountSize(number uint64) int {
 }
 
 // GetNextDposAccounts get next dpos nodes
-func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
+func (bc *BlockChain) GetNextDposAccounts(number uint64) ([]common.DPoSAccount, uint64) {
+	var roundId uint64
 	epoch := bc.chainConfig.Dpos.Epoch
 	confirmPointNumber := common.GetCurrentConfirmPoint(number, epoch)
 	if confirmPointNumber == number {
@@ -2753,13 +2753,14 @@ func (bc *BlockChain) GetNextDposAccounts(number uint64) []*common.DPoSAccount {
 		block := bc.GetBlockByNumber(confirmPointNumber)
 		if block != nil {
 			stateDB, _ := bc.StateAt(block.Root())
-			dPosCandidateAccounts := stateDB.GetDPosCandidateAccounts(common.CalcDPosNodeRoundId(confirmPointNumber, epoch))
+			roundId = common.CalcDPosNodeRoundId(confirmPointNumber, epoch)
+			dPosCandidateAccounts := stateDB.GetDPosCandidateAccounts(roundId)
 			if dPosCandidateAccounts != nil {
-				return dPosCandidateAccounts.GetPresetDPosAccounts()
+				return dPosCandidateAccounts.GetPresetDPosAccounts(), roundId
 			}
 		}
 	}
-	return nil
+	return nil, roundId
 }
 
 // GetSealDposAccount get seal dpos account

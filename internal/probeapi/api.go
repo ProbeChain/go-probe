@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/core/rawdb"
 	"math/big"
 	"strings"
 	"time"
@@ -657,15 +658,15 @@ func (s *PublicBlockChainAPI) CalcLossInfoDigests(lost, benefit common.Address, 
 }
 
 //GetDPOSList return dPos node list
-func (s *PublicBlockChainAPI) GetDPOSList(ctx context.Context) ([]*DPosRpcData, error) {
-	curBlockNumber := s.b.CurrentBlock().Header().Number.Uint64()
-	epoch := s.b.ChainConfig().Dpos.Epoch
-	confirmNumber := common.GetLastConfirmPoint(curBlockNumber, epoch)
-	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.BlockNumber(confirmNumber))
-	if state == nil || err != nil {
-		return nil, err
+func (s *PublicBlockChainAPI) GetDPOSList(blockNumber rpc.BlockNumber) ([]*DPosRpcData, error) {
+	number := blockNumber.Int64()
+	if number < 0 {
+		return nil, errors.New("block number cannot be less than 0")
 	}
-	dPosAccounts := state.GetDPosAccounts(common.CalcDPosNodeRoundId(confirmNumber, epoch))
+	epoch := s.b.ChainConfig().Dpos.Epoch
+	confirmNumber := common.GetLastConfirmPoint(uint64(number), epoch)
+	roundId := common.CalcDPosNodeRoundId(confirmNumber, epoch)
+	dPosAccounts := rawdb.ReadDPos(s.b.ChainDb(), roundId)
 	data := make([]*DPosRpcData, 0, len(dPosAccounts))
 	for _, account := range dPosAccounts {
 		data = append(data, &DPosRpcData{

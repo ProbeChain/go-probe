@@ -100,6 +100,8 @@ var (
 
 	preimageCounter    = metrics.NewRegisteredCounter("db/preimage/total", nil)
 	preimageHitCounter = metrics.NewRegisteredCounter("db/preimage/hits", nil)
+
+	DPosPrefix = []byte("DPos-")
 )
 
 const (
@@ -236,4 +238,15 @@ func configKey(hash common.Hash) []byte {
 // AlterKey = AlterPrefix + hash
 func AlterKey(hash common.Hash) []byte {
 	return append(AlterPrefix, hash.Bytes()...)
+}
+
+//DPosKey = DPosPrefix + hash
+func DPosKey(key uint64) []byte {
+	return append(DPosPrefix, IntToBytes(key)...)
+}
+
+func IntToBytes(n uint64) []byte {
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	binary.Write(bytesBuffer, binary.BigEndian, n)
+	return bytesBuffer.Bytes()
 }
