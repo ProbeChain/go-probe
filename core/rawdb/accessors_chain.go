@@ -852,8 +852,8 @@ func ReadHeadBlock(db probedb.Reader) *types.Block {
 	return ReadBlock(db, headBlockHash, *headBlockNumber)
 }
 
+// WriteDPos save dPos node list with specified round id
 func WriteDPos(db probedb.KeyValueWriter, roundId uint64, list []common.DPoSAccount) {
-	// add trie root
 	arr, err := rlp.EncodeToBytes(list)
 	if err != nil {
 		log.Crit("Failed to EncodeToBytes dPos", "err", err)
@@ -864,6 +864,7 @@ func WriteDPos(db probedb.KeyValueWriter, roundId uint64, list []common.DPoSAcco
 	}
 }
 
+// ReadDPos returns the dPos node list with specified round id
 func ReadDPos(db probedb.KeyValueReader, roundId uint64) []common.DPoSAccount {
 	var arr []common.DPoSAccount
 	key := DPosKey(roundId)
