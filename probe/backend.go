@@ -301,8 +301,8 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		}
 		nodes = append(nodes, dposEnode)
 	}
-	//probe.p2pServer.Config.StaticNodes = append(probe.p2pServer.Config.StaticNodes, nodes...)
-	//probe.p2pServer.Config.TrustedNodes = append(probe.p2pServer.Config.TrustedNodes, nodes...)
+	probe.p2pServer.Config.StaticNodes = append(probe.p2pServer.Config.StaticNodes, nodes...)
+	probe.p2pServer.Config.TrustedNodes = append(probe.p2pServer.Config.TrustedNodes, nodes...)
 
 	return probe, nil
 }
