@@ -24,6 +24,8 @@ import (
 	"math/big"
 	"net"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/probeum/go-probeum/common"
@@ -272,6 +274,22 @@ func (s *StateDB) GetAccountInfo(addr common.Address) *RPCAccountInfo {
 	}
 	return nil
 }
+
+func (s *StateDB) GetAccountType(addrs string) (interface{}, error) {
+	addrArray := strings.Split(addrs, ",")
+	ret := make([]map[string]string, 0, len(addrArray))
+	for _, addr := range addrArray {
+		if common.IsHexAddress(addr) {
+			stateObj := s.getStateObject(common.HexToAddress(addr))
+			if stateObj != nil {
+				mp := map[string]string{"address": addr, "accType": strconv.Itoa(int(stateObj.accountType))}
+				ret = append(ret, mp)
+			}
+		}
+	}
+	return ret, nil
+}
+
 func (s *StateDB) GetNonce(addr common.Address) uint64 {
 	stateObject := s.getStateObject(addr)
 	if stateObject != nil {

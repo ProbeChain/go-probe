@@ -594,6 +594,11 @@ web3._extend({
             inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
         new web3._extend.Method({
+			name: 'getAccountType',
+			call: 'probe_getAccountType',
+			params: 1
+		}),
+        new web3._extend.Method({
 			name: 'getAddressLastBitsToUint',
 			call: 'probe_getAddressLastBitsToUint',
 			params: 1,

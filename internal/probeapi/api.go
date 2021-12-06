@@ -643,6 +643,14 @@ func (s *PublicBlockChainAPI) GetAccountInfo(ctx context.Context, address common
 	return stateDB.GetAccountInfo(address), stateDB.Error()
 }
 
+func (s *PublicBlockChainAPI) GetAccountType(ctx context.Context, addrs string) (interface{}, error) {
+	stateDB, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.LatestBlockNumber)
+	if stateDB == nil || err != nil {
+		return nil, err
+	}
+	return stateDB.GetAccountType(addrs)
+}
+
 //GetAddressLastBitsToUint return address last 10 bits convert to uint64
 func (s *PublicBlockChainAPI) GetAddressLastBitsToUint(address common.Address) uint64 {
 	return address.Last10BitsToUint()
