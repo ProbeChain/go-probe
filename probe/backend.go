@@ -148,7 +148,6 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		chainDb:           chainDb,
 		eventMux:          stack.EventMux(),
 		accountManager:    stack.AccountManager(),
-		engine:            probeconfig.CreateConsensusEngine(stack, chainConfig, &probeashConfig, config.Miner.Notify, config.Miner.Noverify, chainDb),
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
 		gasPrice:          config.Miner.GasPrice,
@@ -161,6 +160,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 	if chainConfig.Probeash != nil {
 		probe.powEngine = probeconfig.CreatePowConsensusEngine(stack, chainConfig, &probeashConfig, config.Miner.Notify, config.Miner.Noverify, chainDb)
 	}
+	probe.engine = probeconfig.CreateConsensusEngine(stack, chainConfig, &probeashConfig, config.Miner.Notify, config.Miner.Noverify, chainDb, probe.powEngine)
 
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
 	var dbVer = "<nil>"

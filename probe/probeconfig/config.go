@@ -215,7 +215,8 @@ type Config struct {
 }
 
 // CreateConsensusEngine creates a consensus engine for the given chain configuration.
-func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *probeash.Config, notify []string, noverify bool, db probedb.Database) consensus.Engine {
+func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *probeash.Config, notify []string,
+	noverify bool, db probedb.Database, powEngine consensus.Engine) consensus.Engine {
 	// If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)
@@ -223,7 +224,7 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 
 	if chainConfig.Dpos != nil {
 		log.Info("CreateConsensusEngine is dpos")
-		return greatri.New(chainConfig.Dpos, db)
+		return greatri.New(chainConfig.Dpos, db, powEngine)
 	}
 
 	// Otherwise assume proof-of-work
@@ -250,7 +251,8 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 	engine.SetThreads(-1) // Disable CPU mining
 	return engine
 }
-func CreatePowConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *probeash.Config, notify []string, noverify bool, db probedb.Database) consensus.Engine {
+func CreatePowConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *probeash.Config, notify []string,
+	noverify bool, db probedb.Database) consensus.Engine {
 	// If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)

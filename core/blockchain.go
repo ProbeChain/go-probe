@@ -1161,6 +1161,20 @@ func (bc *BlockChain) GetBlockByNumber(number uint64) *types.Block {
 	return bc.GetBlock(hash, number)
 }
 
+func (bc *BlockChain) GetRealBlockByNumber(number uint64) *types.Block {
+	for {
+		hash := rawdb.ReadCanonicalHash(bc.db, number)
+		if hash == (common.Hash{}) {
+			return nil
+		}
+		block := bc.GetBlock(hash, number)
+		if !block.Header().IsVisual() {
+			return block
+		}
+		number--
+	}
+}
+
 // GetReceiptsByHash retrieves the receipts for all transactions in a given block.
 func (bc *BlockChain) GetReceiptsByHash(hash common.Hash) types.Receipts {
 	if receipts, ok := bc.receiptsCache.Get(hash); ok {

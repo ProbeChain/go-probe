@@ -1,6 +1,6 @@
 {
     "config": {
-        "chainId": 1205,
+        "chainId": 6,
         "homesteadBlock": 0,
         "eip150Block": 0,
         "eip150Hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -13,43 +13,66 @@
         "probeash": {},
         "dpos": {
             "period": 15,
-            "epoch": 3000000000,
+            "epoch": 3000,
             "list": [
                 {
-                    "enode": "enode://04e65281e7ddb6c6a68baa81bd95d9400a184251cf4ba8507df7674eb2addf38a4be215fae0d82bbd4db3d48721518859f2c6b1330b52beb396b7d7aaa19c60f75@8.214.83.197:30000",
-                    "owner": "0x0051b2e765dec2e012bbd473568063b231d5dcb5833285a503"
+                    "enode": "enode://787fd0281ea769e9ca13fbb222cb592205c6df4ffc4b7d312e5d5fd6dd45f57764c4cc592876bcc28200a4b924f0c92f9efc5fa6a30dc1999823896ed68c3866@8.214.83.197:30000",
+                    "owner": "0x73a852B3A0f63397f9f0DA7b8A0f7FF72d790b08"
+                },
+                {
+                    "enode": "enode://284a5b07535ca9e28ee9c24e9acbffe703a5330097bf0c04f3ef40a062c3815d6bffe86aa114b831cf898c2239d8e1bf583e7d0fa3ea92e4988b3ca93678c3d2@8.214.83.197:30001",
+                    "owner": "0x91B6E1b079787C1a3Df133c4Cc782768159b00f1"
+                },
+                {
+                    "enode": "enode://167a0aa900f258845e4e320eb49fea760a3bc1275b964f288d16c2cd9191b31a6d17f828ab383a27007f99e93ef806d866d6e98703abd338c72ad811d2a89998@8.214.83.197:30002",
+                    "owner": "0xc1635666ADDa4D35d7D82Cb083adFb43b4C2DfBF"
+                },
+                {
+                    "enode": "enode://a87b607a694e2e60d7067d2e62e036a21638e703f0615a9bf591a1b18598bef3b9426d33e53ecd55108f85e63552faa120145e0d5820b55ca056f9681d64be29@8.214.83.197:30003",
+                    "owner": "0xC8434029c9546e1A801041A3A55CcCC028209237"
+                },
+                {
+                    "enode": "enode://4ca4baf9f12d2381d1427011a2aa90707c6601bc1722c0b28a8d79716b27d9ed45f0a4911f0f964f598b52d66e104445933f5f9696161629fcca68de17bc8b26@8.214.83.197:30004",
+                    "owner": "0xF5eD3Be8F7f99040Fe549cd753C90C13980383f2"
+                },
+                {
+                    "enode": "enode://4303b675c5f9c67d71dffdb3cb481cece7ea563b9a138b9a78db21249151f27daa61d7109fcda0e1408c81ce9e08da2431b6a868c27bb4df5ca09900d6a4711b@8.214.83.197:30005",
+                    "owner": "0xf6dB6Ce84d37E606B7f430fD54598410a1230811"
+                },
+                {
+                    "enode": "enode://ff1c7b0be52c664a3c84f3c2a524cac0c8a36234fdf7390dd88bb55a8e5d49521546297d4712efdbc87d4dd6c8663edb97f2ac7a779a3b7299703832094c624c@8.214.83.197:30006",
+                    "owner": "0x433535CE44E744C0C61cd22A38C01C3c13B4f0b9"
                 }
             ]
         }
     },
-
     "nonce": "0x0",
-    "timestamp": "0x6180a0c3",
+    "timestamp": "0x618b60bb",
     "extraData": "0x00000000000000000000000000000000000000000000000000000000000000009ae5c0f24355ca814c0c99d7ee9637ec005fae18b3b1a10f515740ecf805c31c5c612935d60ba5eb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
     "gasLimit": "0x47b76000000",
-    "difficulty": "0x1",
+    "difficulty": "0x2dc6c0",
     "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "coinbase": "0x00000000000000000000000000000000000000000000000000",
+    "coinbase": "0x0000000000000000000000000000000000000000",
     "alloc": {
-        "0x0051b2e765dec2e012bbd473568063b231d5dcb5833285a503": {
+        "0x73a852B3A0f63397f9f0DA7b8A0f7FF72d790b08": {
             "balance": "100000000000000000000000000"
         },
-        "0x00BAF2f1297Ccda7B554f6BD7fe70784e53F55A4DcDF36E73c": {
+        "0x91B6E1b079787C1a3Df133c4Cc782768159b00f1": {
             "balance": "100000000000000000000000000"
         },
-        "0x007A1536d9099365430ed12ae8CE5083D5583802943335B21e": {
+        "0xc1635666ADDa4D35d7D82Cb083adFb43b4C2DfBF": {
             "balance": "100000000000000000000000000"
         },
-        "0x008b27EC6DC9E3b3d547b087f97D4989a98A53cAb2ABbAC54c": {
+        "0xC8434029c9546e1A801041A3A55CcCC028209237": {
             "balance": "100000000000000000000000000"
         },
-        "0x00B727d3b327063B0c1327E0362ea2D0fe37c79Ca24Ed67334": {
+        "0xF5eD3Be8F7f99040Fe549cd753C90C13980383f2": {
             "balance": "100000000000000000000000000"
         },
-        "0x00bE78F0b5C91DcAAF254e4527399781fEB37590C97e720d7C": {
+        "0xf6dB6Ce84d37E606B7f430fD54598410a1230811": {
             "balance": "100000000000000000000000000"
         },
-        "0x00960AD23190Db41C5B91e7f0368f2B788BC1853ce5967CdBD": {
+        "0x433535CE44E744C0C61cd22A38C01C3c13B4f0b9": {
             "balance": "100000000000000000000000000"
         }
     },
