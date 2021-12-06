@@ -621,6 +621,12 @@ web3._extend({
 			call: 'probe_getDPOSCandidate',
 			params: 0
 		}),
+        new web3._extend.Method({
+			name: 'getTxReceipts',
+			call: 'probe_getTxReceipts',
+			params: 1,
+            inputFormatter: [null]
+		}),
 	],
 	properties: [
 		new web3._extend.Property({

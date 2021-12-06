@@ -1731,6 +1731,11 @@ func (s *PublicTransactionPoolAPI) GetTransactionReceipt(ctx context.Context, ha
 	return fields, nil
 }
 
+// GetTxReceipts returns the transaction receipt for the given block hash.
+func (s *PublicTransactionPoolAPI) GetTxReceipts(ctx context.Context, hash common.Hash) (types.Receipts, error) {
+	return s.b.GetReceipts(ctx, hash)
+}
+
 // sign is a helper function that signs a transaction with the private key of the given address.
 func (s *PublicTransactionPoolAPI) sign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) {
 	// Look up the wallet containing the requested signer
