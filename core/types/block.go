@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
 
 	"github.com/probeum/go-probeum/crypto/secp256k1"
@@ -367,6 +368,13 @@ func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnsw
 		b.header.DposAcksHash = EmptyDposAckHash
 	} else {
 		b.header.DposAcksHash = CalcDposAckHash(dposAcks)
+
+		for _, ack := range dposAcks {
+			log.Debug("dposAcks", "AckType", ack.AckType, "BlockHash", ack.BlockHash.String(), "WitnessSig", common.Bytes2Hex(ack.WitnessSig), "EpochPosition", ack.EpochPosition, "Number", ack.Number)
+		}
+
+		log.Error(" DposAcksHash not equal  ", "acks", len(dposAcks), "header:", header.DposAcksHash.String(), "calc :", CalcDposAckHash(dposAcks).String())
+
 		b.dposAcks = make([]*DposAck, len(dposAcks))
 		copy(b.dposAcks, dposAcks)
 	}
@@ -381,7 +389,16 @@ func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnsw
 // header data is copied, changes to header and to the field values
 // will not affect the block.
 func NewBlockWithHeader(header *Header) *Block {
-	return &Block{header: CopyHeader(header)}
+	return &Block{header: CopyMostHeader(header)}
+}
+
+func CopyMostHeader(h *Header) *Header {
+	re := CopyHeader(h)
+
+	re.DposAcksHash = h.DposAcksHash
+	re.DposAckCountList = h.DposAckCountList
+
+	return re
 }
 
 // CopyHeader creates a deep copy of a block header to prevent side effects from
@@ -475,6 +492,15 @@ func (b *Block) BaseFee() *big.Int {
 }
 
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
+
+func (b *Block) CopyMostHeader() *Header {
+	re := CopyHeader(b.header)
+
+	re.DposAcksHash = b.header.DposAcksHash
+	re.DposAckCountList = b.header.DposAckCountList
+
+	return re
+}
 
 // Body returns the non-header content of the block.
 func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles, b.powAnswerUncles, b.dposAcks} }

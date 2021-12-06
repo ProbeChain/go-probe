@@ -625,6 +625,72 @@ func (c *Greatri) VerifyUncles(chain consensus.ChainReader, block *types.Block) 
 	return nil
 }
 
+// VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
+func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
+	powAnswers := block.PowAnswerUncles()
+	log.Debug("VerifyUnclePowAnswers", "start  : ", block.NumberU64(), "uncle", len(powAnswers))
+
+	parent, err, _ := greatri.FindRealParentHeader(chain, block.Header(), nil, -1)
+	if err != nil {
+		return err
+	}
+	for _, answer := range powAnswers {
+		if parent.Number.Uint64()-answer.Number.Uint64() > 5 {
+			return fmt.Errorf("answer is too far ")
+		}
+		verify := greatri.verifyPowAnswer(chain, answer)
+		if verify != nil {
+			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
+			return verify
+		}
+	}
+
+	log.Debug("VerifyUnclePowAnswers", "end  : ", block.NumberU64())
+
+	return nil
+}
+
+// VerifyDposInfo verifies that the given block's dposInfo  conform to the consensus
+func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types.Block) error {
+
+	miner := block.Header().DposSigAddr
+	isVisual := block.Header().IsVisual()
+	num := block.NumberU64()
+
+	log.Debug("VerifyDposInfo", "num : ", num)
+
+	isProducer := chain.CheckIsProducerAccount(num, miner)
+
+	if (isProducer && isVisual) || (!isProducer && !isVisual) {
+		log.Debug("not visual  not allow  visual extra ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
+		return fmt.Errorf(" not visual  not allow  visual extra")
+	}
+
+	if !chain.CheckAcks(block) {
+		log.Debug("acks not legal  ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
+		return fmt.Errorf(" acks not legal")
+	}
+
+	log.Debug("VerifyDposInfo", "end  : ", num)
+
+	return nil
+}
+
+func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer) error {
+
+	parent := chain.GetHeaderByNumber(answer.Number.Uint64())
+	pow, ok := c.powEngine.(*probeash.Probeash)
+	if !ok {
+		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
+	}
+	err := pow.PowVerifySeal(chain, parent, false, answer)
+	if err != nil {
+		log.Debug("PowVerifySeal failed", "block number", parent.Number, "answer", answer)
+		return err
+	}
+	return nil
+}
+
 // verifySeal checks whprobeer the signature contained in the header satisfies the
 // consensus protocol requirements. The method accepts an optional list of parent
 // headers that aren't yet part of the local blockchain to generate the snapshots

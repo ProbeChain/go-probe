@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/log"
 	"math/big"
 
 	"github.com/probeum/go-probeum"
@@ -95,9 +96,11 @@ func (ec *Client) BlockNumber(ctx context.Context) (uint64, error) {
 }
 
 type rpcBlock struct {
-	Hash         common.Hash      `json:"hash"`
-	Transactions []rpcTransaction `json:"transactions"`
-	UncleHashes  []common.Hash    `json:"uncles"`
+	Hash            common.Hash       `json:"hash"`
+	Transactions    []rpcTransaction  `json:"transactions"`
+	UncleHashes     []common.Hash     `json:"uncles"`
+	PowAnswerUncles []types.PowAnswer `json:"powAnswerUncles"`
+	DposAcks        []types.DposAck   `json:"dposAcks"`
 }
 
 func (ec *Client) getBlock(ctx context.Context, method string, args ...interface{}) (*types.Block, error) {
@@ -162,7 +165,19 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 		}
 		txs[i] = tx.tx
 	}
-	return types.NewBlockWithHeader(head).WithBody(txs, uncles), nil
+
+	unclePows := make([]*types.PowAnswer, len(body.PowAnswerUncles))
+	dposAcks := make([]*types.DposAck, len(body.DposAcks))
+
+	for i, uncle := range body.PowAnswerUncles {
+		unclePows[i] = &uncle
+	}
+	for i, ack := range body.DposAcks {
+		dposAcks[i] = &ack
+	}
+
+	log.Debug("this is client getBlock ")
+	return types.NewBlockWithHeader(head).WithBodyGreatri(txs, uncles, unclePows, dposAcks), nil
 }
 
 // HeaderByHash returns the block header with the given hash.

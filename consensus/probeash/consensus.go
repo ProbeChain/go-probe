@@ -189,6 +189,16 @@ func (probeash *Probeash) verifyHeaderWorker(chain consensus.ChainHeaderReader, 
 	return probeash.verifyHeader(chain, headers[index], parent, false, seals[index], unixNow)
 }
 
+// VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
+func (probeash *Probeash) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
+	return fmt.Errorf("not Implement")
+}
+
+// VerifyDposInfo verifies that the given block's dopsInfo  conform to the consensus
+func (probeash *Probeash) VerifyDposInfo(chain consensus.ChainReader, block *types.Block) error {
+	return fmt.Errorf("not Implement")
+}
+
 // VerifyUncles verifies that the given block's uncles conform to the consensus
 // rules of the stock Probeum probeash engine.
 func (probeash *Probeash) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {

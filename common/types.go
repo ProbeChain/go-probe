@@ -262,6 +262,8 @@ func IsHexAddress(s string) bool {
 // Bytes gets the string representation of the underlying address.
 func (a Address) Bytes() []byte { return a[:] }
 
+func (a Address) Equal(address Address) bool { return bytes.Compare(a.Bytes(), address.Bytes()) == 0 }
+
 // Last10BitsToUint intercepts last 10 bits to convert uint64
 func (a Address) Last10BitsToUint() uint64 {
 	last2Bytes := a.Bytes()[18:]

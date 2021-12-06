@@ -2812,6 +2812,11 @@ func (bc *BlockChain) CheckIsDposAccount(number uint64, owner common.Address) bo
 	return false
 }
 
+func (bc *BlockChain) CheckIsProducerAccount(number uint64, owner common.Address) bool {
+	account := bc.GetSealDposAccount(number)
+	return account.Owner.Equal(owner)
+}
+
 func (bc *BlockChain) CheckIsLatestDposAccount(owner common.Address) bool {
 	return bc.CheckIsDposAccount(bc.CurrentHeader().Number.Uint64(), owner)
 }
@@ -3158,4 +3163,71 @@ func (bc *BlockChain) GetDposAck(number *big.Int, ackType types.DposAckType) []*
 // GetDposAckSize get a dpos ack list size
 func (bc *BlockChain) GetDposAckSize(number *big.Int, ackType types.DposAckType) int {
 	return len(bc.dposAcks.FilterList(bc.dposAcks.List(number, ackType)))
+}
+
+// GetDposAckSize get a dpos ack list size
+func (bc *BlockChain) CheckAcks(block *types.Block) bool {
+	number := block.NumberU64()
+	acks := block.DposAcks()
+	commitNum := 0
+	oppopsNum := 0
+	for _, ack := range acks {
+		singer, err := ack.RecoverOwner()
+		if err != nil || !bc.CheckIsDposAccount(number, singer) || ack.Number.Uint64() != number-1 {
+			log.Error(" not legal singer ")
+			return false
+		}
+		if ack.AckType == types.AckTypeAgree {
+			commitNum++
+		}
+		if ack.AckType == types.AckTypeOppose {
+			oppopsNum++
+		}
+	}
+
+	dposNum := len(bc.GetDposAccounts(number))
+	isVisual := block.Header().IsVisual()
+	parent := bc.GetHeaderByNumber(number - 1)
+	header := block.CopyMostHeader()
+
+	if !bytes.Equal(header.DposAcksHash.Bytes(), types.CalcDposAckHash(acks).Bytes()) {
+		log.Error(" DposAcksHash not equal  ", "acks", len(acks), "header:", header.DposAcksHash.String(), "calc :", types.CalcDposAckHash(acks).String())
+		return false
+	}
+	dposAckList := header.DposAckCountList
+	if len(dposAckList) != 1 {
+		log.Error(" DposAckCountList not equal  ")
+		return false
+	}
+
+	if dposAckList[0].BlockNumber.Uint64() != number-1 {
+		log.Error(" dposAckList BlockNumber  not equal  ")
+		return false
+	}
+
+	if parent.IsVisual() && !header.DposSigAddr.Equal(parent.DposSigAddr) {
+		log.Error(" DposSigAddr   not equal  ")
+		return false
+	}
+
+	log.Debug(" CheckAcks  ", "dposNum", dposNum, "commitNum", commitNum, "oppopsNum", oppopsNum, "isVisual", isVisual, "parent.IsVisual()", parent.IsVisual())
+
+	//if isVisual || (!isVisual && parent.IsVisual()) {
+	if parent.IsVisual() {
+		return dposAckList[0].AckCount == uint(oppopsNum) && commitNum == 0 && bc.checkAckNumMin(oppopsNum, dposNum)
+	}
+	return dposAckList[0].AckCount == uint(commitNum) && oppopsNum == 0 && bc.checkAckNumMin(commitNum, dposNum)
+
+}
+
+// GetDposAckSize get a dpos ack list size
+func (bc *BlockChain) checkAckNumMin(ackNum int, dposNum int) bool {
+	return ackNum > (dposNum * 1 / 3)
+}
+
+func (bc *BlockChain) checkBlockBefore(header *types.Header, parent *types.Header) bool {
+	if parent.IsVisual() {
+		return header.DposSigAddr.Equal(parent.DposSigAddr)
+	}
+	return true
 }
