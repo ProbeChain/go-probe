@@ -45,7 +45,7 @@ type (
 	//ContractDeployFunc is the signature of a transfer function
 	ContractDeployFunc func(StateDB, common.Address)
 	//CallDBFunc call database
-	CallDBFunc func(StateDB, *big.Int, TxContext)
+	CallDBFunc func(StateDB, TxContext)
 )
 
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
@@ -114,6 +114,9 @@ type TxContext struct {
 	Nonce    uint64
 	Value    *big.Int
 	Data     []byte
+	//Set when the evm call method is called
+	DPosEpoch   uint64
+	BlockNumber *big.Int
 }
 
 // EVM is the Probeum Virtual Machine base object and provides
@@ -231,23 +234,24 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		return nil, gas, ErrInsufficientBalance
 	}
 	snapshot := evm.StateDB.Snapshot()
-	/*	var p PrecompiledContract
-		var isPrecompile bool
-		p, isPrecompile = evm.precompile(to)
-		fmt.Printf("Call isPrecompile:%t\n", isPrecompile)
-		if !evm.StateDB.Exist(to) {
-			if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
+	p, isPrecompile := evm.precompile(to)
+	if !common.IsSpecialAddress(to.Hex()) && !evm.StateDB.Exist(to) {
+		/*		if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
 				// Calling a non existing account, don't do anything, but ping the tracer
 				if evm.Config.Debug && evm.depth == 0 {
 					evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
 					evm.Config.Tracer.CaptureEnd(ret, 0, 0, nil)
 				}
 				return nil, gas, nil
-			}
-			evm.StateDB.CreateAccount(to)
-		}*/
+			}*/
+		if isPrecompile {
+			evm.StateDB.CreateContractAccount(to)
+		}
+	}
 
-	evm.Context.CallDB(evm.StateDB, evm.Context.BlockNumber, evm.TxContext)
+	evm.TxContext.BlockNumber = evm.Context.BlockNumber
+	evm.TxContext.DPosEpoch = evm.chainConfig.Dpos.Epoch
+	evm.Context.CallDB(evm.StateDB, evm.TxContext)
 	// Capture the tracer start/end events in debug mode
 	if evm.Config.Debug && evm.depth == 0 {
 		evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
@@ -256,27 +260,27 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		}(gas, time.Now())
 	}
 
-	//if isPrecompile {
-	//	ret, gas, err = RunPrecompiledContract(p, input, gas)
-	//} else {
-	// Initialise a new contract and set the code that is to be used by the EVM.
-	// The contract is a scoped environment for this execution context only.
-	code := evm.StateDB.GetCode(to)
-	if len(code) == 0 {
-		ret, err = nil, nil // gas is unchanged
+	if isPrecompile {
+		ret, gas, err = RunPrecompiledContract(p, input, gas)
 	} else {
-		addrCopy := to
-		// If the account has no code, we can abort here
-		// The depth-check is already done, and precompiles handled above
-		contract := NewContract(caller, AccountRef(addrCopy), value, gas)
-		contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
-		ret, err = run(evm, contract, input, false)
-		if err != nil {
-			log.Error(fmt.Sprintf("call contract err:%s\n", err))
+		// Initialise a new contract and set the code that is to be used by the EVM.
+		// The contract is a scoped environment for this execution context only.
+		code := evm.StateDB.GetCode(to)
+		if len(code) == 0 {
+			ret, err = nil, nil // gas is unchanged
+		} else {
+			addrCopy := to
+			// If the account has no code, we can abort here
+			// The depth-check is already done, and precompiles handled above
+			contract := NewContract(caller, AccountRef(addrCopy), value, gas)
+			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
+			ret, err = run(evm, contract, input, false)
+			if err != nil {
+				log.Error(fmt.Sprintf("call contract err:%s\n", err))
+			}
+			gas = contract.Gas
 		}
-		gas = contract.Gas
 	}
-	//}
 	// When an error was returned by the EVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in homestead this also counts for code storage gas errors.
@@ -418,9 +422,6 @@ func (evm *EVM) StaticCall(caller ContractRef, addr common.Address, input []byte
 		// above we revert to the snapshot and consume any gas remaining. Additionally
 		// when we're in Homestead this also counts for code storage gas errors.
 		ret, err = run(evm, contract, input, true)
-		if err != nil {
-			fmt.Printf("StaticCall %s\n", err)
-		}
 		gas = contract.Gas
 	}
 	if err != nil {

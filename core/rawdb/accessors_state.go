@@ -20,7 +20,6 @@ import (
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/rlp"
 )
 
 // ReadPreimage retrieves a single preimage of the provided hash.
@@ -114,49 +113,4 @@ func DeleteTrieNode(db probedb.KeyValueWriter, hash common.Hash) {
 	if err := db.Delete(hash.Bytes()); err != nil {
 		log.Crit("Failed to delete trie node", "err", err)
 	}
-}
-
-func WriteDPos(db probedb.KeyValueWriter, dPosNo uint64, list []common.DPoSAccount) {
-	// add trie root
-	arr, err := rlp.EncodeToBytes(list)
-	if err != nil {
-		log.Crit("Failed to EncodeToBytes dPos", "err", err)
-	}
-	key := DposKey(dPosNo)
-	if err := db.Put(key, arr); err != nil {
-		log.Crit("Failed to store dPos", "err", err)
-	}
-}
-
-func WriteDPosCandidate(db probedb.KeyValueWriter, list []common.DPoSCandidateAccount) {
-	arr, err := rlp.EncodeToBytes(list)
-	if err != nil {
-		log.Crit("Failed to EncodeToBytes dPos candidate", "err", err)
-	}
-	if err := db.Put(DPosCandidateKey(), arr); err != nil {
-		log.Crit("Failed to store dPos candidate", "err", err)
-	}
-}
-
-func ReadDPos(db probedb.KeyValueReader, dkey uint64) []common.DPoSAccount {
-	var arr []common.DPoSAccount
-	key := DposKey(dkey)
-	data, _ := db.Get(key)
-	err := rlp.DecodeBytes(data, &arr)
-	if err != nil {
-		log.Warn("Failed to get dPos", "err", err)
-	}
-
-	return arr
-}
-
-func ReadDPosCandidate(db probedb.KeyValueReader) []common.DPoSCandidateAccount {
-	var arr []common.DPoSCandidateAccount
-	data, _ := db.Get(DPosCandidateKey())
-	err := rlp.DecodeBytes(data, &arr)
-	if err != nil {
-		log.Warn("Failed to get dPos candidate", "err", err)
-	}
-
-	return arr
 }

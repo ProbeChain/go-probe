@@ -100,7 +100,7 @@ type (
 		accType     byte
 		voteAccount common.Address
 		voteValue   big.Int
-		lossType    uint8
+		lossType    common.LossType
 		value       big.Int
 	}
 
@@ -190,34 +190,47 @@ type (
 		voteAccount common.Address
 		voteValue   big.Int
 	}
-	lossTypeForRegularChange struct {
-		account *common.Address
-		prev    uint8
-	}
 
 	voteValueForAuthorizeChange struct {
 		account *common.Address
 		prev    big.Int
 	}
 
+	lossMarkAccountChange struct {
+		account *common.Address
+		prev    common.LossMark
+	}
+
 	sendLossReportChange struct {
 		account    *common.Address
 		state      byte
-		height     big.Int
+		lastBits   uint64
 		infoDigest common.Hash
+		height     big.Int
+	}
+
+	lossTypeChange struct {
+		account  *common.Address
+		lossType common.LossType
+	}
+
+	lossStateChange struct {
+		account *common.Address
+		state   byte
+	}
+
+	lostAccountVoteChange struct {
+		account     *common.Address
+		voteAccount common.Address
+		voteValue   big.Int
 	}
 
 	revealLossReportChange struct {
 		account     *common.Address
-		lossAccount common.Address
+		lostAccount common.Address
 		newAccount  common.Address
 		height      big.Int
 		state       byte
-	}
-
-	transferLostAccountChange struct {
-		account *common.Address
-		state   byte
 	}
 
 	redemptionForRegularChange struct {
@@ -225,6 +238,11 @@ type (
 		voteAccount common.Address
 		voteValue   big.Int
 		value       big.Int
+	}
+
+	modifyAuthorizeOwnerChange struct {
+		account *common.Address
+		owner   common.Address
 	}
 
 	modifyPnsOwnerChange struct {
@@ -248,6 +266,12 @@ type (
 		info      []byte
 		voteValue big.Int
 	}
+
+	dPosCandidateChange struct {
+		account               *common.Address
+		dPosCandidateAccounts dPosCandidateAccounts
+		roundId               uint64
+	}
 )
 
 func (i sendLossReportChange) revert(db *StateDB) {
@@ -269,12 +293,12 @@ func (d voteValueForAuthorizeChange) dirtied() *common.Address {
 	return d.account
 }
 
-func (l lossTypeForRegularChange) revert(db *StateDB) {
-	db.getStateObject(*l.account).regularAccount.LossType = l.prev
+func (d lossMarkAccountChange) revert(db *StateDB) {
+	db.getStateObject(*d.account).lossMarkAccount.LossMark = d.prev
 }
 
-func (l lossTypeForRegularChange) dirtied() *common.Address {
-	return l.account
+func (d lossMarkAccountChange) dirtied() *common.Address {
+	return d.account
 }
 
 func (v voteForRegularChange) revert(db *StateDB) {
@@ -375,7 +399,7 @@ func (ch lossSuicideChange) revert(s *StateDB) {
 		obj.suicided = ch.suicide
 		obj.lossAccount.AccType = ch.accType
 		obj.lossAccount.State = ch.state
-		obj.lossAccount.LossAccount = ch.lossAccount
+		obj.lossAccount.LostAccount = ch.lossAccount
 		obj.lossAccount.NewAccount = ch.newAccount
 		obj.lossAccount.Height = &ch.height
 		obj.lossAccount.InfoDigest = ch.infoDigest
@@ -505,18 +529,6 @@ func (ch redemptionForAuthorizeChange) dirtied() *common.Address {
 
 func (ch dPosCandidateForAuthorizeChange) revert(s *StateDB) {
 	authorizeAccount := s.getStateObject(*ch.account).authorizeAccount
-
-	dPosCandidateAccount := common.DPoSCandidateAccount{}
-	dPosCandidateAccount.Owner = authorizeAccount.Owner
-	dPosCandidateAccount.VoteAccount = *ch.account
-	dPosCandidateAccount.VoteValue = &ch.voteValue
-	if len(ch.info) == 0 {
-		dPosCandidateAccount.Enode = common.BytesToDposEnode(authorizeAccount.Info)
-		GetDPosCandidates().DeleteDPosCandidate(dPosCandidateAccount)
-	} else {
-		dPosCandidateAccount.Enode = common.BytesToDposEnode(ch.info)
-		GetDPosCandidates().UpdateDPosCandidate(dPosCandidateAccount)
-	}
 	authorizeAccount.VoteValue = &ch.voteValue
 	authorizeAccount.Info = ch.info
 
@@ -526,9 +538,19 @@ func (ch dPosCandidateForAuthorizeChange) dirtied() *common.Address {
 	return ch.account
 }
 
+func (ch dPosCandidateChange) revert(s *StateDB) {
+	dPosListAccount := s.getStateObject(*ch.account).dPosListAccount
+	dPosListAccount.DPosCandidateAccounts = ch.dPosCandidateAccounts
+	dPosListAccount.RoundId = ch.roundId
+}
+
+func (ch dPosCandidateChange) dirtied() *common.Address {
+	return ch.account
+}
+
 func (ch revealLossReportChange) revert(s *StateDB) {
 	lossAccount := s.getStateObject(*ch.account).lossAccount
-	lossAccount.LossAccount = ch.lossAccount
+	lossAccount.LostAccount = ch.lostAccount
 	lossAccount.NewAccount = ch.newAccount
 	lossAccount.State = ch.state
 }
@@ -536,11 +558,36 @@ func (ch revealLossReportChange) dirtied() *common.Address {
 	return ch.account
 }
 
-func (ch transferLostAccountChange) revert(s *StateDB) {
+func (ch lossTypeChange) revert(s *StateDB) {
+	lossAccount := s.getStateObject(*ch.account).regularAccount
+	lossAccount.LossType = ch.lossType
+}
+func (ch lossTypeChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch lossStateChange) revert(s *StateDB) {
 	lossAccount := s.getStateObject(*ch.account).lossAccount
 	lossAccount.State = ch.state
 }
-func (ch transferLostAccountChange) dirtied() *common.Address {
+func (ch lossStateChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch lostAccountVoteChange) revert(s *StateDB) {
+	lossAccount := s.getStateObject(*ch.account).regularAccount
+	lossAccount.VoteAccount = ch.voteAccount
+	lossAccount.VoteValue = &ch.voteValue
+}
+func (ch lostAccountVoteChange) dirtied() *common.Address {
+	return ch.account
+}
+
+func (ch modifyAuthorizeOwnerChange) revert(s *StateDB) {
+	pnsAccount := s.getStateObject(*ch.account).authorizeAccount
+	pnsAccount.Owner = ch.owner
+}
+func (ch modifyAuthorizeOwnerChange) dirtied() *common.Address {
 	return ch.account
 }
 

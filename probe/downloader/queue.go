@@ -797,6 +797,8 @@ func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLi
 		return nil
 	}
 
+	log.Debug("DeliverBodies", "txLists", len(txLists), "uncleLists", len(uncleLists), "powAnswerUncles", len(powAnswerUncles), "dposAcks", len(dposAcks))
+
 	reconstruct := func(index int, result *fetchResult) {
 		result.Transactions = txLists[index]
 		result.Uncles = uncleLists[index]

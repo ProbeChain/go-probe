@@ -326,10 +326,3 @@ func (b *LesApiBackend) Exist(addr common.Address) bool {
 func (b *LesApiBackend) DposAccounts(number rpc.BlockNumber) []*common.DPoSAccount {
 	return nil
 }
-func (b *LesApiBackend) GetDPOSByBlockNumber(number rpc.BlockNumber) []*common.DPoSAccount {
-	return nil
-}
-
-func (b *LesApiBackend) GetDPOSCandidate() []common.DPoSCandidateAccount {
-	return nil
-}

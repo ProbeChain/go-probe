@@ -27,20 +27,28 @@ import (
 	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
-	"net"
 	"reflect"
 	"strings"
 )
 
 // Lengths of hashes and addresses in bytes.
 const (
-	// HashLength is the expected length of the hash
+	//HashLength is the expected length of the hash
 	HashLength = 32
-	// AddressLength is the expected length of the address
+	//AddressLength is the expected length of the address
 	AddressLength = 20
-	//DposEnodeLength is the cheche length of dpos node
-	DposEnodeLength = 256
-	DposNodeLength  = 7
+	//DPosEnodeLength is the expected length of dPos enode
+	DPosEnodeLength = 256
+	//DPosNodeLength is the expected length of dPos node
+	DPosNodeLength = 64
+	//DPosNodeIntervalConfirmPoint is the dPos node confirm point
+	DPosNodeIntervalConfirmPoint = 64
+	//DPosNodePrefix the prefix of dPos node connection information
+	DPosNodePrefix = "enode://"
+	//LossMarkLength is the expected length of loss mark
+	LossMarkLength = 128
+	//LossMarkBitLength is the expected length of loss mark bits
+	LossMarkBitLength = LossMarkLength * 8
 )
 
 var (
@@ -203,19 +211,23 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 // Address represents the 25 byte address of an Probeum account.
 type Address [AddressLength]byte
 
-type DposEnode [DposEnodeLength]byte
+type DposEnode [DPosEnodeLength]byte
+
+type LossMark [LossMarkLength]byte
+
+//LossType loss reporting type bits[0]: loss reporting status,bits[1~7]:loss reporting period
+type LossType byte
 
 type DPoSAccount struct {
-	Enode DposEnode `json:"enode,omitempty"`
-	Owner Address   `json:"owner,omitempty"`
+	Enode DposEnode
+	Owner Address
 }
 
 type DPoSCandidateAccount struct {
 	Enode       DposEnode
 	Owner       Address
 	VoteAccount Address
-	//Weight    *big.Int
-	VoteValue *big.Int
+	VoteValue   *big.Int
 }
 
 func BytesToAddress(b []byte) Address {
@@ -250,9 +262,16 @@ func IsHexAddress(s string) bool {
 // Bytes gets the string representation of the underlying address.
 func (a Address) Bytes() []byte { return a[:] }
 
-// Last12Bytes gets the string representation of the underlying address.
-func (a Address) Last12BytesToHash() Hash {
-	return BytesToHash(a[len(a.Bytes())-12:])
+func (a Address) Equal(address Address) bool { return bytes.Compare(a.Bytes(), address.Bytes()) == 0 }
+
+// Last10BitsToUint intercepts last 10 bits to convert uint64
+func (a Address) Last10BitsToUint() uint64 {
+	last2Bytes := a.Bytes()[18:]
+	b := new(big.Int).SetBytes(last2Bytes)
+	c := new(big.Int).Lsh(b, 6)
+	d := new(big.Int).SetBytes(c.Bytes()[1:])
+	e := new(big.Int).Rsh(d, 6)
+	return e.Uint64()
 }
 
 // Hash converts an address to a hash by left-padding it with zeros.
@@ -335,9 +354,9 @@ func (a *Address) SetBytes(b []byte) {
 
 func (n *DposEnode) SetBytes(b []byte) {
 	if len(b) > len(n) {
-		b = b[len(b)-DposEnodeLength:]
+		b = b[len(b)-DPosEnodeLength:]
 	}
-	copy(n[DposEnodeLength-len(b):], b)
+	copy(n[DPosEnodeLength-len(b):], b)
 }
 
 // MarshalText returns the hex representation of a.
@@ -484,18 +503,153 @@ func (enode *DposEnode) MarshalJSON() ([]byte, error) {
 
 func (enode *DposEnode) String() string {
 	s := string(enode[:])
-	i := strings.Index(s, "enode://")
+	i := strings.Index(s, DPosNodePrefix)
+	if i == -1 {
+		return ""
+	}
 	return string([]byte(s)[i:])
 }
 
-func InetAtoN(ip string) *big.Int {
-	ret := big.NewInt(0)
-	ret.SetBytes(net.ParseIP(ip).To4())
+//SetMark set the value of the specified index
+func (a *LossMark) SetMark(index uint, flag bool) error {
+	if index > (LossMarkBitLength - 1) {
+		return ErrIndexOutOfBounds
+	}
+	var b *big.Int
+	mark := new(big.Int).SetUint64(1)
+	num := new(big.Int).SetBytes(a[:])
+	if flag {
+		b = new(big.Int).Or(num, new(big.Int).Lsh(mark, index))
+	} else {
+		b = new(big.Int).AndNot(num, new(big.Int).Lsh(mark, index))
+	}
+	dst := make([]byte, LossMarkLength)
+	src := b.Bytes()
+	copy(dst[LossMarkLength-len(src):], src)
+	copy(a[:], dst)
+	return nil
+}
+
+// GetMark return the value of the specified index
+func (a *LossMark) GetMark(index uint) bool {
+	if index > (LossMarkBitLength - 1) {
+		return false
+	}
+	return new(big.Int).SetBytes(a[:]).Bit(int(index)) > 0
+}
+
+// GetMarkedIndex return the value of the marked index
+func (a *LossMark) GetMarkedIndex() []uint16 {
+	markInt := new(big.Int).SetBytes(a[:])
+	var ret []uint16
+	for i := 0; i < LossMarkBitLength; i++ {
+		if markInt.Bit(i) > 0 {
+			ret = append(ret, uint16(i))
+		}
+	}
 	return ret
+}
+
+//GetState return loss reporting status
+func (a *LossType) GetState() bool {
+	b := new(big.Int).SetUint64(uint64(*a))
+	return b.Bit(0) > 0
+}
+
+//SetState set loss reporting status
+func (a *LossType) SetState(flag bool) LossType {
+	var c *big.Int
+	mark := new(big.Int).SetUint64(1)
+	b := new(big.Int).SetUint64(uint64(*a))
+	if flag {
+		c = new(big.Int).Or(b, new(big.Int).Lsh(mark, 0))
+	} else {
+		c = new(big.Int).AndNot(b, new(big.Int).Lsh(mark, 0))
+	}
+	if c.Sign() > 0 {
+		return LossType(c.Bytes()[0])
+	}
+	return LossType(0)
+}
+
+//GetType return loss reporting cycle time
+func (a *LossType) GetType() byte {
+	bytes := new(big.Int).Rsh(new(big.Int).SetUint64(uint64(*a)), 1).Bytes()
+	if len(bytes) == 0 {
+		return 0
+	}
+	return bytes[0]
+}
+
+//SetType set loss reporting cycle period time
+func (a *LossType) SetType(period byte) LossType {
+	flag := a.GetState()
+	b := new(big.Int).Lsh(new(big.Int).SetUint64(uint64(period)), 1)
+	var c LossType
+	if b.Sign() > 0 {
+		c = LossType(b.Bytes()[0])
+	} else {
+		c = LossType(0)
+	}
+	return c.SetState(flag)
+}
+
+//CalcDPosNodeRoundId calculation DPos node round id
+func CalcDPosNodeRoundId(blockNumber, dPosEpoch uint64) uint64 {
+	if blockNumber == 0 {
+		return blockNumber
+	}
+	confirmBlockNum := dPosEpoch / 2
+	if dPosEpoch > DPosNodeIntervalConfirmPoint {
+		confirmBlockNum = DPosNodeIntervalConfirmPoint
+	}
+	factor := blockNumber + confirmBlockNum + dPosEpoch - 1
+	return (factor - factor%dPosEpoch) / dPosEpoch
+}
+
+//IsConfirmPoint calculation DPos node confirm point
+func IsConfirmPoint(blockNumber, dPosEpoch uint64) bool {
+	confirmBlockNum := dPosEpoch / 2
+	if dPosEpoch > DPosNodeIntervalConfirmPoint {
+		confirmBlockNum = DPosNodeIntervalConfirmPoint
+	}
+	return blockNumber%((blockNumber/dPosEpoch+1)*dPosEpoch-confirmBlockNum) == 0
+}
+
+//GetLastConfirmPoint returns the dPos last confirmation point at the specified height
+func GetLastConfirmPoint(blockNumber, dPosEpoch uint64) uint64 {
+	if blockNumber <= dPosEpoch {
+		return 0
+	}
+	confirmBlockNum := dPosEpoch / 2
+	if dPosEpoch > DPosNodeIntervalConfirmPoint {
+		confirmBlockNum = DPosNodeIntervalConfirmPoint
+	}
+	return (blockNumber-1)/dPosEpoch*dPosEpoch - confirmBlockNum
+}
+
+//GetCurrentConfirmPoint returns the dPos current confirmation point at the specified height
+func GetCurrentConfirmPoint(blockNumber, dPosEpoch uint64) uint64 {
+	lastConfirmPoint := GetLastConfirmPoint(blockNumber, dPosEpoch)
+	var currConfirmPoint uint64
+	if lastConfirmPoint == 0 {
+		confirmBlockNum := dPosEpoch / 2
+		if dPosEpoch > DPosNodeIntervalConfirmPoint {
+			confirmBlockNum = DPosNodeIntervalConfirmPoint
+		}
+		currConfirmPoint = dPosEpoch - confirmBlockNum
+	} else {
+		currConfirmPoint = lastConfirmPoint + dPosEpoch
+	}
+	return currConfirmPoint
 }
 
 type IntDecodeType struct {
 	Num big.Int
+}
+
+type ByteDecodeType struct {
+	Num byte
 }
 
 type AddressDecodeType struct {
@@ -525,4 +679,21 @@ type PnsContentDecodeType struct {
 	PnsAddress Address
 	PnsType    byte
 	PnsData    string
+}
+
+type RegisterLossDecodeType struct {
+	LastBitsMark uint32
+	InfoDigest   Hash
+}
+
+type RevealLossReportDecodeType struct {
+	LossAccount Address //loss reporting address
+	OldAccount  Address //lost address
+	NewAccount  Address //beneficiary address
+	RandomNum   uint32  //random number
+}
+
+type AssociatedAccountDecodeType struct {
+	LossAccount       Address //loss reporting address
+	AssociatedAccount Address //associated address
 }

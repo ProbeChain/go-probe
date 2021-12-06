@@ -459,6 +459,16 @@ func (c *Clique) VerifyUncles(chain consensus.ChainReader, block *types.Block) e
 	return nil
 }
 
+// VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
+func (c *Clique) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
+	return fmt.Errorf("not Implement")
+}
+
+// VerifyDposInfo verifies that the given block's dopsInfo  conform to the consensus
+func (c *Clique) VerifyDposInfo(chain consensus.ChainReader, block *types.Block) error {
+	return fmt.Errorf("not Implement")
+}
+
 // verifySeal checks whprobeer the signature contained in the header satisfies the
 // consensus protocol requirements. The method accepts an optional list of parent
 // headers that aren't yet part of the local blockchain to generate the snapshots
@@ -573,7 +583,7 @@ func (c *Clique) Prepare(chain consensus.ChainHeaderReader, header *types.Header
 // rewards given.
 func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
-	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number), header.Number)
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	header.UncleHash = types.CalcUncleHash(nil)
 }
 

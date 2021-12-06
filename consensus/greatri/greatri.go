@@ -21,9 +21,15 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probeum/go-probeum/crypto/secp256k1"
+
+	//"github.com/probeum/go-probeum/crypto/probecrypto"
+	//"github.com/probeum/go-probeum/crypto/secp256k1"
 	"github.com/probeum/go-probeum/log"
 	"io"
 	"math/big"
+	"runtime"
 	"sync"
 	"time"
 
@@ -68,8 +74,9 @@ var (
 
 	uncleHash = types.CalcPowAnswerUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
 
-	diffInTurn = big.NewInt(2) // Block difficulty for in-turn signatures
-	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn signatures
+	diffInTurn                    = big.NewInt(2) // Block difficulty for in-turn signatures
+	diffNoTurn                    = big.NewInt(1) // Block difficulty for out-of-turn signatures
+	allowedFutureBlockTimeSeconds = int64(15)     // Max seconds from current time allowed for blocks, before they're considered future blocks
 )
 
 // Various error messages to mark blocks invalid. These should be private to
@@ -141,6 +148,43 @@ var (
 	// that already signed a header recently, thus is temporarily not allowed to.
 	errRecentlySigned = errors.New("recently signed")
 )
+var (
+	errOlderBlockTime  = errors.New("timestamp older than parent")
+	errTooManyUncles   = errors.New("too many uncles")
+	errDuplicateUncle  = errors.New("duplicate uncle")
+	errUncleIsAncestor = errors.New("uncle is ancestor")
+	errDanglingUncle   = errors.New("uncle's parent is not ancestor")
+	errInvalidPoW      = errors.New("invalid proof-of-work")
+)
+
+type Mode uint
+
+const (
+	ModeNormal Mode = iota
+	ModeShared
+	ModeTest
+	ModeFake
+	ModeFullFake
+)
+
+// Config are the configuration parameters of the probeash.
+type Config struct {
+	CacheDir         string
+	CachesInMem      int
+	CachesOnDisk     int
+	CachesLockMmap   bool
+	DatasetDir       string
+	DatasetsInMem    int
+	DatasetsOnDisk   int
+	DatasetsLockMmap bool
+	PowMode          Mode
+
+	// When set, notifications sent by the remote sealer will
+	// be block header JSON objects instead of work package arrays.
+	NotifyFull bool
+
+	Log log.Logger `toml:"-"`
+}
 
 // SignerFn hashes and signs the data to be signed by a backing account.
 type SignerFn func(signer accounts.Account, mimeType string, message []byte) ([]byte, error)
@@ -173,8 +217,10 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Greatri is the proof-of-authority consensus engine proposed to support the
 // Probeum testnet following the Ropsten attacks.
 type Greatri struct {
-	config *params.DposConfig // Consensus engine configuration parameters
-	db     probedb.Database   // Database to store and retrieve snapshot checkpoints
+	dposConfig *params.DposConfig // Consensus engine configuration parameters
+	config     Config             //
+	db         probedb.Database   // Database to store and retrieve snapshot checkpoints
+	powEngine  consensus.Engine
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -191,7 +237,7 @@ type Greatri struct {
 
 // New creates a Greatri proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
-func New(config *params.DposConfig, db probedb.Database) *Greatri {
+func New(config *params.DposConfig, db probedb.Database, powEngine consensus.Engine) *Greatri {
 	// Set any missing consensus parameters to their defaults
 	conf := *config
 	if conf.Epoch == 0 {
@@ -202,8 +248,9 @@ func New(config *params.DposConfig, db probedb.Database) *Greatri {
 	signatures, _ := lru.NewARC(inmemorySignatures)
 
 	return &Greatri{
-		config:     &conf,
+		dposConfig: &conf,
 		db:         db,
+		powEngine:  powEngine,
 		recents:    recents,
 		signatures: signatures,
 		proposals:  make(map[common.Address]bool),
@@ -219,98 +266,214 @@ func (c *Greatri) Author(header *types.Header) (common.Address, error) {
 
 // VerifyHeader checks whprobeer a header conforms to the consensus rules.
 func (c *Greatri) VerifyHeader(chain consensus.ChainHeaderReader, header *types.Header, seal bool) error {
-	return c.verifyHeader(chain, header, nil)
+	// currently not support fake mode
+	if c.config.PowMode == ModeFullFake {
+		return nil
+	}
+	// Short circuit if the header is known, or its parent not
+	number := header.Number.Uint64()
+	if chain.GetHeader(header.Hash(), number) != nil {
+		return nil
+	}
+	parent, err, diff := c.FindRealParentHeader(chain, header, nil, -1)
+	if err != nil {
+		return err
+	}
+	// Sanity checks passed, do a proper verification
+	return c.verifyHeader(chain, header, parent, false, seal, time.Now().Unix(), diff)
+}
+
+func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header *types.Header, headers []*types.Header, index int) (*types.Header, error, int64) {
+	var parent = header
+	var diff int64 = 1
+	for {
+		log.Debug("", "index: ", index)
+		if index > 0 && headers != nil {
+			parent = headers[index-1]
+			if parent.Hash() != headers[index].ParentHash || new(big.Int).Sub(headers[index].Number, parent.Number).Cmp(common.Big1) != 0 {
+				log.Debug("parent hash not equal : ", "num:", parent.Number.Uint64(), "diff:", new(big.Int).Sub(headers[index].Number, parent.Number), "parent:", parent.Hash().String(), "next:", headers[index].ParentHash.String())
+				return nil, consensus.ErrUnknownAncestor, diff
+			}
+			index--
+		} else if index == 0 {
+			parent = chain.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
+			index--
+		} else {
+			parent = chain.GetHeader(parent.ParentHash, parent.Number.Uint64()-1)
+		}
+		if parent == nil {
+			log.Error("", "consensus.ErrUnknownAncestor: ", header.Difficulty.String())
+			return nil, consensus.ErrUnknownAncestor, diff
+		}
+		if !parent.IsVisual() {
+			return parent, nil, diff
+		}
+
+		log.Debug("this is a visual block ", "num:", parent.Number.String())
+		diff++
+
+	}
 }
 
 // VerifyHeaders is similar to VerifyHeader, but verifies a batch of headers. The
 // method returns a quit channel to abort the operations and a results channel to
 // retrieve the async verifications (the order is that of the input slice).
 func (c *Greatri) VerifyHeaders(chain consensus.ChainHeaderReader, headers []*types.Header, seals []bool) (chan<- struct{}, <-chan error) {
-	abort := make(chan struct{})
-	results := make(chan error, len(headers))
+	// If we're running a full engine faking, accept any input as valid
+	if c.config.PowMode == ModeFullFake || len(headers) == 0 {
+		abort, results := make(chan struct{}), make(chan error, len(headers))
+		for i := 0; i < len(headers); i++ {
+			results <- nil
+		}
+		return abort, results
+	}
 
+	// Spawn as many workers as allowed threads
+	workers := runtime.GOMAXPROCS(0)
+	if len(headers) < workers {
+		workers = len(headers)
+	}
+
+	// Create a task channel and spawn the verifiers
+	var (
+		inputs  = make(chan int)
+		done    = make(chan int, workers)
+		errors  = make([]error, len(headers))
+		abort   = make(chan struct{})
+		unixNow = time.Now().Unix()
+	)
+	for i := 0; i < workers; i++ {
+		go func() {
+			for index := range inputs {
+				errors[index] = c.verifyHeaderWorker(chain, headers, seals, index, unixNow)
+				done <- index
+			}
+		}()
+	}
+
+	errorsOut := make(chan error, len(headers))
 	go func() {
-		for i, header := range headers {
-			err := c.verifyHeader(chain, header, headers[:i])
-
+		defer close(inputs)
+		var (
+			in, out = 0, 0
+			checked = make([]bool, len(headers))
+			inputs  = inputs
+		)
+		for {
 			select {
+			case inputs <- in:
+				if in++; in == len(headers) {
+					// Reached end of headers. Stop sending to workers.
+					inputs = nil
+				}
+			case index := <-done:
+				for checked[index] = true; checked[out]; out++ {
+					errorsOut <- errors[out]
+					if out == len(headers)-1 {
+						return
+					}
+				}
 			case <-abort:
 				return
-			case results <- err:
 			}
 		}
 	}()
-	return abort, results
+	return abort, errorsOut
+}
+
+func (c *Greatri) verifyHeaderWorker(chain consensus.ChainHeaderReader, headers []*types.Header, seals []bool, index int, unixNow int64) error {
+	parent, err, diff := c.FindRealParentHeader(chain, headers[index], headers, index)
+	if err != nil {
+		return err
+	}
+	return c.verifyHeader(chain, headers[index], parent, false, seals[index], unixNow, diff)
 }
 
 // verifyHeader checks whprobeer a header conforms to the consensus rules.The
 // caller may optionally pass in a batch of parents (ascending order) to avoid
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
-func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header *types.Header, parents []*types.Header) error {
-	return nil
+func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent *types.Header, uncle bool, seal bool, unixNow int64, diff int64) error {
+	log.Trace("enter verifyHeader", "block number", header.Number, "seal", seal)
+	//return nil
+	// Ensure that the header's extra-data section is of a reasonable size
 
-	if header.Number == nil {
-		return errUnknownBlock
+	addr, err := c.RecoverOwner(header)
+	if err != nil || addr != header.DposSigAddr {
+		return fmt.Errorf("DposSigAddr err : %s > %s", addr.String(), header.DposSigAddr.String())
 	}
-	number := header.Number.Uint64()
 
-	// Don't waste time checking blocks from the future
-	if header.Time > uint64(time.Now().Unix()) {
-		return consensus.ErrFutureBlock
+	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
+		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
-	// Checkpoint blocks need to enforce zero beneficiary
-	checkpoint := (number % c.config.Epoch) == 0
-	if checkpoint && header.Coinbase != (common.Address{}) {
-		return errInvalidCheckpointBeneficiary
-	}
-	// Nonces must be 0x00..0 or 0xff..f, zeroes enforced on checkpoints
-	if !bytes.Equal(header.Nonce[:], nonceAuthVote) && !bytes.Equal(header.Nonce[:], nonceDropVote) {
-		return errInvalidVote
-	}
-	if checkpoint && !bytes.Equal(header.Nonce[:], nonceDropVote) {
-		return errInvalidCheckpointVote
-	}
-	// Check that the extra-data contains both the vanity and signature
-	if len(header.Extra) < extraVanity {
-		return errMissingVanity
-	}
-	if len(header.Extra) < extraVanity+extraSeal {
-		return errMissingSignature
-	}
-	// Ensure that the extra-data contains a signer list on checkpoint, but none otherwise
-	signersBytes := len(header.Extra) - extraVanity - extraSeal
-	if !checkpoint && signersBytes != 0 {
-		return errExtraSigners
-	}
-	if checkpoint && signersBytes%common.AddressLength != 0 {
-		return errInvalidCheckpointSigners
-	}
-	// Ensure that the mix digest is zero as we don't have fork protection currently
-	if header.MixDigest != (common.Hash{}) {
-		return errInvalidMixDigest
-	}
-	// Ensure that the block doesn't contain any uncles which are meaningless in PoA
-	if header.UncleHash != uncleHash {
-		return errInvalidUncleHash
-	}
-	// Ensure that the block's difficulty is meaningful (may not be correct at this point)
-	if number > 0 {
-		if header.Difficulty == nil || (header.Difficulty.Cmp(diffInTurn) != 0 && header.Difficulty.Cmp(diffNoTurn) != 0) {
-			return errInvalidDifficulty
+
+	// Verify the header's timestamp
+	if !uncle {
+		if header.Time > uint64(unixNow+allowedFutureBlockTimeSeconds) {
+			return consensus.ErrFutureBlock
 		}
+	}
+	if header.Time <= parent.Time {
+		return errOlderBlockTime
+	}
+	// Verify the block's difficulty based on its timestamp and parent's difficulty
+	expected := probeash.CalcDifficulty(chain.Config(), header.Time, parent)
+
+	if expected.Cmp(header.Difficulty) != 0 {
+		return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
 	}
 	// Verify that the gas limit is <= 2^63-1
 	cap := uint64(0x7fffffffffffffff)
 	if header.GasLimit > cap {
 		return fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, cap)
 	}
-	// If all checks passed, validate any special fields for hard forks
-	if err := misc.VerifyForkHashes(chain.Config(), header, false); err != nil {
+	// Verify that the gasUsed is <= gasLimit
+	if header.GasUsed > header.GasLimit {
+		return fmt.Errorf("invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
+	}
+	// Verify the block's gas usage and (if applicable) verify the base fee.
+	if !chain.Config().IsLondon(header.Number) {
+		// Verify BaseFee not present before EIP-1559 fork.
+		if header.BaseFee != nil {
+			return fmt.Errorf("invalid baseFee before fork: have %d, expected 'nil'", header.BaseFee)
+		}
+		err := misc.VerifyGaslimit(parent.GasLimit, header.GasLimit)
+		if err != nil {
+			log.Info("", err)
+			return err
+		}
+	} else if err := misc.VerifyEip1559Header(chain.Config(), parent, header); err != nil {
+		// Verify the header's EIP-1559 attributes.
 		return err
 	}
-	// All basic checks passed, verify cascading fields
-	return c.verifyCascadingFields(chain, header, parents)
+	// Verify that the block number is parent's +1
+	if new(big.Int).Sub(header.Number, parent.Number).Cmp(big.NewInt(diff)) != 0 {
+		return consensus.ErrInvalidNumber
+	}
+	// Verify the engine specific seal securing the block
+	if seal {
+		pow, ok := c.powEngine.(*probeash.Probeash)
+		if !ok {
+			log.Warn("DispatchPowAnswer err! pow is not a pow engine")
+		}
+		for _, answer := range header.PowAnswers {
+			//baseBlock := c.
+			err := pow.PowVerifySeal(chain, parent, false, answer)
+			if err != nil {
+				log.Debug("PowVerifySeal failed", "block number", header.Number, "answer", answer)
+				return err
+			}
+		}
+		log.Debug("PowVerifySeal pass", "block number", header.Number)
+	}
+	// If all checks passed, validate any special fields for hard forks
+	if err := misc.VerifyDAOHeaderExtraData(chain.Config(), header); err != nil {
+		return err
+	}
+	if err := misc.VerifyForkHashes(chain.Config(), header, uncle); err != nil {
+		return err
+	}
+	return nil
 }
 
 // verifyCascadingFields verifies all the header fields that are not standalone,
@@ -333,7 +496,7 @@ func (c *Greatri) verifyCascadingFields(chain consensus.ChainHeaderReader, heade
 	if parent == nil || parent.Number.Uint64() != number-1 || parent.Hash() != header.ParentHash {
 		return consensus.ErrUnknownAncestor
 	}
-	if parent.Time+c.config.Period > header.Time {
+	if parent.Time+c.dposConfig.Period > header.Time {
 		return errInvalidTimestamp
 	}
 	// Verify that the gasUsed is <= gasLimit
@@ -462,6 +625,72 @@ func (c *Greatri) VerifyUncles(chain consensus.ChainReader, block *types.Block) 
 	return nil
 }
 
+// VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
+func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
+	powAnswers := block.PowAnswerUncles()
+	log.Debug("VerifyUnclePowAnswers", "start  : ", block.NumberU64(), "uncle", len(powAnswers))
+
+	parent, err, _ := greatri.FindRealParentHeader(chain, block.Header(), nil, -1)
+	if err != nil {
+		return err
+	}
+	for _, answer := range powAnswers {
+		if parent.Number.Uint64()-answer.Number.Uint64() > 5 {
+			return fmt.Errorf("answer is too far ")
+		}
+		verify := greatri.verifyPowAnswer(chain, answer)
+		if verify != nil {
+			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
+			return verify
+		}
+	}
+
+	log.Debug("VerifyUnclePowAnswers", "end  : ", block.NumberU64())
+
+	return nil
+}
+
+// VerifyDposInfo verifies that the given block's dposInfo  conform to the consensus
+func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types.Block) error {
+
+	miner := block.Header().DposSigAddr
+	isVisual := block.Header().IsVisual()
+	num := block.NumberU64()
+
+	log.Debug("VerifyDposInfo", "num : ", num)
+
+	isProducer := chain.CheckIsProducerAccount(num, miner)
+
+	if (isProducer && isVisual) || (!isProducer && !isVisual) {
+		log.Debug("not visual  not allow  visual extra ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
+		return fmt.Errorf(" not visual  not allow  visual extra")
+	}
+
+	if !chain.CheckAcks(block) {
+		log.Debug("acks not legal  ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
+		return fmt.Errorf(" acks not legal")
+	}
+
+	log.Debug("VerifyDposInfo", "end  : ", num)
+
+	return nil
+}
+
+func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer) error {
+
+	parent := chain.GetHeaderByNumber(answer.Number.Uint64())
+	pow, ok := c.powEngine.(*probeash.Probeash)
+	if !ok {
+		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
+	}
+	err := pow.PowVerifySeal(chain, parent, false, answer)
+	if err != nil {
+		log.Debug("PowVerifySeal failed", "block number", parent.Number, "answer", answer)
+		return err
+	}
+	return nil
+}
+
 // verifySeal checks whprobeer the signature contained in the header satisfies the
 // consensus protocol requirements. The method accepts an optional list of parent
 // headers that aren't yet part of the local blockchain to generate the snapshots
@@ -506,6 +735,40 @@ func (c *Greatri) verifySeal(chain consensus.ChainHeaderReader, header *types.He
 	//}
 	return nil
 }
+func (c *Greatri) RecoverOwner(header *types.Header) (common.Address, error) {
+	pubkey, err := secp256k1.RecoverPubkey(crypto.Keccak256(GreatriRLP(header)), header.DposSig)
+	if err == nil {
+		publicKey, err := crypto.UnmarshalPubkey(pubkey)
+		if err == nil {
+			return crypto.PubkeyToAddress(*publicKey), nil
+		}
+	}
+	return common.Address{}, nil
+}
+
+func (c *Greatri) verifyHeaderSeal(chain consensus.ChainHeaderReader, header *types.Header, parents []*types.Header) error {
+	//account := chain.GetSealDposAccount(blockNumber)
+	//
+	_, err := c.RecoverOwner(header)
+	//if err == nil {
+	//	for _, account := range accounts {
+	//		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
+	//			if dposAck.AckType == types.AckTypeOppose {
+	//				return true
+	//			} else {
+	//				curHash := bc.GetHeaderByNumber(dposAck.Number.Uint64()).Hash()
+	//				if curHash == dposAck.BlockHash {
+	//					return true
+	//				} else {
+	//					log.Debug("CheckDposAck Fail, hash not match", "signer", owner, "err", err)
+	//				}
+	//			}
+	//		}
+	//	}
+	//	log.Debug("CheckDposAck Fail, singer is not the dpos node", "signer", owner, "err", err)
+	//}
+	return err
+}
 
 // Prepare implements consensus.Engine, preparing all the consensus fields of the
 // header for running the transactions on top.
@@ -528,12 +791,12 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 // rewards given.
 func (c *Greatri) DposFinalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, powUncles []*types.PowAnswer) {
 	accumulateRewards(chain.Config(), state, header, powUncles)
-	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number), header.Number)
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 }
 
 func (c *Greatri) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// No block rewards in PoA, so the state remains as is and uncles are dropped
-	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number), header.Number)
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 	//header.UncleHash = types.CalcUncleHash(nil)
 }
 

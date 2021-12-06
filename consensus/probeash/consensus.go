@@ -189,6 +189,16 @@ func (probeash *Probeash) verifyHeaderWorker(chain consensus.ChainHeaderReader, 
 	return probeash.verifyHeader(chain, headers[index], parent, false, seals[index], unixNow)
 }
 
+// VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
+func (probeash *Probeash) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
+	return fmt.Errorf("not Implement")
+}
+
+// VerifyDposInfo verifies that the given block's dopsInfo  conform to the consensus
+func (probeash *Probeash) VerifyDposInfo(chain consensus.ChainReader, block *types.Block) error {
+	return fmt.Errorf("not Implement")
+}
+
 // VerifyUncles verifies that the given block's uncles conform to the consensus
 // rules of the stock Probeum probeash engine.
 func (probeash *Probeash) VerifyUncles(chain consensus.ChainReader, block *types.Block) error {
@@ -665,7 +675,7 @@ func (probeash *Probeash) Prepare(chain consensus.ChainHeaderReader, header *typ
 func (probeash *Probeash) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction, uncles []*types.Header) {
 	// Accumulate any block and uncle rewards and commit the final state root
 	accumulateRewards(chain.Config(), state, header, uncles)
-	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number), header.Number)
+	header.Root = state.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 }
 
 // FinalizeAndAssemble implements consensus.Engine, accumulating the block and

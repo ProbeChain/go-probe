@@ -259,7 +259,7 @@ func makeHeader(chain consensus.ChainReader, parent *types.Block, state *state.S
 	}
 	currentNumber := new(big.Int).Add(parent.Number(), common.Big1)
 	header := &types.Header{
-		Root:       state.IntermediateRoot(chain.Config().IsEIP158(parent.Number()), currentNumber),
+		Root:       state.IntermediateRoot(chain.Config().IsEIP158(parent.Number())),
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
 		Difficulty: engine.CalcDifficulty(chain, time, &types.Header{
@@ -315,3 +315,9 @@ func (cr *fakeChainReader) GetHeaderByNumber(number uint64) *types.Header       
 func (cr *fakeChainReader) GetHeaderByHash(hash common.Hash) *types.Header          { return nil }
 func (cr *fakeChainReader) GetHeader(hash common.Hash, number uint64) *types.Header { return nil }
 func (cr *fakeChainReader) GetBlock(hash common.Hash, number uint64) *types.Block   { return nil }
+
+func (cr *fakeChainReader) CheckIsProducerAccount(number uint64, owner common.Address) bool {
+	return false
+}
+func (cr *fakeChainReader) CheckIsDposAccount(number uint64, owner common.Address) bool { return false }
+func (cr *fakeChainReader) CheckAcks(block *types.Block) bool                           { return false }

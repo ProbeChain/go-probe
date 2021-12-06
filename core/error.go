@@ -100,4 +100,6 @@ var (
 	ErrValidCandidateDPOSValue = errors.New("valid apply candidate dposAccout value too large")
 
 	ErrValidUnsupportedAccount = errors.New("unsupported account")
+
+	ErrValidLossState = errors.New("loss reporting state constraint")
 )

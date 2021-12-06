@@ -21,6 +21,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/imroc/biu"
 	"math/big"
 	"reflect"
 	"strings"
@@ -536,4 +537,143 @@ func TestHash_Format(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBigToAddress(t *testing.T) {
+	addr := HexToAddress("0x73a852B3A0f63397f9f0DA7b8A0f7FF72d790b08")
+	fmt.Println(addr.Bytes()) //[115 168 82 179 160 246 51 151 249 240 218 123 138 15 127 247 45 121 11 8]
+	last10Bytes := addr[10:]
+	fmt.Println(last10Bytes) //[218 123 138 15 127 247 45 121 11 8]
+	addr1 := BytesToAddress(last10Bytes)
+	fmt.Println("last10BytesToAddress:", addr1)
+	a := new(big.Int).SetBytes(last10Bytes)
+	fmt.Println(a.Uint64())
+	fmt.Println(a.Uint64() % 1024)
+	addr2 := BigToAddress(a)
+	fmt.Println("BigToAddress:", addr2)
+	//first10Bytes := addr2[:10]
+	first10Bytes := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+	fmt.Println(first10Bytes)
+	fmt.Println(new(big.Int).SetBytes(first10Bytes))
+	fmt.Println(addr2[10:])
+}
+
+func TestBigToAddress2(t *testing.T) {
+	addr := HexToAddress("0x897638B555Fa1584965A1E1c4d4302264ac9432b")
+	fmt.Println(addr.Bytes()) //[115 168 82 179 160 246 51 151 249 240 218 123 138 15 127 247 45 121 11 8]
+	last10Bytes := addr[19:]
+	fmt.Println(last10Bytes) //[218 123 138 15 127 247 45 121 11 8]
+	addr1 := BytesToAddress(last10Bytes)
+	fmt.Println("last10BytesToAddress:", addr1)
+	a := new(big.Int).SetBytes(last10Bytes)
+	addr2 := BigToAddress(a)
+	fmt.Println("BigToAddress:", addr2)
+
+}
+
+func TestBigToAddress3(t *testing.T) {
+	lost := HexToAddress("0x897638B555Fa1584965A1E1c4d4302264ac9432b")
+
+	//beni := HexToAddress("0x28fd633B72cA9828542A7dA8E3426E11C831D4Bd")
+	/*	var buffer bytes.Buffer
+		buffer.WriteString(lost.String())
+		buffer.WriteString(beni.String())
+		buffer.WriteString(strconv.Itoa(int(uint32(123456))))
+		h := md5.New()
+		h.Write([]byte(buffer.String()))
+		fmt.Println(buffer.String())
+		fmt.Println(hex.EncodeToString(h.Sum(nil)))*/
+	//flag := new(big.Int).SetUint64(1)
+	bytes := lost.Bytes()[18:]
+	fmt.Println("start：", biu.ToBinaryString(bytes)) //[01000011 00101011]
+	a := new(big.Int).SetBytes(bytes)
+	b := new(big.Int).Lsh(a, 6)
+	c := new(big.Int).SetBytes(b.Bytes()[1:])
+	fmt.Println(biu.ToBinaryString(c.Bytes())) //[11001010 11000000]
+	d := new(big.Int).Rsh(c, 6)
+	fmt.Println(biu.ToBinaryString(d.Bytes()))
+	fmt.Println(d.String())
+}
+
+func TestBigToAddress4(t *testing.T) {
+	var a [128]byte
+	a[0] = 1
+	fmt.Println("start：", biu.ToBinaryString(a[:]))
+	b := new(big.Int).SetBytes(a[:])
+	//c := b|(1<<20)
+	flag := new(big.Int).SetUint64(1)
+	index := uint(0)
+	c := new(big.Int).Or(b, new(big.Int).Lsh(flag, index))
+	fmt.Printf("set loc[%d]:%s\n", index, biu.ToBinaryString(c.Bytes()))
+	fmt.Printf("get loc[%d]:%d\n", index, c.Bit(0))
+	d := new(big.Int).SetBytes(c.Bytes())
+	e := new(big.Int).AndNot(d, new(big.Int).Lsh(flag, index)) //z = x &^ y
+	fmt.Printf("set loc[%d]:%s\n", index, biu.ToBinaryString(e.Bytes()))
+	fmt.Printf("get loc[%d]:%d\n", index, e.Bit(int(index)))
+	f := new(big.Int).SetBytes(e.Bytes())
+	//d:=(a<<4)>>7
+	fmt.Println(f.Bit(3))
+	//new(big.Int).Lsh(f, uint(1023)).
+}
+
+func TestBigToAddress5(t *testing.T) {
+	a := new(LossMark)
+	a[0] = 1
+	fmt.Println("start：", biu.ToBinaryString(a[:]))
+	a.SetMark(0, false)
+	fmt.Println(a.GetMarkedIndex())
+	fmt.Println("update 0：", biu.ToBinaryString(a[:]))
+	a.SetMark(0, true)
+	fmt.Println(a.GetMarkedIndex())
+	fmt.Println("update 1：", biu.ToBinaryString(a[:]))
+	a.SetMark(0, false)
+	fmt.Println(a.GetMarkedIndex())
+	fmt.Println("update 0：", biu.ToBinaryString(a[:]))
+}
+func TestBigToAddress6(t *testing.T) {
+	c := LossType(0)
+	fmt.Println("start ", c)
+	fmt.Println("state", c.GetState())
+	d := c.SetState(false)
+	fmt.Println("state", d.GetState())
+	fmt.Println("start ", d)
+	fmt.Println("type d", d.GetType(), "num", d)
+	e := d.SetType(0)
+	fmt.Println("type e", e.GetType(), "num", e)
+	f := d.SetType(127)
+	fmt.Println("type f", f.GetType(), "num", f)
+	g := f.SetState(false)
+	fmt.Println("type g", g.GetType(), "num", g)
+}
+
+func TestDpos(t *testing.T) {
+	epoch := uint64(60)
+	number := uint64(61)
+	/*	fmt.Println("lastPoint:", GetLastConfirmPoint(number, epoch))
+		fmt.Println("currPoint:", GetCurrentConfirmPoint(number, epoch))
+		fmt.Println("roundId:", CalcDPosNodeRoundId(number, epoch))*/
+
+	lastConfirmNumber := GetLastConfirmPoint(number, epoch)
+	lastRoundId := CalcDPosNodeRoundId(lastConfirmNumber, epoch)
+	fmt.Printf("current block beblog dPos：confirmNumber：%d，roundId：%d\n", lastConfirmNumber, lastRoundId)
+
+	confirmNumber := GetCurrentConfirmPoint(number, epoch)
+	confirmRoundId := CalcDPosNodeRoundId(confirmNumber, epoch)
+	//confirmRoundId2 := CalcDPosNodeRoundId(number, epoch)
+	fmt.Printf("confirmNumber：%d，roundId：%d\n", confirmNumber, confirmRoundId)
+	//fmt.Printf("confirmNumber：%d，roundId2：%d\n", confirmNumber, confirmRoundId2)
+	if number >= confirmNumber {
+		fmt.Printf("next block beblog dPos：confirmNumber：%d，roundId：%d\n", confirmNumber, confirmRoundId)
+	} else {
+		fmt.Printf("next block beblog dPos：confirmNumber：%s，roundId：%d\n", "nil", confirmRoundId)
+	}
+
+	/*	if number <= confirmNumber {
+			fmt.Printf("next block beblog dPos candidate：confirmNumber：%d，roundId：%d\n", number, confirmRoundId2)
+		} else {
+			fmt.Printf("next block beblog dPos candidate：confirmNumber：%d，roundId：%d\n", number, confirmRoundId2)
+		}*/
+
+	//if number
+
 }

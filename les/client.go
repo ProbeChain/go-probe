@@ -30,10 +30,6 @@ import (
 	"github.com/probeum/go-probeum/core/bloombits"
 	"github.com/probeum/go-probeum/core/rawdb"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probe/filters"
-	"github.com/probeum/go-probeum/probe/gasprice"
 	"github.com/probeum/go-probeum/event"
 	"github.com/probeum/go-probeum/internal/probeapi"
 	"github.com/probeum/go-probeum/les/vflux"
@@ -45,6 +41,10 @@ import (
 	"github.com/probeum/go-probeum/p2p/enode"
 	"github.com/probeum/go-probeum/p2p/enr"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/filters"
+	"github.com/probeum/go-probeum/probe/gasprice"
+	"github.com/probeum/go-probeum/probe/probeconfig"
 	"github.com/probeum/go-probeum/rlp"
 	"github.com/probeum/go-probeum/rpc"
 )
@@ -109,7 +109,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*LightProbeum, error) {
 		eventMux:       stack.EventMux(),
 		reqDist:        newRequestDistributor(peers, &mclock.System{}),
 		accountManager: stack.AccountManager(),
-		engine:         probeconfig.CreateConsensusEngine(stack, chainConfig, &config.Probeash, nil, false, chainDb),
+		engine:         probeconfig.CreateConsensusEngine(stack, chainConfig, &config.Probeash, nil, false, chainDb, nil),
 		bloomRequests:  make(chan chan *bloombits.Retrieval),
 		bloomIndexer:   core.NewBloomIndexer(chainDb, params.BloomBitsBlocksClient, params.HelperTrieConfirmations),
 		p2pServer:      stack.Server(),

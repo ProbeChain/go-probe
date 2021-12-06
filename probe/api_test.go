@@ -84,7 +84,7 @@ func TestAccountRange(t *testing.T) {
 		}
 	}
 	state.Commit(true)
-	root := state.IntermediateRoot(true, nil)
+	root := state.IntermediateRoot(true)
 
 	trie, err := statedb.OpenTrie(root)
 	if err != nil {
@@ -141,7 +141,7 @@ func TestEmptyAccountRange(t *testing.T) {
 		st, _   = state.New(common.Hash{}, statedb, nil)
 	)
 	st.Commit(true)
-	st.IntermediateRoot(true, nil)
+	st.IntermediateRoot(true)
 	results := st.IteratorDump(&state.DumpConfig{
 		SkipCode:          true,
 		SkipStorage:       true,
