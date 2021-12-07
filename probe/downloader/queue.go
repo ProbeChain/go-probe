@@ -76,9 +76,9 @@ func newFetchResult(header *types.Header, fastSync bool) *fetchResult {
 	item := &fetchResult{
 		Header: header,
 	}
-	if !header.EmptyBody() {
-		item.pending |= (1 << bodyType)
-	}
+	//if !header.EmptyBody() {
+	item.pending |= (1 << bodyType)
+	//}
 	if fastSync && !header.EmptyReceipts() {
 		item.pending |= (1 << receiptType)
 	}

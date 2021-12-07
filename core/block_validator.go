@@ -63,11 +63,11 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 
 	if err := v.engine.VerifyUnclePowAnswers(v.bc, block); err != nil {
 		log.Error("ValidateBody", "VerifyUnclePowAnswers error", err)
-		//return err
+		return err
 	}
 	if err := v.engine.VerifyDposInfo(v.bc, block); err != nil {
 		log.Error("ValidateBody", "VerifyDposInfo error", err)
-		//return err
+		return err
 	}
 	if hash := types.DeriveSha(block.Transactions(), trie.NewStackTrie(nil)); hash != header.TxHash {
 		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, header.TxHash)

@@ -1719,7 +1719,6 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 	)
 	blocks := make([]*types.Block, len(results))
 	for i, result := range results {
-		//	log.Debug("importBlockResults","DposAcks:",len(result.DposAcks))
 		blocks[i] = types.NewBlockWithHeader(result.Header).WithBodyGreatri(result.Transactions, result.Uncles, result.PowAnswerUncles, result.DposAcks)
 		//blocks[i].CopyPowAnswerUncles(result.PowAnswerUncles)
 	}
