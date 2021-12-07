@@ -99,5 +99,5 @@ func IsSpecialAddress(hexAddr string) bool {
 
 //IsReservedAddress judge system reserved address
 func IsReservedAddress(address Address) bool {
-	return address.Hash().Big().Int64() <= 512
+	return address.Hash().Big().Uint64() <= 512
 }

@@ -689,9 +689,10 @@ func TestSpecialAddress(t *testing.T) {
 		"0x0000000000000000000000000000000000000119",
 		"0x0000000000000000000000000000000000000120",
 		"0x0000000000000000000000000000000000000200",
+		"0xFb6Ba8741A1F36132E7A4a8DA55e167d1baC98cC",
 	}
 	for _, v := range arr {
 		addr := HexToAddress(v)
-		fmt.Println(addr.Hash().Big().Int64() <= 512)
+		fmt.Println(addr.Hash().Big().Uint64() <= 512)
 	}
 }
