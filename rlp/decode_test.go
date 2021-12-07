@@ -18,9 +18,11 @@ package rlp
 
 import (
 	"bytes"
+	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/probeum/go-probeum/common"
 	"io"
 	"math/big"
 	"reflect"
@@ -1167,4 +1169,39 @@ func unhex(str string) []byte {
 		panic(fmt.Sprintf("invalid hex string: %q", str))
 	}
 	return b
+}
+
+func TestDecoder2Func(t *testing.T) {
+	h := md5.New()
+	h.Write([]byte("abc123"))
+	fmt.Println(hex.EncodeToString(h.Sum(nil)))
+}
+
+func TestDecoder3Func(t *testing.T) {
+	//make(map[common.Address]*stateObject),
+	addr := common.HexToAddress("0x309Ef4F509f956f9beeEAb10232Ad8A90ecdD6E6")
+	addr2 := common.HexToAddress("0x309Ef4F509f956f9beeEAb10232Ad8A90ecdD6E5")
+
+	type Dog struct {
+		s byte
+		a []common.Address
+	}
+	b := new(Dog)
+	b.s = 1
+	b.a = append(b.a, addr)
+	b.a = append(b.a, addr2)
+	//b.a[0] = append(b.a[0], addr)
+	//b.a[1] = append(b.a[1], addr2)
+	var bytes []byte
+	bytes, err := EncodeToBytes(b)
+	c := new(Dog)
+	if err == nil {
+		err := DecodeBytes(bytes, &c)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(1212)
+		}
+
+	}
 }

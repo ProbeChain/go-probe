@@ -98,14 +98,10 @@ var (
 
 	AlterPrefix = []byte("alt") // 修改前缀
 
-	StateRootPrefix = []byte("state-root-") // 修改前缀
-
-	DPosPrefix = []byte("DPos-")
-
-	DPosCandidatePrefix = []byte("DPos-Candidate-")
-
 	preimageCounter    = metrics.NewRegisteredCounter("db/preimage/total", nil)
 	preimageHitCounter = metrics.NewRegisteredCounter("db/preimage/hits", nil)
+
+	DPosPrefix = []byte("DPos-")
 )
 
 const (
@@ -244,16 +240,9 @@ func AlterKey(hash common.Hash) []byte {
 	return append(AlterPrefix, hash.Bytes()...)
 }
 
-func StateRootKey(hash common.Hash) []byte {
-	return append(StateRootPrefix, hash.Bytes()...)
-}
-
-func DposKey(key uint64) []byte {
+//DPosKey = DPosPrefix + hash
+func DPosKey(key uint64) []byte {
 	return append(DPosPrefix, IntToBytes(key)...)
-}
-
-func DPosCandidateKey() []byte {
-	return DPosCandidatePrefix
 }
 
 func IntToBytes(n uint64) []byte {

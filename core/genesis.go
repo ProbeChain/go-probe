@@ -164,11 +164,6 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, overri
 	if genesis != nil && genesis.Config == nil {
 		return params.AllProbeashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
-	dPosCandidates := rawdb.ReadDPosCandidate(db)
-	log.Info(fmt.Sprintf("load %d dPos candidate", len(dPosCandidates)))
-	for _, candidate := range dPosCandidates {
-		state.GetDPosCandidates().AddDPosCandidate(candidate)
-	}
 	// Just commit the new block if there is no stored genesis block.
 	stored := rawdb.ReadCanonicalHash(db, 0)
 	if (stored == common.Hash{}) {
@@ -274,34 +269,11 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	if err != nil {
 		panic(err)
 	}
-	var dPosHash common.Hash
 	if g.Config.Dpos != nil {
-		number := g.Number
-		epoch := g.Config.Dpos.Epoch
-		dposNo := number + 1 - (number+1)%epoch
-		if number == 0 {
-			/*for _, s := range statedb.GetStateDbTrie().GetTallHash() {
-				log.Info("ToBlock roothash ", "hash", s.Hex())
-			}*/
-			dPosHash = state.BuildHashForDPos(g.Config.Dpos.DposList)
-			statedb.UpdateDPosHash(dPosHash)
-			rawdb.WriteDPos(db, dposNo, g.Config.Dpos.DposList)
-			//data, _ := json.Marshal(g.Dpos.DposList)
-			/*			data, err := rlp.EncodeToBytes(g.Dpos.DposList)
-						if err != nil {
-							log.Error("ToBlock", "dpos Should not error: %v", err)
-						}
-						batch := db.NewBatch()
-						dposNodesKey := common.GetDposNodesKey(dposNo, dPosHash)
-						if err := db.Put(dposNodesKey, data); err != nil {
-							log.Crit("Failed to store dposNodesList", "err", err)
-						}
-						batch.Write()*/
-		} else {
-			dPosHash = state.BuildHashForDPos(rawdb.ReadDPos(db, dposNo))
+		if g.Number == 0 {
+			statedb.InitDPosListAccount(g.Config.Dpos.DposList)
 		}
 	}
-	dPosCandidateHash := state.BuildHashForDPosCandidate(rawdb.ReadDPosCandidate(db))
 	for addr, account := range g.Alloc {
 		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
@@ -310,28 +282,26 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			statedb.SetState(addr, key, value)
 		}
 	}
-	root := statedb.IntermediateRoot(false, nil)
+	root := statedb.IntermediateRoot(false)
 
 	head := &types.Header{
-		Number:            new(big.Int).SetUint64(g.Number),
-		Nonce:             types.EncodeNonce(g.Nonce),
-		Time:              g.Timestamp,
-		ParentHash:        g.ParentHash,
-		Extra:             g.ExtraData,
-		GasLimit:          g.GasLimit,
-		GasUsed:           g.GasUsed,
-		BaseFee:           g.BaseFee,
-		Difficulty:        g.Difficulty,
-		MixDigest:         g.Mixhash,
-		Coinbase:          g.Coinbase,
-		Root:              root,
-		DposSigAddr:       common.Address{},
-		DposAcksHash:      common.Hash{},
-		DposSig:           make([]byte, 65),
-		DposAckCountList:  make([]*types.DposAckCount, 0),
-		PowAnswers:        make([]*types.PowAnswer, 0),
-		DPoSRoot:          dPosHash,
-		DPoSCandidateRoot: dPosCandidateHash,
+		Number:           new(big.Int).SetUint64(g.Number),
+		Nonce:            types.EncodeNonce(g.Nonce),
+		Time:             g.Timestamp,
+		ParentHash:       g.ParentHash,
+		Extra:            g.ExtraData,
+		GasLimit:         g.GasLimit,
+		GasUsed:          g.GasUsed,
+		BaseFee:          g.BaseFee,
+		Difficulty:       g.Difficulty,
+		MixDigest:        g.Mixhash,
+		Coinbase:         g.Coinbase,
+		Root:             root,
+		DposSigAddr:      common.Address{},
+		DposAcksHash:     common.Hash{},
+		DposSig:          make([]byte, 65),
+		DposAckCountList: make([]*types.DposAckCount, 0),
+		PowAnswers:       make([]*types.PowAnswer, 0),
 	}
 
 	if g.GasLimit == 0 {
@@ -347,12 +317,6 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}
-	/*	if g.Dpos != nil {
-		dposAccountList := statedb.GetDpostList()
-		for _, candidateDPOS := range g.Dpos.DposList {
-			dposAccountList = append(dposAccountList, candidateDPOS)
-		}
-	}*/
 
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true, nil)

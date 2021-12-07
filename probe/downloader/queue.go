@@ -76,9 +76,9 @@ func newFetchResult(header *types.Header, fastSync bool) *fetchResult {
 	item := &fetchResult{
 		Header: header,
 	}
-	if !header.EmptyBody() {
-		item.pending |= (1 << bodyType)
-	}
+	//if !header.EmptyBody() {
+	item.pending |= (1 << bodyType)
+	//}
 	if fastSync && !header.EmptyReceipts() {
 		item.pending |= (1 << receiptType)
 	}
@@ -796,6 +796,8 @@ func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLi
 		}
 		return nil
 	}
+
+	log.Debug("DeliverBodies", "txLists", len(txLists), "uncleLists", len(uncleLists), "powAnswerUncles", len(powAnswerUncles), "dposAcks", len(dposAcks))
 
 	reconstruct := func(index int, result *fetchResult) {
 		result.Transactions = txLists[index]

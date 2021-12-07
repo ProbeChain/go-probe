@@ -126,29 +126,32 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
 			err = args.setDefaultsOfRegisterAuthorize(b)
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
-			err = nil
+			err = args.setDefaultsOfRegisterLoss()
 		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
 			err = args.setDefaultsOfCancellation()
-		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
-			err = args.setDefaultsOfSendLossReport()
 		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
 			err = args.setDefaultsOfRevealLossReport()
-		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
-			err = args.setDefaultsOfTransferLostAccount()
-		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
-			err = args.setDefaultsOfRemoveLossReport()
-		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
-			err = args.setDefaultsOfRejectLossReport()
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_BALANCE,
+			common.SPECIAL_ADDRESS_FOR_CANCELLATION_LOST_ACCOUNT,
+			common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT,
+			common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT,
+			common.SPECIAL_ADDRESS_FOR_REDEMPTION:
+			err = args.setDefaultsOfTargetAddress()
 		case common.SPECIAL_ADDRESS_FOR_VOTE:
 			err = args.setDefaultsOfVote()
 		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
 			err = args.setDefaultsOfApplyToBeDPoSNode()
-		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
-			err = args.setDefaultsOfRedemption()
 		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
 			err = args.setDefaultsOfModifyPnsOwner()
 		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
 			err = args.setDefaultsOfModifyPnsContent()
+		case common.SPECIAL_ADDRESS_FOR_MODIFY_LOSS_TYPE:
+			err = args.setDefaultsOfModifyLossType()
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_PNS,
+			common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_AUTHORIZE:
+			err = args.setDefaultsOfTransferLostAssociatedAccount()
+		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_ASSET:
+			err = common.ErrReservedAddress
 		default:
 			err = args.setDefaultsOfTransfer()
 		}

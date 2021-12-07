@@ -27,6 +27,7 @@ import (
 	"github.com/probeum/go-probeum/rlp"
 	"io"
 	"math/big"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -76,7 +77,8 @@ type stateObject struct {
 	assetAccount     ContractAccount
 	authorizeAccount AuthorizeAccount
 	lossAccount      LossAccount
-
+	lossMarkAccount  LossMarkAccount
+	dPosListAccount  DPosListAccount
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -102,12 +104,12 @@ type stateObject struct {
 }
 
 type RegularAccount struct {
-	VoteAccount common.Address //Voting account address
-	VoteValue   *big.Int       //Voting amount
-	LossType    uint8          //Account loss reporting type
-	Nonce       uint64         //Transaction serial number
-	Value       *big.Int       //Balance
-	AccType     byte           //Account type
+	VoteAccount common.Address  //Voting account address
+	VoteValue   *big.Int        //Voting amount
+	LossType    common.LossType //Account loss reporting type
+	Nonce       uint64          //Transaction serial number
+	Value       *big.Int        //Balance
+	AccType     byte            //Account type
 }
 
 type PnsAccount struct {
@@ -138,45 +140,82 @@ type AuthorizeAccount struct {
 
 type LossAccount struct {
 	State       byte           //retrieve state
-	LossAccount common.Address //lost account address
+	LostAccount common.Address //lost account address
 	NewAccount  common.Address //asset transfer account address
 	Height      *big.Int       //retrieve effective block height
 	InfoDigest  common.Hash    //summary of loss reporting information
-	LastTenBits uint16         //Last ten bits
+	LastBits    uint32         //Last bits
 	AccType     byte           //Account type
 }
 
+type LossMarkAccount struct {
+	LossMark common.LossMark //128 Bytes
+	AccType  byte            //Account type
+}
+
+type DPosListAccount struct {
+	DPosCandidateAccounts dPosCandidateAccounts //dPoS candidate accounts, max length 64,see common.DPosNodeLength
+	RoundId               uint64                //round id
+	AccType               byte                  //Account type
+}
+
+func (d *DPosListAccount) AddDPosCandidate(curNode common.DPoSCandidateAccount) {
+	exist := false
+	if d.DPosCandidateAccounts.Len() > 0 {
+		for i, node := range d.DPosCandidateAccounts {
+			if node.VoteAccount == curNode.VoteAccount {
+				d.DPosCandidateAccounts[i] = curNode
+				exist = true
+				break
+			}
+		}
+	}
+	if !exist {
+		d.DPosCandidateAccounts = append(d.DPosCandidateAccounts, curNode)
+	}
+	sort.Sort(d.DPosCandidateAccounts)
+	if d.DPosCandidateAccounts.Len() > common.DPosNodeLength {
+		d.DPosCandidateAccounts = d.DPosCandidateAccounts[0:common.DPosNodeLength]
+	}
+}
+
 type Wrapper struct {
-	accountType          byte
-	regularAccount       RegularAccount
-	pnsAccount           PnsAccount
-	assetAccount         ContractAccount
-	authorizeAccount     AuthorizeAccount
-	lossAccount          LossAccount
-	dPoSAccount          common.DPoSAccount
-	dPoSCandidateAccount common.DPoSCandidateAccount
+	accountType      byte
+	regularAccount   RegularAccount
+	pnsAccount       PnsAccount
+	assetAccount     ContractAccount
+	authorizeAccount AuthorizeAccount
+	lossAccount      LossAccount
+	dPoSListAccount  DPosListAccount
+	lossMarkAccount  LossMarkAccount
 }
 
 type RPCAccountInfo struct {
-	Owner         *common.Address `json:"owner,omitempty"`
-	LossAccount   *common.Address `json:"lossAccount,omitempty"`
-	NewAccount    *common.Address `json:"newAccount,omitempty"`
-	VoteAccount   *common.Address `json:"voteAccount,omitempty"`
-	VoteValue     string          `json:"voteValue,omitempty"`
-	PledgeValue   string          `json:"pledgeValue,omitempty"`
-	Value         string          `json:"value,omitempty"`
-	ValidPeriod   string          `json:"validPeriod,omitempty"`
-	Height        string          `json:"height,omitempty"`
-	Weight        string          `json:"weight,omitempty"`
-	DelegateValue string          `json:"delegateValue,omitempty"`
-	LossType      string          `json:"lossType,omitempty"`
-	Nonce         string          `json:"nonce,omitempty"`
-	Type          string          `json:"type,omitempty"`
-	State         string          `json:"state,omitempty"`
-	Data          string          `json:"data,omitempty"`
-	CodeHash      string          `json:"codeHash,omitempty"`
-	Info          string          `json:"info,omitempty"`
-	AccType       string          `json:"accType,omitempty"`
+	Owner                 *common.Address        `json:"owner,omitempty"`
+	LostAccount           *common.Address        `json:"lostAccount,omitempty"`
+	NewAccount            *common.Address        `json:"newAccount,omitempty"`
+	VoteAccount           *common.Address        `json:"voteAccount,omitempty"`
+	LossMarkedIndex       *[]uint16              `json:"lossMarkedIndex,omitempty"`
+	VoteValue             string                 `json:"voteValue,omitempty"`
+	PledgeValue           string                 `json:"pledgeValue,omitempty"`
+	Value                 string                 `json:"value,omitempty"`
+	ValidPeriod           string                 `json:"validPeriod,omitempty"`
+	Height                string                 `json:"height,omitempty"`
+	Weight                string                 `json:"weight,omitempty"`
+	DelegateValue         string                 `json:"delegateValue,omitempty"`
+	LossType              string                 `json:"lossType,omitempty"`
+	LossState             string                 `json:"lossState,omitempty"`
+	Nonce                 string                 `json:"nonce,omitempty"`
+	Type                  string                 `json:"type,omitempty"`
+	State                 string                 `json:"state,omitempty"`
+	Data                  string                 `json:"data,omitempty"`
+	InfoDigest            *common.Hash           `json:"infoDigest,omitempty"`
+	CodeHash              string                 `json:"codeHash,omitempty"`
+	Info                  string                 `json:"info,omitempty"`
+	AccType               string                 `json:"accType,omitempty"`
+	LastBits              string                 `json:"lastBits,omitempty"`
+	DPosCandidateAccounts *dPosCandidateAccounts `json:"dPosCandidateAccounts,omitempty"`
+	RoundId               uint64                 `json:"roundId,omitempty"`
 }
 
 // DecodeRLP decode bytes to account
@@ -206,6 +245,14 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		var data LossAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossAccount = data
+	case common.ACC_TYPE_OF_LOSS_MARK:
+		var data LossMarkAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.lossMarkAccount = data
+	case common.ACC_TYPE_OF_DPOS:
+		var data DPosListAccount
+		err = rlp.DecodeBytes(encodedBytes, &data)
+		wrapper.dPoSListAccount = data
 	default:
 		err = accounts.ErrUnknownAccount
 	}
@@ -227,6 +274,8 @@ func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *
 		assetAccount:     wrapper.assetAccount,
 		authorizeAccount: wrapper.authorizeAccount,
 		lossAccount:      wrapper.lossAccount,
+		lossMarkAccount:  wrapper.lossMarkAccount,
+		dPosListAccount:  wrapper.dPoSListAccount,
 		originStorage:    make(Storage),
 		pendingStorage:   make(Storage),
 		dirtyStorage:     make(Storage),
@@ -323,6 +372,36 @@ func newLossAccount(db *StateDB, address common.Address, data LossAccount) *stat
 	}
 }
 
+// newLossMarkAccount creates a state object.
+func newLossMarkAccount(db *StateDB, address common.Address, data LossMarkAccount) *stateObject {
+	data.AccType = common.ACC_TYPE_OF_LOSS_MARK
+	return &stateObject{
+		db:              db,
+		address:         address,
+		addrHash:        crypto.Keccak256Hash(address[:]),
+		accountType:     common.ACC_TYPE_OF_LOSS_MARK,
+		lossMarkAccount: data,
+		originStorage:   make(Storage),
+		pendingStorage:  make(Storage),
+		dirtyStorage:    make(Storage),
+	}
+}
+
+// newDPoSListAccount creates a state object.
+func newDPoSListAccount(db *StateDB, address common.Address, data DPosListAccount) *stateObject {
+	data.AccType = common.ACC_TYPE_OF_DPOS
+	return &stateObject{
+		db:              db,
+		address:         address,
+		addrHash:        crypto.Keccak256Hash(address[:]),
+		accountType:     common.ACC_TYPE_OF_DPOS,
+		dPosListAccount: data,
+		originStorage:   make(Storage),
+		pendingStorage:  make(Storage),
+		dirtyStorage:    make(Storage),
+	}
+}
+
 // EncodeRLP implements rlp.Encoder.
 func (s *stateObject) EncodeRLP(w io.Writer) error {
 	switch s.accountType {
@@ -336,6 +415,10 @@ func (s *stateObject) EncodeRLP(w io.Writer) error {
 		return rlp.Encode(w, s.authorizeAccount)
 	case common.ACC_TYPE_OF_LOSS:
 		return rlp.Encode(w, s.lossAccount)
+	case common.ACC_TYPE_OF_LOSS_MARK:
+		return rlp.Encode(w, s.lossMarkAccount)
+	case common.ACC_TYPE_OF_DPOS:
+		return rlp.Encode(w, s.dPosListAccount)
 	default:
 		return accounts.ErrUnknownAccount
 	}
@@ -708,6 +791,10 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, accountType byte) *st
 		state = newAuthorizeAccount(db, s.address, s.authorizeAccount)
 	case common.ACC_TYPE_OF_LOSS:
 		state = newLossAccount(db, s.address, s.lossAccount)
+	case common.ACC_TYPE_OF_LOSS_MARK:
+		state = newLossMarkAccount(db, s.address, s.lossMarkAccount)
+	case common.ACC_TYPE_OF_DPOS:
+		state = newDPoSListAccount(db, s.address, s.dPosListAccount)
 	default:
 		state = nil
 	}
@@ -821,7 +908,11 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 	case common.ACC_TYPE_OF_REGULAR:
 		accountInfo.VoteAccount = &s.regularAccount.VoteAccount
 		accountInfo.VoteValue = s.regularAccount.VoteValue.String()
-		accountInfo.LossType = strconv.Itoa(int(s.regularAccount.LossType))
+		accountInfo.LossType = strconv.Itoa(int(s.regularAccount.LossType.GetType()))
+		accountInfo.LossState = "normal"
+		if s.regularAccount.LossType.GetState() {
+			accountInfo.LossState = "lost"
+		}
 		accountInfo.Nonce = strconv.Itoa(int(s.regularAccount.Nonce))
 		accountInfo.Value = s.regularAccount.Value.String()
 	case common.ACC_TYPE_OF_PNS:
@@ -847,11 +938,18 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		//accountInfo.State = strconv.Itoa(int(s.authorizeAccount.State))
 	case common.ACC_TYPE_OF_LOSS:
 		accountInfo.State = strconv.Itoa(int(s.lossAccount.State))
-		accountInfo.LossAccount = &s.lossAccount.LossAccount
+		accountInfo.LostAccount = &s.lossAccount.LostAccount
 		accountInfo.NewAccount = &s.lossAccount.NewAccount
 		accountInfo.Height = s.lossAccount.Height.String()
 		//infoDigest := hexutil.Bytes(s.lossAccount.InfoDigest)
-		accountInfo.Data = s.lossAccount.InfoDigest.String()
+		accountInfo.InfoDigest = &s.lossAccount.InfoDigest
+		accountInfo.LastBits = strconv.Itoa(int(s.lossAccount.LastBits))
+	case common.ACC_TYPE_OF_LOSS_MARK:
+		lossMarkedIndex := s.lossMarkAccount.LossMark.GetMarkedIndex()
+		accountInfo.LossMarkedIndex = &lossMarkedIndex
+	case common.ACC_TYPE_OF_DPOS:
+		accountInfo.DPosCandidateAccounts = &s.dPosListAccount.DPosCandidateAccounts
+		accountInfo.RoundId = s.dPosListAccount.RoundId
 	}
 	return accountInfo
 }
@@ -885,6 +983,9 @@ func (s *stateObject) AuthorizeAccount() AuthorizeAccount {
 }
 func (s *stateObject) LossAccount() LossAccount {
 	return s.lossAccount
+}
+func (s *stateObject) LossMarkAccount() LossMarkAccount {
+	return s.lossMarkAccount
 }
 
 // Never called, but must be present to allow stateObject to be used

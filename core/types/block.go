@@ -22,6 +22,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/log"
+	"github.com/probeum/go-probeum/params"
 
 	"github.com/probeum/go-probeum/crypto/secp256k1"
 	"io"
@@ -174,10 +176,24 @@ type Header struct {
 
 	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
 	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
+}
 
-	DPoSCandidateRoot common.Hash `json:"dPoSCandidateRoot"  rlp:"optional"`
-	DPoSRoot          common.Hash `json:"dPoSRoot" rlp:"optional"`
-	LossState         [1024]byte  `json:"lossState" rlp:"optional"`
+func (h *Header) String() string {
+	return "{" + "\n" +
+		"DposSigAddr" + h.DposSigAddr.String() + "\n" +
+		"DposSig" + common.Bytes2Hex(h.DposSig) + "\n" +
+		"DposAcksHash" + h.DposAcksHash.String() + "\n" +
+		"ParentHash" + h.ParentHash.String() + "\n" +
+		"UncleHash" + h.UncleHash.String() + "\n" +
+		"Coinbase" + h.Coinbase.String() + "\n" +
+		"Root" + h.Root.String() + "\n" +
+		"TxHash" + h.TxHash.String() + "\n" +
+		"ReceiptHash" + h.ReceiptHash.String() + "\n" +
+		"TxHash" + h.TxHash.String() + "\n" +
+		"Extra" + common.Bytes2Hex(h.Extra) + "\n" +
+		"MixDigest" + h.MixDigest.String() + "\n" +
+		"NUmber:" + h.Number.String() + "\n" +
+		"}"
 }
 
 // field type overrides for gencodec
@@ -196,6 +212,10 @@ type headerMarshaling struct {
 // RLP encoding.
 func (h *Header) Hash() common.Hash {
 	return rlpHash(h)
+}
+
+func (h *Header) IsVisual() bool {
+	return bytes.Equal(h.Extra, params.VisualBlockExtra.Bytes())
 }
 
 var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size())
@@ -348,6 +368,13 @@ func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnsw
 		b.header.DposAcksHash = EmptyDposAckHash
 	} else {
 		b.header.DposAcksHash = CalcDposAckHash(dposAcks)
+
+		for _, ack := range dposAcks {
+			log.Debug("dposAcks", "AckType", ack.AckType, "BlockHash", ack.BlockHash.String(), "WitnessSig", common.Bytes2Hex(ack.WitnessSig), "EpochPosition", ack.EpochPosition, "Number", ack.Number)
+		}
+
+		log.Error(" DposAcksHash not equal  ", "acks", len(dposAcks), "header:", header.DposAcksHash.String(), "calc :", CalcDposAckHash(dposAcks).String())
+
 		b.dposAcks = make([]*DposAck, len(dposAcks))
 		copy(b.dposAcks, dposAcks)
 	}
@@ -362,7 +389,16 @@ func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnsw
 // header data is copied, changes to header and to the field values
 // will not affect the block.
 func NewBlockWithHeader(header *Header) *Block {
-	return &Block{header: CopyHeader(header)}
+	return &Block{header: CopyMostHeader(header)}
+}
+
+func CopyMostHeader(h *Header) *Header {
+	re := CopyHeader(h)
+
+	re.DposAcksHash = h.DposAcksHash
+	re.DposAckCountList = h.DposAckCountList
+
+	return re
 }
 
 // CopyHeader creates a deep copy of a block header to prevent side effects from
@@ -456,6 +492,15 @@ func (b *Block) BaseFee() *big.Int {
 }
 
 func (b *Block) Header() *Header { return CopyHeader(b.header) }
+
+func (b *Block) CopyMostHeader() *Header {
+	re := CopyHeader(b.header)
+
+	re.DposAcksHash = b.header.DposAcksHash
+	re.DposAckCountList = b.header.DposAckCountList
+
+	return re
+}
 
 // Body returns the non-header content of the block.
 func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles, b.powAnswerUncles, b.dposAcks} }

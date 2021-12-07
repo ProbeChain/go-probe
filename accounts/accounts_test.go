@@ -419,3 +419,15 @@ func TestOfflineSign(*testing.T) {
 
 	fmt.Println("tx sent:", txs.Hash().Hex())
 }
+
+func TestDigest(*testing.T) {
+	adr1 := common.HexToAddress("0x28fd633B72cA9828542A7dA8E3426E11C831D4Bd")
+	adr2 := common.HexToAddress("0x897638B555Fa1584965A1E1c4d4302264ac9432b")
+	randomNum := uint32(123456)
+	var buffer bytes.Buffer
+	buffer.Write(adr1.Bytes())
+	buffer.Write(adr2.Bytes())
+	buffer.Write(new(big.Int).SetUint64(uint64(randomNum)).Bytes())
+	h := crypto.Keccak256Hash(buffer.Bytes())
+	fmt.Println(h)
+}
