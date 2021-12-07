@@ -17,7 +17,6 @@
 package core
 
 import (
-	"fmt"
 	"github.com/probeum/go-probeum/core/types"
 	"math/big"
 
@@ -121,7 +120,6 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 
 // ContractDeploy subtracts amount from sender and adds amount to recipient using the given Db
 func ContractDeploy(db vm.StateDB, sender common.Address) {
-	fmt.Printf("ContractDeploy, sender:%s,pledgeAmount:%d\n", sender.String(), common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
 	db.SubBalance(sender, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT))
 }
 

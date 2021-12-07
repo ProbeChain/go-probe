@@ -3,12 +3,10 @@ package core
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/rlp"
 	"math/big"
 	"strings"
@@ -92,9 +90,11 @@ func (pool *TxPool) validateTxOfCancellation(tx *types.Transaction, sender *comm
 
 //validateTxOfTransfer validate transaction for transfer
 func (pool *TxPool) validateTxOfTransfer(tx *types.Transaction) error {
+	if common.IsReservedAddress(*tx.To()) {
+		return errors.New("receiver address is the reserved address of the system")
+	}
 	toAccount := pool.currentState.GetStateObject(*tx.To())
 	if toAccount == nil {
-		log.Warn(fmt.Sprintf("receiver not exists, Will be created:%s", tx.To()))
 		if tx.Value().Cmp(new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR)) != 1 {
 			return errors.New("receiver not exists and will be created,but the deposit is not enough")
 		}
