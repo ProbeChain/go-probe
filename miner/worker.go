@@ -1252,7 +1252,6 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 
 	select {
 	case w.taskCh <- &task{receipts: receipts, state: s, block: block, createdAt: time.Now()}:
-		log.Info("", "extra： ", common.Bytes2Hex(block.Extra()))
 		log.Debug("Commit new block", "number", block.Number(), "blockHash", block.Hash(), "blockType", newBlockType,
 			"txs", w.current.tcount, "gas", block.GasUsed(), "fees", totalFees(block, receipts))
 		return block

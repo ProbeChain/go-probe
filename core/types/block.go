@@ -22,7 +22,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
 
 	"github.com/probeum/go-probeum/crypto/secp256k1"
@@ -368,13 +367,6 @@ func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnsw
 		b.header.DposAcksHash = EmptyDposAckHash
 	} else {
 		b.header.DposAcksHash = CalcDposAckHash(dposAcks)
-
-		for _, ack := range dposAcks {
-			log.Debug("dposAcks", "AckType", ack.AckType, "BlockHash", ack.BlockHash.String(), "WitnessSig", common.Bytes2Hex(ack.WitnessSig), "EpochPosition", ack.EpochPosition, "Number", ack.Number)
-		}
-
-		log.Error(" DposAcksHash not equal  ", "acks", len(dposAcks), "header:", header.DposAcksHash.String(), "calc :", CalcDposAckHash(dposAcks).String())
-
 		b.dposAcks = make([]*DposAck, len(dposAcks))
 		copy(b.dposAcks, dposAcks)
 	}
