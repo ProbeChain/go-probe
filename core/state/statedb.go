@@ -1538,9 +1538,7 @@ func (s *StateDB) ModifyPnsContent(context vm.TxContext) {
 				data:    stateObj.pnsAccount.Data,
 			})
 			stateObj.pnsAccount.Type = decode.PnsType
-			pnsData, _ := rlp.EncodeToBytes(common.StringDecodeType{Text: decode.PnsData})
-			stateObj.pnsAccount.Data = pnsData
-
+			stateObj.pnsAccount.Data = []byte(decode.PnsData)
 		}
 	}
 }
