@@ -43,7 +43,7 @@ type (
 	// CancellationFunc is the signature of a cancellation function
 	CancellationFunc func(StateDB, common.Address, common.Address)
 	//ContractDeployFunc is the signature of a transfer function
-	ContractDeployFunc func(StateDB, common.Address)
+	ContractDeployFunc func(StateDB, common.Address) error
 	//CallDBFunc call database
 	CallDBFunc func(StateDB, TxContext)
 )
@@ -276,7 +276,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 			contract.SetCallCode(&addrCopy, evm.StateDB.GetCodeHash(addrCopy), code)
 			ret, err = run(evm, contract, input, false)
 			if err != nil {
-				log.Error(fmt.Sprintf("call contract err:%s\n", err))
+				log.Error(fmt.Sprintf("call contract:%s, err:%s\n", to.String(), err))
 			}
 			gas = contract.Gas
 		}
@@ -474,7 +474,9 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 		evm.StateDB.SetNonce(address, 1)
 	}
 
-	evm.Context.ContractDeploy(evm.StateDB, caller.Address())
+	if err := evm.Context.ContractDeploy(evm.StateDB, caller.Address()); err != nil {
+		return nil, common.Address{}, gas, err
+	}
 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.

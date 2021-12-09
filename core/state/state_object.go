@@ -894,8 +894,6 @@ func (s *stateObject) Balance() *big.Int {
 		return s.regularAccount.Value
 	case common.ACC_TYPE_OF_CONTRACT:
 		return s.assetAccount.Value
-	case common.ACC_TYPE_OF_AUTHORIZE:
-		return s.authorizeAccount.VoteValue
 	default:
 		return new(big.Int)
 	}
