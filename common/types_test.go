@@ -649,9 +649,6 @@ func TestBigToAddress6(t *testing.T) {
 func TestDpos(t *testing.T) {
 	epoch := uint64(60)
 	number := uint64(61)
-	/*	fmt.Println("lastPoint:", GetLastConfirmPoint(number, epoch))
-		fmt.Println("currPoint:", GetCurrentConfirmPoint(number, epoch))
-		fmt.Println("roundId:", CalcDPosNodeRoundId(number, epoch))*/
 
 	lastConfirmNumber := GetLastConfirmPoint(number, epoch)
 	lastRoundId := CalcDPosNodeRoundId(lastConfirmNumber, epoch)
@@ -667,13 +664,35 @@ func TestDpos(t *testing.T) {
 	} else {
 		fmt.Printf("next block beblog dPos：confirmNumber：%s，roundId：%d\n", "nil", confirmRoundId)
 	}
+}
 
-	/*	if number <= confirmNumber {
-			fmt.Printf("next block beblog dPos candidate：confirmNumber：%d，roundId：%d\n", number, confirmRoundId2)
-		} else {
-			fmt.Printf("next block beblog dPos candidate：confirmNumber：%d，roundId：%d\n", number, confirmRoundId2)
-		}*/
-
-	//if number
-
+func TestSpecialAddress(t *testing.T) {
+	arr := []string{
+		"0x0000000000000000000000000000000000000101",
+		"0x0000000000000000000000000000000000000102",
+		"0x0000000000000000000000000000000000000103",
+		"0x0000000000000000000000000000000000000104",
+		"0x0000000000000000000000000000000000000105",
+		"0x0000000000000000000000000000000000000106",
+		"0x0000000000000000000000000000000000000107",
+		"0x0000000000000000000000000000000000000108",
+		"0x0000000000000000000000000000000000000109",
+		"0x0000000000000000000000000000000000000110",
+		"0x0000000000000000000000000000000000000111",
+		"0x0000000000000000000000000000000000000112",
+		"0x0000000000000000000000000000000000000113",
+		"0x0000000000000000000000000000000000000114",
+		"0x0000000000000000000000000000000000000115",
+		"0x0000000000000000000000000000000000000116",
+		"0x0000000000000000000000000000000000000117",
+		"0x0000000000000000000000000000000000000118",
+		"0x0000000000000000000000000000000000000119",
+		"0x0000000000000000000000000000000000000120",
+		"0x0000000000000000000000000000000000000200",
+		"0xFb6Ba8741A1F36132E7A4a8DA55e167d1baC98cC",
+	}
+	for _, v := range arr {
+		addr := HexToAddress(v)
+		fmt.Println(addr.Hash().Big().Uint64() <= 512)
+	}
 }

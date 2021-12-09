@@ -70,6 +70,7 @@ const (
 	LOSS_STATE_OF_SUCCESS uint8 = 2
 )
 
+//IsSpecialAddress judge system reserved address
 func IsSpecialAddress(hexAddr string) bool {
 	switch hexAddr {
 	case SPECIAL_ADDRESS_FOR_REGISTER_PNS,
@@ -94,4 +95,9 @@ func IsSpecialAddress(hexAddr string) bool {
 		return true
 	}
 	return false
+}
+
+//IsReservedAddress judge system reserved address
+func IsReservedAddress(address Address) bool {
+	return address.Hash().Big().Uint64() <= 512
 }

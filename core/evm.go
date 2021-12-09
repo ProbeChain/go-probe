@@ -17,8 +17,10 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/log"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -120,9 +122,15 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 }
 
 // ContractDeploy subtracts amount from sender and adds amount to recipient using the given Db
-func ContractDeploy(db vm.StateDB, sender common.Address) {
-	fmt.Printf("ContractDeploy, sender:%s,pledgeAmount:%d\n", sender.String(), common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
-	db.SubBalance(sender, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT))
+func ContractDeploy(db vm.StateDB, sender common.Address) error {
+	balance := db.GetBalance(sender)
+	pledge := new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
+	if balance.Sign() < 1 || balance.Cmp(pledge) == -1 {
+		log.Error(fmt.Sprintf("the new contract address will be created,but the deposit is not enough, creator:%s", sender.String()))
+		return errors.New("the new contract address will be created,but the deposit is not enough")
+	}
+	db.SubBalance(sender, pledge)
+	return nil
 }
 
 //CallDB call database for update operation
