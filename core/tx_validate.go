@@ -17,6 +17,9 @@ func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, sender *common.A
 	var newAccount common.Address
 	switch tx.To().Hex() {
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
+		if len(tx.Data()) == 0 {
+			return errors.New("pns data cannot be empty")
+		}
 		newAccount = crypto.CreatePNSAddress(*sender, tx.Data())
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:
 		newAccount = crypto.CreateAddress(*sender, tx.Nonce())

@@ -916,9 +916,7 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 	case common.ACC_TYPE_OF_PNS:
 		accountInfo.Type = strconv.Itoa(int(s.pnsAccount.Type))
 		accountInfo.Owner = &s.pnsAccount.Owner
-		decode := new(common.StringDecodeType)
-		rlp.DecodeBytes(s.pnsAccount.Data, &decode)
-		accountInfo.Data = decode.Text
+		accountInfo.Data = string(s.pnsAccount.Data)
 	case common.ACC_TYPE_OF_CONTRACT:
 		codeHash := hexutil.Bytes(s.assetAccount.CodeHash)
 		accountInfo.CodeHash = codeHash.String()
