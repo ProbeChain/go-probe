@@ -296,11 +296,30 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	go worker.powMinerNewWorkLoop()
 	go worker.powMinerResultLoop()
 
+	go worker.judge()
+
 	// Submit first work to initialize pending state.
 	if init {
 		//worker.startCh <- struct{}{}
 	}
 	return worker
+}
+
+func (w *worker) judge() {
+	now := w.chain.CurrentBlock().NumberU64()
+	w.chainHeadCh <- core.ChainHeadEvent{}
+	time.Sleep(10 * time.Second)
+
+	for {
+		log.Debug("judge ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
+		w.sendAck(w.chain.CurrentBlock().NumberU64(), types.AckTypeAgree)
+		if now != w.chain.CurrentBlock().NumberU64() {
+			log.Debug("exit ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
+			return
+		}
+		time.Sleep(1 * time.Second)
+		w.chainHeadCh <- core.ChainHeadEvent{}
+	}
 }
 
 // setProbeerbase sets the probeerbase used to initialize the block coinbase field.
@@ -572,6 +591,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			clearPending(w.chain.CurrentBlock().NumberU64())
 			//commit(false, commitInterruptNewHead)
 			time.Sleep(2 * time.Second)
+			//now :=w.chain.CurrentBlock().NumberU64()
 			w.chainHeadCh <- core.ChainHeadEvent{}
 
 		case block := <-w.chainHeadCh:
@@ -803,6 +823,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			}
 
 		case <-w.exitCh:
+			log.Info(" start exitCh", "exitCh", "exitCh")
 			return
 		}
 	}

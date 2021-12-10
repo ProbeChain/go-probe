@@ -636,12 +636,14 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 	}
 	for _, answer := range powAnswers {
 		if parent.Number.Uint64()-answer.Number.Uint64() > 5 {
-			return fmt.Errorf("answer is too far ")
+			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
+			return nil
+			//return fmt.Errorf("answer is too far ")
 		}
 		verify := greatri.verifyPowAnswer(chain, answer)
 		if verify != nil {
 			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
-			return verify
+			return nil
 		}
 	}
 
@@ -663,12 +665,16 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 
 	if (isProducer && isVisual) || (!isProducer && !isVisual) {
 		log.Debug("not visual  not allow  visual extra ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
-		return fmt.Errorf(" not visual  not allow  visual extra")
+		return nil
+
+		//return fmt.Errorf(" not visual  not allow  visual extra")
 	}
 
 	if !chain.CheckAcks(block) {
 		log.Debug("acks not legal  ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
-		return fmt.Errorf(" acks not legal")
+		return nil
+
+		//return fmt.Errorf(" acks not legal")
 	}
 
 	log.Debug("VerifyDposInfo", "end  : ", num)
