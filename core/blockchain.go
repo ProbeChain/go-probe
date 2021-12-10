@@ -3123,8 +3123,8 @@ func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 	var used map[common.Hash]*types.PowAnswer
 	used = make(map[common.Hash]*types.PowAnswer)
 
-	for uncles >= 0 {
-		curNumber := big.NewInt(0).Sub(number, big.NewInt(int64(uncles)))
+	for uncles > 0 {
+		curNumber := big.NewInt(0).Sub(number, big.NewInt(int64(uncles-1)))
 		uncles -= 1
 		if curNumber.Int64() <= 0 {
 			continue

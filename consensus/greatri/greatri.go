@@ -643,7 +643,7 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 		verify := greatri.verifyPowAnswer(chain, answer)
 		if verify != nil {
 			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
-			return nil
+			return verify
 		}
 	}
 
@@ -665,16 +665,14 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 
 	if (isProducer && isVisual) || (!isProducer && !isVisual) {
 		log.Debug("not visual  not allow  visual extra ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
-		return nil
-
-		//return fmt.Errorf(" not visual  not allow  visual extra")
+		//return nil
+		return fmt.Errorf(" not visual  not allow  visual extra")
 	}
 
 	if !chain.CheckAcks(block) {
 		log.Debug("acks not legal  ", "isProducer:", isProducer, " visual:", isVisual, "num", num)
-		return nil
-
-		//return fmt.Errorf(" acks not legal")
+		//return nil
+		return fmt.Errorf(" acks not legal")
 	}
 
 	log.Debug("VerifyDposInfo", "end  : ", num)
