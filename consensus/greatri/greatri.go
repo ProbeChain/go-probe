@@ -635,7 +635,7 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 		return err
 	}
 	for _, answer := range powAnswers {
-		if parent.Number.Uint64()-answer.Number.Uint64() > 5 {
+		if parent.Number.Uint64()-answer.Number.Uint64() > 4 {
 			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
 			return nil
 			//return fmt.Errorf("answer is too far ")
