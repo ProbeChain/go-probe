@@ -296,7 +296,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	go worker.powMinerNewWorkLoop()
 	go worker.powMinerResultLoop()
 
-	go worker.judge()
+	go worker.commitAckLoop()
 
 	// Submit first work to initialize pending state.
 	if init {
@@ -305,20 +305,23 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	return worker
 }
 
-func (w *worker) judge() {
+func (w *worker) commitAckLoop() {
 	now := w.chain.CurrentBlock().NumberU64()
+	if !w.imDposWorkNode(w.chain.CurrentBlock().Number()) {
+		return
+	}
+
 	w.chainHeadCh <- core.ChainHeadEvent{}
 	time.Sleep(10 * time.Second)
 
 	for {
-		log.Debug("judge ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
+		log.Debug("commitAckLoop ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
 		w.sendAck(w.chain.CurrentBlock().NumberU64(), types.AckTypeAgree)
 		if now != w.chain.CurrentBlock().NumberU64() {
 			log.Debug("exit ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
 			return
 		}
 		time.Sleep(1 * time.Second)
-		w.chainHeadCh <- core.ChainHeadEvent{}
 	}
 }
 
