@@ -2166,10 +2166,11 @@ func (bc *BlockChain) insertChain(blocks types.Blocks, verifySeals bool) (int, e
 
 		// Write the block to the chain and get the status.
 		substart = time.Now()
-		status, err := bc.writeBlockWithState(block, receipts, logs, statedb, false)
+		status, error := bc.writeBlockWithState(block, receipts, logs, statedb, false)
 		atomic.StoreUint32(&followupInterrupt, 1)
-		if err != nil {
-			return it.index, err
+		if error != nil {
+			log.Error("writeBlockWithState", "error", error)
+			return it.index, error
 		}
 		// Update the metrics touched during block commit
 		accountCommitTimer.Update(statedb.AccountCommits)   // Account commits are complete, we can mark them
@@ -3078,7 +3079,7 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 					if curHash == dposAck.BlockHash {
 						return true
 					} else {
-						log.Debug("CheckDposAck Fail, hash not match", "signer", owner, "err", err)
+						log.Debug("CheckDposAck Fail, hash not match", "signer", owner, "curHash", curHash.String(), "dposAck.BlockHash", dposAck.BlockHash.String(), "err", err)
 					}
 				}
 			}
