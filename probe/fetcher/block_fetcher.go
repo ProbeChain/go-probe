@@ -719,8 +719,10 @@ func (f *BlockFetcher) enqueue(peer string, header *types.Header, block *types.B
 	)
 	if header != nil {
 		hash, number = header.Hash(), header.Number.Uint64()
+		log.Info("BlockFetcherk header ", "number", number, "Header", header.String())
 	} else {
 		hash, number = block.Hash(), block.NumberU64()
+		log.Info("BlockFetcherk block ", "number", number, "Header", block.Header().String())
 	}
 	// Ensure the peer isn't DOSing us
 	count := f.queues[peer] + 1
