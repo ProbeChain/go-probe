@@ -3184,7 +3184,7 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 
 	dposNum := len(bc.GetDposAccounts(number))
 	isVisual := block.Header().IsVisual()
-	parent := bc.GetHeaderByNumber(number - 1)
+	parent := bc.GetBlock(block.ParentHash(), number-1).Header()
 	header := block.CopyMostHeader()
 
 	if !bytes.Equal(header.DposAcksHash.Bytes(), types.CalcDposAckHash(acks).Bytes()) {

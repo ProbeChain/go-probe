@@ -1240,7 +1240,8 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	}
 
 	//process powAnswers and dposAcks
-	if newBlockNumber.Uint64()-currentEffectBlockNumber.Uint64() == 1 {
+	//if newBlockNumber.Uint64()-currentEffectBlockNumber.Uint64() == 1 {
+	if !parent.Header().IsVisual() {
 		w.current.dposAcks = w.probe.BlockChain().GetDposAck(parentBlockNum, types.AckTypeAgree)
 	} else {
 		w.current.dposAcks = w.probe.BlockChain().GetDposAck(parentBlockNum, types.AckTypeOppose)
