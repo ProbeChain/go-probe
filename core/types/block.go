@@ -493,7 +493,10 @@ func (b *Block) UncleHash() common.Hash   { return b.header.UncleHash }
 func (b *Block) Extra() []byte            { return common.CopyBytes(b.header.Extra) }
 
 func (b *Block) SetDposSig(dposSig []byte) bool {
+	log.Info("SetDposSig", "SetDposSig", common.Bytes2Hex(b.header.DposSig), "dposSig", common.Bytes2Hex(dposSig), "ack", b.header.DposAcksHash.String())
 	b.header.DposSig = append(b.header.DposSig, dposSig...)
+
+	log.Info("SetDposSig after ", "SetDposSig", common.Bytes2Hex(b.header.DposSig), "dposSig", common.Bytes2Hex(dposSig), "ack", b.header.DposAcksHash.String())
 	return true
 }
 
