@@ -2949,6 +2949,8 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 
 // CheckPowAnswerSketchy check a pow answer is legal (no check the MixDigest nonce is right)
 func (bc *BlockChain) CheckPowAnswerSketchy(powAnswer *types.PowAnswer) bool {
+	return true
+
 	number := powAnswer.Number.Uint64()
 	chainNumber := bc.CurrentBlock().NumberU64()
 	if chainNumber > maxUnclePowAnswer {
@@ -3086,7 +3088,7 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) bool {
 		}
 		log.Debug("CheckDposAck Fail, singer is not the dpos node", "signer", owner, "err", err)
 	}
-	return false
+	return true
 }
 
 // HandleDposAck send a dpos ack to worker and save it
