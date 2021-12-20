@@ -189,6 +189,8 @@ func (h *Header) String() string {
 
 	log.Info("hash:", " hash ", h.Hash().String())
 
+	log.Info("hash:", " hash ", h.Hash().String())
+
 	return "{" + "\n" +
 		"DposSigAddr" + h.DposSigAddr.String() + "\n" +
 		"DposSig" + common.Bytes2Hex(h.DposSig) + "\n" +
@@ -402,8 +404,8 @@ func NewBlockWithHeader(header *Header) *Block {
 func CopyMostHeader(h *Header) *Header {
 	re := CopyHeader(h)
 
-	re.DposAcksHash = h.DposAcksHash
-	re.DposAckCountList = h.DposAckCountList
+	//re.DposAcksHash = h.DposAcksHash
+	//re.DposAckCountList = h.DposAckCountList
 
 	return re
 }
@@ -424,6 +426,10 @@ func CopyHeader(h *Header) *Header {
 	if len(h.Extra) > 0 {
 		cpy.Extra = make([]byte, len(h.Extra))
 		copy(cpy.Extra, h.Extra)
+	}
+	if len(h.DposSig) > 0 {
+		cpy.DposSig = make([]byte, len(h.DposSig))
+		copy(cpy.DposSig, h.DposSig)
 	}
 	return &cpy
 }
@@ -503,8 +509,8 @@ func (b *Block) Header() *Header { return CopyHeader(b.header) }
 func (b *Block) CopyMostHeader() *Header {
 	re := CopyHeader(b.header)
 
-	re.DposAcksHash = b.header.DposAcksHash
-	re.DposAckCountList = b.header.DposAckCountList
+	//re.DposAcksHash = b.header.DposAcksHash
+	//re.DposAckCountList = b.header.DposAckCountList
 
 	return re
 }

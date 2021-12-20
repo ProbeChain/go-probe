@@ -394,7 +394,7 @@ func (c *Greatri) verifyHeaderWorker(chain consensus.ChainHeaderReader, headers 
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
 func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent *types.Header, uncle bool, seal bool, unixNow int64, diff int64) error {
-	log.Trace("enter verifyHeader", "block number", header.Number, "seal", seal)
+	log.Trace("enter verifyHeader", "block number", header.Number, "seal", seal, "dposign", common.Bytes2Hex(header.DposSig), "ackHash", header.DposAcksHash.String())
 	//return nil
 	// Ensure that the header's extra-data section is of a reasonable size
 
@@ -402,6 +402,8 @@ func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent
 	if err != nil || addr != header.DposSigAddr {
 		return fmt.Errorf("DposSigAddr err : %s > %s", addr.String(), header.DposSigAddr.String())
 	}
+
+	log.Trace("enter verifyHeader", "block number", header.Number, "addr", addr.String(), "dposign", header.DposSigAddr.String(), "dposign", common.Bytes2Hex(header.DposSig), "ackHash", header.DposAcksHash.String())
 
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
