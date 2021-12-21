@@ -627,6 +627,8 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			if blockNumber.Uint64() >= rejectBlockNumber.Uint64() {
 				timerSealDealine.Stop()
 				timerSealDealineSetFlag = false
+				timerDelaySeal.Stop()
+				timerDelaySealSetFlag = false
 			}
 			//if w.imProducer(blockNumber.Uint64() + 1) {
 			//	dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
@@ -678,6 +680,9 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			}
 			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
 
+			ret1, answerNumber1 := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
+			log.Debug("dposAckCh", "visualBlockNumber", w.visualBlockNumber, "dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "ret1", ret1, "answerNumber1", answerNumber1)
+
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer
 				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
@@ -728,6 +733,10 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			}
 			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
+
+			ret1, answerNumber1 := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
+			log.Debug("dposAckCh", "visualBlockNumber", w.visualBlockNumber, "dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "ret1", ret1, "answerNumber1", answerNumber1)
+
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer
 				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
