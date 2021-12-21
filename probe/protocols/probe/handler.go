@@ -18,6 +18,7 @@ package probe
 
 import (
 	"fmt"
+	"github.com/probeum/go-probeum/log"
 	"math/big"
 	"time"
 
@@ -215,6 +216,7 @@ func handleMessage(backend Backend, peer *Peer) error {
 	// Read the next message from the remote peer, and ensure it's fully consumed
 	msg, err := peer.rw.ReadMsg()
 	if err != nil {
+		log.Error("handleMessage", "read", err)
 		return err
 	}
 	if msg.Size > maxMessageSize {
@@ -224,6 +226,7 @@ func handleMessage(backend Backend, peer *Peer) error {
 
 	var handlers = probe65
 	if peer.Version() >= ETH66 {
+		log.Info("handleMessage", "read", err)
 		handlers = probe66
 	}
 	// Track the amount of time it takes to serve the request and run the handler
@@ -239,7 +242,13 @@ func handleMessage(backend Backend, peer *Peer) error {
 		}(time.Now())
 	}
 	if handler := handlers[msg.Code]; handler != nil {
-		return handler(backend, msg, peer)
+		error := handler(backend, msg, peer)
+		if err != nil {
+			log.Error("handlers", "error", error, "msg", msg)
+			return fmt.Errorf("%w: %v", errInvalidMsgCode, msg.Code)
+		}
+
+		return error
 	}
 	return fmt.Errorf("%w: %v", errInvalidMsgCode, msg.Code)
 }
