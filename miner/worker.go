@@ -724,9 +724,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			}
 
 			var dposAgreeAckNum = 0
-			log.Debug("", "", w.visualBlockNumber, "  ", w.chain.CurrentBlock().Number())
 			if w.visualBlockNumber.Uint64() == w.chain.CurrentBlock().NumberU64() {
-				log.Debug("", "", w.chain.CurrentBlock().ParentHash().String())
 				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			}
 			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
@@ -912,7 +910,7 @@ func (w *worker) taskLoop() {
 				continue
 			}
 			log.Info("Successfully sealed new block", "number", block.Number(), "hash", hash)
-			log.Info("Successfully sealed new block", "number", block.Number(), "Header", block.Header().String())
+			//log.Info("Successfully sealed new block", "number", block.Number(), "Header", block.Header().String())
 
 			// Broadcast the block and announce chain insertion event
 			w.mux.Post(core.NewMinedBlockEvent{Block: block})
@@ -1212,7 +1210,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	header.MixDigest = common.Hash{}
 	header.Difficulty = probehash2.CalcDifficulty(w.chainConfig, uint64(timestamp), realParent.Header())
 
-	log.Info("", "calc Difficulty :  ", header.Difficulty)
+	log.Info("dposCommitNewWork", "calc Difficulty :  ", header.Difficulty)
 	header.Coinbase = common.Address{}
 	header.DposSigAddr = w.coinbase
 

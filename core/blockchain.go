@@ -247,11 +247,6 @@ func (pool *PowAnswerPool) remove(currNum uint64) {
 			delete(pool.powAnswerMap, num)
 		}
 	}
-
-	for num, _ := range pool.powAnswerMap {
-		log.Info("pool.powAnswerMap", "num", num)
-	}
-
 }
 
 func (pool *PowAnswerPool) FilterList(powAnswers []*types.PowAnswer) []*types.PowAnswer {
@@ -2972,7 +2967,7 @@ func (bc *BlockChain) DispatchPowAnswer() int {
 	header := bc.CurrentBlock().Header()
 
 	for i := 0; i < maxUnclePowAnswer; i++ {
-		log.Debug("DispatchPowAnswer", "num", header.Number, "hash", header.Hash())
+		//log.Debug("DispatchPowAnswer", "num", header.Number, "hash", header.Hash())
 		powAnswers := bc.powAnswers.List(header.Number, header.Hash())
 		for _, answer := range powAnswers {
 			bc.checkPowAnswer(answer)
@@ -3040,8 +3035,8 @@ func (bc *BlockChain) CheckAndGetNumAcks(num uint64, hash common.Hash, ackType t
 			if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
 				bc.CheckDposAck(dposAck)
 			}
-			log.Info("", "", bc.dposAcks.CheckRet(dposAck), "", dposAck.BlockHash.String(), "", hash.String(), "", num)
-			log.Info("", "", bc.dposAcks.CheckRet(dposAck) == dposAckLegal, "", ackType == types.AckTypeAgree, "", bytes.Equal(dposAck.BlockHash.Bytes(), hash.Bytes()))
+			//	log.Debug("", "", bc.dposAcks.CheckRet(dposAck), "", dposAck.BlockHash.String(), "", hash.String(), "", num)
+			//	log.Debug("", "", bc.dposAcks.CheckRet(dposAck) == dposAckLegal, "", ackType == types.AckTypeAgree, "", bytes.Equal(dposAck.BlockHash.Bytes(), hash.Bytes()))
 			if bc.dposAcks.CheckRet(dposAck) == dposAckLegal && ((ackType == types.AckTypeAgree && bytes.Equal(dposAck.BlockHash.Bytes(), hash.Bytes())) || ackType == types.AckTypeOppose) {
 				ans = append(ans, dposAck)
 			}
@@ -3158,12 +3153,12 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header) []*types.PowAnswe
 
 	var used map[common.Hash]*types.PowAnswer
 	used = make(map[common.Hash]*types.PowAnswer)
-	log.Info("GetUnclePowAnswers", "from", header.Number)
+	//log.Info("GetUnclePowAnswers", "from", header.Number)
 
 	curBlock := bc.GetBlock(header.Hash(), header.Number.Uint64())
 	for i := 0; i < uncles; i++ {
 
-		log.Info("GetUnclePowAnswers", "num", curBlock.Number(), "hash", curBlock.Hash())
+		//	log.Debug("GetUnclePowAnswers", "num", curBlock.Number(), "hash", curBlock.Hash())
 		for _, an := range curBlock.PowAnswers() {
 			if an != nil {
 				used[an.MixDigest] = an
@@ -3207,6 +3202,11 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 	acks := block.DposAcks()
 	commitNum := 0
 	oppopsNum := 0
+
+	dposNum := len(bc.GetDposAccounts(number))
+	isVisual := block.Header().IsVisual()
+	parent := bc.GetBlock(block.ParentHash(), number-1).Header()
+
 	for _, ack := range acks {
 		singer, err := ack.RecoverOwner()
 		if err != nil || !bc.CheckIsDposAccount(number, singer) || ack.Number.Uint64() != number-1 {
@@ -3214,6 +3214,10 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 			return false
 		}
 		if ack.AckType == types.AckTypeAgree {
+			if bytes.Equal(ack.Hash(), parent.Hash().Bytes()) {
+				log.Error(" ack hash not equal  ")
+				return false
+			}
 			commitNum++
 		}
 		if ack.AckType == types.AckTypeOppose {
@@ -3221,9 +3225,6 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 		}
 	}
 
-	dposNum := len(bc.GetDposAccounts(number))
-	isVisual := block.Header().IsVisual()
-	parent := bc.GetBlock(block.ParentHash(), number-1).Header()
 	header := block.CopyMostHeader()
 
 	if !bytes.Equal(header.DposAcksHash.Bytes(), types.CalcDposAckHash(acks).Bytes()) {

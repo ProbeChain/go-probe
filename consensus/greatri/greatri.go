@@ -684,7 +684,7 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 
 func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer) error {
 
-	parent := chain.GetHeaderByNumber(answer.Number.Uint64())
+	parent := chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
 	pow, ok := c.powEngine.(*probeash.Probeash)
 	if !ok {
 		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
@@ -783,7 +783,7 @@ func (c *Greatri) Prepare(chain consensus.ChainHeaderReader, header *types.Heade
 }
 
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, powUncles []*types.PowAnswer) {
-	log.Debug("enter accumulateRewards")
+	//log.Debug("enter accumulateRewards")
 	state.AddBalance(header.DposSigAddr, new(big.Int).Set(BlockRewardDposSigner))
 	for _, answer := range header.PowAnswers {
 		state.AddBalance(answer.Miner, new(big.Int).Set(BlockRewardPowMiner))

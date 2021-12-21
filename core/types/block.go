@@ -187,11 +187,7 @@ func (h *Header) String() string {
 	for _, answer := range h.PowAnswers {
 		log.Info("PowAnswers:", " answer.Number", answer.Number, " answer.Number", answer.MixDigest.String())
 	}
-
 	log.Info("hash:", " hash ", h.Hash().String())
-
-	log.Info("hash:", " hash ", h.Hash().String())
-
 	return "{" + "\n" +
 		"DposSigAddr" + h.DposSigAddr.String() + "\n" +
 		"DposSig" + common.Bytes2Hex(h.DposSig) + "\n" +
@@ -494,10 +490,7 @@ func (b *Block) UncleHash() common.Hash   { return b.header.UncleHash }
 func (b *Block) Extra() []byte            { return common.CopyBytes(b.header.Extra) }
 
 func (b *Block) SetDposSig(dposSig []byte) bool {
-	log.Info("SetDposSig", "SetDposSig", common.Bytes2Hex(b.header.DposSig), "dposSig", common.Bytes2Hex(dposSig), "ack", b.header.DposAcksHash.String())
 	b.header.DposSig = append(b.header.DposSig, dposSig...)
-
-	log.Info("SetDposSig after ", "SetDposSig", common.Bytes2Hex(b.header.DposSig), "dposSig", common.Bytes2Hex(dposSig), "ack", b.header.DposAcksHash.String())
 	return true
 }
 
