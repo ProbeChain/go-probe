@@ -161,7 +161,7 @@ func Handle(backend Backend, peer *Peer) error {
 	for {
 		if err := handleMessage(backend, peer); err != nil {
 			peer.Log().Debug("Message handling failed in `probe`", "err", err)
-			return err
+			return nil
 		}
 	}
 }
