@@ -232,6 +232,7 @@ type worker struct {
 	resubmitHook         func(time.Duration, time.Duration) // Method to call upon updating resubmitting interval.
 	visualBlockNumber    *big.Int
 	effectBlockNumber    *big.Int
+	effectHeader         *types.Header
 	delaySealBlockNumber *big.Int
 }
 
@@ -272,6 +273,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		powMinerResultCh:     make(chan *types.PowAnswer, powMinerResultChanSize),
 		visualBlockNumber:    new(big.Int).SetUint64(0),
 		effectBlockNumber:    new(big.Int).SetUint64(0),
+		effectHeader:         chain.CurrentHeader(),
 		delaySealBlockNumber: new(big.Int).SetUint64(0),
 	}
 	// Subscribe NewTxsEvent for tx pool
@@ -493,10 +495,10 @@ func (w *worker) sendAck(blockNumber uint64, ackType types.DposAckType) error {
 //	}
 //}
 
-func (w *worker) checkPowAnswerNumber(blockNumber *big.Int, effectBlockNumber *big.Int) (bool, int) {
+func (w *worker) checkPowAnswerNumber(blockNumber *big.Int, header *types.Header) (bool, int) {
 	visualBlockCount := new(big.Int)
-	visualBlockCount.Sub(blockNumber, effectBlockNumber)
-	answerNumber := len(w.chain.GetPowAnswers(effectBlockNumber))
+	visualBlockCount.Sub(blockNumber, header.Number)
+	answerNumber := len(w.chain.GetPowAnswers(header.Number, header.Hash()))
 	log.Debug("check answer", "answerNumber", answerNumber, "int(visualBlockCount.Uint64() + 1)", int(visualBlockCount.Uint64()+1))
 	return answerNumber >= int(visualBlockCount.Uint64()+1), answerNumber
 }
@@ -605,7 +607,6 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				blockNumber = block.Block.Number()
 			}
 			newBlock := w.chain.GetBlockByNumber(blockNumber.Uint64())
-
 			log.Trace("worker received new block", "blockNumber", blockNumber)
 			if blockNumber.Uint64() != 0 && blockNumber.Uint64() <= w.visualBlockNumber.Uint64() {
 				log.Debug("received a block that we have reject",
@@ -620,6 +621,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			}
 			w.visualBlockNumber.Set(blockNumber)
 			w.effectBlockNumber.Set(blockNumber)
+			w.effectHeader = newBlock.Header()
 			log.Trace("block number update", "effectBlockNumber", w.effectBlockNumber, "currentBlock",
 				w.chain.CurrentBlock().Number(), "visualBlockNumber", w.visualBlockNumber)
 			if blockNumber.Uint64() >= rejectBlockNumber.Uint64() {
@@ -669,11 +671,16 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				continue
 			}
 
-			dposAgreeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, types.AckTypeAgree)
-			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, types.AckTypeOppose)
+			var dposAgreeAckNum = 0
+			if w.visualBlockNumber.Uint64() == w.chain.CurrentBlock().NumberU64() {
+				log.Debug("", "", w.chain.CurrentBlock().ParentHash().String())
+				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
+			}
+			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
+
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectBlockNumber)
+				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
 				if ret && (dposAgreeAckNum >= int(MostDposWitness) || dposOpposeAckNum >= int(MostDposWitness)) {
 					//received powAnswer and received 2/3 witness node ack
 					timerDelaySeal.Stop()
@@ -693,7 +700,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
 				}
 			} else if w.imDposWorkNode(w.visualBlockNumber) {
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectBlockNumber)
+				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
 				if !timerSealDealineSetFlag && ret &&
 					(dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness)) {
 					timerSealDealineSetFlag = true
@@ -716,11 +723,16 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				continue
 			}
 
-			dposAgreeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, types.AckTypeAgree)
-			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, types.AckTypeOppose)
+			var dposAgreeAckNum = 0
+			log.Debug("", "", w.visualBlockNumber, "  ", w.chain.CurrentBlock().Number())
+			if w.visualBlockNumber.Uint64() == w.chain.CurrentBlock().NumberU64() {
+				log.Debug("", "", w.chain.CurrentBlock().ParentHash().String())
+				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
+			}
+			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectBlockNumber)
+				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
 				if ret && (dposAgreeAckNum >= int(MostDposWitness) || dposOpposeAckNum >= int(MostDposWitness)) {
 					//received 2/3 witness node ack
 					timerDelaySeal.Stop()
@@ -742,7 +754,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				}
 			} else if w.imDposWorkNode(w.visualBlockNumber) {
 				//not the producer
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectBlockNumber)
+				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
 				if !timerSealDealineSetFlag && ret &&
 					(dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness)) {
 					//todo: consider if i should wait MostDposWitness to start a timer?
@@ -760,8 +772,12 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 
 		case <-timerDelaySeal.C:
 			baseBlockNumber := new(big.Int).Sub(w.delaySealBlockNumber, common.Big1)
-			dposAgreeAckNum := w.chain.GetDposAckSize(baseBlockNumber, types.AckTypeAgree)
-			dposOpposeAckNum := w.chain.GetDposAckSize(baseBlockNumber, types.AckTypeOppose)
+			var dposAgreeAckNum = 0
+			if w.visualBlockNumber == w.chain.CurrentBlock().Number() {
+				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().ParentHash(), types.AckTypeAgree)
+			}
+			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
+
 			if dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness) {
 				//received 1/3 witness node ack
 				if commit(false, commitInterruptNewHead, w.delaySealBlockNumber.Uint64()) {
@@ -1236,15 +1252,15 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 			}
 		}
 
-		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(realParent.Number())
+		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(realParent.Header())
 	}
 
 	//process powAnswers and dposAcks
 	//if newBlockNumber.Uint64()-currentEffectBlockNumber.Uint64() == 1 {
 	if !parent.Header().IsVisual() {
-		w.current.dposAcks = w.probe.BlockChain().GetDposAck(parentBlockNum, types.AckTypeAgree)
+		w.current.dposAcks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeAgree)
 	} else {
-		w.current.dposAcks = w.probe.BlockChain().GetDposAck(parentBlockNum, types.AckTypeOppose)
+		w.current.dposAcks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeOppose)
 	}
 	if len(w.current.dposAcks) < int(LeastDposWitness) {
 		log.Error("not enough dposAck in blockchain! something error", "parentBlockNum", parentBlockNum)
@@ -1256,7 +1272,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	}
 	w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, &ackCount)
 
-	answers := w.probe.BlockChain().GetLatestPowAnswer(realParent.Number())
+	answers := w.probe.BlockChain().GetLatestPowAnswer(realParent.Number(), realParent.Hash())
 	if answers == nil {
 		log.Error("Refusing to mine without PowAnswers, something error, need to check")
 		return nil

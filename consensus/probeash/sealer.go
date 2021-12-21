@@ -221,16 +221,12 @@ func (probeash *Probeash) PowSeal(chain consensus.ChainHeaderReader, block *type
 // seed that results in correct final block difficulty.
 func (probeash *Probeash) mine(header *types.Header, id int, seed uint64, abort chan struct{}, found chan *types.PowAnswer, coinbase common.Address) {
 	// Extract some data from the header
-	tmp := header.Coinbase
-	header.Coinbase = coinbase
-
 	var (
-		hash    = probeash.SealHash(header).Bytes()
+		hash    = probeash.GreatriSealHash(header, coinbase).Bytes()
 		target  = new(big.Int).Div(two256, header.Difficulty)
 		number  = header.Number.Uint64()
 		dataset = probeash.dataset(number, false)
 	)
-	header.Coinbase = tmp
 	// Start generating random nonces until we abort or find a good one
 	var (
 		attempts = int64(0)
@@ -266,6 +262,7 @@ search:
 					Nonce:     types.EncodeNonce(nonce),
 					MixDigest: common.BytesToHash(digest),
 					Miner:     coinbase,
+					BlockHash: header.Hash(),
 				}
 				select {
 				case found <- &answer:

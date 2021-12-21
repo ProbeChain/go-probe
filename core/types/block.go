@@ -95,6 +95,7 @@ type PowAnswer struct {
 	MixDigest common.Hash    `json:"mixHash"          gencodec:"required"`
 	Nonce     BlockNonce     `json:"nonce"            gencodec:"required"`
 	Miner     common.Address `json:"miner"            gencodec:"required"`
+	BlockHash common.Hash    `json:"blockHash"          gencodec:"required"`
 }
 
 // Id returns the pow answer unique id
