@@ -772,10 +772,10 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 
 		case <-timerDelaySeal.C:
 			baseBlockNumber := new(big.Int).Sub(w.delaySealBlockNumber, common.Big1)
-			var dposAgreeAckNum = 0
-			if w.visualBlockNumber == w.chain.CurrentBlock().Number() {
-				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
-			}
+			dposAgreeAckNum := w.chain.GetDposAckSize(w.effectHeader.Number, w.effectHeader.Hash(), types.AckTypeAgree)
+			//if w.visualBlockNumber == w.chain.CurrentBlock().Number() {
+			//	dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
+			//}
 			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
 
 			if dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness) {

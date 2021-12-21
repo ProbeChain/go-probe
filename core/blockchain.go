@@ -3040,8 +3040,8 @@ func (bc *BlockChain) CheckAndGetNumAcks(num uint64, hash common.Hash, ackType t
 			if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
 				bc.CheckDposAck(dposAck)
 			}
-			log.Info("", "", bc.dposAcks.CheckRet(dposAck), "", dposAck.BlockHash.String(), "", hash.String())
-			log.Info("", "", bc.dposAcks.CheckRet(dposAck) == dposAckLegal, "", ackType == types.AckTypeAgree, "", bytes.Equal(dposAck.Hash(), hash.Bytes()))
+			log.Info("", "", bc.dposAcks.CheckRet(dposAck), "", dposAck.BlockHash.String(), "", hash.String(), "", num)
+			log.Info("", "", bc.dposAcks.CheckRet(dposAck) == dposAckLegal, "", ackType == types.AckTypeAgree, "", bytes.Equal(dposAck.BlockHash.Bytes(), hash.Bytes()))
 			if bc.dposAcks.CheckRet(dposAck) == dposAckLegal && ((ackType == types.AckTypeAgree && bytes.Equal(dposAck.BlockHash.Bytes(), hash.Bytes())) || ackType == types.AckTypeOppose) {
 				ans = append(ans, dposAck)
 			}
