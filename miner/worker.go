@@ -323,7 +323,7 @@ func (w *worker) commitAckLoop() {
 			log.Debug("exit ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
 			return
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
@@ -774,7 +774,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			baseBlockNumber := new(big.Int).Sub(w.delaySealBlockNumber, common.Big1)
 			var dposAgreeAckNum = 0
 			if w.visualBlockNumber == w.chain.CurrentBlock().Number() {
-				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().ParentHash(), types.AckTypeAgree)
+				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			}
 			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
 
