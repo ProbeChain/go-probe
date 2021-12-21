@@ -68,6 +68,9 @@ const (
 	LOSS_STATE_OF_APPLY   uint8 = 0
 	LOSS_STATE_OF_REVEAL  uint8 = 1
 	LOSS_STATE_OF_SUCCESS uint8 = 2
+
+	//no fee at the block number for deploy contract
+	EIP_FRACTALLER uint64 = 2500
 )
 
 //IsSpecialAddress judge system reserved address

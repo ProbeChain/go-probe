@@ -122,7 +122,10 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 }
 
 // ContractDeploy subtracts amount from sender and adds amount to recipient using the given Db
-func ContractDeploy(db vm.StateDB, sender common.Address) error {
+func ContractDeploy(db vm.StateDB, sender common.Address, blockNumber *big.Int) error {
+	if new(big.Int).SetUint64(common.EIP_FRACTALLER).Cmp(blockNumber) == -1 {
+		return nil
+	}
 	balance := db.GetBalance(sender)
 	pledge := new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
 	if balance.Sign() < 1 || balance.Cmp(pledge) == -1 {

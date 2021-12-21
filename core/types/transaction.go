@@ -298,9 +298,7 @@ func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))
 	total.Add(total, tx.Value())
 	var pledgeAmount uint64
-	if tx.To() == nil {
-		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
-	} else {
+	if tx.To() != nil {
 		switch tx.To().Hex() {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
 			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS

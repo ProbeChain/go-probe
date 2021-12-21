@@ -43,7 +43,7 @@ type (
 	// CancellationFunc is the signature of a cancellation function
 	CancellationFunc func(StateDB, common.Address, common.Address)
 	//ContractDeployFunc is the signature of a transfer function
-	ContractDeployFunc func(StateDB, common.Address) error
+	ContractDeployFunc func(StateDB, common.Address, *big.Int) error
 	//CallDBFunc call database
 	CallDBFunc func(StateDB, TxContext)
 )
@@ -474,7 +474,7 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 		evm.StateDB.SetNonce(address, 1)
 	}
 
-	if err := evm.Context.ContractDeploy(evm.StateDB, caller.Address()); err != nil {
+	if err := evm.Context.ContractDeploy(evm.StateDB, caller.Address(), evm.Context.BlockNumber); err != nil {
 		return nil, common.Address{}, gas, err
 	}
 

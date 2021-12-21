@@ -1293,8 +1293,6 @@ func (s *StateDB) Cancellation(context vm.TxContext) {
 				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
 			case common.ACC_TYPE_OF_PNS:
 				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
-			case common.ACC_TYPE_OF_CONTRACT:
-				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
 			case common.ACC_TYPE_OF_AUTHORIZE:
 				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
 			}
