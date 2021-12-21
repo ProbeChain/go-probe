@@ -226,7 +226,6 @@ func handleMessage(backend Backend, peer *Peer) error {
 
 	var handlers = probe65
 	if peer.Version() >= ETH66 {
-		log.Info("handleMessage", "read", err)
 		handlers = probe66
 	}
 	// Track the amount of time it takes to serve the request and run the handler
