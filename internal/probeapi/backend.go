@@ -92,10 +92,6 @@ type Backend interface {
 	Engine() consensus.Engine
 
 	Exist(addr common.Address) bool
-
-	GetDPOSByBlockNumber(number rpc.BlockNumber) []*common.DPoSAccount
-
-	GetDPOSCandidate() []common.DPoSCandidateAccount
 }
 
 func GetAPIs(apiBackend Backend) []rpc.API {

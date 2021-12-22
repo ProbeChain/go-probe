@@ -296,11 +296,30 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	go worker.powMinerNewWorkLoop()
 	go worker.powMinerResultLoop()
 
+	go worker.judge()
+
 	// Submit first work to initialize pending state.
 	if init {
 		//worker.startCh <- struct{}{}
 	}
 	return worker
+}
+
+func (w *worker) judge() {
+	now := w.chain.CurrentBlock().NumberU64()
+	w.chainHeadCh <- core.ChainHeadEvent{}
+	time.Sleep(10 * time.Second)
+
+	for {
+		log.Debug("judge ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
+		w.sendAck(w.chain.CurrentBlock().NumberU64(), types.AckTypeAgree)
+		if now != w.chain.CurrentBlock().NumberU64() {
+			log.Debug("exit ", "now", now, "curr", w.chain.CurrentBlock().NumberU64())
+			return
+		}
+		time.Sleep(1 * time.Second)
+		w.chainHeadCh <- core.ChainHeadEvent{}
+	}
 }
 
 // setProbeerbase sets the probeerbase used to initialize the block coinbase field.
@@ -383,9 +402,7 @@ func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
 		log.Error("somprobeing wrong in get dpos account, neeQd to check", "blockNumber", blockNumber)
 		return false
 	}
-
-	log.Debug(" producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " current:", account.Owner, " current:", account.Enode.String(), " re:", account.Owner == w.coinbase)
-
+	log.Debug("producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " curOwner:", account.Owner, " curNode:", account.Enode.String(), " eq:", account.Owner == w.coinbase)
 	return account.Owner == w.coinbase
 }
 
@@ -574,6 +591,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			clearPending(w.chain.CurrentBlock().NumberU64())
 			//commit(false, commitInterruptNewHead)
 			time.Sleep(2 * time.Second)
+			//now :=w.chain.CurrentBlock().NumberU64()
 			w.chainHeadCh <- core.ChainHeadEvent{}
 
 		case block := <-w.chainHeadCh:
@@ -717,7 +735,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					w.delaySealBlockNumber.Add(w.effectBlockNumber, common.Big1)
 					log.Debug("received powAnswer, but not enough dposAck, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber)
+						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
 				} else {
 					log.Trace("i'm producer, but nothing to do", "timerDelaySealSetFlag", timerDelaySealSetFlag, "answer check", ret,
 						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
@@ -733,7 +751,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					timerSealDealine.Reset(consensus.Time2SealDeadline * time.Second)
 					log.Debug("received powAnswer, not my turn to produce, setup a timer to wait new block", "addr", w.coinbase,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber)
+						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
 				} else {
 					log.Trace("i'm dpos node, but nothing to do", "timerSealDealineSetFlag", timerSealDealineSetFlag, "answer check", ret,
 						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
@@ -808,6 +826,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			}
 
 		case <-w.exitCh:
+			log.Info(" start exitCh", "exitCh", "exitCh")
 			return
 		}
 	}
@@ -1154,6 +1173,9 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 
 	parentBlockNum := new(big.Int).SetUint64(newBlockNumber.Uint64() - 1)
 	parent := w.chain.GetBlockByNumber(parentBlockNum.Uint64())
+
+	realParent := w.chain.GetRealBlockByNumber(parentBlockNum.Uint64())
+
 	timestamp := time.Now().Unix()
 	if parent.Time() >= uint64(timestamp) {
 		timestamp = int64(parent.Time() + 1)
@@ -1162,13 +1184,18 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	header := &types.Header{
 		ParentHash: parent.Hash(),
 		Number:     newBlockNumber,
-		GasLimit:   core.CalcGasLimit(parent.GasUsed(), parent.GasLimit(), w.config.GasFloor, w.config.GasCeil),
+		GasLimit:   core.CalcGasLimit(realParent.GasUsed(), realParent.GasLimit(), w.config.GasFloor, w.config.GasCeil),
 		Extra:      w.extra,
 		Time:       uint64(timestamp),
 	}
+	if newBlockType == types.BlockTypeVisual {
+		header.Extra = params.VisualBlockExtra.Bytes()
+	}
 	header.Nonce = types.BlockNonce{}
 	header.MixDigest = common.Hash{}
-	header.Difficulty = calcDifficulty(uint64(timestamp), parent.Header())
+	header.Difficulty = probehash2.CalcDifficulty(w.chainConfig, uint64(timestamp), realParent.Header())
+
+	log.Info("", "calc Difficulty :  ", header.Difficulty)
 	header.Coinbase = common.Address{}
 	header.DposSigAddr = w.coinbase
 
@@ -1208,7 +1235,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 			}
 		}
 
-		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(currentEffectBlockNumber)
+		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(realParent.Number())
 	}
 
 	//process powAnswers and dposAcks
@@ -1227,7 +1254,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	}
 	w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, &ackCount)
 
-	answers := w.probe.BlockChain().GetLatestPowAnswer(currentEffectBlockNumber)
+	answers := w.probe.BlockChain().GetLatestPowAnswer(realParent.Number())
 	if answers == nil {
 		log.Error("Refusing to mine without PowAnswers, something error, need to check")
 		return nil

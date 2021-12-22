@@ -17,8 +17,10 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"github.com/probeum/go-probeum/core/types"
+	"github.com/probeum/go-probeum/log"
 	"math/big"
 
 	"github.com/probeum/go-probeum/common"
@@ -120,47 +122,53 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *big.Int) bool {
 }
 
 // ContractDeploy subtracts amount from sender and adds amount to recipient using the given Db
-func ContractDeploy(db vm.StateDB, sender common.Address) {
-	fmt.Printf("ContractDeploy, sender:%s,pledgeAmount:%d\n", sender.String(), common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
-	db.SubBalance(sender, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT))
+func ContractDeploy(db vm.StateDB, sender common.Address) error {
+	balance := db.GetBalance(sender)
+	pledge := new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT)
+	if balance.Sign() < 1 || balance.Cmp(pledge) == -1 {
+		log.Error(fmt.Sprintf("the new contract address will be created,but the deposit is not enough, creator:%s", sender.String()))
+		return errors.New("the new contract address will be created,but the deposit is not enough")
+	}
+	db.SubBalance(sender, pledge)
+	return nil
 }
 
 //CallDB call database for update operation
-func CallDB(db vm.StateDB, blockNumber *big.Int, txContext vm.TxContext) {
-	if txContext.To == nil {
-		//ContractDeploy(db, txContext.From)
-		//todo
-		panic("ContractDeploy--------")
-	} else {
-		switch txContext.To.Hex() {
-		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
-			common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
-			common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
-			db.Register(txContext)
-		case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
-			db.Cancellation(txContext)
-		case common.SPECIAL_ADDRESS_FOR_SEND_LOSS_REPORT:
-			db.SendLossReport(blockNumber, txContext)
-		case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
-			db.RevealLossReport(blockNumber, txContext)
-		case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT:
-			db.TransferLostAccount(txContext)
-		case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
-			db.RemoveLossReport(txContext)
-		case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
-			db.RejectLossReport(txContext)
-		case common.SPECIAL_ADDRESS_FOR_VOTE:
-			db.Vote(txContext)
-		case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
-			db.ApplyToBeDPoSNode(txContext)
-		case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
-			db.Redemption(txContext)
-		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
-			db.ModifyPnsOwner(txContext)
-		case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
-			db.ModifyPnsContent(txContext)
-		default:
-			db.Transfer(txContext)
-		}
+func CallDB(db vm.StateDB, txContext vm.TxContext) {
+	switch txContext.To.Hex() {
+	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
+		common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
+		common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:
+		db.Register(txContext)
+	case common.SPECIAL_ADDRESS_FOR_CANCELLATION:
+		db.Cancellation(txContext)
+	case common.SPECIAL_ADDRESS_FOR_CANCELLATION_LOST_ACCOUNT:
+		db.CancellationLoss(txContext)
+	case common.SPECIAL_ADDRESS_FOR_REVEAL_LOSS_REPORT:
+		db.RevealLossReport(txContext)
+	case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_BALANCE:
+		db.TransferLostAccount(txContext)
+	case common.SPECIAL_ADDRESS_FOR_REMOVE_LOSS_REPORT:
+		db.RemoveLossReport(txContext)
+	case common.SPECIAL_ADDRESS_FOR_REJECT_LOSS_REPORT:
+		db.RejectLossReport(txContext)
+	case common.SPECIAL_ADDRESS_FOR_VOTE:
+		db.Vote(txContext)
+	case common.SPECIAL_ADDRESS_FOR_APPLY_TO_BE_DPOS_NODE:
+		db.ApplyToBeDPoSNode(txContext)
+	case common.SPECIAL_ADDRESS_FOR_REDEMPTION:
+		db.Redemption(txContext)
+	case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_OWNER:
+		db.ModifyPnsOwner(txContext)
+	case common.SPECIAL_ADDRESS_FOR_MODIFY_PNS_CONTENT:
+		db.ModifyPnsContent(txContext)
+	case common.SPECIAL_ADDRESS_FOR_MODIFY_LOSS_TYPE:
+		db.ModifyLossType(txContext)
+	case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_PNS,
+		common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_AUTHORIZE:
+		db.TransferLostAssociatedAccount(txContext)
+	default:
+		db.Transfer(txContext)
 	}
+
 }

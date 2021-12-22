@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	probe "github.com/probeum/go-probeum/crypto/probecrypto"
 	"math"
 	"math/big"
 	"math/rand"
@@ -55,7 +54,7 @@ func TestUpdateLeaks(t *testing.T) {
 		}
 	}
 
-	root := state.IntermediateRoot(false, nil)
+	root := state.IntermediateRoot(false)
 	if err := state.Database().TrieDB().Commit(root, false, nil); err != nil {
 		t.Errorf("can not commit trie %v to persistent database", root.Hex())
 	}
@@ -90,20 +89,20 @@ func TestIntermediateLeaks(t *testing.T) {
 	}
 	var accountMap map[byte]common.Address
 	accountMap = make(map[byte]common.Address)
-	for i := byte(0); i < 5; i++ {
-		key, err := probe.GenerateKeyByType(0x00)
+	/*	for i := byte(0); i < 5; i++ {
+		key, err := crypto.GenerateKeyByType(0x00)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 		}
-		address := probe.PubkeyToAddress(key.PublicKey)
+		address := crypto.PubkeyToAddress(key.PublicKey)
 		accountMap[i] = address
-	}
+	}*/
 	// Modify the transient state.
 	for i := byte(0); i < 5; i++ {
 		modify(transState, accountMap[i], i, 0)
 	}
 	// Write modifications to trie.
-	transState.IntermediateRoot(false, nil)
+	transState.IntermediateRoot(false)
 
 	// Overwrite all the data with new values in the transient database.
 	for i := byte(0); i < 5; i++ {

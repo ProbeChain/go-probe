@@ -204,7 +204,7 @@ func testIterativeStateSync(t *testing.T, count int, commit bool, bypath bool) {
 				results[len(hashQueue)+i] = trie.SyncResult{Hash: crypto.Keccak256Hash(data), Data: data}
 			} else {
 				//var acc Account
-				var acc AssetAccount
+				var acc ContractAccount
 				if err := rlp.DecodeBytes(srcTrie.Get(path[0]), &acc); err != nil {
 					t.Fatalf("failed to decode account on path %x: %v", path, err)
 				}
