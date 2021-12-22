@@ -3092,11 +3092,17 @@ func (bc *BlockChain) CheckDposAckSketchy(dposAck *types.DposAck) bool {
 func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) uint8 {
 	if dposAck.AckType == types.AckTypeOppose {
 		bc.dposAcks.CheckSet(dposAck, dposAckLegal)
+		bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
 		return dposAckLegal
 	}
 	singer, err := dposAck.RecoverOwner()
 	if err == nil {
 		number := dposAck.Number.Uint64()
+		if bc.GetDposAccountSize(number) == 0 {
+			log.Debug("CheckDposAck Fail, GetDposAccountSize = 0", "dposAck.Number", number)
+			bc.dposAcks.CheckSet(dposAck, dposAckUncheck)
+			return dposAckUncheck
+		}
 		if !bc.CheckIsDposAccount(number, singer) {
 			log.Error("CheckDposAck Fail, singer is not the dpos node", "signer", singer, "err", err)
 			bc.dposAcks.CheckSet(dposAck, dposAckIllegal)
@@ -3110,6 +3116,7 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) uint8 {
 		}
 		curHash := header.Hash()
 		if curHash == dposAck.BlockHash {
+			bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
 			bc.dposAcks.CheckSet(dposAck, dposAckLegal)
 			return dposAckLegal
 		}
