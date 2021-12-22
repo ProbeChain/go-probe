@@ -68,6 +68,7 @@ func setDefaults(cfg *Config) {
 			MuirGlacierBlock:    new(big.Int),
 			BerlinBlock:         new(big.Int),
 			LondonBlock:         new(big.Int),
+			ShenzhenBlock:       new(big.Int),
 		}
 	}
 
@@ -121,7 +122,7 @@ func Execute(code, input []byte, cfg *Config) ([]byte, *state.StateDB, error) {
 	if rules := cfg.ChainConfig.Rules(vmenv.Context.BlockNumber); rules.IsBerlin {
 		cfg.State.PrepareAccessList(cfg.Origin, &address, vm.ActivePrecompiles(rules), nil)
 	}
-	cfg.State.CreateAccount(address)
+	cfg.State.CreateContractAccount(address)
 	// set the receiver's (the executing contract) code for execution.
 	cfg.State.SetCode(address, code)
 	// Call the code with the given configuration.

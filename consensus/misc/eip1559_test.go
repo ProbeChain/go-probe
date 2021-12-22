@@ -44,9 +44,10 @@ func copyConfig(original *params.ChainConfig) *params.ChainConfig {
 		MuirGlacierBlock:    original.MuirGlacierBlock,
 		BerlinBlock:         original.BerlinBlock,
 		LondonBlock:         original.LondonBlock,
+		ShenzhenBlock:       original.ShenzhenBlock,
 		EWASMBlock:          original.EWASMBlock,
 		CatalystBlock:       original.CatalystBlock,
-		Probeash:              original.Probeash,
+		Probeash:            original.Probeash,
 		Clique:              original.Clique,
 	}
 }
