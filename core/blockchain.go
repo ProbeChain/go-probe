@@ -88,22 +88,22 @@ var (
 )
 
 const (
-	bodyCacheLimit      = 256
-	blockCacheLimit     = 256
-	receiptsCacheLimit  = 32
-	txLookupCacheLimit  = 1024
-	maxFutureBlocks     = 256
-	maxTimeFutureBlocks = 30
-	TriesInMemory       = 128
-	maxChainPowAnswers  = 256
-	maxChainDposAcks    = 10
-	maxUnclePowAnswer   = 5
-	powAnswerUncheck    = 0
-	powAnswerLegal      = 1
-	powAnswerIllegal    = 2
-	dposAckUncheck      = 0
-	dposAckLegal        = 1
-	dposAckIllegal      = 2
+	bodyCacheLimit            = 256
+	blockCacheLimit           = 256
+	receiptsCacheLimit        = 32
+	txLookupCacheLimit        = 1024
+	maxFutureBlocks           = 256
+	maxTimeFutureBlocks       = 30
+	TriesInMemory             = 128
+	maxChainPowAnswers        = 256
+	maxChainDposAcks          = 10
+	maxUnclePowAnswer         = 5
+	powAnswerUncheck    uint8 = 0
+	powAnswerLegal      uint8 = 1
+	powAnswerIllegal    uint8 = 2
+	dposAckUncheck      uint8 = 0
+	dposAckLegal        uint8 = 1
+	dposAckIllegal      uint8 = 2
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -169,17 +169,13 @@ func (x Uint64Slice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // PowAnswerPool contains all pow answer
 type PowAnswerPool struct {
-	lock         sync.RWMutex
-	check        map[common.Hash]uint8
-	powAnswerMap map[uint64][]*types.PowAnswer
+	check        sync.Map
+	powAnswerMap sync.Map
 }
 
 // NewPowAnswerPool return a two-dimension pow answer
 func NewPowAnswerPool() *PowAnswerPool {
-	pool := &PowAnswerPool{
-		powAnswerMap: make(map[uint64][]*types.PowAnswer),
-		check:        map[common.Hash]uint8{},
-	}
+	pool := &PowAnswerPool{}
 	return pool
 }
 
@@ -189,7 +185,7 @@ func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
 		log.Error("powAnswer  is nil")
 		return true
 	}
-	powAnswers := pool.powAnswerMap[powAnswer.Number.Uint64()]
+	powAnswers := pool.getPowsByNum(powAnswer.Number.Uint64())
 	var count = 0
 	for _, answer := range powAnswers {
 		if powAnswer.Miner == answer.Miner {
@@ -203,28 +199,34 @@ func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
 }
 
 func (pool *PowAnswerPool) CheckRet(powAnswer *types.PowAnswer) uint8 {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-	return pool.check[powAnswer.Id()]
+	id := powAnswer.Id()
+	re, _ := pool.check.Load(id)
+	if re == nil {
+		re = powAnswerUncheck
+		pool.check.Store(id, powAnswerUncheck)
+	}
+	return re.(uint8)
+}
+
+func (pool *PowAnswerPool) getPowsByNum(num uint64) []*types.PowAnswer {
+	re, _ := pool.powAnswerMap.Load(num)
+	if re == nil {
+		re = make([]*types.PowAnswer, 0, maxChainDposAcks)
+		pool.powAnswerMap.Store(num, re.([]*types.PowAnswer))
+	}
+	return re.([]*types.PowAnswer)
 }
 
 func (pool *PowAnswerPool) CheckSet(powAnswer *types.PowAnswer, result uint8) {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-	pool.check[powAnswer.Id()] = result
+	pool.check.Store(powAnswer.Id(), result)
 }
 
 func (pool *PowAnswerPool) Contain(powAnswer *types.PowAnswer) bool {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	return pool.contain(powAnswer)
 }
 
 func (pool *PowAnswerPool) List(number *big.Int, blockHash common.Hash) []*types.PowAnswer {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-	powAnswers := pool.powAnswerMap[number.Uint64()]
-
+	powAnswers := pool.getPowsByNum(number.Uint64())
 	re := make([]*types.PowAnswer, 0, len(powAnswers))
 	for _, powAnswer := range powAnswers {
 		if blockHash == powAnswer.BlockHash {
@@ -235,26 +237,24 @@ func (pool *PowAnswerPool) List(number *big.Int, blockHash common.Hash) []*types
 }
 
 func (pool *PowAnswerPool) remove(currNum uint64) {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-
 	if currNum <= maxUnclePowAnswer {
 		return
 	}
 	leftNum := currNum - maxUnclePowAnswer
-	for num, _ := range pool.powAnswerMap {
-		if num < leftNum {
-			delete(pool.powAnswerMap, num)
+
+	pool.powAnswerMap.Range(func(k, v interface{}) bool {
+		if k.(uint64) < leftNum {
+			pool.powAnswerMap.Delete(k)
 		}
-	}
+		return true
+	})
+
 }
 
 func (pool *PowAnswerPool) FilterList(powAnswers []*types.PowAnswer) []*types.PowAnswer {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	answers := make([]*types.PowAnswer, 0, len(powAnswers))
 	for _, answer := range powAnswers {
-		if pool.check[answer.Id()] == powAnswerLegal {
+		if powAnswerLegal == pool.CheckRet(answer) {
 			answers = append(answers, answer)
 		}
 	}
@@ -262,35 +262,29 @@ func (pool *PowAnswerPool) FilterList(powAnswers []*types.PowAnswer) []*types.Po
 }
 
 func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	if pool.contain(powAnswer) {
 		return
 	}
 	number := powAnswer.Number
-	powAnswers := pool.powAnswerMap[number.Uint64()]
+	powAnswers := pool.getPowsByNum(number.Uint64())
 	powAnswers = append(powAnswers, powAnswer)
-	pool.powAnswerMap[number.Uint64()] = powAnswers
+	pool.powAnswerMap.Store(number.Uint64(), powAnswers)
 }
 
 // DposAckPool contains all dpos ack
 type DposAckPool struct {
-	lock       sync.RWMutex
-	check      map[common.Hash]uint8
-	dposAckMap map[uint64][]*types.DposAck
+	check      sync.Map
+	dposAckMap sync.Map
 }
 
 // NewDposAckPool return a two-dimension pow answer
 func NewDposAckPool() *DposAckPool {
-	pool := &DposAckPool{
-		dposAckMap: make(map[uint64][]*types.DposAck),
-		check:      map[common.Hash]uint8{},
-	}
+	pool := &DposAckPool{}
 	return pool
 }
 
 func (pool *DposAckPool) contain(dposAck *types.DposAck) bool {
-	dposAcks := pool.dposAckMap[dposAck.Number.Uint64()]
+	dposAcks := pool.getAcksByNum(dposAck.Number.Uint64())
 	for _, ack := range dposAcks {
 		if bytes.Compare(ack.WitnessSig, dposAck.WitnessSig) == 0 {
 			return true
@@ -300,43 +294,48 @@ func (pool *DposAckPool) contain(dposAck *types.DposAck) bool {
 }
 
 func (pool *DposAckPool) CheckRet(dposAck *types.DposAck) uint8 {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-	return pool.check[dposAck.Id()]
+	re, _ := pool.check.Load(dposAck.Id())
+	if re == nil {
+		re = dposAckUncheck
+		pool.check.Store(dposAck.Id(), dposAckUncheck)
+	}
+	return re.(uint8)
+}
+
+func (pool *DposAckPool) getAcksByNum(num uint64) []*types.DposAck {
+	re, _ := pool.dposAckMap.Load(num)
+	if re == nil {
+		re = make([]*types.DposAck, 0, maxChainDposAcks)
+		pool.dposAckMap.Store(num, re.([]*types.DposAck))
+	}
+	return re.([]*types.DposAck)
 }
 
 func (pool *DposAckPool) CheckSet(dposAck *types.DposAck, result uint8) {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-	pool.check[dposAck.Id()] = result
+	pool.check.Store(dposAck.Id(), result)
 }
 
 func (pool *DposAckPool) Contain(dposAck *types.DposAck) bool {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	return pool.contain(dposAck)
 }
 
 func (pool *DposAckPool) remove(currNum uint64) {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-
 	if currNum <= maxChainDposAcks {
 		return
 	}
 	leftNum := currNum - maxChainDposAcks
-	for num, _ := range pool.dposAckMap {
-		if num < leftNum {
-			delete(pool.dposAckMap, num)
+
+	pool.dposAckMap.Range(func(k, v interface{}) bool {
+		if k.(uint64) < leftNum {
+			pool.dposAckMap.Delete(k)
 		}
-	}
+		return true
+	})
 
 }
 
 func (pool *DposAckPool) List(number uint64, blockHash common.Hash, ackType types.DposAckType) []*types.DposAck {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
-	dposAcks := pool.dposAckMap[number]
+	dposAcks := pool.getAcksByNum(number)
 	if ackType == types.AckTypeAll {
 		return dposAcks
 	} else {
@@ -353,23 +352,19 @@ func (pool *DposAckPool) List(number uint64, blockHash common.Hash, ackType type
 }
 
 func (pool *DposAckPool) Add(dposAck *types.DposAck) {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	if pool.contain(dposAck) {
 		return
 	}
 	number := dposAck.Number
-	dposAcks := pool.dposAckMap[number.Uint64()]
+	dposAcks := pool.getAcksByNum(number.Uint64())
 	dposAcks = append(dposAcks, dposAck)
-	pool.dposAckMap[number.Uint64()] = dposAcks
+	pool.dposAckMap.Store(number.Uint64(), dposAcks)
 }
 
 func (pool *DposAckPool) FilterList(dposAcks []*types.DposAck) []*types.DposAck {
-	pool.lock.Lock()
-	defer pool.lock.Unlock()
 	acks := make([]*types.DposAck, 0, len(dposAcks))
 	for _, dposAck := range dposAcks {
-		if pool.check[dposAck.Id()] == dposAckLegal {
+		if dposAckLegal == pool.CheckRet(dposAck) {
 			acks = append(acks, dposAck)
 		}
 	}
@@ -3027,7 +3022,7 @@ func (bc *BlockChain) DispatchDposAck() int {
 }
 
 func (bc *BlockChain) CheckAndGetNumAcks(num uint64, hash common.Hash, ackType types.DposAckType) []*types.DposAck {
-	dposAcks := bc.dposAcks.dposAckMap[num]
+	dposAcks := bc.dposAcks.getAcksByNum(num)
 	ans := make([]*types.DposAck, 0, len(dposAcks))
 
 	for _, dposAck := range dposAcks {
