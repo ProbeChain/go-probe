@@ -3118,48 +3118,42 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 	uncles := maxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
-	if number.Uint64() < 1 {
-		return ans
-	}
-	number = number.Sub(number, common.Big1)
 	ret := make([]*types.PowAnswer, 0, uncles*2)
-
 	var used map[common.Hash]*types.PowAnswer
 	used = make(map[common.Hash]*types.PowAnswer)
 
-	for uncles > 0 {
-		curNumber := big.NewInt(0).Sub(number, big.NewInt(int64(uncles-1)))
-		uncles -= 1
+	if number.Uint64() < 1 {
+		return ans
+	}
+
+	for i := 0; i <= uncles; i++ {
+		curNumber := big.NewInt(0).Sub(number, big.NewInt(int64(i)))
 		if curNumber.Int64() <= 0 {
 			continue
 		}
+
 		curBlock := bc.GetBlockByNumber(curNumber.Uint64())
+		log.Debug("GetUnclePowAnswers", "curNumber", curNumber, "number", number)
+		if i != 0 {
+			ans = append(ans, bc.GetPowAnswers(curNumber)...)
+		}
+
 		for _, an := range curBlock.PowAnswers() {
 			if an != nil {
 				used[an.MixDigest] = an
-				log.Info("", "GetUnclePowAnswers is used ", an.MixDigest.String(), "curNumber", curNumber)
 			}
 		}
 		for _, an := range curBlock.PowAnswerUncles() {
 			if an != nil {
 				used[an.MixDigest] = an
-				log.Info("", "GetUnclePowAnswers is used ", an.MixDigest.String(), "curNumber", curNumber)
 			}
 		}
-		for _, answer := range bc.GetPowAnswers(curNumber) {
-			log.Info("", "GetUnclePowAnswers get  ", answer.MixDigest.String(), "curNumber", curNumber)
-		}
-		ans = append(ans, bc.GetPowAnswers(curNumber)...)
-	}
 
+	}
 	for _, answer := range ans {
 		if answer != nil && used[answer.MixDigest] == nil {
-			log.Info("", "GetUnclePowAnswers un used ", answer.MixDigest.String(), "curNumber", number)
 			ret = append(ret, answer)
 		}
-	}
-	for _, answer := range ret {
-		log.Info("", "GetUnclePowAnswers un used ", answer.MixDigest.String(), "curNumber", number)
 	}
 	return ret
 }
