@@ -3147,7 +3147,6 @@ func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 				used[an.MixDigest] = an
 			}
 		}
-
 	}
 	for _, answer := range ans {
 		if answer != nil && used[answer.MixDigest] == nil {
