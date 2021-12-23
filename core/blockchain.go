@@ -3133,7 +3133,6 @@ func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 		}
 
 		curBlock := bc.GetBlockByNumber(curNumber.Uint64())
-		log.Debug("GetUnclePowAnswers", "curNumber", curNumber, "number", number)
 		if i != 0 {
 			ans = append(ans, bc.GetPowAnswers(curNumber)...)
 		}
