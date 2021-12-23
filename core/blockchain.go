@@ -3118,7 +3118,7 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int) *types.PowAnswer {
 func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 	uncles := maxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
-	if number.Uint64() < 2 {
+	if number.Uint64() < 1 {
 		return ans
 	}
 	number = number.Sub(number, common.Big1)
