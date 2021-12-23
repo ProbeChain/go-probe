@@ -244,6 +244,9 @@ func (pool *PowAnswerPool) remove(currNum uint64) {
 
 	pool.powAnswerMap.Range(func(k, v interface{}) bool {
 		if k.(uint64) < leftNum {
+			for _, answer := range pool.getPowsByNum(k.(uint64)) {
+				pool.check.Delete(answer.Id())
+			}
 			pool.powAnswerMap.Delete(k)
 		}
 		return true
@@ -327,6 +330,9 @@ func (pool *DposAckPool) remove(currNum uint64) {
 
 	pool.dposAckMap.Range(func(k, v interface{}) bool {
 		if k.(uint64) < leftNum {
+			for _, ack := range pool.getAcksByNum(k.(uint64)) {
+				pool.check.Delete(ack.Id())
+			}
 			pool.dposAckMap.Delete(k)
 		}
 		return true

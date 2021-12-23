@@ -152,7 +152,7 @@ func makeMiner(genesis *core.Genesis) (*node.Node, *probe.Probeum, error) {
 		P2P: p2p.Config{
 			ListenAddr:  "0.0.0.0:0",
 			NoDiscovery: true,
-			MaxPeers:    25,
+			MaxPeers:    256,
 		},
 		UseLightweightKDF: true,
 	}
