@@ -3137,20 +3137,29 @@ func (bc *BlockChain) GetUnclePowAnswers(number *big.Int) []*types.PowAnswer {
 		for _, an := range curBlock.PowAnswers() {
 			if an != nil {
 				used[an.MixDigest] = an
+				log.Info("", "GetUnclePowAnswers is used ", an.MixDigest.String())
 			}
 		}
 		for _, an := range curBlock.PowAnswerUncles() {
 			if an != nil {
 				used[an.MixDigest] = an
+				log.Info("", "GetUnclePowAnswers is used ", an.MixDigest.String())
 			}
+		}
+		for _, answer := range bc.GetPowAnswers(curNumber) {
+			log.Info("", "GetUnclePowAnswers get  ", answer.MixDigest.String())
 		}
 		ans = append(ans, bc.GetPowAnswers(curNumber)...)
 	}
 
 	for _, answer := range ans {
 		if answer != nil && used[answer.MixDigest] == nil {
+			log.Info("", "GetUnclePowAnswers un used ", answer.MixDigest.String())
 			ret = append(ret, answer)
 		}
+	}
+	for _, answer := range ret {
+		log.Info("", "GetUnclePowAnswers un used ", answer.MixDigest.String())
 	}
 	return ret
 }
