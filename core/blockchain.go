@@ -169,6 +169,7 @@ func (x Uint64Slice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // PowAnswerPool contains all pow answer
 type PowAnswerPool struct {
+	lock         sync.RWMutex
 	check        sync.Map
 	powAnswerMap sync.Map
 }
@@ -209,6 +210,8 @@ func (pool *PowAnswerPool) CheckRet(powAnswer *types.PowAnswer) uint8 {
 }
 
 func (pool *PowAnswerPool) getPowsByNum(num uint64) []*types.PowAnswer {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 	re, _ := pool.powAnswerMap.Load(num)
 	if re == nil {
 		re = make([]*types.PowAnswer, 0, maxChainDposAcks)
@@ -265,6 +268,8 @@ func (pool *PowAnswerPool) FilterList(powAnswers []*types.PowAnswer) []*types.Po
 }
 
 func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 	if pool.contain(powAnswer) {
 		return
 	}
@@ -276,6 +281,7 @@ func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
 
 // DposAckPool contains all dpos ack
 type DposAckPool struct {
+	lock       sync.RWMutex
 	check      sync.Map
 	dposAckMap sync.Map
 }
@@ -306,6 +312,8 @@ func (pool *DposAckPool) CheckRet(dposAck *types.DposAck) uint8 {
 }
 
 func (pool *DposAckPool) getAcksByNum(num uint64) []*types.DposAck {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 	re, _ := pool.dposAckMap.Load(num)
 	if re == nil {
 		re = make([]*types.DposAck, 0, maxChainDposAcks)
@@ -358,6 +366,8 @@ func (pool *DposAckPool) List(number uint64, blockHash common.Hash, ackType type
 }
 
 func (pool *DposAckPool) Add(dposAck *types.DposAck) {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 	if pool.contain(dposAck) {
 		return
 	}
@@ -3231,6 +3241,12 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 		}
 		if ack.AckType == types.AckTypeOppose {
 			oppopsNum++
+		}
+	}
+
+	if commitNum == 20 || oppopsNum == 20 {
+		for _, ack := range acks {
+			log.Info("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
 		}
 	}
 

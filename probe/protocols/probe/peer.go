@@ -65,7 +65,7 @@ const (
 
 	maxPeerPowAnswers = 17
 
-	maxPeerAcks = 17
+	maxPeerAcks = 4
 )
 
 // max is a helper function which returns the larger of the two given integers.
