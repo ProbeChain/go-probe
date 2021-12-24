@@ -62,6 +62,10 @@ const (
 	// dropping broadcasts. Similarly to block propagations, there's no point to queue
 	// above some healthy uncle limit, so use that.
 	maxQueuedBlockAnns = 4
+
+	maxPeerPowAnswers = 17
+
+	maxPeerAcks = 17
 )
 
 // max is a helper function which returns the larger of the two given integers.
@@ -118,8 +122,8 @@ func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool) *Pe
 		queuedBlockAnns:    make(chan *types.Block, maxQueuedBlockAnns),
 		txBroadcast:        make(chan []common.Hash),
 		txAnnounce:         make(chan []common.Hash),
-		powAnswerBroadcast: make(chan *types.PowAnswer),
-		dposAckBroadcast:   make(chan *types.DposAck),
+		powAnswerBroadcast: make(chan *types.PowAnswer, maxPeerPowAnswers),
+		dposAckBroadcast:   make(chan *types.DposAck, maxPeerAcks),
 		txpool:             txpool,
 		term:               make(chan struct{}),
 	}
