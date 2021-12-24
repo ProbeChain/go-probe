@@ -63,9 +63,9 @@ const (
 	// above some healthy uncle limit, so use that.
 	maxQueuedBlockAnns = 4
 
-	maxPeerPowAnswers = 17
+	maxPeerPowAnswers = 7
 
-	maxPeerAcks = 4
+	maxPeerAcks = 7
 )
 
 // max is a helper function which returns the larger of the two given integers.
