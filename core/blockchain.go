@@ -3246,6 +3246,11 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 
 	header := block.CopyMostHeader()
 
+	log.Info("acks", "ackType", len(acks))
+	for _, ack := range acks {
+		log.Info("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
+	}
+
 	if !bytes.Equal(header.DposAcksHash.Bytes(), types.CalcDposAckHash(acks).Bytes()) {
 		log.Error(" DposAcksHash not equal  ", "acks", len(acks), "header:", header.DposAcksHash.String(), "calc :", types.CalcDposAckHash(acks).String())
 		return false
