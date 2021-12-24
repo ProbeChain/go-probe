@@ -19,11 +19,10 @@ package probe
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sync/atomic"
 	"time"
-
-	"github.com/status-im/keycard-go/hexutils"
 
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core"
@@ -231,10 +230,10 @@ func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *typ
 	// boardcast pow answer again
 	if h.chain.CheckPowAnswerSketchy(powAnswer) {
 		peer.KnownPowAnswer(powAnswer.Id())
-		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
-			if err := peer.SendNewPowAnswer(powAnswer); err != nil {
-				log.Debug("SendNewPowAnswer", "err", err)
-			}
+		peers := h.peers.peersWithoutPowAnswers(powAnswer)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			peer.AsyncSendPowAnswer(powAnswer)
 		}
 		h.chain.HandlePowAnswer(powAnswer)
 	} else {
@@ -249,10 +248,10 @@ func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.D
 	check := h.chain.CheckDposAckSketchy(dposAck)
 	if check {
 		peer.KnownDposAck(dposAck.Id())
-		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
-			if err := peer.SendNewDposAck(dposAck); err != nil {
-				log.Debug("SendNewDposAck", "err", err)
-			}
+		peers := h.peers.peersWithoutDposAcks(dposAck)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			peer.AsyncSendDposAck(dposAck)
 		}
 		h.chain.HandleDposAck(dposAck)
 	} else {

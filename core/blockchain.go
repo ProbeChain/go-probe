@@ -3177,13 +3177,14 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header) []*types.PowAnswe
 				used[an.MixDigest] = an
 			}
 		}
-		ans = append(ans, bc.GetPowAnswers(curBlock.Number(), curBlock.Hash())...)
+		if i != 0 {
+			ans = append(ans, bc.GetPowAnswers(curBlock.Number(), curBlock.Hash())...)
+		}
 		curBlock = bc.GetBlock(curBlock.ParentHash(), curBlock.Number().Uint64()-1)
 		if curBlock == nil {
 			break
 		}
 	}
-
 	for _, answer := range ans {
 		if answer != nil && used[answer.MixDigest] == nil {
 			ret = append(ret, answer)
