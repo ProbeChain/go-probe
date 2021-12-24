@@ -468,7 +468,6 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 		transfer := peers[:int(math.Sqrt(float64(len(peers))))]
 		//transfer := peers
 		for _, peer := range transfer {
-			log.Debug("BroadcastBlock", "name", peer.String(), "len", len(transfer))
 			peer.AsyncSendNewBlock(block, td)
 		}
 		log.Trace("Propagated block", "hash", hash, "recipients", len(transfer), "duration", common.PrettyDuration(time.Since(block.ReceivedAt)))
@@ -533,7 +532,6 @@ func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
 		peers := h.peers.peersWithoutPowAnswers(powAnswer)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
-			log.Debug("BroadcastPowAnswer", "peer", peer.String(), "dposAck", powAnswer.Number)
 			peer.AsyncSendPowAnswer(powAnswer)
 		}
 		log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
@@ -550,7 +548,6 @@ func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
 		peers := h.peers.peersWithoutDposAcks(dposAck)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
-			log.Debug("BroadcastDposAck", "peer", peer.String(), "dposAck", dposAck.Number)
 			peer.AsyncSendDposAck(dposAck)
 		}
 		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)

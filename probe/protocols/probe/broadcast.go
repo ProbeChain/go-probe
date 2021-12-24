@@ -68,15 +68,11 @@ func (p *Peer) broadcastDposInfo() {
 				p.Log().Error("SendNewPowAnswer error", "pow", powAnswer.Id(), "error", err)
 				return
 			}
-			p.Log().Info("SendNewPowAnswer success ", "pow", powAnswer.Id(), "num", powAnswer.Number)
-
 		case ack := <-p.dposAckBroadcast:
 			if err := p.SendNewDposAck(ack); err != nil {
 				p.Log().Error("SendNewDposAck error", "ack", ack.Id(), "error", err)
 				return
 			}
-			p.Log().Info("dposAckBroadcast success ", "ack", ack.Id(), "num", ack.Number)
-
 		case <-p.term:
 			return
 		}

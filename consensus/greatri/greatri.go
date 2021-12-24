@@ -637,10 +637,12 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 		return err
 	}
 	for _, answer := range powAnswers {
-		if parent.Number.Uint64()-answer.Number.Uint64() > 4 {
+		differ := parent.Number.Uint64() - answer.Number.Uint64()
+		// todo eip适配
+		if differ < 0 || differ > 5 {
 			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
-			return nil
-			//return fmt.Errorf("answer is too far ")
+			//return nil
+			return fmt.Errorf("answer is too far ")
 		}
 		verify := greatri.verifyPowAnswer(chain, answer)
 		if verify != nil {
@@ -684,14 +686,14 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 
 func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer) error {
 
-	parent := chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
+	header := chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
 	pow, ok := c.powEngine.(*probeash.Probeash)
 	if !ok {
 		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
 	}
-	err := pow.PowVerifySeal(chain, parent, false, answer)
+	err := pow.PowVerifySeal(chain, header, false, answer)
 	if err != nil {
-		log.Debug("PowVerifySeal failed", "block number", parent.Number, "answer", answer)
+		log.Debug("PowVerifySeal failed", "block number", header.Number, "answer", answer)
 		return err
 	}
 	return nil

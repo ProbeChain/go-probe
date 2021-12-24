@@ -17,7 +17,6 @@
 package probe
 
 import (
-	"github.com/probeum/go-probeum/log"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -400,7 +399,6 @@ func (p *Peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
 func (p *Peer) AsyncSendPowAnswer(powAnswer *types.PowAnswer) {
 	select {
 	case p.powAnswerBroadcast <- powAnswer:
-		p.Log().Debug("powAnswerBroadcast propagation", "number", powAnswer.Number, "hash", powAnswer.BlockHash.String())
 	default:
 		p.Log().Debug("Dropping AsyncSendPowAnswer propagation", "number", powAnswer.Number, "hash", powAnswer.BlockHash.String())
 	}
@@ -410,8 +408,6 @@ func (p *Peer) AsyncSendPowAnswer(powAnswer *types.PowAnswer) {
 func (p *Peer) AsyncSendDposAck(ack *types.DposAck) {
 	select {
 	case p.dposAckBroadcast <- ack:
-		p.Log().Debug(" AsyncSendDposAck  dposAckBroadcast propagation", "number", ack.Number, "hash", ack.BlockHash.String())
-
 	default:
 		p.Log().Debug("Dropping AsyncSendDposAck propagation", "number", ack.Number, "hash", ack.BlockHash.String())
 	}
@@ -428,7 +424,6 @@ func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
 // SendNewDposAck send a dpos ack to a remote peer.
 func (p *Peer) SendNewDposAck(dposAck *types.DposAck) error {
 	p.markDposAck(dposAck.Id())
-	log.Info("SendNewDposAck", "num", dposAck.Number)
 	return p2p.Send(p.rw, DposAckMsg, &NewDposAckPacket{
 		DposAck: dposAck,
 	})
