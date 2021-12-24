@@ -17,6 +17,7 @@
 package probe
 
 import (
+	"github.com/probeum/go-probeum/log"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -92,9 +93,11 @@ type Peer struct {
 	txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
 	txAnnounce  chan []common.Hash // Channel used to queue transaction announcement requests
 
-	knowPowAnswers mapset.Set
+	knowPowAnswers     mapset.Set
+	powAnswerBroadcast chan *types.PowAnswer // Channel used to queue transaction propagation requests
 
-	knowDposAcks mapset.Set
+	knowDposAcks     mapset.Set
+	dposAckBroadcast chan *types.DposAck // Channel used to queue transaction announcement requests
 
 	term chan struct{} // Termination channel to stop the broadcasters
 	lock sync.RWMutex  // Mutex protecting the internal fields
@@ -104,24 +107,27 @@ type Peer struct {
 // version.
 func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool) *Peer {
 	peer := &Peer{
-		id:              p.ID().String(),
-		Peer:            p,
-		rw:              rw,
-		version:         version,
-		knownTxs:        mapset.NewSet(),
-		knownBlocks:     mapset.NewSet(),
-		knowPowAnswers:  mapset.NewSet(),
-		knowDposAcks:    mapset.NewSet(),
-		queuedBlocks:    make(chan *blockPropagation, maxQueuedBlocks),
-		queuedBlockAnns: make(chan *types.Block, maxQueuedBlockAnns),
-		txBroadcast:     make(chan []common.Hash),
-		txAnnounce:      make(chan []common.Hash),
-		txpool:          txpool,
-		term:            make(chan struct{}),
+		id:                 p.ID().String(),
+		Peer:               p,
+		rw:                 rw,
+		version:            version,
+		knownTxs:           mapset.NewSet(),
+		knownBlocks:        mapset.NewSet(),
+		knowPowAnswers:     mapset.NewSet(),
+		knowDposAcks:       mapset.NewSet(),
+		queuedBlocks:       make(chan *blockPropagation, maxQueuedBlocks),
+		queuedBlockAnns:    make(chan *types.Block, maxQueuedBlockAnns),
+		txBroadcast:        make(chan []common.Hash),
+		txAnnounce:         make(chan []common.Hash),
+		powAnswerBroadcast: make(chan *types.PowAnswer),
+		dposAckBroadcast:   make(chan *types.DposAck),
+		txpool:             txpool,
+		term:               make(chan struct{}),
 	}
 	// Start up all the broadcasters
 	go peer.broadcastBlocks()
 	go peer.broadcastTransactions()
+	go peer.broadcastDposInfo()
 	if version >= ETH65 {
 		go peer.announceTransactions()
 	}
@@ -390,6 +396,27 @@ func (p *Peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
 	}
 }
 
+//  AsyncSendPowAnswer
+func (p *Peer) AsyncSendPowAnswer(powAnswer *types.PowAnswer) {
+	select {
+	case p.powAnswerBroadcast <- powAnswer:
+		p.Log().Debug("powAnswerBroadcast propagation", "number", powAnswer.Number, "hash", powAnswer.BlockHash.String())
+	default:
+		p.Log().Debug("Dropping AsyncSendPowAnswer propagation", "number", powAnswer.Number, "hash", powAnswer.BlockHash.String())
+	}
+}
+
+//AsyncSendDposAck
+func (p *Peer) AsyncSendDposAck(ack *types.DposAck) {
+	select {
+	case p.dposAckBroadcast <- ack:
+		p.Log().Debug(" AsyncSendDposAck  dposAckBroadcast propagation", "number", ack.Number, "hash", ack.BlockHash.String())
+
+	default:
+		p.Log().Debug("Dropping AsyncSendDposAck propagation", "number", ack.Number, "hash", ack.BlockHash.String())
+	}
+}
+
 // SendNewPowAnswer send a pow answer to a remote peer.
 func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
 	p.markPowAnswer(powAnswer.Id())
@@ -401,6 +428,7 @@ func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
 // SendNewDposAck send a dpos ack to a remote peer.
 func (p *Peer) SendNewDposAck(dposAck *types.DposAck) error {
 	p.markDposAck(dposAck.Id())
+	log.Info("SendNewDposAck", "num", dposAck.Number)
 	return p2p.Send(p.rw, DposAckMsg, &NewDposAckPacket{
 		DposAck: dposAck,
 	})
