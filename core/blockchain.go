@@ -93,6 +93,8 @@ const (
 	receiptsCacheLimit        = 32
 	txLookupCacheLimit        = 1024
 	maxFutureBlocks           = 256
+	maxKnowAcks               = 128
+	maxKnowPowAnswers         = 128
 	maxTimeFutureBlocks       = 30
 	TriesInMemory             = 128
 	maxChainPowAnswers        = 256
@@ -436,6 +438,9 @@ type BlockChain struct {
 	txLookupCache *lru.Cache     // Cache for the most recent transaction lookup data.
 	futureBlocks  *lru.Cache     // future blocks are blocks added for later processing
 
+	knowAcks       *lru.Cache // future blocks are blocks added for later processing
+	knowPowAnswers *lru.Cache // future blocks are blocks added for later processing
+
 	quit          chan struct{}  // blockchain quit channel
 	wg            sync.WaitGroup // chain processing wait group for shutting down
 	running       int32          // 0 if chain is running, 1 when stopped
@@ -465,6 +470,8 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	blockCache, _ := lru.New(blockCacheLimit)
 	txLookupCache, _ := lru.New(txLookupCacheLimit)
 	futureBlocks, _ := lru.New(maxFutureBlocks)
+	knowAcks, _ := lru.New(maxKnowAcks)
+	knowPowAnswers, _ := lru.New(maxKnowPowAnswers)
 
 	bc := &BlockChain{
 		chainConfig: chainConfig,
@@ -484,6 +491,8 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 		blockCache:     blockCache,
 		txLookupCache:  txLookupCache,
 		futureBlocks:   futureBlocks,
+		knowAcks:       knowAcks,
+		knowPowAnswers: knowPowAnswers,
 		engine:         engine,
 		powEngine:      powEngine,
 		vmConfig:       vmConfig,
@@ -659,6 +668,21 @@ func (bc *BlockChain) empty() bool {
 		}
 	}
 	return true
+}
+func (bc *BlockChain) WorkerKnowAcks(dposAck *types.DposAck) {
+	if dposAck == nil || bc.knowAcks.Contains(dposAck.Id()) {
+		return
+	}
+	bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+	bc.knowAcks.Add(dposAck.Id(), dposAck)
+}
+
+func (bc *BlockChain) WorkerKnowPowAnswers(powAnswer *types.PowAnswer) {
+	if powAnswer == nil || bc.knowPowAnswers.Contains(powAnswer.Id()) {
+		return
+	}
+	bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
+	bc.knowPowAnswers.Add(powAnswer.Id(), powAnswer)
 }
 
 // loadLastState loads the last known chain state from the database. This method
@@ -864,6 +888,8 @@ func (bc *BlockChain) SetHeadBeyondRoot(head uint64, root common.Hash) (uint64, 
 	bc.blockCache.Purge()
 	bc.txLookupCache.Purge()
 	bc.futureBlocks.Purge()
+	bc.knowPowAnswers.Purge()
+	bc.knowAcks.Purge()
 
 	return rootNumber, bc.loadLastState()
 }
@@ -1374,6 +1400,8 @@ func (bc *BlockChain) truncateAncient(head uint64) error {
 	bc.blockCache.Purge()
 	bc.txLookupCache.Purge()
 	bc.futureBlocks.Purge()
+	bc.knowPowAnswers.Purge()
+	bc.knowAcks.Purge()
 
 	log.Info("Rewind ancient data", "number", head)
 	return nil
@@ -3002,7 +3030,7 @@ func (bc *BlockChain) checkPowAnswer(answer *types.PowAnswer) {
 		err := pow.PowVerifySeal(bc, header, false, answer)
 		if err == nil {
 			bc.powAnswers.CheckSet(answer, powAnswerLegal)
-			bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: answer})
+			bc.WorkerKnowPowAnswers(answer)
 		} else {
 			log.Error("PowAnswer PowVerifySeal illegal", "number", answer.Number.String(), "nonce", answer.Nonce.Uint64(), "miner", answer.Miner.String(), "MixDigest", answer.MixDigest.String())
 			bc.powAnswers.CheckSet(answer, powAnswerIllegal)
@@ -3096,7 +3124,7 @@ func (bc *BlockChain) CheckDposAckSketchy(dposAck *types.DposAck) bool {
 func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) uint8 {
 	if dposAck.AckType == types.AckTypeOppose {
 		bc.dposAcks.CheckSet(dposAck, dposAckLegal)
-		bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+		bc.WorkerKnowAcks(dposAck)
 		return dposAckLegal
 	}
 	singer, err := dposAck.RecoverOwner()
@@ -3120,7 +3148,7 @@ func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) uint8 {
 		}
 		curHash := header.Hash()
 		if curHash == dposAck.BlockHash {
-			bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+			bc.WorkerKnowAcks(dposAck)
 			bc.dposAcks.CheckSet(dposAck, dposAckLegal)
 			return dposAckLegal
 		}
@@ -3240,18 +3268,17 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 
 	if commitNum == 20 || oppopsNum == 20 {
 		for _, ack := range acks {
-			log.Info("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
+			log.Debug("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
 		}
 	}
 
 	header := block.CopyMostHeader()
 
-	log.Info("acks", "ackType", len(acks))
-	for _, ack := range acks {
-		log.Info("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
-	}
-
 	if !bytes.Equal(header.DposAcksHash.Bytes(), types.CalcDposAckHash(acks).Bytes()) {
+		log.Debug("acks", "ackType", len(acks))
+		for _, ack := range acks {
+			log.Debug("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
+		}
 		log.Error(" DposAcksHash not equal  ", "acks", len(acks), "header:", header.DposAcksHash.String(), "calc :", types.CalcDposAckHash(acks).String())
 		return false
 	}
