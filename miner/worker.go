@@ -96,8 +96,8 @@ var (
 	MostDposWitness = DposWitnessNumber*2/3 + 1
 
 	// LeastDposWitness the least number of witness to product block
-	//LeastDposWitness = DposWitnessNumber*1/3 + 1
-	LeastDposWitness = DposWitnessNumber*1/2 + 1
+	LeastDposWitness = DposWitnessNumber*1/3 + 1
+	//LeastDposWitness = DposWitnessNumber*1/2 + 1
 
 	// dposAckChanSize is the size of channel listening to DposAckEvent.
 	dposAckChanSize = DposWitnessNumber * 10
@@ -666,6 +666,9 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 					log.Warn("pow Miner failed", "err", err)
 				}
 			}
+
+		case sideChainBlock := <-w.chainSideCh:
+			log.Trace("new side block", "block number", sideChainBlock.Block.Number())
 
 		case ack := <-w.dposAckCh:
 			log.Trace("receive ack", "blockNumber", ack.DposAck.Number, "type", ack.DposAck.AckType, "sig", hex.EncodeToString(ack.DposAck.WitnessSig))
@@ -1379,7 +1382,7 @@ func calcDifficulty(time uint64, parent *types.Header) *big.Int {
 func updateDposParams(dposSize int) {
 	DposWitnessNumber = uint(dposSize)
 	MostDposWitness = DposWitnessNumber*2/3 + 1
-	//LeastDposWitness = DposWitnessNumber*1/3 + 1
-	LeastDposWitness = DposWitnessNumber*1/2 + 1
+	LeastDposWitness = DposWitnessNumber*1/3 + 1
+	//LeastDposWitness = DposWitnessNumber*1/2 + 1
 	dposAckChanSize = DposWitnessNumber * 10
 }

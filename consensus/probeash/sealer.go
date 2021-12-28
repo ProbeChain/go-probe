@@ -209,6 +209,7 @@ func (probeash *Probeash) PowSeal(chain consensus.ChainHeaderReader, block *type
 				if err := probeash.PowSeal(chain, block, results, stop, coinbase); err != nil {
 					probeash.config.Log.Error("Failed to restart sealing after update", "err", err)
 				}
+				return
 			}
 			// Wait for all miners to terminate and return the block
 		}
