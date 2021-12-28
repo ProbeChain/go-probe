@@ -224,7 +224,7 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 
 	if chainConfig.Dpos != nil {
 		log.Info("CreateConsensusEngine is dpos")
-		return greatri.New(chainConfig.Dpos, db, powEngine)
+		return greatri.New(chainConfig.Dpos, db, powEngine, chainConfig)
 	}
 
 	// Otherwise assume proof-of-work

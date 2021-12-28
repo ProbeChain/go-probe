@@ -217,10 +217,11 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Greatri is the proof-of-authority consensus engine proposed to support the
 // Probeum testnet following the Ropsten attacks.
 type Greatri struct {
-	dposConfig *params.DposConfig // Consensus engine configuration parameters
-	config     Config             //
-	db         probedb.Database   // Database to store and retrieve snapshot checkpoints
-	powEngine  consensus.Engine
+	dposConfig  *params.DposConfig // Consensus engine configuration parameters
+	chainConfig *params.ChainConfig
+	config      Config           //
+	db          probedb.Database // Database to store and retrieve snapshot checkpoints
+	powEngine   consensus.Engine
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -237,7 +238,7 @@ type Greatri struct {
 
 // New creates a Greatri proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
-func New(config *params.DposConfig, db probedb.Database, powEngine consensus.Engine) *Greatri {
+func New(config *params.DposConfig, db probedb.Database, powEngine consensus.Engine, chainConfig *params.ChainConfig) *Greatri {
 	// Set any missing consensus parameters to their defaults
 	conf := *config
 	if conf.Epoch == 0 {
@@ -248,12 +249,13 @@ func New(config *params.DposConfig, db probedb.Database, powEngine consensus.Eng
 	signatures, _ := lru.NewARC(inmemorySignatures)
 
 	return &Greatri{
-		dposConfig: &conf,
-		db:         db,
-		powEngine:  powEngine,
-		recents:    recents,
-		signatures: signatures,
-		proposals:  make(map[common.Address]bool),
+		dposConfig:  &conf,
+		chainConfig: chainConfig,
+		db:          db,
+		powEngine:   powEngine,
+		recents:     recents,
+		signatures:  signatures,
+		proposals:   make(map[common.Address]bool),
 	}
 }
 
@@ -633,13 +635,19 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 		return err
 	}
 	for _, answer := range powAnswers {
-		differ := parent.Number.Uint64() - answer.Number.Uint64()
-		// todo eip适配
-		if differ < 0 || differ > 5 {
+		differ := int(parent.Number.Uint64() - answer.Number.Uint64())
+
+		isUnclePowFix := (greatri.chainConfig.ChainID == params.FrcMainChainConfig.ChainID || greatri.chainConfig.ChainID == params.FrcTestChainConfig.ChainID || greatri.chainConfig.ChainID == params.ProbeTestChainConfig.ChainID) && !greatri.chainConfig.IsShenzhen(block.Number())
+		minDiffer := 1
+		if isUnclePowFix {
+			minDiffer = 0
+		}
+
+		if differ < minDiffer || differ > 5 {
 			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
-			//return nil
 			return fmt.Errorf("answer is too far ")
 		}
+
 		verify := greatri.verifyPowAnswer(chain, answer)
 		if verify != nil {
 			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
