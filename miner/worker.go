@@ -675,13 +675,9 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 
 			var dposAgreeAckNum = 0
 			if w.visualBlockNumber.Uint64() == w.chain.CurrentBlock().NumberU64() {
-				log.Debug("", "", w.chain.CurrentBlock().ParentHash().String())
 				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			}
 			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
-
-			ret1, answerNumber1 := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
-			log.Debug("dposAckCh", "visualBlockNumber", w.visualBlockNumber, "dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "ret1", ret1, "answerNumber1", answerNumber1)
 
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer
@@ -733,9 +729,6 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			}
 			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
-
-			ret1, answerNumber1 := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
-			log.Debug("dposAckCh", "visualBlockNumber", w.visualBlockNumber, "dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "ret1", ret1, "answerNumber1", answerNumber1)
 
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer

@@ -521,6 +521,9 @@ var DynamicDifficultyCalculator = makeDifficultyCalculator
 // either using the usual probeash cache for it, or alternatively using a full DAG
 // to make remote mining fast.
 func (probeash *Probeash) PowVerifySeal(chain consensus.ChainHeaderReader, fromHeader *types.Header, fulldag bool, powAnwer *types.PowAnswer) error {
+	if fromHeader == nil {
+		return fmt.Errorf("header is nil")
+	}
 	header := types.CopyHeader(fromHeader)
 
 	// If we're running a fake PoW, accept any seal as valid

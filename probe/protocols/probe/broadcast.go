@@ -60,6 +60,25 @@ func (p *Peer) broadcastBlocks() {
 	}
 }
 
+func (p *Peer) broadcastDposInfo() {
+	for {
+		select {
+		case powAnswer := <-p.powAnswerBroadcast:
+			if err := p.SendNewPowAnswer(powAnswer); err != nil {
+				p.Log().Error("SendNewPowAnswer error", "pow", powAnswer.Id(), "error", err)
+				return
+			}
+		case ack := <-p.dposAckBroadcast:
+			if err := p.SendNewDposAck(ack); err != nil {
+				p.Log().Error("SendNewDposAck error", "ack", ack.Id(), "error", err)
+				return
+			}
+		case <-p.term:
+			return
+		}
+	}
+}
+
 // broadcastTransactions is a write loop that schedules transaction broadcasts
 // to the remote peer. The goal is to have an async writer that does not lock up
 // node internals and at the same time rate limits queued data.

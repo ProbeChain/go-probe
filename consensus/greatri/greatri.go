@@ -287,7 +287,6 @@ func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header
 	var parent = header
 	var diff int64 = 1
 	for {
-		log.Debug("", "index: ", index)
 		if index > 0 && headers != nil {
 			parent = headers[index-1]
 			if parent.Hash() != headers[index].ParentHash || new(big.Int).Sub(headers[index].Number, parent.Number).Cmp(common.Big1) != 0 {
@@ -308,7 +307,6 @@ func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header
 		if !parent.IsVisual() {
 			return parent, nil, diff
 		}
-
 		log.Debug("this is a visual block ", "num:", parent.Number.String())
 		diff++
 
@@ -630,17 +628,17 @@ func (c *Greatri) VerifyUncles(chain consensus.ChainReader, block *types.Block) 
 // VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
 func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
 	powAnswers := block.PowAnswerUncles()
-	log.Debug("VerifyUnclePowAnswers", "start  : ", block.NumberU64(), "uncle", len(powAnswers))
-
 	parent, err, _ := greatri.FindRealParentHeader(chain, block.Header(), nil, -1)
 	if err != nil {
 		return err
 	}
 	for _, answer := range powAnswers {
-		if parent.Number.Uint64()-answer.Number.Uint64() > 4 {
+		differ := parent.Number.Uint64() - answer.Number.Uint64()
+		// todo eip适配
+		if differ < 0 || differ > 5 {
 			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
-			return nil
-			//return fmt.Errorf("answer is too far ")
+			//return nil
+			return fmt.Errorf("answer is too far ")
 		}
 		verify := greatri.verifyPowAnswer(chain, answer)
 		if verify != nil {
@@ -648,8 +646,6 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 			return verify
 		}
 	}
-
-	log.Debug("VerifyUnclePowAnswers", "end  : ", block.NumberU64())
 
 	return nil
 }
@@ -660,9 +656,6 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 	miner := block.Header().DposSigAddr
 	isVisual := block.Header().IsVisual()
 	num := block.NumberU64()
-
-	log.Debug("VerifyDposInfo", "num : ", num)
-
 	isProducer := chain.CheckIsProducerAccount(num, miner)
 
 	if (isProducer && isVisual) || (!isProducer && !isVisual) {
@@ -677,21 +670,19 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 		return fmt.Errorf(" acks not legal")
 	}
 
-	log.Debug("VerifyDposInfo", "end  : ", num)
-
 	return nil
 }
 
 func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer) error {
 
-	parent := chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
+	header := chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
 	pow, ok := c.powEngine.(*probeash.Probeash)
 	if !ok {
 		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
 	}
-	err := pow.PowVerifySeal(chain, parent, false, answer)
+	err := pow.PowVerifySeal(chain, header, false, answer)
 	if err != nil {
-		log.Debug("PowVerifySeal failed", "block number", parent.Number, "answer", answer)
+		log.Debug("PowVerifySeal failed", "block number", header.Number, "answer", answer)
 		return err
 	}
 	return nil

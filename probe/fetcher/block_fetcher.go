@@ -39,10 +39,10 @@ const (
 )
 
 const (
-	maxUncleDist = 7   // Maximum allowed backward distance from the chain head
-	maxQueueDist = 32  // Maximum allowed distance from the chain head to queue
-	hashLimit    = 256 // Maximum number of unique blocks or headers a peer may have announced
-	blockLimit   = 64  // Maximum number of unique blocks a peer may have delivered
+	maxUncleDist = 700  // Maximum allowed backward distance from the chain head
+	maxQueueDist = 3200 // Maximum allowed distance from the chain head to queue
+	hashLimit    = 256  // Maximum number of unique blocks or headers a peer may have announced
+	blockLimit   = 64   // Maximum number of unique blocks a peer may have delivered
 )
 
 var (
@@ -550,16 +550,16 @@ func (f *BlockFetcher) loop() {
 						announce.time = task.time
 
 						// If the block is empty (header only), short circuit into the final import queue
-						if header.TxHash == types.EmptyRootHash && header.UncleHash == types.EmptyUncleHash {
-							log.Trace("Block empty, skipping body retrieval", "peer", announce.origin, "number", header.Number, "hash", header.Hash())
-
-							block := types.NewBlockWithHeader(header)
-							block.ReceivedAt = task.time
-
-							complete = append(complete, block)
-							f.completing[hash] = announce
-							continue
-						}
+						//if header.TxHash == types.EmptyRootHash && header.UncleHash == types.EmptyUncleHash {
+						//	log.Trace("Block empty, skipping body retrieval", "peer", announce.origin, "number", header.Number, "hash", header.Hash())
+						//
+						//	block := types.NewBlockWithHeader(header)
+						//	block.ReceivedAt = task.time
+						//
+						//	complete = append(complete, block)
+						//	f.completing[hash] = announce
+						//	continue
+						//}
 						// Otherwise add to the list of blocks needing completion
 						incomplete = append(incomplete, announce)
 					} else {
