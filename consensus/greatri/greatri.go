@@ -627,6 +627,16 @@ func (c *Greatri) VerifyUncles(chain consensus.ChainReader, block *types.Block) 
 	return nil
 }
 
+func (greatri *Greatri) IsBeforeUnclePowFix(block *types.Block) bool {
+	if block == nil {
+		return false
+	}
+	myChainId := greatri.chainConfig.ChainID.Uint64()
+	chain := myChainId == params.FrcMainChainConfig.ChainID.Uint64() || myChainId == params.FrcTestChainConfig.ChainID.Uint64() || myChainId == params.ProbeTestChainConfig.ChainID.Uint64()
+	isShenZhen := !greatri.chainConfig.IsShenzhen(block.Number())
+	return chain && isShenZhen
+}
+
 // VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
 func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
 	powAnswers := block.PowAnswerUncles()
@@ -636,19 +646,17 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 	}
 	for _, answer := range powAnswers {
 		differ := int(parent.Number.Uint64() - answer.Number.Uint64())
-
-		isUnclePowFix := (greatri.chainConfig.ChainID == params.FrcMainChainConfig.ChainID || greatri.chainConfig.ChainID == params.FrcTestChainConfig.ChainID || greatri.chainConfig.ChainID == params.ProbeTestChainConfig.ChainID) && !greatri.chainConfig.IsShenzhen(block.Number())
 		minDiffer := 1
-		if isUnclePowFix {
+		isBeforeUnclePowFix := greatri.IsBeforeUnclePowFix(block)
+		if isBeforeUnclePowFix {
 			minDiffer = 0
 		}
-
 		if differ < minDiffer || differ > 5 {
 			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
 			return fmt.Errorf("answer is too far ")
 		}
 
-		verify := greatri.verifyPowAnswer(chain, answer)
+		verify := greatri.verifyPowAnswer(chain, answer, isBeforeUnclePowFix)
 		if verify != nil {
 			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
 			return verify
@@ -681,9 +689,16 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 	return nil
 }
 
-func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer) error {
-
-	header := chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
+func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer, isBeforeUnclePowFix bool) error {
+	var header *types.Header
+	if isBeforeUnclePowFix {
+		header = chain.GetHeaderByNumber(answer.Number.Uint64())
+	} else {
+		header = chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
+	}
+	if header == nil {
+		return fmt.Errorf("verifyPowAnswer header is nil ")
+	}
 	pow, ok := c.powEngine.(*probeash.Probeash)
 	if !ok {
 		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
