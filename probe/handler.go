@@ -548,7 +548,7 @@ func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
 		peers := h.peers.peersWithoutDposAcks(dposAck)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
-			log.Debug("BroadcastDposAck", "ack", common.BytesToHash(dposAck.WitnessSig))
+			//log.Debug("BroadcastDposAck", "ack", common.BytesToHash(dposAck.WitnessSig))
 			peer.AsyncSendDposAck(dposAck)
 		}
 		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
@@ -599,7 +599,7 @@ func (h *handler) dposAckBroadcastLoop() {
 
 	for obj := range h.dposAckSub.Chan() {
 		if ev, ok := obj.Data.(core.DposAckEvent); ok {
-			log.Debug("dposAckBroadcastLoop", "ack", common.BytesToHash(ev.DposAck.WitnessSig))
+			//log.Debug("dposAckBroadcastLoop", "ack", common.BytesToHash(ev.DposAck.WitnessSig))
 			h.BroadcastDposAck(ev.DposAck)
 		}
 	}

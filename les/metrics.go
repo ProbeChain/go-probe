@@ -17,7 +17,6 @@
 package les
 
 import (
-	"fmt"
 	"github.com/probeum/go-probeum/metrics"
 	"github.com/probeum/go-probeum/p2p"
 )
@@ -129,7 +128,6 @@ func newMeteredMsgWriter(rw p2p.MsgReadWriter, version int) p2p.MsgReadWriter {
 
 func (rw *meteredMsgReadWriter) ReadMsg() (p2p.Msg, error) {
 	// Read the message and short circuit in case of an error
-	fmt.Println("meteredMsgReadWriter", "ReadMsg")
 
 	msg, err := rw.MsgReadWriter.ReadMsg()
 	if err != nil {

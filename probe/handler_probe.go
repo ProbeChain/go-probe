@@ -19,6 +19,7 @@ package probe
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -94,7 +95,7 @@ func (h *probeHandler) Handle(peer *probe.Peer, packet probe.Packet) error {
 		return h.handlePowAnswerBroadcast(peer, packet.PowAnswer)
 
 	case *probe.NewDposAckPacket:
-		log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(packet.DposAck.WitnessSig))
+		//log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(packet.DposAck.WitnessSig))
 		return h.handleDposAckBroadcast(peer, packet.DposAck)
 
 	case *probe.NewPooledTransactionHashesPacket:
@@ -230,12 +231,12 @@ func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *typ
 	// boardcast pow answer again
 	if h.chain.CheckPowAnswerSketchy(powAnswer) {
 		peer.KnownPowAnswer(powAnswer.Id())
-		//peers := h.peers.peersWithoutPowAnswers(powAnswer)
-		//filter := peers[:int(math.Sqrt(float64(len(peers))))]
-		//for _, peer := range filter {
+		peers := h.peers.peersWithoutPowAnswers(powAnswer)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			peer.AsyncSendPowAnswer(powAnswer)
+		}
 		//	peer.AsyncSendPowAnswer(powAnswer)
-		//}
-		peer.AsyncSendPowAnswer(powAnswer)
 		h.chain.HandlePowAnswer(powAnswer)
 	} else {
 		log.Debug("CheckPowAnswer Fail", "powAnswer.Number", powAnswer.Number.Uint64(), "Chain Number", h.chain.CurrentBlock().NumberU64())
@@ -249,14 +250,14 @@ func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.D
 	check := h.chain.CheckDposAckSketchy(dposAck)
 	if check {
 		peer.KnownDposAck(dposAck.Id())
-		//peers := h.peers.peersWithoutDposAcks(dposAck)
-		//filter := peers[:int(math.Sqrt(float64(len(peers))))]
-		//for _, peer := range filter {
-		//	log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(dposAck.WitnessSig))
-		//	peer.AsyncSendDposAck(dposAck)
-		//}
+		peers := h.peers.peersWithoutDposAcks(dposAck)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			//log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(dposAck.WitnessSig))
+			peer.AsyncSendDposAck(dposAck)
+		}
 
-		peer.AsyncSendDposAck(dposAck)
+		//peer.AsyncSendDposAck(dposAck)
 
 		h.chain.HandleDposAck(dposAck)
 	} else {
