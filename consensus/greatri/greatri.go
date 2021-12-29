@@ -54,8 +54,8 @@ const (
 	checkpointInterval = 1024 // Number of blocks after which to save the vote snapshot to the database
 	inmemorySnapshots  = 128  // Number of recent vote snapshots to keep in memory
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
-
-	wiggleTime = 500 * time.Millisecond // Random delay (per signer) to allow concurrent signers
+	maxUnclePowAnswer  = 5
+	wiggleTime         = 500 * time.Millisecond // Random delay (per signer) to allow concurrent signers
 )
 
 // Greatri proof-of-authority protocol constants.
@@ -644,6 +644,35 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 	if err != nil {
 		return err
 	}
+
+	uncleHeader := parent
+	used := make(map[common.Hash]*types.PowAnswer)
+	parentNUm := parent.Number.Uint64()
+	if parentNUm > 1 {
+		for i := 0; i < maxUnclePowAnswer; i++ {
+			num := uncleHeader.Number.Uint64() - 1
+			if num == 0 {
+				break
+			}
+			//log.Debug("used check ", "block ", block.NumberU64(),"num",num)
+			uncleBlock := chain.GetBlock(uncleHeader.ParentHash, uncleHeader.Number.Uint64()-1)
+			if uncleBlock == nil {
+				return fmt.Errorf("uncleblock not found")
+			}
+			for _, answer := range uncleBlock.PowAnswers() {
+				if answer != nil {
+					used[answer.Id()] = answer
+				}
+			}
+			for _, answer := range uncleBlock.PowAnswerUncles() {
+				if answer != nil {
+					used[answer.Id()] = answer
+				}
+			}
+			uncleHeader = uncleBlock.Header()
+		}
+	}
+
 	for _, answer := range powAnswers {
 		differ := int(parent.Number.Uint64() - answer.Number.Uint64())
 		minDiffer := 1
@@ -656,11 +685,15 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 			return fmt.Errorf("answer is too far ")
 		}
 
+		if !isBeforeUnclePowFix && used[answer.Id()] != nil {
+			return fmt.Errorf("powAnswer used")
+		}
 		verify := greatri.verifyPowAnswer(chain, answer, isBeforeUnclePowFix)
 		if verify != nil {
 			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
 			return verify
 		}
+		used[answer.Id()] = answer
 	}
 
 	return nil

@@ -509,7 +509,7 @@ func (c *ChainConfig) IsEWASM(num *big.Int) bool {
 
 // IsShenzhen returns whprobeer num is either equal to the Merge fork block or greater.
 func (c *ChainConfig) IsShenzhen(num *big.Int) bool {
-	return true
+	//return  num.Uint64()>280800
 	return isForked(c.ShenzhenBlock, num)
 }
 
