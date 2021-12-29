@@ -413,7 +413,7 @@ func (p *Peer) AsyncSendDposAck(ack *types.DposAck) {
 	select {
 	case p.dposAckBroadcast <- ack:
 	default:
-		p.Log().Debug("Dropping AsyncSendDposAck propagation", "number", ack.Number, "hash", ack.BlockHash.String())
+		p.Log().Debug("Dropping AsyncSendDposAck propagation", "peer", p.id, "number", ack.Number, "hash", ack.BlockHash.String(), "WitnessSig", common.BytesToHash(ack.WitnessSig))
 	}
 }
 

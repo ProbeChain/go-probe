@@ -673,16 +673,16 @@ func (bc *BlockChain) WorkerKnowAcks(dposAck *types.DposAck) {
 	if dposAck == nil || bc.knowAcks.Contains(dposAck.Id()) {
 		return
 	}
-	bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
 	bc.knowAcks.Add(dposAck.Id(), dposAck)
+	bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
 }
 
 func (bc *BlockChain) WorkerKnowPowAnswers(powAnswer *types.PowAnswer) {
 	if powAnswer == nil || bc.knowPowAnswers.Contains(powAnswer.Id()) {
 		return
 	}
-	bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
 	bc.knowPowAnswers.Add(powAnswer.Id(), powAnswer)
+	bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
 }
 
 // loadLastState loads the last known chain state from the database. This method
