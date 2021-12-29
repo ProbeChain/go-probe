@@ -57,6 +57,7 @@ func newRLPX(conn net.Conn, dialDest *ecdsa.PublicKey) transport {
 }
 
 func (t *rlpxTransport) ReadMsg() (Msg, error) {
+	fmt.Println("rlpxTransport", "ReadMsg")
 	t.rmu.Lock()
 	defer t.rmu.Unlock()
 
