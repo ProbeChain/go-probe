@@ -482,6 +482,7 @@ func (w *worker) sendAck(blockNumber uint64, ackType types.DposAckType) error {
 	}
 	ack.WitnessSig = append(ack.WitnessSig, ackSig...)
 
+	log.Debug("sendAck", "ack", common.BytesToHash(ack.WitnessSig))
 	w.mux.Post(core.DposAckEvent{DposAck: ack})
 	return nil
 }

@@ -95,6 +95,7 @@ func (h *probeHandler) Handle(peer *probe.Peer, packet probe.Packet) error {
 		return h.handlePowAnswerBroadcast(peer, packet.PowAnswer)
 
 	case *probe.NewDposAckPacket:
+		log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(packet.DposAck.WitnessSig))
 		return h.handleDposAckBroadcast(peer, packet.DposAck)
 
 	case *probe.NewPooledTransactionHashesPacket:
@@ -251,6 +252,7 @@ func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.D
 		peers := h.peers.peersWithoutDposAcks(dposAck)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
+			log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(dposAck.WitnessSig))
 			peer.AsyncSendDposAck(dposAck)
 		}
 		h.chain.HandleDposAck(dposAck)
