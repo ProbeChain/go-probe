@@ -230,7 +230,7 @@ func (h *probeHandler) handleBlockBroadcast(peer *probe.Peer, block *types.Block
 func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *types.PowAnswer) error {
 	// boardcast pow answer again
 	if h.chain.CheckPowAnswerSketchy(powAnswer) {
-		peer.KnownPowAnswer(powAnswer.Id())
+		peer.MarkPowAnswer(powAnswer.Id())
 		peers := h.peers.peersWithoutPowAnswers(powAnswer)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
@@ -250,7 +250,7 @@ func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *typ
 func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.DposAck) error {
 	check := h.chain.CheckDposAckSketchy(dposAck)
 	if check {
-		peer.KnownDposAck(dposAck.Id())
+		peer.MarkDposAck(dposAck.Id())
 		peers := h.peers.peersWithoutDposAcks(dposAck)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
