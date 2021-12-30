@@ -321,7 +321,7 @@ func handlePowAnswerMsg(backend Backend, msg Decoder, peer *Peer) error {
 	}
 
 	// Mark the peer as owning the pow answer
-	peer.markPowAnswer(ann.PowAnswer.Id())
+	peer.MarkPowAnswer(ann.PowAnswer.Id())
 
 	return backend.Handle(peer, ann)
 }
@@ -334,7 +334,7 @@ func handleDposAckMsg(backend Backend, msg Decoder, peer *Peer) error {
 	}
 
 	// Mark the peer as owning the pow answer
-	peer.markPowAnswer(ann.DposAck.Id())
+	peer.MarkPowAnswer(ann.DposAck.Id())
 
 	return backend.Handle(peer, ann)
 }

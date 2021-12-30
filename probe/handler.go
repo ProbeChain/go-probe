@@ -532,6 +532,7 @@ func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
 		peers := h.peers.peersWithoutPowAnswers(powAnswer)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
+			peer.MarkPowAnswer(powAnswer.Id())
 			peer.AsyncSendPowAnswer(powAnswer)
 		}
 		log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
@@ -549,6 +550,7 @@ func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
 			//log.Debug("BroadcastDposAck", "ack", common.BytesToHash(dposAck.WitnessSig))
+			peer.MarkDposAck(dposAck.Id())
 			peer.AsyncSendDposAck(dposAck)
 		}
 		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)

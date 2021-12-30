@@ -212,9 +212,9 @@ func (p *Peer) markTransaction(hash common.Hash) {
 	p.knownTxs.Add(hash)
 }
 
-// markPowAnswer marks a pow answer as known for the peer, ensuring that it
+// MarkPowAnswer marks a pow answer as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
-func (p *Peer) markPowAnswer(id common.Hash) {
+func (p *Peer) MarkPowAnswer(id common.Hash) {
 	// If we reached the memory allowance, drop a previously known pow answer hash
 	for p.knowPowAnswers.Cardinality() >= maxPowAnswers {
 		p.knowPowAnswers.Pop()
@@ -222,9 +222,9 @@ func (p *Peer) markPowAnswer(id common.Hash) {
 	p.knowPowAnswers.Add(id)
 }
 
-// markDposAck marks a dpos ack as known for the peer, ensuring that it
+// MarkDposAck marks a dpos ack as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
-func (p *Peer) markDposAck(id common.Hash) {
+func (p *Peer) MarkDposAck(id common.Hash) {
 	// If we reached the memory allowance, drop a previously known pow answer hash
 	for p.knowDposAcks.Cardinality() >= maxDposAcks {
 		p.knowDposAcks.Pop()
@@ -419,7 +419,7 @@ func (p *Peer) AsyncSendDposAck(ack *types.DposAck) {
 
 // SendNewPowAnswer send a pow answer to a remote peer.
 func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
-	p.markPowAnswer(powAnswer.Id())
+	p.MarkPowAnswer(powAnswer.Id())
 	return p2p.Send(p.rw, PowAnswerMsg, &NewPowAnswerPacket{
 		PowAnswer: powAnswer,
 	})
@@ -427,7 +427,7 @@ func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
 
 // SendNewDposAck send a dpos ack to a remote peer.
 func (p *Peer) SendNewDposAck(dposAck *types.DposAck) error {
-	p.markDposAck(dposAck.Id())
+	p.MarkDposAck(dposAck.Id())
 	return p2p.Send(p.rw, DposAckMsg, &NewDposAckPacket{
 		DposAck: dposAck,
 	})

@@ -234,6 +234,7 @@ func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *typ
 		peers := h.peers.peersWithoutPowAnswers(powAnswer)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
+			peer.MarkPowAnswer(powAnswer.Id())
 			peer.AsyncSendPowAnswer(powAnswer)
 		}
 		//	peer.AsyncSendPowAnswer(powAnswer)
@@ -254,6 +255,7 @@ func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.D
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
 			//log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(dposAck.WitnessSig))
+			peer.MarkDposAck(dposAck.Id())
 			peer.AsyncSendDposAck(dposAck)
 		}
 
