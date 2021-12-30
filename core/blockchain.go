@@ -3266,7 +3266,7 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 		}
 	}
 
-	if commitNum >= dposNum {
+	if commitNum > dposNum {
 		for _, ack := range acks {
 			log.Debug("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
 		}
