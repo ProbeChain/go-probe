@@ -1227,6 +1227,13 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 		return nil
 	}
 
+	answers := w.probe.BlockChain().GetLatestPowAnswer(realParent.Number(), realParent.Hash())
+	if answers == nil {
+		log.Error("Refusing to mine without PowAnswers, something error, need to check")
+		return nil
+	}
+	w.current.header.PowAnswers = append(w.current.header.PowAnswers, answers)
+
 	if newBlockType == types.BlockTypeEffect {
 		//Process txs
 		// Fill the block with all available pending transactions.
@@ -1256,11 +1263,12 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 			}
 		}
 
-		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(realParent.Header())
+		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(realParent.Header(), w.current.header.PowAnswers, parent)
 	}
 
 	//process powAnswers and dposAcks
 	//if newBlockNumber.Uint64()-currentEffectBlockNumber.Uint64() == 1 {
+
 	if !parent.Header().IsVisual() {
 		w.current.dposAcks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeAgree)
 	} else {
@@ -1275,13 +1283,6 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 		uint(len(w.current.dposAcks)),
 	}
 	w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, &ackCount)
-
-	answers := w.probe.BlockChain().GetLatestPowAnswer(realParent.Number(), realParent.Hash())
-	if answers == nil {
-		log.Error("Refusing to mine without PowAnswers, something error, need to check")
-		return nil
-	}
-	w.current.header.PowAnswers = append(w.current.header.PowAnswers, answers)
 
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(w.current.receipts)

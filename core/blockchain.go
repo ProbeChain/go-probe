@@ -99,7 +99,7 @@ const (
 	TriesInMemory             = 128
 	maxChainPowAnswers        = 256
 	maxChainDposAcks          = 10
-	maxUnclePowAnswer         = 5
+	MaxUnclePowAnswer         = 5
 	powAnswerUncheck    uint8 = 0
 	powAnswerLegal      uint8 = 1
 	powAnswerIllegal    uint8 = 2
@@ -239,10 +239,10 @@ func (pool *PowAnswerPool) List(number *big.Int, blockHash common.Hash) []*types
 }
 
 func (pool *PowAnswerPool) remove(currNum uint64) {
-	if currNum <= maxUnclePowAnswer {
+	if currNum <= MaxUnclePowAnswer {
 		return
 	}
-	leftNum := currNum - maxUnclePowAnswer
+	leftNum := currNum - MaxUnclePowAnswer
 
 	pool.powAnswerMap.Range(func(k, v interface{}) bool {
 		if k.(uint64) < leftNum {
@@ -2983,10 +2983,10 @@ func (bc *BlockChain) CheckPowAnswerSketchy(powAnswer *types.PowAnswer) bool {
 
 	number := powAnswer.Number.Uint64()
 	chainNumber := bc.CurrentBlock().NumberU64()
-	if chainNumber > maxUnclePowAnswer {
-		return number >= chainNumber-maxUnclePowAnswer && number <= chainNumber+maxUnclePowAnswer
+	if chainNumber > MaxUnclePowAnswer {
+		return number >= chainNumber-MaxUnclePowAnswer && number <= chainNumber+MaxUnclePowAnswer
 	} else {
-		return number >= 0 && number <= chainNumber+maxUnclePowAnswer
+		return number >= 0 && number <= chainNumber+MaxUnclePowAnswer
 	}
 }
 
@@ -2995,7 +2995,7 @@ func (bc *BlockChain) DispatchPowAnswer() int {
 	count := 0
 	header := bc.CurrentBlock().Header()
 
-	for i := 0; i < maxUnclePowAnswer; i++ {
+	for i := 0; i < MaxUnclePowAnswer; i++ {
 		//log.Debug("DispatchPowAnswer", "num", header.Number, "hash", header.Hash())
 		powAnswers := bc.powAnswers.List(header.Number, header.Hash())
 		for _, answer := range powAnswers {
@@ -3185,19 +3185,26 @@ func (bc *BlockChain) GetLatestPowAnswer(number *big.Int, blockHash common.Hash)
 }
 
 // GetUnclePowAnswers get uncle pow answer list
-func (bc *BlockChain) GetUnclePowAnswers(header *types.Header) []*types.PowAnswer {
-	uncles := maxUnclePowAnswer
+func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.PowAnswer, parent *types.Block) []*types.PowAnswer {
+	uncles := MaxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
 	ret := make([]*types.PowAnswer, 0, uncles*2)
 
 	var used map[common.Hash]*types.PowAnswer
 	used = make(map[common.Hash]*types.PowAnswer)
-	//log.Info("GetUnclePowAnswers", "from", header.Number)
 
-	curBlock := bc.GetBlock(header.Hash(), header.Number.Uint64())
-	for i := 0; i <= uncles; i++ {
+	for _, answer := range powUsed {
+		used[answer.Id()] = answer
+	}
+	uncleHeader := parent.Header()
 
-		//	log.Debug("GetUnclePowAnswers", "num", curBlock.Number(), "hash", curBlock.Hash())
+	for {
+		curBlock := bc.GetBlock(uncleHeader.Hash(), uncleHeader.Number.Uint64())
+		if curBlock == nil {
+			break
+		}
+
+		//log.Debug("used","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
 		for _, an := range curBlock.PowAnswers() {
 			if an != nil {
 				used[an.MixDigest] = an
@@ -3208,19 +3215,25 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header) []*types.PowAnswe
 				used[an.MixDigest] = an
 			}
 		}
-		if i != 0 {
+		if uncleHeader.Number.Uint64() < header.Number.Uint64() {
+			//log.Debug("getAll","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
 			ans = append(ans, bc.GetPowAnswers(curBlock.Number(), curBlock.Hash())...)
 		}
-		curBlock = bc.GetBlock(curBlock.ParentHash(), curBlock.Number().Uint64()-1)
-		if curBlock == nil {
+		uncleHeader = bc.GetHeader(curBlock.ParentHash(), curBlock.NumberU64()-1)
+		if curBlock.NumberU64() == 0 || header.Number.Uint64()-uncleHeader.Number.Uint64() > MaxUnclePowAnswer {
 			break
 		}
 	}
+
 	for _, answer := range ans {
 		if answer != nil && used[answer.MixDigest] == nil {
 			ret = append(ret, answer)
 			used[answer.MixDigest] = answer
+			if len(used) == 64 {
+				break
+			}
 		}
+
 	}
 	return ret
 }
@@ -3248,8 +3261,14 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 	isVisual := block.Header().IsVisual()
 	parent := bc.GetBlock(block.ParentHash(), number-1).Header()
 
+	used := make(map[common.Address]*types.DposAck)
+
 	for _, ack := range acks {
 		singer, err := ack.RecoverOwner()
+		if used[singer] != nil {
+			log.Error(" singer exist  ")
+			return false
+		}
 		if err != nil || !bc.CheckIsDposAccount(number, singer) || ack.Number.Uint64() != number-1 {
 			log.Error(" not legal singer ")
 			return false
@@ -3264,6 +3283,7 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 		if ack.AckType == types.AckTypeOppose {
 			oppopsNum++
 		}
+		used[singer] = ack
 	}
 
 	if commitNum > dposNum {

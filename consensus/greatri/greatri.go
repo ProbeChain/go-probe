@@ -640,21 +640,26 @@ func (greatri *Greatri) IsBeforeUnclePowFix(block *types.Block) bool {
 // VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
 func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
 	powAnswers := block.PowAnswerUncles()
-	parent, err, _ := greatri.FindRealParentHeader(chain, block.Header(), nil, -1)
+	isVisual := block.Header().IsVisual()
+	if (isVisual && len(powAnswers) > 0) || (isVisual && len(powAnswers) > 64) {
+		log.Debug("VerifyUnclePowAnswers fail", "isVisual", isVisual, "len(powAnswers)", len(powAnswers))
+		return fmt.Errorf("len(powAnswers) error")
+	}
+
+	realParentHeader, err, _ := greatri.FindRealParentHeader(chain, block.Header(), nil, -1)
 	if err != nil {
 		return err
 	}
 
-	uncleHeader := parent
 	used := make(map[common.Hash]*types.PowAnswer)
-	parentNUm := parent.Number.Uint64()
-	if parentNUm > 1 {
-		for i := 0; i < maxUnclePowAnswer; i++ {
-			num := uncleHeader.Number.Uint64() - 1
-			if num == 0 {
-				break
-			}
-			//log.Debug("used check ", "block ", block.NumberU64(),"num",num)
+	for _, answer := range block.PowAnswers() {
+		used[answer.Id()] = answer
+	}
+
+	blockNUm := block.NumberU64()
+	if blockNUm > 1 {
+		uncleHeader := block.Header()
+		for {
 			uncleBlock := chain.GetBlock(uncleHeader.ParentHash, uncleHeader.Number.Uint64()-1)
 			if uncleBlock == nil {
 				return fmt.Errorf("uncleblock not found")
@@ -664,24 +669,31 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 					used[answer.Id()] = answer
 				}
 			}
+			//log.Debug("used check ", "block ", block.NumberU64(),"num",uncleBlock.NumberU64())
 			for _, answer := range uncleBlock.PowAnswerUncles() {
 				if answer != nil {
 					used[answer.Id()] = answer
 				}
 			}
 			uncleHeader = uncleBlock.Header()
+
+			if uncleBlock.NumberU64() == 0 || realParentHeader.Number.Uint64()-uncleHeader.Number.Uint64() >= maxUnclePowAnswer {
+				break
+			}
+
 		}
+
 	}
 
 	for _, answer := range powAnswers {
-		differ := int(parent.Number.Uint64() - answer.Number.Uint64())
+		differ := int(realParentHeader.Number.Uint64() - answer.Number.Uint64())
 		minDiffer := 1
 		isBeforeUnclePowFix := greatri.IsBeforeUnclePowFix(block)
 		if isBeforeUnclePowFix {
 			minDiffer = 0
 		}
 		if differ < minDiffer || differ > 5 {
-			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
+			log.Debug("VerifyUnclePowAnswers answer is too far", "realParentHeader.Number  : ", realParentHeader.Number, "answer.Number", answer.Number)
 			return fmt.Errorf("answer is too far ")
 		}
 
