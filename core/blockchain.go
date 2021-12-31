@@ -3220,7 +3220,7 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 			ans = append(ans, bc.GetPowAnswers(curBlock.Number(), curBlock.Hash())...)
 		}
 		uncleHeader = bc.GetHeader(curBlock.ParentHash(), curBlock.NumberU64()-1)
-		if curBlock.NumberU64() == 0 || header.Number.Uint64()-uncleHeader.Number.Uint64() > MaxUnclePowAnswer {
+		if curBlock.NumberU64() == 0 || (header.Number.Uint64() > uncleHeader.Number.Uint64() && header.Number.Uint64()-uncleHeader.Number.Uint64() > MaxUnclePowAnswer) {
 			break
 		}
 	}

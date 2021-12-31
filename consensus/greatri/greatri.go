@@ -677,7 +677,7 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 			}
 			uncleHeader = uncleBlock.Header()
 
-			if uncleBlock.NumberU64() == 0 || realParentHeader.Number.Uint64()-uncleHeader.Number.Uint64() >= maxUnclePowAnswer {
+			if uncleBlock.NumberU64() == 0 || (realParentHeader.Number.Uint64() > uncleHeader.Number.Uint64() && realParentHeader.Number.Uint64()-uncleHeader.Number.Uint64() >= maxUnclePowAnswer) {
 				break
 			}
 
