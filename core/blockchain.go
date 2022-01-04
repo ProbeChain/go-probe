@@ -3174,14 +3174,52 @@ func (bc *BlockChain) GetPowAnswers(number *big.Int, blockHash common.Hash) []*t
 }
 
 // GetLatestPowAnswer get a pow answer receive latest
-func (bc *BlockChain) GetLatestPowAnswer(number *big.Int, blockHash common.Hash) *types.PowAnswer {
+func (bc *BlockChain) GetLatestPowAnswer(parent *types.Block, number *big.Int, blockHash common.Hash) *types.PowAnswer {
 	ans := bc.powAnswers.List(number, blockHash)
 	ans = bc.powAnswers.FilterList(ans)
-	if len(ans) > 0 {
-		return ans[0]
-	} else {
+
+	if len(ans) == 0 {
+		log.Error("GetLatestPowAnswer no answers", "number ", number, "hash", blockHash.String())
 		return nil
 	}
+
+	var used = make(map[common.Hash]*types.PowAnswer)
+	header := parent.Header()
+	for {
+		block := bc.GetBlockByHash(header.Hash())
+		if block.NumberU64() == number.Uint64() {
+			break
+		}
+
+		//log.Debug("GetLatestPowAnswer  used","header",parent.Number,"block",block.NumberU64())
+
+		if block == nil {
+			log.Error("GetLatestPowAnswer no block", "number ", header.Number, "hash", header.Hash().String())
+			return nil
+		}
+		for _, an := range block.PowAnswers() {
+			if an != nil {
+				used[an.MixDigest] = an
+				//log.Debug("GetLatestPowAnswer  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
+			}
+		}
+		for _, an := range block.PowAnswerUncles() {
+			if an != nil {
+				used[an.MixDigest] = an
+				//log.Debug("GetLatestPowAnswer  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
+			}
+		}
+		header = bc.GetHeaderByHash(block.ParentHash())
+	}
+
+	for _, an := range ans {
+		if used[an.MixDigest] == nil {
+			//log.Debug("GetLatestPowAnswer   get unused","header",an.Number,"hash",an.MixDigest.String(),"header",number)
+			return an
+		}
+	}
+	log.Debug("GetLatestPowAnswer  not get unused", "header", number)
+	return nil
 }
 
 // GetUnclePowAnswers get uncle pow answer list
@@ -3204,19 +3242,21 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 			break
 		}
 
-		//log.Debug("used","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
+		//log.Debug("GetUnclePowAnswers  used","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
 		for _, an := range curBlock.PowAnswers() {
 			if an != nil {
 				used[an.MixDigest] = an
+				//log.Debug("GetUnclePowAnswers  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
 			}
 		}
 		for _, an := range curBlock.PowAnswerUncles() {
 			if an != nil {
 				used[an.MixDigest] = an
+				//log.Debug("GetUnclePowAnswers  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
 			}
 		}
 		if uncleHeader.Number.Uint64() < header.Number.Uint64() {
-			//log.Debug("getAll","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
+			//log.Debug("GetUnclePowAnswers getAll","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
 			ans = append(ans, bc.GetPowAnswers(curBlock.Number(), curBlock.Hash())...)
 		}
 		uncleHeader = bc.GetHeader(curBlock.ParentHash(), curBlock.NumberU64()-1)
@@ -3226,9 +3266,11 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 	}
 
 	for _, answer := range ans {
+		//log.Debug("GetUnclePowAnswers  All","header",header.Number,"MixDigest",answer.MixDigest.String())
 		if answer != nil && used[answer.MixDigest] == nil {
 			ret = append(ret, answer)
 			used[answer.MixDigest] = answer
+			//log.Debug("GetUnclePowAnswers  unused","header",header.Number,"MixDigest",answer.MixDigest.String())
 			if len(used) == 64 {
 				break
 			}

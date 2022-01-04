@@ -652,9 +652,6 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 	}
 
 	used := make(map[common.Hash]*types.PowAnswer)
-	for _, answer := range block.PowAnswers() {
-		used[answer.Id()] = answer
-	}
 
 	blockNUm := block.NumberU64()
 	if blockNUm > 1 {
@@ -667,14 +664,16 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 			for _, answer := range uncleBlock.PowAnswers() {
 				if answer != nil {
 					used[answer.Id()] = answer
+					//log.Debug("used check get", "num ", answer.Number,"hash",answer.MixDigest.String())
 				}
 			}
-			//log.Debug("used check ", "block ", block.NumberU64(),"num",uncleBlock.NumberU64())
 			for _, answer := range uncleBlock.PowAnswerUncles() {
 				if answer != nil {
 					used[answer.Id()] = answer
+					//log.Debug("used check get", "num ", answer.Number,"hash",answer.MixDigest.String())
 				}
 			}
+			//log.Debug("used check ", "block ", block.NumberU64(),"num",uncleBlock.NumberU64())
 			uncleHeader = uncleBlock.Header()
 
 			if uncleBlock.NumberU64() == 0 || (realParentHeader.Number.Uint64() > uncleHeader.Number.Uint64() && realParentHeader.Number.Uint64()-uncleHeader.Number.Uint64() >= maxUnclePowAnswer) {
@@ -685,10 +684,21 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 
 	}
 
+	isBeforeUnclePowFix := greatri.IsBeforeUnclePowFix(block)
+	for _, answer := range block.PowAnswers() {
+		if !isBeforeUnclePowFix {
+			if used[answer.Id()] != nil {
+				return fmt.Errorf("powAnswer used")
+			}
+			used[answer.Id()] = answer
+		}
+
+	}
+
 	for _, answer := range powAnswers {
+		log.Debug("powAnswers", "num ", answer.Number, "hash", answer.MixDigest.String())
 		differ := int(realParentHeader.Number.Uint64() - answer.Number.Uint64())
 		minDiffer := 1
-		isBeforeUnclePowFix := greatri.IsBeforeUnclePowFix(block)
 		if isBeforeUnclePowFix {
 			minDiffer = 0
 		}
@@ -698,7 +708,7 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 		}
 
 		if !isBeforeUnclePowFix && used[answer.Id()] != nil {
-			return fmt.Errorf("powAnswer used")
+			return fmt.Errorf("uncle powAnswer used")
 		}
 		verify := greatri.verifyPowAnswer(chain, answer, isBeforeUnclePowFix)
 		if verify != nil {

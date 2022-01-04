@@ -1227,7 +1227,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 		return nil
 	}
 
-	answers := w.probe.BlockChain().GetLatestPowAnswer(realParent.Number(), realParent.Hash())
+	answers := w.probe.BlockChain().GetLatestPowAnswer(parent, realParent.Number(), realParent.Hash())
 	if answers == nil {
 		log.Error("Refusing to mine without PowAnswers, something error, need to check")
 		return nil
