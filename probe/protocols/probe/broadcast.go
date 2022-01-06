@@ -46,14 +46,33 @@ func (p *Peer) broadcastBlocks() {
 			if err := p.SendNewBlock(prop.block, prop.td); err != nil {
 				return
 			}
-			p.Log().Trace("Propagated block", "number", prop.block.Number(), "hash", prop.block.Hash(), "td", prop.td)
+		//	p.Log().Trace("Propagated block", "number", prop.block.Number(), "hash", prop.block.Hash(), "td", prop.td)
 
 		case block := <-p.queuedBlockAnns:
 			if err := p.SendNewBlockHashes([]common.Hash{block.Hash()}, []uint64{block.NumberU64()}); err != nil {
 				return
 			}
-			p.Log().Trace("Announced block", "number", block.Number(), "hash", block.Hash())
+		//	p.Log().Trace("Announced block", "number", block.Number(), "hash", block.Hash())
 
+		case <-p.term:
+			return
+		}
+	}
+}
+
+func (p *Peer) broadcastDposInfo() {
+	for {
+		select {
+		case powAnswer := <-p.powAnswerBroadcast:
+			if err := p.SendNewPowAnswer(powAnswer); err != nil {
+				p.Log().Error("SendNewPowAnswer error", "pow", powAnswer.Id(), "error", err)
+				return
+			}
+		case ack := <-p.dposAckBroadcast:
+			if err := p.SendNewDposAck(ack); err != nil {
+				p.Log().Error("SendNewDposAck error", "ack", ack.Id(), "error", err)
+				return
+			}
 		case <-p.term:
 			return
 		}

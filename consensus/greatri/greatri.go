@@ -54,8 +54,8 @@ const (
 	checkpointInterval = 1024 // Number of blocks after which to save the vote snapshot to the database
 	inmemorySnapshots  = 128  // Number of recent vote snapshots to keep in memory
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
-
-	wiggleTime = 500 * time.Millisecond // Random delay (per signer) to allow concurrent signers
+	maxUnclePowAnswer  = 5
+	wiggleTime         = 500 * time.Millisecond // Random delay (per signer) to allow concurrent signers
 )
 
 // Greatri proof-of-authority protocol constants.
@@ -217,10 +217,11 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 // Greatri is the proof-of-authority consensus engine proposed to support the
 // Probeum testnet following the Ropsten attacks.
 type Greatri struct {
-	dposConfig *params.DposConfig // Consensus engine configuration parameters
-	config     Config             //
-	db         probedb.Database   // Database to store and retrieve snapshot checkpoints
-	powEngine  consensus.Engine
+	dposConfig  *params.DposConfig // Consensus engine configuration parameters
+	chainConfig *params.ChainConfig
+	config      Config           //
+	db          probedb.Database // Database to store and retrieve snapshot checkpoints
+	powEngine   consensus.Engine
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
 	signatures *lru.ARCCache // Signatures of recent blocks to speed up mining
@@ -237,7 +238,7 @@ type Greatri struct {
 
 // New creates a Greatri proof-of-authority consensus engine with the initial
 // signers set to the ones provided by the user.
-func New(config *params.DposConfig, db probedb.Database, powEngine consensus.Engine) *Greatri {
+func New(config *params.DposConfig, db probedb.Database, powEngine consensus.Engine, chainConfig *params.ChainConfig) *Greatri {
 	// Set any missing consensus parameters to their defaults
 	conf := *config
 	if conf.Epoch == 0 {
@@ -248,12 +249,13 @@ func New(config *params.DposConfig, db probedb.Database, powEngine consensus.Eng
 	signatures, _ := lru.NewARC(inmemorySignatures)
 
 	return &Greatri{
-		dposConfig: &conf,
-		db:         db,
-		powEngine:  powEngine,
-		recents:    recents,
-		signatures: signatures,
-		proposals:  make(map[common.Address]bool),
+		dposConfig:  &conf,
+		chainConfig: chainConfig,
+		db:          db,
+		powEngine:   powEngine,
+		recents:     recents,
+		signatures:  signatures,
+		proposals:   make(map[common.Address]bool),
 	}
 }
 
@@ -287,7 +289,6 @@ func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header
 	var parent = header
 	var diff int64 = 1
 	for {
-		log.Debug("", "index: ", index)
 		if index > 0 && headers != nil {
 			parent = headers[index-1]
 			if parent.Hash() != headers[index].ParentHash || new(big.Int).Sub(headers[index].Number, parent.Number).Cmp(common.Big1) != 0 {
@@ -308,7 +309,6 @@ func (c *Greatri) FindRealParentHeader(chain consensus.ChainHeaderReader, header
 		if !parent.IsVisual() {
 			return parent, nil, diff
 		}
-
 		log.Debug("this is a visual block ", "num:", parent.Number.String())
 		diff++
 
@@ -394,7 +394,7 @@ func (c *Greatri) verifyHeaderWorker(chain consensus.ChainHeaderReader, headers 
 // looking those up from the database. This is useful for concurrently verifying
 // a batch of new headers.
 func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent *types.Header, uncle bool, seal bool, unixNow int64, diff int64) error {
-	log.Trace("enter verifyHeader", "block number", header.Number, "seal", seal)
+	log.Trace("enter verifyHeader", "block number", header.Number, "seal", seal, "dposign", common.Bytes2Hex(header.DposSig), "ackHash", header.DposAcksHash.String())
 	//return nil
 	// Ensure that the header's extra-data section is of a reasonable size
 
@@ -402,6 +402,8 @@ func (c *Greatri) verifyHeader(chain consensus.ChainHeaderReader, header, parent
 	if err != nil || addr != header.DposSigAddr {
 		return fmt.Errorf("DposSigAddr err : %s > %s", addr.String(), header.DposSigAddr.String())
 	}
+
+	log.Trace("enter verifyHeader", "block number", header.Number, "addr", addr.String(), "dposign", header.DposSigAddr.String(), "dposign", common.Bytes2Hex(header.DposSig), "ackHash", header.DposAcksHash.String())
 
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
@@ -625,29 +627,92 @@ func (c *Greatri) VerifyUncles(chain consensus.ChainReader, block *types.Block) 
 	return nil
 }
 
+func (greatri *Greatri) IsBeforeUnclePowFix(block *types.Block) bool {
+	if block == nil {
+		return false
+	}
+	myChainId := greatri.chainConfig.ChainID.Uint64()
+	chain := myChainId == params.FrcMainChainConfig.ChainID.Uint64() || myChainId == params.FrcTestChainConfig.ChainID.Uint64() || myChainId == params.ProbeTestChainConfig.ChainID.Uint64()
+	isShenZhen := !greatri.chainConfig.IsShenzhen(block.Number())
+	return chain && isShenZhen
+}
+
 // VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
 func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
 	powAnswers := block.PowAnswerUncles()
-	log.Debug("VerifyUnclePowAnswers", "start  : ", block.NumberU64(), "uncle", len(powAnswers))
+	isVisual := block.Header().IsVisual()
+	if (isVisual && len(powAnswers) > 0) || (isVisual && len(powAnswers) > 64) {
+		log.Debug("VerifyUnclePowAnswers fail", "isVisual", isVisual, "len(powAnswers)", len(powAnswers))
+		return fmt.Errorf("len(powAnswers) error")
+	}
 
-	parent, err, _ := greatri.FindRealParentHeader(chain, block.Header(), nil, -1)
+	realParentHeader, err, _ := greatri.FindRealParentHeader(chain, block.Header(), nil, -1)
 	if err != nil {
 		return err
 	}
-	for _, answer := range powAnswers {
-		if parent.Number.Uint64()-answer.Number.Uint64() > 4 {
-			log.Debug("VerifyUnclePowAnswers answer is too far", "parent.Number  : ", parent.Number, "answer.Number", answer.Number)
-			return nil
-			//return fmt.Errorf("answer is too far ")
+
+	used := make(map[common.Hash]*types.PowAnswer)
+
+	blockNUm := block.NumberU64()
+	if blockNUm > 1 {
+		uncleHeader := block.Header()
+		for {
+			uncleBlock := chain.GetBlock(uncleHeader.ParentHash, uncleHeader.Number.Uint64()-1)
+			if uncleBlock == nil {
+				return fmt.Errorf("uncleblock not found")
+			}
+			for _, answer := range uncleBlock.PowAnswers() {
+				if answer != nil {
+					used[answer.Id()] = answer
+				}
+			}
+			for _, answer := range uncleBlock.PowAnswerUncles() {
+				if answer != nil {
+					used[answer.Id()] = answer
+				}
+			}
+			uncleHeader = uncleBlock.Header()
+
+			if uncleBlock.NumberU64() == 0 || (realParentHeader.Number.Uint64() > uncleHeader.Number.Uint64() && realParentHeader.Number.Uint64()-uncleHeader.Number.Uint64() >= maxUnclePowAnswer) {
+				break
+			}
+
 		}
-		verify := greatri.verifyPowAnswer(chain, answer)
+
+	}
+
+	isBeforeUnclePowFix := greatri.IsBeforeUnclePowFix(block)
+	for _, answer := range block.PowAnswers() {
+		if !isBeforeUnclePowFix {
+			if used[answer.Id()] != nil {
+				return fmt.Errorf("powAnswer used")
+			}
+			used[answer.Id()] = answer
+		}
+
+	}
+
+	for _, answer := range powAnswers {
+		differ := int(realParentHeader.Number.Uint64() - answer.Number.Uint64())
+		minDiffer := 1
+		if isBeforeUnclePowFix {
+			minDiffer = 0
+		}
+		if differ < minDiffer || differ > 5 {
+			log.Debug("VerifyUnclePowAnswers answer is too far", "realParentHeader.Number  : ", realParentHeader.Number, "answer.Number", answer.Number)
+			return fmt.Errorf("answer is too far ")
+		}
+
+		if !isBeforeUnclePowFix && used[answer.Id()] != nil {
+			return fmt.Errorf("uncle powAnswer used")
+		}
+		verify := greatri.verifyPowAnswer(chain, answer, isBeforeUnclePowFix)
 		if verify != nil {
 			log.Error("VerifyUnclePowAnswers", "fail  : ", block.NumberU64())
 			return verify
 		}
+		used[answer.Id()] = answer
 	}
-
-	log.Debug("VerifyUnclePowAnswers", "end  : ", block.NumberU64())
 
 	return nil
 }
@@ -658,9 +723,6 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 	miner := block.Header().DposSigAddr
 	isVisual := block.Header().IsVisual()
 	num := block.NumberU64()
-
-	log.Debug("VerifyDposInfo", "num : ", num)
-
 	isProducer := chain.CheckIsProducerAccount(num, miner)
 
 	if (isProducer && isVisual) || (!isProducer && !isVisual) {
@@ -675,21 +737,26 @@ func (greatri *Greatri) VerifyDposInfo(chain consensus.ChainReader, block *types
 		return fmt.Errorf(" acks not legal")
 	}
 
-	log.Debug("VerifyDposInfo", "end  : ", num)
-
 	return nil
 }
 
-func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer) error {
-
-	parent := chain.GetHeaderByNumber(answer.Number.Uint64())
+func (c *Greatri) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer, isBeforeUnclePowFix bool) error {
+	var header *types.Header
+	if isBeforeUnclePowFix {
+		header = chain.GetHeaderByNumber(answer.Number.Uint64())
+	} else {
+		header = chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
+	}
+	if header == nil {
+		return fmt.Errorf("verifyPowAnswer header is nil ")
+	}
 	pow, ok := c.powEngine.(*probeash.Probeash)
 	if !ok {
 		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
 	}
-	err := pow.PowVerifySeal(chain, parent, false, answer)
+	err := pow.PowVerifySeal(chain, header, false, answer)
 	if err != nil {
-		log.Debug("PowVerifySeal failed", "block number", parent.Number, "answer", answer)
+		log.Debug("PowVerifySeal failed", "block number", header.Number, "answer", answer)
 		return err
 	}
 	return nil
@@ -781,7 +848,7 @@ func (c *Greatri) Prepare(chain consensus.ChainHeaderReader, header *types.Heade
 }
 
 func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, powUncles []*types.PowAnswer) {
-	log.Debug("enter accumulateRewards")
+	//log.Debug("enter accumulateRewards")
 	state.AddBalance(header.DposSigAddr, new(big.Int).Set(BlockRewardDposSigner))
 	for _, answer := range header.PowAnswers {
 		state.AddBalance(answer.Miner, new(big.Int).Set(BlockRewardPowMiner))

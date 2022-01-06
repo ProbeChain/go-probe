@@ -137,14 +137,14 @@ func (t *VMTest) newEVM(statedb *state.StateDB, vmconfig vm.Config) *vm.EVM {
 		}
 		return core.CanTransfer(db, address, amount)
 	}
-	transfer := func(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {}
+	//transfer := func(db vm.StateDB, sender, recipient common.Address, amount *big.Int) {}
 	txContext := vm.TxContext{
 		Origin:   t.json.Exec.Origin,
 		GasPrice: t.json.Exec.GasPrice,
 	}
 	context := vm.BlockContext{
 		CanTransfer: canTransfer,
-		Transfer:    transfer,
+		//Transfer:    transfer,
 		GetHash:     vmTestBlockHash,
 		Coinbase:    t.json.Env.Coinbase,
 		BlockNumber: new(big.Int).SetUint64(t.json.Env.Number),

@@ -465,8 +465,8 @@ func (h *handler) BroadcastBlock(block *types.Block, propagate bool) {
 			return
 		}
 		// Send the block to a subset of our peers
-		//transfer := peers[:int(math.Sqrt(float64(len(peers))))]
-		transfer := peers
+		transfer := peers[:int(math.Sqrt(float64(len(peers))))]
+		//transfer := peers
 		for _, peer := range transfer {
 			peer.AsyncSendNewBlock(block, td)
 		}
@@ -529,10 +529,11 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
 	if h.chain.CheckPowAnswerSketchy(powAnswer) {
 		h.chain.HandlePowAnswer(powAnswer)
-		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
-			if err := peer.SendNewPowAnswer(powAnswer); err != nil {
-				log.Debug("SendNewPowAnswer", "err", err)
-			}
+		peers := h.peers.peersWithoutPowAnswers(powAnswer)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			peer.MarkPowAnswer(powAnswer.Id())
+			peer.AsyncSendPowAnswer(powAnswer)
 		}
 		log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
 	} else {
@@ -545,10 +546,12 @@ func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
 	check := h.chain.CheckDposAckSketchy(dposAck)
 	if check {
 		h.chain.HandleDposAck(dposAck)
-		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
-			if err := peer.SendNewDposAck(dposAck); err != nil {
-				log.Debug("SendNewDposAck", "err", err)
-			}
+		peers := h.peers.peersWithoutDposAcks(dposAck)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			//log.Debug("BroadcastDposAck", "ack", common.BytesToHash(dposAck.WitnessSig))
+			peer.MarkDposAck(dposAck.Id())
+			peer.AsyncSendDposAck(dposAck)
 		}
 		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
 	} else {
@@ -598,6 +601,7 @@ func (h *handler) dposAckBroadcastLoop() {
 
 	for obj := range h.dposAckSub.Chan() {
 		if ev, ok := obj.Data.(core.DposAckEvent); ok {
+			//log.Debug("dposAckBroadcastLoop", "ack", common.BytesToHash(ev.DposAck.WitnessSig))
 			h.BroadcastDposAck(ev.DposAck)
 		}
 	}

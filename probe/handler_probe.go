@@ -19,11 +19,10 @@ package probe
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sync/atomic"
 	"time"
-
-	"github.com/status-im/keycard-go/hexutils"
 
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core"
@@ -96,6 +95,7 @@ func (h *probeHandler) Handle(peer *probe.Peer, packet probe.Packet) error {
 		return h.handlePowAnswerBroadcast(peer, packet.PowAnswer)
 
 	case *probe.NewDposAckPacket:
+		//log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(packet.DposAck.WitnessSig))
 		return h.handleDposAckBroadcast(peer, packet.DposAck)
 
 	case *probe.NewPooledTransactionHashesPacket:
@@ -230,12 +230,14 @@ func (h *probeHandler) handleBlockBroadcast(peer *probe.Peer, block *types.Block
 func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *types.PowAnswer) error {
 	// boardcast pow answer again
 	if h.chain.CheckPowAnswerSketchy(powAnswer) {
-		peer.KnownPowAnswer(powAnswer.Id())
-		for _, peer := range h.peers.peersWithoutPowAnswers(powAnswer) {
-			if err := peer.SendNewPowAnswer(powAnswer); err != nil {
-				log.Debug("SendNewPowAnswer", "err", err)
-			}
+		peer.MarkPowAnswer(powAnswer.Id())
+		peers := h.peers.peersWithoutPowAnswers(powAnswer)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			peer.MarkPowAnswer(powAnswer.Id())
+			peer.AsyncSendPowAnswer(powAnswer)
 		}
+		//	peer.AsyncSendPowAnswer(powAnswer)
 		h.chain.HandlePowAnswer(powAnswer)
 	} else {
 		log.Debug("CheckPowAnswer Fail", "powAnswer.Number", powAnswer.Number.Uint64(), "Chain Number", h.chain.CurrentBlock().NumberU64())
@@ -248,15 +250,20 @@ func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *typ
 func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.DposAck) error {
 	check := h.chain.CheckDposAckSketchy(dposAck)
 	if check {
-		peer.KnownDposAck(dposAck.Id())
-		for _, peer := range h.peers.peersWithoutDposAcks(dposAck) {
-			if err := peer.SendNewDposAck(dposAck); err != nil {
-				log.Debug("SendNewDposAck", "err", err)
-			}
+		peer.MarkDposAck(dposAck.Id())
+		peers := h.peers.peersWithoutDposAcks(dposAck)
+		filter := peers[:int(math.Sqrt(float64(len(peers))))]
+		for _, peer := range filter {
+			//log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(dposAck.WitnessSig))
+			peer.MarkDposAck(dposAck.Id())
+			peer.AsyncSendDposAck(dposAck)
 		}
+
+		//peer.AsyncSendDposAck(dposAck)
+
 		h.chain.HandleDposAck(dposAck)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
+		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", common.Bytes2Hex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
 	}
 	return nil
 }

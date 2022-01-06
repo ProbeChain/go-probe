@@ -25,16 +25,16 @@ import (
 	"path/filepath"
 
 	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probeclient"
-	"github.com/probeum/go-probeum/probestats"
 	"github.com/probeum/go-probeum/internal/debug"
 	"github.com/probeum/go-probeum/les"
 	"github.com/probeum/go-probeum/node"
 	"github.com/probeum/go-probeum/p2p"
 	"github.com/probeum/go-probeum/p2p/nat"
 	"github.com/probeum/go-probeum/params"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probeclient"
+	"github.com/probeum/go-probeum/probestats"
 )
 
 // NodeConfig represents the collection of configuration values to fine tune the Gprobe
@@ -77,8 +77,8 @@ type NodeConfig struct {
 // defaultNodeConfig contains the default node configuration values to use if all
 // or some fields are missing from the user's specified list.
 var defaultNodeConfig = &NodeConfig{
-	BootstrapNodes:        FoundationBootnodes(),
-	MaxPeers:              25,
+	BootstrapNodes:       FoundationBootnodes(),
+	MaxPeers:             250,
 	ProbeumEnabled:       true,
 	ProbeumNetworkID:     1,
 	ProbeumDatabaseCache: 16,

@@ -1293,8 +1293,6 @@ func (s *StateDB) Cancellation(context vm.TxContext) {
 				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR
 			case common.ACC_TYPE_OF_PNS:
 				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
-			case common.ACC_TYPE_OF_CONTRACT:
-				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_CONTRACT
 			case common.ACC_TYPE_OF_AUTHORIZE:
 				pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_AUTHORIZE
 			}
@@ -1307,7 +1305,11 @@ func (s *StateDB) Cancellation(context vm.TxContext) {
 //Transfer transfer balance
 func (s *StateDB) Transfer(context vm.TxContext) {
 	isNew := s.getStateObject(*context.To) == nil
+	//fmt.Printf("Transfer  from:%s,to:%s,value:%d,isNew:%t\n",context.From,context.To,context.Value,isNew)
 	actualValue := context.Value
+	if actualValue.Cmp(new(big.Int).SetUint64(0)) == 0 {
+		return
+	}
 	if isNew {
 		actualValue = new(big.Int).Sub(context.Value, new(big.Int).SetUint64(common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_REGULAR))
 	}

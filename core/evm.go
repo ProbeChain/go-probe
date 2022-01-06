@@ -170,5 +170,4 @@ func CallDB(db vm.StateDB, txContext vm.TxContext) {
 	default:
 		db.Transfer(txContext)
 	}
-
 }

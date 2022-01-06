@@ -22,7 +22,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/params"
+	"strconv"
 
 	"github.com/probeum/go-probeum/crypto/secp256k1"
 	"io"
@@ -93,6 +95,7 @@ type PowAnswer struct {
 	MixDigest common.Hash    `json:"mixHash"          gencodec:"required"`
 	Nonce     BlockNonce     `json:"nonce"            gencodec:"required"`
 	Miner     common.Address `json:"miner"            gencodec:"required"`
+	BlockHash common.Hash    `json:"blockHash"        rlp:"optional"`
 }
 
 // Id returns the pow answer unique id
@@ -178,6 +181,13 @@ type Header struct {
 }
 
 func (h *Header) String() string {
+	for _, count := range h.DposAckCountList {
+		log.Info("DposAckCountList:", "count.BlockNumber", count.BlockNumber, "count.AckCount", count.AckCount)
+	}
+	for _, answer := range h.PowAnswers {
+		log.Info("PowAnswers:", " answer.Number", answer.Number, " answer.Number", answer.MixDigest.String())
+	}
+	log.Info("hash:", " hash ", h.Hash().String())
 	return "{" + "\n" +
 		"DposSigAddr" + h.DposSigAddr.String() + "\n" +
 		"DposSig" + common.Bytes2Hex(h.DposSig) + "\n" +
@@ -188,10 +198,14 @@ func (h *Header) String() string {
 		"Root" + h.Root.String() + "\n" +
 		"TxHash" + h.TxHash.String() + "\n" +
 		"ReceiptHash" + h.ReceiptHash.String() + "\n" +
-		"TxHash" + h.TxHash.String() + "\n" +
 		"Extra" + common.Bytes2Hex(h.Extra) + "\n" +
 		"MixDigest" + h.MixDigest.String() + "\n" +
 		"NUmber:" + h.Number.String() + "\n" +
+		"Difficulty:" + h.Difficulty.String() + "\n" +
+		"GasLimit:" + strconv.FormatUint(h.GasLimit, 10) + "\n" +
+		"GasUsed:" + strconv.FormatUint(h.GasUsed, 10) + "\n" +
+		"Time:" + strconv.FormatUint(h.Time, 10) + "\n" +
+		"Nonce:" + strconv.FormatUint(h.Nonce.Uint64(), 10) + "\n" +
 		"}"
 }
 
@@ -387,8 +401,8 @@ func NewBlockWithHeader(header *Header) *Block {
 func CopyMostHeader(h *Header) *Header {
 	re := CopyHeader(h)
 
-	re.DposAcksHash = h.DposAcksHash
-	re.DposAckCountList = h.DposAckCountList
+	//re.DposAcksHash = h.DposAcksHash
+	//re.DposAckCountList = h.DposAckCountList
 
 	return re
 }
@@ -409,6 +423,10 @@ func CopyHeader(h *Header) *Header {
 	if len(h.Extra) > 0 {
 		cpy.Extra = make([]byte, len(h.Extra))
 		copy(cpy.Extra, h.Extra)
+	}
+	if len(h.DposSig) > 0 {
+		cpy.DposSig = make([]byte, len(h.DposSig))
+		copy(cpy.DposSig, h.DposSig)
 	}
 	return &cpy
 }
@@ -488,8 +506,8 @@ func (b *Block) Header() *Header { return CopyHeader(b.header) }
 func (b *Block) CopyMostHeader() *Header {
 	re := CopyHeader(b.header)
 
-	re.DposAcksHash = b.header.DposAcksHash
-	re.DposAckCountList = b.header.DposAckCountList
+	//re.DposAcksHash = b.header.DposAcksHash
+	//re.DposAckCountList = b.header.DposAckCountList
 
 	return re
 }

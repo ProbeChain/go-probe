@@ -12,10 +12,6 @@ func (args *TransactionArgs) setDefaultsOfRegisterPns() error {
 	if err := common.ValidateNil(args.Data, "data"); err != nil {
 		return err
 	}
-	decode := new(common.StringDecodeType)
-	if err := rlp.DecodeBytes(*args.Data, &decode); err != nil {
-		return err
-	}
 	return nil
 }
 

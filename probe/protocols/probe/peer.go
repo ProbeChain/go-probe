@@ -62,6 +62,10 @@ const (
 	// dropping broadcasts. Similarly to block propagations, there's no point to queue
 	// above some healthy uncle limit, so use that.
 	maxQueuedBlockAnns = 4
+
+	maxPeerPowAnswers = 7
+
+	maxPeerAcks = 7
 )
 
 // max is a helper function which returns the larger of the two given integers.
@@ -92,9 +96,11 @@ type Peer struct {
 	txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
 	txAnnounce  chan []common.Hash // Channel used to queue transaction announcement requests
 
-	knowPowAnswers mapset.Set
+	knowPowAnswers     mapset.Set
+	powAnswerBroadcast chan *types.PowAnswer // Channel used to queue transaction propagation requests
 
-	knowDposAcks mapset.Set
+	knowDposAcks     mapset.Set
+	dposAckBroadcast chan *types.DposAck // Channel used to queue transaction announcement requests
 
 	term chan struct{} // Termination channel to stop the broadcasters
 	lock sync.RWMutex  // Mutex protecting the internal fields
@@ -104,24 +110,27 @@ type Peer struct {
 // version.
 func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool) *Peer {
 	peer := &Peer{
-		id:              p.ID().String(),
-		Peer:            p,
-		rw:              rw,
-		version:         version,
-		knownTxs:        mapset.NewSet(),
-		knownBlocks:     mapset.NewSet(),
-		knowPowAnswers:  mapset.NewSet(),
-		knowDposAcks:    mapset.NewSet(),
-		queuedBlocks:    make(chan *blockPropagation, maxQueuedBlocks),
-		queuedBlockAnns: make(chan *types.Block, maxQueuedBlockAnns),
-		txBroadcast:     make(chan []common.Hash),
-		txAnnounce:      make(chan []common.Hash),
-		txpool:          txpool,
-		term:            make(chan struct{}),
+		id:                 p.ID().String(),
+		Peer:               p,
+		rw:                 rw,
+		version:            version,
+		knownTxs:           mapset.NewSet(),
+		knownBlocks:        mapset.NewSet(),
+		knowPowAnswers:     mapset.NewSet(),
+		knowDposAcks:       mapset.NewSet(),
+		queuedBlocks:       make(chan *blockPropagation, maxQueuedBlocks),
+		queuedBlockAnns:    make(chan *types.Block, maxQueuedBlockAnns),
+		txBroadcast:        make(chan []common.Hash),
+		txAnnounce:         make(chan []common.Hash),
+		powAnswerBroadcast: make(chan *types.PowAnswer, maxPeerPowAnswers),
+		dposAckBroadcast:   make(chan *types.DposAck, maxPeerAcks),
+		txpool:             txpool,
+		term:               make(chan struct{}),
 	}
 	// Start up all the broadcasters
 	go peer.broadcastBlocks()
 	go peer.broadcastTransactions()
+	go peer.broadcastDposInfo()
 	if version >= ETH65 {
 		go peer.announceTransactions()
 	}
@@ -203,9 +212,9 @@ func (p *Peer) markTransaction(hash common.Hash) {
 	p.knownTxs.Add(hash)
 }
 
-// markPowAnswer marks a pow answer as known for the peer, ensuring that it
+// MarkPowAnswer marks a pow answer as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
-func (p *Peer) markPowAnswer(id common.Hash) {
+func (p *Peer) MarkPowAnswer(id common.Hash) {
 	// If we reached the memory allowance, drop a previously known pow answer hash
 	for p.knowPowAnswers.Cardinality() >= maxPowAnswers {
 		p.knowPowAnswers.Pop()
@@ -213,9 +222,9 @@ func (p *Peer) markPowAnswer(id common.Hash) {
 	p.knowPowAnswers.Add(id)
 }
 
-// markDposAck marks a dpos ack as known for the peer, ensuring that it
+// MarkDposAck marks a dpos ack as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
-func (p *Peer) markDposAck(id common.Hash) {
+func (p *Peer) MarkDposAck(id common.Hash) {
 	// If we reached the memory allowance, drop a previously known pow answer hash
 	for p.knowDposAcks.Cardinality() >= maxDposAcks {
 		p.knowDposAcks.Pop()
@@ -390,9 +399,27 @@ func (p *Peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
 	}
 }
 
+//  AsyncSendPowAnswer
+func (p *Peer) AsyncSendPowAnswer(powAnswer *types.PowAnswer) {
+	select {
+	case p.powAnswerBroadcast <- powAnswer:
+	default:
+		p.Log().Debug("Dropping AsyncSendPowAnswer propagation", "number", powAnswer.Number, "hash", powAnswer.BlockHash.String())
+	}
+}
+
+//AsyncSendDposAck
+func (p *Peer) AsyncSendDposAck(ack *types.DposAck) {
+	select {
+	case p.dposAckBroadcast <- ack:
+	default:
+		p.Log().Debug("Dropping AsyncSendDposAck propagation", "peer", p.id, "number", ack.Number, "hash", ack.BlockHash.String(), "WitnessSig", common.BytesToHash(ack.WitnessSig))
+	}
+}
+
 // SendNewPowAnswer send a pow answer to a remote peer.
 func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
-	p.markPowAnswer(powAnswer.Id())
+	p.MarkPowAnswer(powAnswer.Id())
 	return p2p.Send(p.rw, PowAnswerMsg, &NewPowAnswerPacket{
 		PowAnswer: powAnswer,
 	})
@@ -400,7 +427,7 @@ func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
 
 // SendNewDposAck send a dpos ack to a remote peer.
 func (p *Peer) SendNewDposAck(dposAck *types.DposAck) error {
-	p.markDposAck(dposAck.Id())
+	p.MarkDposAck(dposAck.Id())
 	return p2p.Send(p.rw, DposAckMsg, &NewDposAckPacket{
 		DposAck: dposAck,
 	})

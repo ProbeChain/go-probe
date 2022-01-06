@@ -283,6 +283,7 @@ func newMsgEventer(rw MsgReadWriter, feed *event.Feed, peerID enode.ID, proto, r
 // ReadMsg reads a message from the underlying MsgReadWriter and emits a
 // "message received" event
 func (ev *msgEventer) ReadMsg() (Msg, error) {
+
 	msg, err := ev.MsgReadWriter.ReadMsg()
 	if err != nil {
 		return msg, err

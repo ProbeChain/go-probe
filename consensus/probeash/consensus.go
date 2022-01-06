@@ -521,6 +521,9 @@ var DynamicDifficultyCalculator = makeDifficultyCalculator
 // either using the usual probeash cache for it, or alternatively using a full DAG
 // to make remote mining fast.
 func (probeash *Probeash) PowVerifySeal(chain consensus.ChainHeaderReader, fromHeader *types.Header, fulldag bool, powAnwer *types.PowAnswer) error {
+	if fromHeader == nil {
+		return fmt.Errorf("header is nil")
+	}
 	header := types.CopyHeader(fromHeader)
 
 	// If we're running a fake PoW, accept any seal as valid
@@ -696,6 +699,32 @@ func (probeash *Probeash) SealHash(header *types.Header) (hash common.Hash) {
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,
+		header.Root,
+		header.TxHash,
+		header.ReceiptHash,
+		header.Bloom,
+		header.Difficulty,
+		header.Number,
+		header.GasLimit,
+		header.GasUsed,
+		header.Time,
+		header.Extra,
+	}
+	if header.BaseFee != nil {
+		enc = append(enc, header.BaseFee)
+	}
+	rlp.Encode(hasher, enc)
+	hasher.Sum(hash[:0])
+	return hash
+}
+
+func (probeash *Probeash) GreatriSealHash(header *types.Header, coinbase common.Address) (hash common.Hash) {
+	hasher := sha3.NewLegacyKeccak256()
+
+	enc := []interface{}{
+		header.ParentHash,
+		header.UncleHash,
+		coinbase,
 		header.Root,
 		header.TxHash,
 		header.ReceiptHash,

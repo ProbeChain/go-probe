@@ -41,16 +41,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/accounts/keystore"
 	"github.com/probeum/go-probeum/cmd/utils"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/core"
 	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probeclient"
-	"github.com/probeum/go-probeum/probestats"
 	"github.com/probeum/go-probeum/les"
 	"github.com/probeum/go-probeum/log"
 	"github.com/probeum/go-probeum/node"
@@ -58,16 +55,19 @@ import (
 	"github.com/probeum/go-probeum/p2p/enode"
 	"github.com/probeum/go-probeum/p2p/nat"
 	"github.com/probeum/go-probeum/params"
-	"github.com/gorilla/websocket"
+	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probeum/go-probeum/probeclient"
+	"github.com/probeum/go-probeum/probestats"
 )
 
 var (
-	genesisFlag = flag.String("genesis", "", "Genesis json file to seed the chain with")
-	apiPortFlag = flag.Int("apiport", 8080, "Listener port for the HTTP API connection")
+	genesisFlag   = flag.String("genesis", "", "Genesis json file to seed the chain with")
+	apiPortFlag   = flag.Int("apiport", 8080, "Listener port for the HTTP API connection")
 	probePortFlag = flag.Int("probeport", 30303, "Listener port for the devp2p connection")
-	bootFlag    = flag.String("bootnodes", "", "Comma separated bootnode enode URLs to seed with")
-	netFlag     = flag.Uint64("network", 0, "Network ID to use for the Probeum protocol")
-	statsFlag   = flag.String("probestats", "", "Probestats network monitoring auth string")
+	bootFlag      = flag.String("bootnodes", "", "Comma separated bootnode enode URLs to seed with")
+	netFlag       = flag.Uint64("network", 0, "Network ID to use for the Probeum protocol")
+	statsFlag     = flag.String("probestats", "", "Probestats network monitoring auth string")
 
 	netnameFlag = flag.String("faucet.name", "", "Network name to assign to the faucet")
 	payoutFlag  = flag.Int("faucet.amount", 1, "Number of Probeers to pay out per user request")
@@ -202,7 +202,7 @@ type request struct {
 type faucet struct {
 	config *params.ChainConfig // Chain configurations for signing
 	stack  *node.Node          // Probeum protocol stack
-	client *probeclient.Client   // Client connection to the Probeum chain
+	client *probeclient.Client // Client connection to the Probeum chain
 	index  []byte              // Index page to serve up on the web
 
 	keystore *keystore.KeyStore // Keystore containing the single signer
@@ -238,7 +238,7 @@ func newFaucet(genesis *core.Genesis, port int, enodes []*enode.Node, network ui
 			NoDiscovery:      true,
 			DiscoveryV5:      true,
 			ListenAddr:       fmt.Sprintf(":%d", port),
-			MaxPeers:         25,
+			MaxPeers:         256,
 			BootstrapNodesV5: enodes,
 		},
 	})

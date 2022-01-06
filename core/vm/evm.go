@@ -236,19 +236,16 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(to)
 	if !common.IsSpecialAddress(to.Hex()) && !evm.StateDB.Exist(to) {
-		/*		if !isPrecompile && evm.chainRules.IsEIP158 && value.Sign() == 0 {
-				// Calling a non existing account, don't do anything, but ping the tracer
-				if evm.Config.Debug && evm.depth == 0 {
-					evm.Config.Tracer.CaptureStart(evm, caller.Address(), to, false, input, gas, value)
-					evm.Config.Tracer.CaptureEnd(ret, 0, 0, nil)
-				}
-				return nil, gas, nil
-			}*/
 		if isPrecompile {
 			evm.StateDB.CreateContractAccount(to)
 		}
 	}
 
+	if evm.chainRules.IsShenzhen {
+		evm.TxContext.From = caller.Address()
+		evm.TxContext.To = &to
+		evm.TxContext.Value = value
+	}
 	evm.TxContext.BlockNumber = evm.Context.BlockNumber
 	evm.TxContext.DPosEpoch = evm.chainConfig.Dpos.Epoch
 	evm.Context.CallDB(evm.StateDB, evm.TxContext)
@@ -473,11 +470,16 @@ func (evm *EVM) create(caller ContractRef, codeAndHash *codeAndHash, gas uint64,
 	if evm.chainRules.IsEIP158 {
 		evm.StateDB.SetNonce(address, 1)
 	}
-
-	if err := evm.Context.ContractDeploy(evm.StateDB, caller.Address()); err != nil {
-		return nil, common.Address{}, gas, err
+	if evm.chainRules.IsShenzhen {
+		evm.TxContext.From = caller.Address()
+		evm.TxContext.To = &address
+		evm.TxContext.Value = value
+		evm.Context.CallDB(evm.StateDB,evm.TxContext)
+	}else{
+		if err := evm.Context.ContractDeploy(evm.StateDB, caller.Address()); err != nil {
+			return nil, common.Address{}, gas, err
+		}
 	}
-
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
 	defaultValue := big.NewInt(0) //when contract deploy is zero
