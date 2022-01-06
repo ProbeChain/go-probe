@@ -3223,7 +3223,6 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 	uncles := MaxUnclePowAnswer
 	ans := make([]*types.PowAnswer, 0, uncles*2)
 	ret := make([]*types.PowAnswer, 0, uncles*2)
-
 	var used map[common.Hash]*types.PowAnswer
 	used = make(map[common.Hash]*types.PowAnswer)
 
@@ -3256,7 +3255,6 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 			break
 		}
 	}
-
 	for _, answer := range ans {
 		if answer != nil && used[answer.MixDigest] == nil {
 			ret = append(ret, answer)
