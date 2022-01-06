@@ -552,6 +552,10 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			log.Info("can't produce the same block number", "blockNumber", newBlockNumber)
 			return false
 		}
+		if newBlockNumber <= w.chain.CurrentBlock().NumberU64() {
+			log.Info("can't produce under current block ", "blockNumber", newBlockNumber, "current", w.chain.CurrentBlock().NumberU64())
+			return false
+		}
 		sealedBlockNumber = newBlockNumber
 		log.Debug("sealedBlockNumber changed", "sealedBlockNumber", sealedBlockNumber)
 

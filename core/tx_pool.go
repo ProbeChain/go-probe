@@ -1153,7 +1153,15 @@ func (pool *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirt
 	if len(events) > 0 {
 		var txs []*types.Transaction
 		for _, set := range events {
-			txs = append(txs, set.Flatten()...)
+			trans := set.Flatten()
+			for _, tran := range trans {
+				isLocal := pool.locals.containsTx(tran)
+				if err := pool.validateTx(tran, isLocal); err != nil {
+					log.Trace(" runReorg  noneed broadcastLoop  tx", "hash", tran.Hash(), "err", err)
+					continue
+				}
+				txs = append(txs, tran)
+			}
 		}
 		pool.txFeed.Send(NewTxsEvent{txs})
 	}
