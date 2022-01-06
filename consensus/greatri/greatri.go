@@ -664,16 +664,13 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 			for _, answer := range uncleBlock.PowAnswers() {
 				if answer != nil {
 					used[answer.Id()] = answer
-					//log.Debug("used check get", "num ", answer.Number,"hash",answer.MixDigest.String())
 				}
 			}
 			for _, answer := range uncleBlock.PowAnswerUncles() {
 				if answer != nil {
 					used[answer.Id()] = answer
-					//log.Debug("used check get", "num ", answer.Number,"hash",answer.MixDigest.String())
 				}
 			}
-			//log.Debug("used check ", "block ", block.NumberU64(),"num",uncleBlock.NumberU64())
 			uncleHeader = uncleBlock.Header()
 
 			if uncleBlock.NumberU64() == 0 || (realParentHeader.Number.Uint64() > uncleHeader.Number.Uint64() && realParentHeader.Number.Uint64()-uncleHeader.Number.Uint64() >= maxUnclePowAnswer) {
@@ -696,7 +693,6 @@ func (greatri *Greatri) VerifyUnclePowAnswers(chain consensus.ChainReader, block
 	}
 
 	for _, answer := range powAnswers {
-		log.Debug("powAnswers", "num ", answer.Number, "hash", answer.MixDigest.String())
 		differ := int(realParentHeader.Number.Uint64() - answer.Number.Uint64())
 		minDiffer := 1
 		if isBeforeUnclePowFix {

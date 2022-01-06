@@ -3191,8 +3191,6 @@ func (bc *BlockChain) GetLatestPowAnswer(parent *types.Block, number *big.Int, b
 			break
 		}
 
-		//log.Debug("GetLatestPowAnswer  used","header",parent.Number,"block",block.NumberU64())
-
 		if block == nil {
 			log.Error("GetLatestPowAnswer no block", "number ", header.Number, "hash", header.Hash().String())
 			return nil
@@ -3200,13 +3198,11 @@ func (bc *BlockChain) GetLatestPowAnswer(parent *types.Block, number *big.Int, b
 		for _, an := range block.PowAnswers() {
 			if an != nil {
 				used[an.MixDigest] = an
-				//log.Debug("GetLatestPowAnswer  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
 			}
 		}
 		for _, an := range block.PowAnswerUncles() {
 			if an != nil {
 				used[an.MixDigest] = an
-				//log.Debug("GetLatestPowAnswer  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
 			}
 		}
 		header = bc.GetHeaderByHash(block.ParentHash())
@@ -3242,21 +3238,17 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 			break
 		}
 
-		//log.Debug("GetUnclePowAnswers  used","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
 		for _, an := range curBlock.PowAnswers() {
 			if an != nil {
 				used[an.MixDigest] = an
-				//log.Debug("GetUnclePowAnswers  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
 			}
 		}
 		for _, an := range curBlock.PowAnswerUncles() {
 			if an != nil {
 				used[an.MixDigest] = an
-				//log.Debug("GetUnclePowAnswers  used","header",an.Number,"an.MixDigest",an.MixDigest.String())
 			}
 		}
 		if uncleHeader.Number.Uint64() < header.Number.Uint64() {
-			//log.Debug("GetUnclePowAnswers getAll","header",header.Number,"curBlock.Number().Uint64()",curBlock.Number().Uint64())
 			ans = append(ans, bc.GetPowAnswers(curBlock.Number(), curBlock.Hash())...)
 		}
 		uncleHeader = bc.GetHeader(curBlock.ParentHash(), curBlock.NumberU64()-1)
@@ -3266,12 +3258,10 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 	}
 
 	for _, answer := range ans {
-		//log.Debug("GetUnclePowAnswers  All","header",header.Number,"MixDigest",answer.MixDigest.String())
 		if answer != nil && used[answer.MixDigest] == nil {
 			ret = append(ret, answer)
 			used[answer.MixDigest] = answer
-			//log.Debug("GetUnclePowAnswers  unused","header",header.Number,"MixDigest",answer.MixDigest.String())
-			if len(used) == 64 {
+			if len(ret) == 64 {
 				break
 			}
 		}
