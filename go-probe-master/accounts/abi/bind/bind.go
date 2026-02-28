@@ -17,7 +17,7 @@
 // Package bind generates Probeum contract Go bindings.
 //
 // Detailed usage document and tutorial available on the go-probeum Wiki page:
-// https://github.com/probeum/go-probeum/wiki/Native-DApps:-Go-bindings-to-Probeum-contracts
+// https://github.com/probechain/go-probe/wiki/Native-DApps:-Go-bindings-to-Probeum-contracts
 package bind
 
 import (
@@ -30,8 +30,8 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/probeum/go-probeum/accounts/abi"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/accounts/abi"
+	"github.com/probechain/go-probe/log"
 )
 
 // Lang is a target programming language selector to generate bindings for.

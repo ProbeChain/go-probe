@@ -19,11 +19,11 @@ package core
 import (
 	"sync/atomic"
 
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/params"
 )
 
 // statePrefetcher is a basic Prefetcher, which blindly executes a block on top

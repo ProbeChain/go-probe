@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/metrics"
 )
 
 // a regexp for extracting the unit from time.Duration.String

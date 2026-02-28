@@ -24,12 +24,12 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/internal/utesting"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/rlpx"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/internal/utesting"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/rlpx"
 )
 
 var (

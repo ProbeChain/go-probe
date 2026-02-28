@@ -42,7 +42,7 @@ import (
 	"fmt"
 	"hash"
 
-	probecrypto "github.com/probeum/go-probeum/crypto"
+	probecrypto "github.com/probechain/go-probe/crypto"
 )
 
 var (

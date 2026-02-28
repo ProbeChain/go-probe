@@ -17,12 +17,12 @@
 package core
 
 import (
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"math/big"
 	"math/rand"
 	"testing"
 
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // Tests that transactions can be added to strict lists and list contents and

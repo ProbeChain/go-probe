@@ -24,13 +24,13 @@ import (
 	"io/ioutil"
 	"math/big"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/external"
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/external"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/log"
 )
 
 // ErrNoChainID is returned whenever the user failed to specify a chain id.

@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/rpc"
 )
 
 func TestUnmarshalJSONNewFilterArgs(t *testing.T) {

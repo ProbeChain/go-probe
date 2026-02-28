@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 type MyType [5]byte

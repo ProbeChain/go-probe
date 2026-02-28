@@ -26,8 +26,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/crypto"
 	"golang.org/x/crypto/pbkdf2"
 )
 

@@ -26,7 +26,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/probeum/go-probeum/common/math"
+	"github.com/probechain/go-probe/common/math"
 	"gopkg.in/urfave/cli.v1"
 )
 

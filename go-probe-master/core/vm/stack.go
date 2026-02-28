@@ -18,8 +18,8 @@ package vm
 
 import (
 	"fmt"
-	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
-	//"github.com/probeum/go-probeum/core/vm/uint256"
+	uint256 "github.com/probechain/go-probe/core/vm/uint256"
+	//"github.com/probechain/go-probe/core/vm/uint256"
 	"sync"
 )
 

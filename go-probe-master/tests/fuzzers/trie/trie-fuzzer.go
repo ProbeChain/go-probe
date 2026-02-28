@@ -21,9 +21,9 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb/memorydb"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb/memorydb"
+	"github.com/probechain/go-probe/trie"
 )
 
 // randTest performs random trie operations.

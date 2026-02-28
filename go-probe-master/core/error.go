@@ -19,7 +19,7 @@ package core
 import (
 	"errors"
 
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/core/types"
 )
 
 var (

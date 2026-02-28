@@ -19,9 +19,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/params"
 	"io/ioutil"
 	"math/big"
 	"os"
@@ -223,7 +223,7 @@ Fatal: Failed to unlock account f466859ead1932d743d622cb74fc058882e8648a (could 
 `)
 }
 
-// https://github.com/probeum/go-probeum/issues/1785
+// https://github.com/probechain/go-probe/issues/1785
 func TestUnlockFlagMultiIndex(t *testing.T) {
 	gprobe := runMinimalGprobe(t, "--port", "0", "--ipcdisable", "--datadir", tmpDatadirWithKeystore(t),
 		"--unlock", "f466859ead1932d743d622cb74fc058882e8648a", "--unlock", "0,2", "js", "testdata/empty.js")

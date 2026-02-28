@@ -26,7 +26,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 var (

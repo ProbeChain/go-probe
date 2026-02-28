@@ -21,8 +21,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/tests/fuzzers/vflux"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/tests/fuzzers/vflux"
 )
 
 func main() {

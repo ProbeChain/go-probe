@@ -31,7 +31,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 )
 
 // Command line flags to configure the interpreters.

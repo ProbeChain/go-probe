@@ -26,8 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common/bitutil"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/common/bitutil"
+	"github.com/probechain/go-probe/crypto"
 )
 
 // bloomIndexes represents the bit indexes inside the bloom filter that belong

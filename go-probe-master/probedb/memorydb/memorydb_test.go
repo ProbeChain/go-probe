@@ -19,8 +19,8 @@ package memorydb
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/probedb/dbtest"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/probedb/dbtest"
 )
 
 func TestMemoryDB(t *testing.T) {

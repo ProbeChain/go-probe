@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/light"
+	"github.com/probechain/go-probe/light"
 )
 
 var (

@@ -17,7 +17,7 @@
 package pob
 
 import (
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 const (
@@ -176,6 +176,29 @@ func (ba *BehaviorAgent) calcSignalSovereignty(h *ValidatorHistory) uint64 {
 		score = maxScore
 	}
 	return score
+}
+
+// EvaluateValidatorFast returns a cached score during StellarSpeed ticks.
+// Full evaluation only happens at epoch boundaries; between ticks, the previous
+// score is returned with only the StellarBlocks count updated.
+func (ba *BehaviorAgent) EvaluateValidatorFast(addr common.Address, history *ValidatorHistory,
+	blockNumber uint64, epochLength uint64, cachedScore *BehaviorScore) *BehaviorScore {
+
+	// At epoch boundaries, do a full evaluation
+	if epochLength == 0 || blockNumber%epochLength == 0 || cachedScore == nil {
+		return ba.EvaluateValidator(addr, history, blockNumber)
+	}
+
+	// Between epochs: return the cached score with an updated timestamp
+	return &BehaviorScore{
+		Total:             cachedScore.Total,
+		Liveness:          cachedScore.Liveness,
+		Correctness:       cachedScore.Correctness,
+		Cooperation:       cachedScore.Cooperation,
+		Consistency:       cachedScore.Consistency,
+		SignalSovereignty: cachedScore.SignalSovereignty,
+		LastUpdate:        blockNumber,
+	}
 }
 
 // UpdateScores re-evaluates all validators in the snapshot and returns updated scores.

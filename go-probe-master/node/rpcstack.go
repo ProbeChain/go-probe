@@ -29,8 +29,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rpc"
 	"github.com/rs/cors"
 )
 

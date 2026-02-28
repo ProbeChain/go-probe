@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
 )
 
 // deployNode creates a new node configuration based on some user input.
@@ -104,19 +104,19 @@ func (w *wizard) deployNode(boot bool) {
 	// If the node is a miner/signer, load up needed credentials
 	if !boot {
 		if w.conf.Genesis.Config.Probeash != nil {
-			// Probeash based miners only need an probeerbase to mine against
+			// Probeash based miners only need an probebase to mine against
 			fmt.Println()
-			if infos.probeerbase == "" {
+			if infos.probebase == "" {
 				fmt.Printf("What address should the miner use?\n")
 				for {
 					if address := w.readAddress(); address != nil {
-						infos.probeerbase = address.Hex()
+						infos.probebase = address.Hex()
 						break
 					}
 				}
 			} else {
-				fmt.Printf("What address should the miner use? (default = %s)\n", infos.probeerbase)
-				infos.probeerbase = w.readDefaultAddress(common.HexToAddress(infos.probeerbase)).Hex()
+				fmt.Printf("What address should the miner use? (default = %s)\n", infos.probebase)
+				infos.probebase = w.readDefaultAddress(common.HexToAddress(infos.probebase)).Hex()
 			}
 		} else if w.conf.Genesis.Config.Clique != nil {
 			// If a previous signer was already set, offer to reuse it

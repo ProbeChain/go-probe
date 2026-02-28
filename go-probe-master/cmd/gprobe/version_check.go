@@ -25,7 +25,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 	"github.com/jedisct1/go-minisign"
 	"gopkg.in/urfave/cli.v1"
 )

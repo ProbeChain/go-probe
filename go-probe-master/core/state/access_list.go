@@ -17,7 +17,7 @@
 package state
 
 import (
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 type accessList struct {

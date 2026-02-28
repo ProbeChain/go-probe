@@ -19,9 +19,9 @@ package keystore
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p/enode"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -34,9 +34,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/event"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/event"
 )
 
 var testSigData = make([]byte, 32)

@@ -30,9 +30,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // Tests that the account management snippets work correctly.

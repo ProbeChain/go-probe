@@ -26,8 +26,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
 )
 
 // faucetDockerfile is the Dockerfile required to build a faucet container to

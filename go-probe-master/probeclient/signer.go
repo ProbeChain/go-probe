@@ -20,8 +20,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // senderFromServer is a types.Signer that remembers the sender address returned by the RPC

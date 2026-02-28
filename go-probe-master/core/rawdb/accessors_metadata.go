@@ -20,11 +20,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // ReadDatabaseVersion retrieves the version number of the database.

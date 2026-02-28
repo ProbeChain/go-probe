@@ -19,10 +19,10 @@ package greatri
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // API is a user facing RPC API to allow controlling the signer and voting

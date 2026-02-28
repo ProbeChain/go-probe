@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/log"
 )
 
 const (

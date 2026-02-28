@@ -23,19 +23,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/consensus/clique"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/consensus/clique"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/params"
 )
 
 const (
@@ -197,7 +197,7 @@ func newTestWorker(t *testing.T, chainConfig *params.ChainConfig, engine consens
 	backend := newTestWorkerBackend(t, chainConfig, engine, db, blocks)
 	backend.txPool.AddLocals(pendingTxs)
 	w := newWorker(testConfig, chainConfig, engine, nil, backend, new(event.TypeMux), nil, false)
-	w.setProbeerbase(testBankAddress)
+	w.setProbebase(testBankAddress)
 	return w, backend
 }
 

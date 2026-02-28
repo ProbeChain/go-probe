@@ -23,7 +23,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/probeum/go-probeum/p2p/simulations/pipes"
+	"github.com/probechain/go-probe/p2p/simulations/pipes"
 )
 
 func TestTCPPipe(t *testing.T) {

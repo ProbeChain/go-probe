@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // TestPack tests the general pack/unpack tests in packing_test.go

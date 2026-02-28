@@ -21,8 +21,8 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/metrics"
 )
 
 // The fields below define the low level database schema prefixing.

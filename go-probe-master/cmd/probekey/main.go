@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/probeum/go-probeum/internal/flags"
+	"github.com/probechain/go-probe/internal/flags"
 	"gopkg.in/urfave/cli.v1"
 )
 

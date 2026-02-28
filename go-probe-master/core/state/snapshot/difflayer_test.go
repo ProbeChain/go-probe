@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb/memorydb"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/probedb/memorydb"
 )
 
 func copyDestructs(destructs map[common.Hash]struct{}) map[common.Hash]struct{} {

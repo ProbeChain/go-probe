@@ -24,10 +24,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/console/prompt"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/console/prompt"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/log"
 )
 
 type CommandlineUI struct {

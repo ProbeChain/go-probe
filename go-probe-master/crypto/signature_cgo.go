@@ -23,8 +23,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"fmt"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/crypto/secp256k1"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/crypto/secp256k1"
 )
 
 // Ecrecover returns the uncompressed public key that created the given signature.

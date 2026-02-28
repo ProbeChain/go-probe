@@ -21,11 +21,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/light"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/light"
 )
 
 // stateAtBlock retrieves the state database associated with a certain block.

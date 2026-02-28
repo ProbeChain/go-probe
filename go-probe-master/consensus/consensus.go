@@ -20,11 +20,11 @@ package consensus
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rpc"
 )
 
 const (
@@ -36,6 +36,13 @@ const (
 	Time2SealDeadline = 7
 	//Maximum uncle block height accepted
 	MaxDistantOfUncleBlock = 5
+)
+
+// StellarSpeed timing constants for sub-second block production (400ms target).
+const (
+	StellarSpeedDelaySealMs   = 100  // Milliseconds to delay seal in StellarSpeed mode
+	StellarSpeedDeadlineMs    = 200  // Seal deadline in milliseconds for StellarSpeed
+	StellarSpeedFutureTolerance = 1  // Max seconds from current time allowed for StellarSpeed blocks
 )
 
 // ChainHeaderReader defines a small collection of methods needed to access the local

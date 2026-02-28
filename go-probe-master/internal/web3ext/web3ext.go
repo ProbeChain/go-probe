@@ -665,8 +665,8 @@ web3._extend({
 			call: 'miner_stop'
 		}),
 		new web3._extend.Method({
-			name: 'setProbeerbase',
-			call: 'miner_setProbeerbase',
+			name: 'setProbebase',
+			call: 'miner_setProbebase',
 			params: 1,
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
 		}),

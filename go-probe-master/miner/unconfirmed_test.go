@@ -19,7 +19,7 @@ package miner
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // noopChainRetriever is an implementation of headerRetriever that always

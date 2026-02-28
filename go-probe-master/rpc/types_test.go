@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
 )
 
 func TestBlockNumberJSONUnmarshal(t *testing.T) {

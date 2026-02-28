@@ -22,10 +22,10 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/forkid"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/forkid"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // Constants to match up protocol versions and messages

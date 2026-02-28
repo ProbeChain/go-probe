@@ -17,8 +17,8 @@
 package runtime
 
 import (
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/vm"
 )
 
 func NewEnv(cfg *Config) *vm.EVM {

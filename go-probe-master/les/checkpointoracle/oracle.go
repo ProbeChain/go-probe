@@ -25,12 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/abi/bind"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/contracts/checkpointoracle"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/accounts/abi/bind"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/contracts/checkpointoracle"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
 )
 
 // CheckpointOracle is responsible for offering the latest stable checkpoint

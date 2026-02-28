@@ -19,7 +19,7 @@ package p2p
 import (
 	"container/heap"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 // expHeap tracks strings and their expiry time.

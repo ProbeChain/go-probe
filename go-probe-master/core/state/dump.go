@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/trie"
 )
 
 // DumpConfig is a set of options to control what portions of the statewill be

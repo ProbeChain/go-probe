@@ -20,16 +20,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"net"
 	"os"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/discover"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/nat"
-	"github.com/probeum/go-probeum/p2p/netutil"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/discover"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/nat"
+	"github.com/probechain/go-probe/p2p/netutil"
 )
 
 func main() {

@@ -25,7 +25,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 const (

@@ -1,4 +1,4 @@
-module github.com/probeum/go-probeum
+module github.com/probechain/go-probe
 
 go 1.22.0
 

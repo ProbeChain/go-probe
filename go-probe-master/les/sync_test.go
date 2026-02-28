@@ -22,12 +22,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/abi/bind"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/light"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/accounts/abi/bind"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/light"
+	"github.com/probechain/go-probe/params"
 )
 
 // Test light syncing which will download all headers from genesis.
@@ -196,7 +196,7 @@ func testMissOracleBackend(t *testing.T, hasCheckpoint bool, protocol int) {
 	// that user wants to unlock somprobeing which blocks the oracle backend
 	// initialisation. But at the same time syncing starts.
 	//
-	// See https://github.com/probeum/go-probeum/issues/20097 for more detail.
+	// See https://github.com/probechain/go-probe/issues/20097 for more detail.
 	//
 	// In this case, client should run light sync or legacy checkpoint sync
 	// if hardcoded checkpoint is configured.

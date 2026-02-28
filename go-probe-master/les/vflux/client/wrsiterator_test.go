@@ -21,8 +21,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/p2p/nodestate"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/p2p/nodestate"
 )
 
 var (

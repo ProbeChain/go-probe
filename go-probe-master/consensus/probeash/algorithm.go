@@ -27,10 +27,10 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/bitutil"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/bitutil"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/log"
 	"golang.org/x/crypto/sha3"
 )
 

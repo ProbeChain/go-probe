@@ -24,11 +24,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p/discover/v5wire"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p/discover/v5wire"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
 )
 
 // readError represents an error during packet reading.

@@ -19,7 +19,7 @@ package params
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // DAOForkBlockExtra is the block header extra-data field to set for the DAO fork

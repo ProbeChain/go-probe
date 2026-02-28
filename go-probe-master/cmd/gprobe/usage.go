@@ -22,9 +22,9 @@ import (
 	"io"
 	"sort"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/internal/debug"
-	"github.com/probeum/go-probeum/internal/flags"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/internal/debug"
+	"github.com/probechain/go-probe/internal/flags"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -42,10 +42,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 			utils.SmartCardDaemonPathFlag,
 			utils.NetworkIdFlag,
 			utils.MainnetFlag,
-			utils.GoerliFlag,
-			utils.RinkebyFlag,
-			utils.CalaverasFlag,
-			utils.RopstenFlag,
 			utils.SyncModeFlag,
 			utils.ExitWhenSyncedFlag,
 			utils.GCModeFlag,
@@ -185,7 +181,7 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 			utils.MinerGasPriceFlag,
 			utils.MinerGasTargetFlag,
 			utils.MinerGasLimitFlag,
-			utils.MinerProbeerbaseFlag,
+			utils.MinerProbebaseFlag,
 			utils.MinerExtraDataFlag,
 			utils.MinerRecommitIntervalFlag,
 			utils.MinerNoVerfiyFlag,

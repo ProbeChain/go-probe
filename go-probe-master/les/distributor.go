@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/les/utils"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/les/utils"
 )
 
 // requestDistributor implements a mechanism that distributes requests to

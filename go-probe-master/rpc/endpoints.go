@@ -20,7 +20,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // StartIPCEndpoint starts an IPC endpoint.

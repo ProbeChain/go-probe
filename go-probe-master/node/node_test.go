@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto/probe"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/crypto/probe"
+	"github.com/probechain/go-probe/log"
 	"io"
 	"io/ioutil"
 	"net"
@@ -32,9 +32,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/rpc"
 
 	"github.com/stretchr/testify/assert"
 )

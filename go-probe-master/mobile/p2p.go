@@ -21,7 +21,7 @@ package gprobe
 import (
 	"errors"
 
-	"github.com/probeum/go-probeum/p2p"
+	"github.com/probechain/go-probe/p2p"
 )
 
 // NodeInfo represents pi short summary of the information known about the host.

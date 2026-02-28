@@ -3,8 +3,8 @@ package probeapi
 import (
 	"bytes"
 	"errors"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/rlp"
 )
 
 //setDefaultsOfRegisterPns set default parameters for register pns account

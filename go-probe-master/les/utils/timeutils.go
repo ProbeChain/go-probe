@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 type UpdateTimer struct {

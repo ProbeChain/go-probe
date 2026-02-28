@@ -29,11 +29,11 @@ import (
 	"syscall"
 
 	"github.com/dop251/goja"
-	"github.com/probeum/go-probeum/console/prompt"
-	"github.com/probeum/go-probeum/internal/jsre"
-	"github.com/probeum/go-probeum/internal/jsre/deps"
-	"github.com/probeum/go-probeum/internal/web3ext"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/console/prompt"
+	"github.com/probechain/go-probe/internal/jsre"
+	"github.com/probechain/go-probe/internal/jsre/deps"
+	"github.com/probechain/go-probe/internal/web3ext"
+	"github.com/probechain/go-probe/rpc"
 	"github.com/mattn/go-colorable"
 	"github.com/peterh/liner"
 )

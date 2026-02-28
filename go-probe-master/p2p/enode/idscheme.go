@@ -19,12 +19,12 @@ package enode
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 	"io"
 
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

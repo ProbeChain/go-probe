@@ -3,9 +3,9 @@ InstallDir "$InstDir"
 OutFile "${OUTPUTFILE}" # set through command line arguments
 
 # Links for "Add/Remove Programs"
-!define HELPURL "https://github.com/probeum/go-probeum/issues"
-!define UPDATEURL "https://github.com/probeum/go-probeum/releases"
-!define ABOUTURL "https://github.com/probeum/go-probeum#probeum-go"
+!define HELPURL "https://github.com/probechain/go-probe/issues"
+!define UPDATEURL "https://github.com/probechain/go-probe/releases"
+!define ABOUTURL "https://github.com/probechain/go-probe#probeum-go"
 !define /date NOW "%Y%m%d"
 
 PageEx license

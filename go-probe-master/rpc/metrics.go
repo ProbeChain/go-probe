@@ -19,7 +19,7 @@ package rpc
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/metrics"
 )
 
 var (

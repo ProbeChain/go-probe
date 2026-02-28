@@ -22,12 +22,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/accounts/abi"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/event"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/accounts/abi"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/event"
 )
 
 // SignerFn is a signer function callback when a contract requires a method to

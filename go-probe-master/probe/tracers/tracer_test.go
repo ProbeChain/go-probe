@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/params"
 )
 
 type account struct{}

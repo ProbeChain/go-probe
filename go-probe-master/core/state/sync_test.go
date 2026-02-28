@@ -21,13 +21,13 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/probedb/memorydb"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/probedb/memorydb"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/trie"
 )
 
 // testAccount is the data associated with an account used by the state tests.

@@ -19,7 +19,7 @@ package abi
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 type packUnpackTest struct {

@@ -23,11 +23,11 @@ import (
 	"strings"
 
 	"github.com/dop251/goja"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/signer/core"
-	"github.com/probeum/go-probeum/signer/rules/deps"
-	"github.com/probeum/go-probeum/signer/storage"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/signer/core"
+	"github.com/probechain/go-probe/signer/rules/deps"
+	"github.com/probechain/go-probe/signer/storage"
 )
 
 var (

@@ -17,12 +17,12 @@
 package params
 
 // These are the multipliers for probeer denominations.
-// Example: To get the wei value of an amount in 'gwei', use
+// Example: To get the pico value of an amount in 'gpico', use
 //
-//    new(big.Int).Mul(value, big.NewInt(params.GWei))
+//    new(big.Int).Mul(value, big.NewInt(params.GPico))
 //
 const (
-	Wei   = 1
-	GWei  = 1e9
+	Pico    = 1
+	GPico   = 1e9
 	Probeer = 1e18
 )

@@ -23,17 +23,17 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus/misc"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/node"
-	chainParams "github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rpc"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus/misc"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probe"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/node"
+	chainParams "github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rpc"
+	"github.com/probechain/go-probe/trie"
 )
 
 // Register adds catalyst APIs to the node.
@@ -133,7 +133,7 @@ func (api *consensusAPI) AssembleBlock(params assembleBlockParams) (*executableD
 		return nil, err
 	}
 
-	coinbase, err := api.probe.Probeerbase()
+	coinbase, err := api.probe.Probebase()
 	if err != nil {
 		return nil, err
 	}

@@ -24,8 +24,8 @@ import (
 	"fmt"
 
 	"github.com/cloudflare/circl/sign/dilithium/mode2"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
 )
 
 const (

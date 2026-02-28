@@ -19,10 +19,10 @@ package core
 import (
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
 )
 
 // insertStats tracks and reports on block insertion.

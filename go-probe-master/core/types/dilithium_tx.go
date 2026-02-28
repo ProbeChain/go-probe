@@ -19,7 +19,7 @@ package types
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // DilithiumTx is a transaction type that uses CRYSTALS-Dilithium (ML-DSA-44)

@@ -26,11 +26,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/bitutil"
-	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/p2p/rlpx"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/bitutil"
+	"github.com/probechain/go-probe/metrics"
+	"github.com/probechain/go-probe/p2p/rlpx"
+	"github.com/probechain/go-probe/rlp"
 )
 
 const (

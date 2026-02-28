@@ -26,7 +26,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // makeWizard creates and returns a new puppprobe wizard.

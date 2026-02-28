@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/core/forkid"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/core/forkid"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rlp"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -229,12 +229,6 @@ func probeFilter(args []string) (nodeFilter, error) {
 	switch args[0] {
 	case "mainnet":
 		filter = forkid.NewStaticFilter(params.MainnetChainConfig, params.MainnetGenesisHash)
-	case "rinkeby":
-		filter = forkid.NewStaticFilter(params.RinkebyChainConfig, params.RinkebyGenesisHash)
-	case "goerli":
-		filter = forkid.NewStaticFilter(params.GoerliChainConfig, params.GoerliGenesisHash)
-	case "ropsten":
-		filter = forkid.NewStaticFilter(params.RopstenChainConfig, params.RopstenGenesisHash)
 	default:
 		return nil, fmt.Errorf("unknown network %q", args[0])
 	}

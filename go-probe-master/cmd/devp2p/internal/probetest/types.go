@@ -20,10 +20,10 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/rlpx"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/rlpx"
+	"github.com/probechain/go-probe/rlp"
 )
 
 type Message interface {

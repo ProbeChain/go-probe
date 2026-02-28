@@ -21,8 +21,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/p2p"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/p2p"
 	"github.com/stretchr/testify/assert"
 )
 

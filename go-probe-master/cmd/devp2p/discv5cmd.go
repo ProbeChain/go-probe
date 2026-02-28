@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/probeum/go-probeum/cmd/devp2p/internal/v5test"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/p2p/discover"
+	"github.com/probechain/go-probe/cmd/devp2p/internal/v5test"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/p2p/discover"
 	"gopkg.in/urfave/cli.v1"
 )
 

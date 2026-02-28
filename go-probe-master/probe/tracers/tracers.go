@@ -21,7 +21,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/probeum/go-probeum/probe/tracers/internal/tracers"
+	"github.com/probechain/go-probe/probe/tracers/internal/tracers"
 )
 
 // all contains all the built in JavaScript tracers by name.

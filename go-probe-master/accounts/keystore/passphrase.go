@@ -40,11 +40,11 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/dilithium"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/crypto/dilithium"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )
@@ -124,7 +124,7 @@ func (ks keyStorePassphrase) StoreKey(filename string, key *Key, auth string) er
 				"This indicates that the keystore is corrupted. \n" +
 				"The corrupted file is stored at \n%v\n" +
 				"Please file a ticket at:\n\n" +
-				"https://github.com/probeum/go-probeum/issues." +
+				"https://github.com/probechain/go-probe/issues." +
 				"The error was : %s"
 			//lint:ignore ST1005 This is a message for the user
 			return fmt.Errorf(msg, tmpName, err)

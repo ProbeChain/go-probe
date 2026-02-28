@@ -21,20 +21,20 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probeclient"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/les/checkpointoracle"
-	"github.com/probeum/go-probeum/light"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/probeclient"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/les/checkpointoracle"
+	"github.com/probechain/go-probe/light"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/params"
 )
 
 func errResp(code errCode, format string, v ...interface{}) error {
@@ -63,7 +63,7 @@ type lesCommons struct {
 // NodeInfo represents a short summary of the Probeum sub-protocol metadata
 // known about the host peer.
 type NodeInfo struct {
-	Network    uint64                   `json:"network"`    // Probeum network ID (1=Frontier, 2=Morden, Ropsten=3, Rinkeby=4)
+	Network    uint64                   `json:"network"`    // Probeum network ID (1=Mainnet, 1205=ProbeChain)
 	Difficulty *big.Int                 `json:"difficulty"` // Total difficulty of the host's blockchain
 	Genesis    common.Hash              `json:"genesis"`    // SHA3 hash of the host's genesis block
 	Config     *params.ChainConfig      `json:"config"`     // Chain configuration for the fork rules

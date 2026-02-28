@@ -22,13 +22,13 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/blake2b"
-	"github.com/probeum/go-probeum/crypto/bls12381"
-	"github.com/probeum/go-probeum/crypto/bn256"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/crypto/blake2b"
+	"github.com/probechain/go-probe/crypto/bls12381"
+	"github.com/probechain/go-probe/crypto/bn256"
+	"github.com/probechain/go-probe/params"
 
 	//lint:ignore SA1019 Needed for precompile
 	"golang.org/x/crypto/ripemd160"

@@ -17,11 +17,11 @@
 package vm
 
 import (
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
-	//uint256 "github.com/probeum/go-probeum/core/vm/uint256"
-	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
+	//uint256 "github.com/probechain/go-probe/core/vm/uint256"
+	uint256 "github.com/probechain/go-probe/core/vm/uint256"
 	"golang.org/x/crypto/sha3"
 )
 

@@ -21,7 +21,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // Entry is implemented by known node record entry types.

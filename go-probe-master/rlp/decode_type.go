@@ -3,8 +3,8 @@ package rlp
 import (
 	"bytes"
 	"errors"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
 )
 
 func ParseTypeByHead(b []byte) (byte, error) {

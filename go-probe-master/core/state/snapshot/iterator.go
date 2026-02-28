@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/probedb"
 )
 
 // Iterator is an iterator to step over all the accounts or the specific

@@ -11,7 +11,7 @@
 
   <name>Android Probeum Client</name>
   <description>Android port of the go-probeum libraries and node</description>
-  <url>https://github.com/probeum/go-probeum</url>
+  <url>https://github.com/probechain/go-probe</url>
   <inceptionYear>2015</inceptionYear>
 
   <licenses>
@@ -48,10 +48,10 @@
 
   <issueManagement>
     <system>GitHub Issues</system>
-    <url>https://github.com/probeum/go-probeum/issues/</url>
+    <url>https://github.com/probechain/go-probe/issues/</url>
   </issueManagement>
 
   <scm>
-    <url>https://github.com/probeum/go-probeum</url>
+    <url>https://github.com/probechain/go-probe</url>
   </scm>
 </project>

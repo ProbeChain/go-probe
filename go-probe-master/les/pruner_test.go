@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/light"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/light"
 )
 
 func TestLightPruner(t *testing.T) {

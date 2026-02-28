@@ -20,8 +20,8 @@ import (
 	"context"
 	"net"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/netutil"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/netutil"
 )
 
 // ServeListener accepts connections on l, serving JSON-RPC on them.

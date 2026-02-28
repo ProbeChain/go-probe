@@ -25,13 +25,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/probeum/go-probeum/accounts/abi"
-	"github.com/probeum/go-probeum/accounts/abi/bind"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common/compiler"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/internal/flags"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/accounts/abi"
+	"github.com/probechain/go-probe/accounts/abi/bind"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common/compiler"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/internal/flags"
+	"github.com/probechain/go-probe/log"
 	"gopkg.in/urfave/cli.v1"
 )
 

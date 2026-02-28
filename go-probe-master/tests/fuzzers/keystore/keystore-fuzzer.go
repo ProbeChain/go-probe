@@ -19,7 +19,7 @@ package keystore
 import (
 	"os"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
+	"github.com/probechain/go-probe/accounts/keystore"
 )
 
 func Fuzz(input []byte) int {

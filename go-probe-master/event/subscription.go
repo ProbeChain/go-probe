@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 // Subscription represents a stream of events. The carrier of the events is typically a

@@ -19,15 +19,15 @@ package vm
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 	"math/big"
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	uint256 "github.com/probechain/go-probe/core/vm/uint256"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/params"
 )
 
 // emptyCodeHash is used by create to ensure deployment is disallowed to already

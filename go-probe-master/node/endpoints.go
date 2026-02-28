@@ -21,8 +21,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // StartHTTPEndpoint starts the HTTP RPC endpoint.

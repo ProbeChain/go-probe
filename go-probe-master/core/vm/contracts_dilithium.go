@@ -17,8 +17,8 @@
 package vm
 
 import (
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto/dilithium"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto/dilithium"
 )
 
 // dilithiumVerify implements a precompiled contract for Dilithium signature verification.

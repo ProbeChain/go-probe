@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/accounts/abi"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/accounts/abi"
+	"github.com/probechain/go-probe/common"
 )
 
 func verify(t *testing.T, jsondata, calldata string, exp []interface{}) {

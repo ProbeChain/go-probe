@@ -23,8 +23,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/probeum/go-probeum/signer/core"
-	"github.com/probeum/go-probeum/signer/fourbyte"
+	"github.com/probechain/go-probe/signer/core"
+	"github.com/probechain/go-probe/signer/fourbyte"
 )
 
 func init() {

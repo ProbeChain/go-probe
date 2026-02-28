@@ -20,11 +20,11 @@ import (
 	"crypto/ecdsa"
 	"net"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/p2p/netutil"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/p2p/netutil"
 )
 
 // UDPConn is a network connection on which discovery can operate.

@@ -17,9 +17,9 @@
 package snap
 
 import (
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p"
 )
 
 // Peer is a collection of relevant information we have about a `snap` peer.

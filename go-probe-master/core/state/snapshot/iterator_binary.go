@@ -19,7 +19,7 @@ package snapshot
 import (
 	"bytes"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // binaryIterator is a simplistic iterator to step over the accounts or storage

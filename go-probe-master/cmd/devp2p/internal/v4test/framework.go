@@ -22,9 +22,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p/discover/v4wire"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p/discover/v4wire"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 const waitTime = 300 * time.Millisecond

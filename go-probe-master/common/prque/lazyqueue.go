@@ -20,7 +20,7 @@ import (
 	"container/heap"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 // LazyQueue is a priority queue data structure where priorities can change over

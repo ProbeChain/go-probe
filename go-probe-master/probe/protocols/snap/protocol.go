@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/state/snapshot"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/state/snapshot"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // Constants to match up protocol versions and messages

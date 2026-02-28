@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/probeum/go-probeum/core/asm"
+	"github.com/probechain/go-probe/core/asm"
 )
 
 func Compile(fn string, src []byte, debug bool) (string, error) {

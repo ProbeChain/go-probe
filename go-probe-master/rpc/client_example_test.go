@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // In this example, our client wishes to track the latest 'block number'

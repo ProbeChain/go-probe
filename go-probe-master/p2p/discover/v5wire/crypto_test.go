@@ -25,9 +25,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 func TestVector_ECDH(t *testing.T) {

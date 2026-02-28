@@ -21,8 +21,8 @@ package gprobe
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probeclient"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probeclient"
 )
 
 // ProbeumClient provides access to the Probeum APIs.

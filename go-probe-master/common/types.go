@@ -28,8 +28,8 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/probeum/go-probeum/common/bech32"
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common/bech32"
+	"github.com/probechain/go-probe/common/hexutil"
 	"golang.org/x/crypto/sha3"
 )
 

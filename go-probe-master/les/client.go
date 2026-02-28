@@ -21,32 +21,32 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/bloombits"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/les/vflux"
-	vfc "github.com/probeum/go-probeum/les/vflux/client"
-	"github.com/probeum/go-probeum/light"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/filters"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/bloombits"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/les/vflux"
+	vfc "github.com/probechain/go-probe/les/vflux/client"
+	"github.com/probechain/go-probe/light"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/filters"
+	"github.com/probechain/go-probe/probe/gasprice"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/rpc"
 )
 
 type LightProbeum struct {
@@ -262,12 +262,12 @@ func (s *LightProbeum) prenegQuery(n *enode.Node) int {
 
 type LightDummyAPI struct{}
 
-// Probeerbase is the address that mining rewards will be send to
-func (s *LightDummyAPI) Probeerbase() (common.Address, error) {
+// Probebase is the address that mining rewards will be send to
+func (s *LightDummyAPI) Probebase() (common.Address, error) {
 	return common.Address{}, fmt.Errorf("mining is not supported in light mode")
 }
 
-// Coinbase is the address that mining rewards will be send to (alias for Probeerbase)
+// Coinbase is the address that mining rewards will be send to (alias for Probebase)
 func (s *LightDummyAPI) Coinbase() (common.Address, error) {
 	return common.Address{}, fmt.Errorf("mining is not supported in light mode")
 }

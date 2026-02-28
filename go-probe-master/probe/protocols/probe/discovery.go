@@ -17,10 +17,10 @@
 package probe
 
 import (
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/forkid"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/forkid"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // enrEntry is the ENR entry which advertises `probe` protocol on the discovery.

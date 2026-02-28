@@ -19,7 +19,7 @@ package snap
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // Tests that given a starting hash and a density, the hash ranger can correctly

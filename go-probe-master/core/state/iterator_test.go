@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb"
 )
 
 // Tests that the node iterator indeed walks over the entire database contents.

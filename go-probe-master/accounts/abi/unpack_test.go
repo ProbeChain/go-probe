@@ -26,7 +26,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"github.com/stretchr/testify/require"
 )
 

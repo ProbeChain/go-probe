@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/probeum/go-probeum/core"
+	"github.com/probechain/go-probe/core"
 )
 
 // Tests the go-probeum to Alprobe chainspec conversion for the Stureby testnet.

@@ -20,7 +20,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/console/prompt"
+	"github.com/probechain/go-probe/console/prompt"
 )
 
 // GetPassPhrase displays the given text(prompt) to the user and requests some textual

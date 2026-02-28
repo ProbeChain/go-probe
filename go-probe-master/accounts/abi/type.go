@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // Type enumerator

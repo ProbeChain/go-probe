@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/rlp"
 )
 
 func decodeEncode(input []byte, val interface{}, i int) {

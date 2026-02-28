@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/rlp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

@@ -18,14 +18,14 @@ package types
 
 import (
 	"bytes"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"math"
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rlp"
 )
 
 func TestDecodeEmptyTypedReceipt(t *testing.T) {

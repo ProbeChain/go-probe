@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/probedb"
 )
 
 func TestTableDatabase(t *testing.T)            { testTableDatabase(t, "prefix") }

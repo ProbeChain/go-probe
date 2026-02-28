@@ -20,9 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/params"
 	"github.com/holiman/uint256"
 )
 

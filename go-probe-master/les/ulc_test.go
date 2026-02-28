@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 func TestULCAnnounceThresholdLes2(t *testing.T) { testULCAnnounceThreshold(t, 2) }

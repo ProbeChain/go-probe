@@ -32,23 +32,23 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	atomicClock "github.com/probeum/go-probeum/core/atomic"
-	"github.com/probeum/go-probeum/consensus/misc"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/dilithium"
-	"github.com/probeum/go-probeum/crypto/secp256k1"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/rpc"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	atomicClock "github.com/probechain/go-probe/core/atomic"
+	"github.com/probechain/go-probe/consensus/misc"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/crypto/dilithium"
+	"github.com/probechain/go-probe/crypto/secp256k1"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/rpc"
+	"github.com/probechain/go-probe/trie"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -76,7 +76,8 @@ var (
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn validators
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn validators
 
-	allowedFutureBlockTimeSeconds = int64(15) // Max seconds from current time allowed for blocks
+	allowedFutureBlockTimeSeconds          = int64(15) // Max seconds from current time allowed for blocks
+	allowedFutureBlockTimeSecondsStellar   = int64(1)  // Max seconds from current time allowed in StellarSpeed mode
 )
 
 // Various error messages to mark blocks invalid.
@@ -351,11 +352,19 @@ func (c *ProofOfBehavior) verifyHeader(chain consensus.ChainHeaderReader, header
 
 	// Verify the header's timestamp
 	if !uncle {
-		if header.Time > uint64(unixNow+allowedFutureBlockTimeSeconds) {
+		futureLimit := allowedFutureBlockTimeSeconds
+		if chain.Config().IsStellarSpeed(header.Number) {
+			futureLimit = allowedFutureBlockTimeSecondsStellar
+		}
+		if header.Time > uint64(unixNow+futureLimit) {
 			return consensus.ErrFutureBlock
 		}
 	}
-	if header.Time <= parent.Time {
+	// In StellarSpeed mode, allow same-second blocks ordered by AtomicTime
+	if header.Time < parent.Time {
+		return errOlderBlockTime
+	}
+	if header.Time == parent.Time && !chain.Config().IsStellarSpeed(header.Number) {
 		return errOlderBlockTime
 	}
 

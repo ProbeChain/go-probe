@@ -27,11 +27,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/internal/testlog"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/netutil"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/internal/testlog"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/netutil"
 )
 
 // This test checks that dynamic dials are launched from discovery results.

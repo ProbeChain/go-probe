@@ -21,15 +21,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 
 	"net"
 	"net/url"
 	"regexp"
 	"strconv"
 
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/p2p/enr"
 )
 
 var (

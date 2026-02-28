@@ -16,7 +16,7 @@
 
 package downloader
 
-import "github.com/probeum/go-probeum/core/types"
+import "github.com/probechain/go-probe/core/types"
 
 type DoneEvent struct {
 	Latest *types.Header

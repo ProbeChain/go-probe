@@ -21,8 +21,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // This is the number of consecutive leaf requests that may fail before

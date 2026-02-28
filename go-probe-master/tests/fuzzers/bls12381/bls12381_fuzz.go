@@ -28,7 +28,7 @@ import (
 	gnark "github.com/consensys/gnark-crypto/ecc/bls12-381"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fp"
 	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
-	"github.com/probeum/go-probeum/crypto/bls12381"
+	"github.com/probechain/go-probe/crypto/bls12381"
 )
 
 func FuzzCrossPairing(data []byte) int {

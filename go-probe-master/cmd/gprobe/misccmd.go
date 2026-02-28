@@ -23,9 +23,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/params"
 	"gopkg.in/urfave/cli.v1"
 )
 

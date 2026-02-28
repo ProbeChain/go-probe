@@ -25,8 +25,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/probeum/go-probeum/internal/cmdtest"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/internal/cmdtest"
+	"github.com/probechain/go-probe/rpc"
 )
 
 func tmpdir(t *testing.T) string {
@@ -42,7 +42,7 @@ type testgprobe struct {
 
 	// template variables for expect
 	Datadir   string
-	Probeerbase string
+	Probebase string
 }
 
 func init() {
@@ -75,9 +75,9 @@ func runGprobe(t *testing.T, args ...string) *testgprobe {
 			if i < len(args)-1 {
 				tt.Datadir = args[i+1]
 			}
-		case "--miner.probeerbase":
+		case "--miner.probebase":
 			if i < len(args)-1 {
-				tt.Probeerbase = args[i+1]
+				tt.Probebase = args[i+1]
 			}
 		}
 	}

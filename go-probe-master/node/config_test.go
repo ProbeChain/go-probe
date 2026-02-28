@@ -18,15 +18,15 @@ package node
 
 import (
 	"bytes"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p"
 )
 
 // Tests that datadirs can be successfully created, be them manually configured

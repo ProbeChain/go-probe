@@ -21,8 +21,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/common/prque"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/common/prque"
 )
 
 // servingQueue allows running tasks in a limited number of threads and puts the

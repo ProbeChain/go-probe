@@ -19,12 +19,12 @@ package tests
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // TransactionTest checks RLP decoding and sender derivation of transactions.

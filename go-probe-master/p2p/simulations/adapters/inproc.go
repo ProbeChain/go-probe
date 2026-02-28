@@ -24,13 +24,13 @@ import (
 	"net"
 	"sync"
 
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/simulations/pipes"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/simulations/pipes"
+	"github.com/probechain/go-probe/rpc"
 	"github.com/gorilla/websocket"
 )
 

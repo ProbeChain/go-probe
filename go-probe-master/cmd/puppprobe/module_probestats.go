@@ -25,7 +25,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // probestatsDockerfile is the Dockerfile required to build an probestats backend

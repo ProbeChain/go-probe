@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/probe/protocols/snap"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/probe/protocols/snap"
 )
 
 // probePeerInfo represents a short summary of the `probe` sub-protocol metadata known

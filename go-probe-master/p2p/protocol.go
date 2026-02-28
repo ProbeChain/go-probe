@@ -19,8 +19,8 @@ package p2p
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
 )
 
 // Protocol represents a P2P subprotocol implementation.

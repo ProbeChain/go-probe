@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
 )
 
 // wipeSnapshot starts a goroutine to iterate over the entire key-value database

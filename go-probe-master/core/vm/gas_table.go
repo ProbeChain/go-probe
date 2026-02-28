@@ -19,9 +19,9 @@ package vm
 import (
 	"errors"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/params"
 )
 
 // memoryGasCost calculates the quadratic gas for memory expansion. It does so

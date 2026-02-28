@@ -24,16 +24,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/core/forkid"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/light"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/core/forkid"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/light"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/params"
 )
 
 // clientHandler is responsible for receiving and processing all incoming server

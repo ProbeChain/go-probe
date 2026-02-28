@@ -20,7 +20,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 var (

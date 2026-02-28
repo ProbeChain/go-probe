@@ -20,10 +20,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // NodeSet stores a set of trie nodes. It implements trie.Database and can also

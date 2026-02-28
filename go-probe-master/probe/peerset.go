@@ -18,14 +18,14 @@ package probe
 
 import (
 	"errors"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/core/types"
 	"math/big"
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/probe/protocols/snap"
-	"github.com/probeum/go-probeum/p2p"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/probe/protocols/snap"
+	"github.com/probechain/go-probe/p2p"
 )
 
 var (

@@ -22,9 +22,9 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/probeum/go-probeum/cmd/evm/internal/t8ntool"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/internal/flags"
+	"github.com/probechain/go-probe/cmd/evm/internal/t8ntool"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/internal/flags"
 	"gopkg.in/urfave/cli.v1"
 )
 

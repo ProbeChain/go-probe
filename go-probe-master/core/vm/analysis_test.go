@@ -19,7 +19,7 @@ package vm
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 )
 
 func TestJumpDestAnalysis(t *testing.T) {

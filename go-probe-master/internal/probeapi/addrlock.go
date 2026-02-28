@@ -19,7 +19,7 @@ package probeapi
 import (
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 type AddrLocker struct {

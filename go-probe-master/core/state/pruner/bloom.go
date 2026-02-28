@@ -21,9 +21,9 @@ import (
 	"errors"
 	"os"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/log"
 	bloomfilter "github.com/holiman/bloomfilter/v2"
 )
 

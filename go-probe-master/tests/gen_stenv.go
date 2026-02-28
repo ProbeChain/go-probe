@@ -7,8 +7,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
 )
 
 var _ = (*stEnvMarshaling)(nil)

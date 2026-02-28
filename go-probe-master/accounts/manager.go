@@ -21,8 +21,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/event"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/event"
 )
 
 // Config contains the settings of the global account manager.

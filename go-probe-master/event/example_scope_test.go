@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/probeum/go-probeum/event"
+	"github.com/probechain/go-probe/event"
 )
 
 // This example demonstrates how SubscriptionScope can be used to control the lifetime of

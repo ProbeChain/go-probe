@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 func TestBytesPadding(t *testing.T) {

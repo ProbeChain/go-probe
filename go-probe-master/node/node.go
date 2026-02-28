@@ -19,7 +19,7 @@ package node
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,13 +27,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/rpc"
 	"github.com/prometheus/tsdb/fileutil"
 )
 
@@ -408,7 +408,7 @@ func (n *Node) stopRPC() {
 func (n *Node) startInProc() error {
 	for _, api := range n.rpcAPIs {
 		if api.Namespace == common.PROBE {
-			if err := n.inprocHandler.RegisterName(common.ETH, api.Service); err != nil {
+			if err := n.inprocHandler.RegisterName("eth", api.Service); err != nil {
 				return err
 			}
 		}

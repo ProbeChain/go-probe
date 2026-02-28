@@ -19,9 +19,9 @@ package rawdb
 import (
 	"encoding/binary"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/log"
 )
 
 // ReadSnapshotDisabled retrieves if the snapshot maintenance is disabled.

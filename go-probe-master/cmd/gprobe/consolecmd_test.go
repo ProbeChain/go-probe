@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 )
 
 const (
@@ -53,7 +53,7 @@ func TestConsoleWelcome(t *testing.T) {
 	coinbase := "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182"
 
 	// Start a gprobe console, make sure it's cleaned up and terminate the console
-	gprobe := runMinimalGprobe(t, "--miner.probeerbase", coinbase, "console")
+	gprobe := runMinimalGprobe(t, "--miner.probebase", coinbase, "console")
 
 	// Gather all the infos the welcome message needs to contain
 	gprobe.SetTemplateFunc("goos", func() string { return runtime.GOOS })
@@ -70,7 +70,7 @@ func TestConsoleWelcome(t *testing.T) {
 Welcome to the Gprobe JavaScript console!
 
 instance: Gprobe/v{{gprobever}}/{{goos}}-{{goarch}}/{{gover}}
-coinbase: {{.Probeerbase}}
+coinbase: {{.Probebase}}
 at block: 0 ({{niltime}})
  datadir: {{.Datadir}}
  modules: {{apis}}
@@ -100,7 +100,7 @@ func TestAttachWelcome(t *testing.T) {
 	p := trulyRandInt(1024, 65533) // Yeah, sometimes this will fail, sorry :P
 	httpPort = strconv.Itoa(p)
 	wsPort = strconv.Itoa(p + 1)
-	gprobe := runMinimalGprobe(t, "--miner.probeerbase", "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182",
+	gprobe := runMinimalGprobe(t, "--miner.probebase", "0x8605cdbbdb6d264aa742e77020dcbc58fcdce182",
 		"--ipcpath", ipc,
 		"--http", "--http.port", httpPort,
 		"--ws", "--ws.port", wsPort)
@@ -131,7 +131,7 @@ func testAttachWelcome(t *testing.T, gprobe *testgprobe, endpoint, apis string) 
 	attach.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
 	attach.SetTemplateFunc("gover", runtime.Version)
 	attach.SetTemplateFunc("gprobever", func() string { return params.VersionWithCommit("", "") })
-	attach.SetTemplateFunc("probeerbase", func() string { return gprobe.Probeerbase })
+	attach.SetTemplateFunc("probebase", func() string { return gprobe.Probebase })
 	attach.SetTemplateFunc("niltime", func() string {
 		return time.Unix(0, 0).Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
 	})
@@ -144,7 +144,7 @@ func testAttachWelcome(t *testing.T, gprobe *testgprobe, endpoint, apis string) 
 Welcome to the Gprobe JavaScript console!
 
 instance: Gprobe/v{{gprobever}}/{{goos}}-{{goarch}}/{{gover}}
-coinbase: {{probeerbase}}
+coinbase: {{probebase}}
 at block: 0 ({{niltime}}){{if ipc}}
  datadir: {{datadir}}{{end}}
  modules: {{apis}}

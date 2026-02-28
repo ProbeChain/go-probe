@@ -28,12 +28,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/internal/testlog"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/discover/v5wire"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/internal/testlog"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/discover/v5wire"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // Real sockets, real crypto: this test checks end-to-end connectivity for UDPv5.

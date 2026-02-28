@@ -18,10 +18,10 @@ package vm
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/core/vm/uint256"
+	"github.com/probechain/go-probe/core/vm/uint256"
 	"sort"
 
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 )
 
 var activators = map[int]func(*JumpTable){

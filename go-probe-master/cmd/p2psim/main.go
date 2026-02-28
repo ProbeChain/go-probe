@@ -40,17 +40,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"io"
 	"os"
 	"strings"
 	"text/tabwriter"
 
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/simulations"
-	"github.com/probeum/go-probeum/p2p/simulations/adapters"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/simulations"
+	"github.com/probechain/go-probe/p2p/simulations/adapters"
+	"github.com/probechain/go-probe/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
 

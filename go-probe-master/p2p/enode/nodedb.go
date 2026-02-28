@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/rlp"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/iterator"

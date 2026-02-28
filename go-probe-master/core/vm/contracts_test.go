@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // precompiledTest defines the input/output pairs for precompiled contract tests.

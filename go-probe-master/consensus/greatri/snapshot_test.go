@@ -23,13 +23,13 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/params"
 )
 
 // testerAccountPool is a pool to maintain currently active tester accounts,
@@ -364,8 +364,8 @@ func TestGreatri(t *testing.T) {
 			failure: errRecentlySigned,
 		}, {
 			// Recent signatures should not reset on checkpoint blocks imported in a new
-			// batch (https://github.com/probeum/go-probeum/issues/17593). Whilst this
-			// seems overly specific and weird, it was a Rinkeby consensus split.
+			// batch (https://github.com/probechain/go-probe/issues/17593). Whilst this
+			// seems overly specific and weird, it was a PoA consensus split.
 			epoch:   3,
 			signers: []string{"A", "B", "C"},
 			votes: []testerVote{

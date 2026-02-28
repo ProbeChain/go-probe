@@ -27,13 +27,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/abi/bind"
-	"github.com/probeum/go-probeum/accounts/abi/bind/backends"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/contracts/checkpointoracle/contract"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/accounts/abi/bind"
+	"github.com/probechain/go-probe/accounts/abi/bind/backends"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/contracts/checkpointoracle/contract"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/params"
 )
 
 var (

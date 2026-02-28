@@ -21,11 +21,11 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	cmath "github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	cmath "github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/params"
 )
 
 /*

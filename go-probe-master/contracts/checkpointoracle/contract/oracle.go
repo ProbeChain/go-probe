@@ -7,12 +7,12 @@ import (
 	"math/big"
 	"strings"
 
-	probeum "github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/accounts/abi"
-	"github.com/probeum/go-probeum/accounts/abi/bind"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/event"
+	probeum "github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/accounts/abi"
+	"github.com/probechain/go-probe/accounts/abi/bind"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/event"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

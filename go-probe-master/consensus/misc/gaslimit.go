@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 )
 
 // VerifyGaslimit verifies the header gas limit according increase/decrease

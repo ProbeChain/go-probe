@@ -23,13 +23,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/probedb/memorydb"
-	"github.com/probeum/go-probeum/les/utils"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/p2p/nodestate"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/probedb/memorydb"
+	"github.com/probechain/go-probe/les/utils"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/p2p/nodestate"
 )
 
 type zeroExpirer struct{}

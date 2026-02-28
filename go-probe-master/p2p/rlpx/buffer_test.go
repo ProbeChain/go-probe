@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 

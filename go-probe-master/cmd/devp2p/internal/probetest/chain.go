@@ -26,11 +26,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/forkid"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/forkid"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rlp"
 )
 
 type Chain struct {

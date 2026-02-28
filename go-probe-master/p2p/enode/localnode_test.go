@@ -21,8 +21,8 @@ import (
 	"net"
 	"testing"
 
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p/enr"
 	"github.com/stretchr/testify/assert"
 )
 

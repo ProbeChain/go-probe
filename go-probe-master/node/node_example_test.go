@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/probeum/go-probeum/node"
+	"github.com/probechain/go-probe/node"
 )
 
 // SampleLifecycle is a trivial network service that can be attached to a node for

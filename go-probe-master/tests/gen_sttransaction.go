@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core/types"
 )
 
 var _ = (*stTransactionMarshaling)(nil)

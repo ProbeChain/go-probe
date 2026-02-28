@@ -26,10 +26,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/rlp"
 )
 
 var (
@@ -47,6 +47,7 @@ const (
 	AccessListTxType            // 1 - EIP-2930
 	DynamicFeeTxType            // 2 - EIP-1559
 	DilithiumTxType             // 3 - Dilithium post-quantum
+	SuperlightTxType            // 4 - Superlight DEX operations
 )
 
 // Transaction is an Probeum transaction.
@@ -189,6 +190,10 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		return &inner, err
 	case DilithiumTxType:
 		var inner DilithiumTx
+		err := rlp.DecodeBytes(b[1:], &inner)
+		return &inner, err
+	case SuperlightTxType:
+		var inner SuperlightTx
 		err := rlp.DecodeBytes(b[1:], &inner)
 		return &inner, err
 	default:

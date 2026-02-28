@@ -18,19 +18,19 @@ package core
 
 import (
 	"fmt"
-	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
-	pob2 "github.com/probeum/go-probeum/consensus/pob"
-	"github.com/probeum/go-probeum/crypto"
+	greatri2 "github.com/probechain/go-probe/consensus/greatri"
+	pob2 "github.com/probechain/go-probe/consensus/pob"
+	"github.com/probechain/go-probe/crypto"
 
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/consensus/misc"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/consensus/misc"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/params"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning

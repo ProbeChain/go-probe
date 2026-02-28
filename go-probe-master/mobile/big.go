@@ -22,7 +22,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // A BigInt represents a signed multi-precision integer.

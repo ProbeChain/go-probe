@@ -19,7 +19,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // ensureVirtualHost checks whprobeer a reverse-proxy is running on the specified

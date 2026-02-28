@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/internal/debug"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/internal/debug"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // apis returns the collection of built-in RPC APIs.

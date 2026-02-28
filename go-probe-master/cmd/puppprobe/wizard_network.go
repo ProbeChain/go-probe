@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // manageServers displays a list of servers the user can disconnect from, and an

@@ -19,7 +19,7 @@ package event_test
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/event"
+	"github.com/probechain/go-probe/event"
 )
 
 func ExampleNewSubscription() {

@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.

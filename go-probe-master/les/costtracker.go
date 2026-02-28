@@ -23,12 +23,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/les/flowcontrol"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/les/flowcontrol"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
 )
 
 const makeCostStats = false // make request cost statistics during operation

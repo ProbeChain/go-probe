@@ -23,8 +23,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/log"
 	"github.com/olekukonko/tablewriter"
 )
 

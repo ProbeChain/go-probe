@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/probeum/go-probeum/common/fdlimit"
-	"github.com/probeum/go-probeum/internal/flags"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common/fdlimit"
+	"github.com/probechain/go-probe/internal/flags"
+	"github.com/probechain/go-probe/log"
 	"gopkg.in/urfave/cli.v1"
 )
 

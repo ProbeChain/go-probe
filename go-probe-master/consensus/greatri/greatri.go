@@ -21,10 +21,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/crypto/secp256k1"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/crypto/secp256k1"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 	"io"
 	"math/big"
 	"runtime"
@@ -32,20 +32,20 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/consensus/misc"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/dilithium"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/rpc"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/consensus/misc"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/crypto/dilithium"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/rpc"
+	"github.com/probechain/go-probe/trie"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -214,7 +214,7 @@ func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, er
 }
 
 // Greatri is the proof-of-authority consensus engine proposed to support the
-// Probeum testnet following the Ropsten attacks.
+// Probeum network.
 type Greatri struct {
 	dposConfig  *params.DposConfig // Consensus engine configuration parameters
 	chainConfig *params.ChainConfig

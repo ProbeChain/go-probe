@@ -19,10 +19,10 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 type bytesBacked interface {

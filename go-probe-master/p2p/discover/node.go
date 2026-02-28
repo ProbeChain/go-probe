@@ -25,9 +25,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // node represents a host on the network.

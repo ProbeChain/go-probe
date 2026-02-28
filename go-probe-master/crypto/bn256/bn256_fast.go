@@ -8,7 +8,7 @@
 package bn256
 
 import (
-	bn256cf "github.com/probeum/go-probeum/crypto/bn256/cloudflare"
+	bn256cf "github.com/probechain/go-probe/crypto/bn256/cloudflare"
 )
 
 // G1 is an abstract cyclic group. The zero value is suitable for use as the
