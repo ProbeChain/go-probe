@@ -19,6 +19,7 @@ package core
 import (
 	"fmt"
 	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
+	pob2 "github.com/probeum/go-probeum/consensus/pob"
 	"github.com/probeum/go-probeum/crypto"
 
 	"math/big"
@@ -89,8 +90,13 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		allLogs = append(allLogs, receipt.Logs...)
 	}
 
-	greatri, _ := p.engine.(*greatri2.Greatri)
-	greatri.DposFinalize(p.bc, header, statedb, block.Transactions(), block.PowAnswerUncles())
+	if g, ok := p.engine.(*greatri2.Greatri); ok {
+		g.DposFinalize(p.bc, header, statedb, block.Transactions(), block.PowAnswerUncles())
+	} else if pb, ok := p.engine.(*pob2.ProofOfBehavior); ok {
+		pb.PobFinalize(p.bc, header, statedb, block.Transactions(), block.PowAnswerUncles())
+	} else {
+		p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles())
+	}
 
 	return receipts, allLogs, *usedGas, nil
 }
