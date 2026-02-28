@@ -43,9 +43,10 @@ var (
 
 // Transaction types.
 const (
-	LegacyTxType = iota
-	AccessListTxType
-	DynamicFeeTxType
+	LegacyTxType     = iota
+	AccessListTxType            // 1 - EIP-2930
+	DynamicFeeTxType            // 2 - EIP-1559
+	DilithiumTxType             // 3 - Dilithium post-quantum
 )
 
 // Transaction is an Probeum transaction.
@@ -186,6 +187,10 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		var inner DynamicFeeTx
 		err := rlp.DecodeBytes(b[1:], &inner)
 		return &inner, err
+	case DilithiumTxType:
+		var inner DilithiumTx
+		err := rlp.DecodeBytes(b[1:], &inner)
+		return &inner, err
 	default:
 		return nil, ErrTxTypeNotSupported
 	}
@@ -299,7 +304,7 @@ func (tx *Transaction) Cost() *big.Int {
 	total.Add(total, tx.Value())
 	var pledgeAmount uint64
 	if tx.To() != nil {
-		switch tx.To().Hex() {
+		switch *tx.To() {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
 			pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:

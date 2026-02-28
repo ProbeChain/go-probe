@@ -60,6 +60,7 @@ type Snapshot struct {
 	Recents    map[uint64]common.Address            `json:"recents"`    // Set of recent block producers
 	Votes      []*Vote                              `json:"votes"`      // List of votes cast in chronological order
 	Tally      map[common.Address]Tally             `json:"tally"`      // Current vote tally
+	PubKeys    map[common.Address][]byte            `json:"pubkeys"`    // Dilithium public keys for validators (optional)
 }
 
 // validatorsAscending implements the sort interface to allow sorting a list of addresses.
@@ -84,6 +85,7 @@ func newSnapshot(config *params.PobConfig, sigcache *lru.ARCCache, number uint64
 		Histories:  make(map[common.Address]*ValidatorHistory),
 		Recents:    make(map[uint64]common.Address),
 		Tally:      make(map[common.Address]Tally),
+		PubKeys:    make(map[common.Address][]byte),
 	}
 	for _, v := range validators {
 		snap.Validators[v] = DefaultBehaviorScore(initialScore, number)

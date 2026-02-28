@@ -287,3 +287,13 @@ func zeroBytes(bytes []byte) {
 		bytes[i] = 0
 	}
 }
+
+// KeyType distinguishes between ECDSA and post-quantum key types.
+type KeyType uint8
+
+const (
+	// KeyTypeECDSA is the traditional secp256k1 ECDSA key type.
+	KeyTypeECDSA KeyType = 0
+	// KeyTypeDilithium is the CRYSTALS-Dilithium (ML-DSA-44) post-quantum key type.
+	KeyTypeDilithium KeyType = 1
+)

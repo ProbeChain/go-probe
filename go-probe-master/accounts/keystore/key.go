@@ -22,7 +22,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
 	"io"
 	"io/ioutil"
 	"os"
@@ -33,6 +32,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
+	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/crypto/dilithium"
 )
 
 const (
@@ -43,9 +44,12 @@ type Key struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
 	// to simplify lookups we also store the address
 	Address common.Address
+	// KeyType distinguishes ECDSA (0) from Dilithium (1)
+	KeyType crypto.KeyType
 	// we only store privkey as pubkey/address can be derived from it
 	// privkey in this struct is always in plaintext
-	PrivateKey *ecdsa.PrivateKey
+	PrivateKey   *ecdsa.PrivateKey        // Used when KeyType == KeyTypeECDSA
+	DilithiumKey *dilithium.PrivateKey     // Used when KeyType == KeyTypeDilithium
 }
 
 type keyStore interface {
@@ -92,9 +96,15 @@ type cipherparamsJSON struct {
 }
 
 func (k *Key) MarshalJSON() (j []byte, err error) {
+	var privHex string
+	if k.KeyType == crypto.KeyTypeDilithium {
+		privHex = hex.EncodeToString(dilithium.MarshalPrivateKey(k.DilithiumKey))
+	} else {
+		privHex = hex.EncodeToString(crypto.FromECDSA(k.PrivateKey))
+	}
 	jStruct := plainKeyJSON{
 		hex.EncodeToString(k.Address[:]),
-		hex.EncodeToString(crypto.FromECDSA(k.PrivateKey)),
+		privHex,
 		k.Id.String(),
 		version,
 	}
@@ -119,15 +129,23 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	privkey, err := crypto.HexToECDSA(keyJSON.PrivateKey)
+	k.Address = common.BytesToAddress(addr)
+
+	privBytes, err := hex.DecodeString(keyJSON.PrivateKey)
 	if err != nil {
 		return err
 	}
 
-	k.Address = common.BytesToAddress(addr)
-	k.PrivateKey = privkey
-
-	return nil
+	// Detect key type by size
+	if len(privBytes) == dilithium.PrivateKeySize {
+		k.KeyType = crypto.KeyTypeDilithium
+		k.DilithiumKey, err = dilithium.UnmarshalPrivateKey(privBytes)
+		return err
+	}
+	// Default: ECDSA
+	k.KeyType = crypto.KeyTypeECDSA
+	k.PrivateKey, err = crypto.HexToECDSA(keyJSON.PrivateKey)
+	return err
 }
 
 func newKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *Key {
@@ -138,7 +156,23 @@ func newKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *Key {
 	key := &Key{
 		Id:         id,
 		Address:    crypto.PubkeyToAddress(privateKeyECDSA.PublicKey),
+		KeyType:    crypto.KeyTypeECDSA,
 		PrivateKey: privateKeyECDSA,
+	}
+	return key
+}
+
+func newKeyFromDilithium(priv *dilithium.PrivateKey) *Key {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		panic(fmt.Sprintf("Could not create random uuid: %v", err))
+	}
+	pub := priv.Public()
+	key := &Key{
+		Id:           id,
+		Address:      dilithium.PubkeyToAddress(pub),
+		KeyType:      crypto.KeyTypeDilithium,
+		DilithiumKey: priv,
 	}
 	return key
 }
@@ -172,6 +206,14 @@ func newKey(rand io.Reader) (*Key, error) {
 	return newKeyFromECDSA(privateKeyECDSA), nil
 }
 
+func newDilithiumKey() (*Key, error) {
+	priv, err := dilithium.GenerateKey()
+	if err != nil {
+		return nil, err
+	}
+	return newKeyFromDilithium(priv), nil
+}
+
 func storeNewKey(ks keyStore, rand io.Reader, auth string) (*Key, accounts.Account, error) {
 	key, err := newKey(rand)
 	if err != nil {
@@ -183,6 +225,21 @@ func storeNewKey(ks keyStore, rand io.Reader, auth string) (*Key, accounts.Accou
 	}
 	if err := ks.StoreKey(a.URL.Path, key, auth); err != nil {
 		zeroKey(key.PrivateKey)
+		return nil, a, err
+	}
+	return key, a, err
+}
+
+func storeNewDilithiumKey(ks keyStore, auth string) (*Key, accounts.Account, error) {
+	key, err := newDilithiumKey()
+	if err != nil {
+		return nil, accounts.Account{}, err
+	}
+	a := accounts.Account{
+		Address: key.Address,
+		URL:     accounts.URL{Scheme: KeyStoreScheme, Path: ks.JoinPath(keyFileName(key.Address))},
+	}
+	if err := ks.StoreKey(a.URL.Path, key, auth); err != nil {
 		return nil, a, err
 	}
 	return key, a, err

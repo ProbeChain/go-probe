@@ -44,6 +44,7 @@ import (
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/common/math"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/crypto/dilithium"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 )
@@ -184,28 +185,43 @@ func EncryptDataV3(data, auth []byte, scryptN, scryptP int) (CryptoJSON, error) 
 }
 
 // EncryptKey encrypts a key using the specified scrypt parameters into a json
-// blob that can be decrypted later on.
+// blob that can be decrypted later on. Supports both ECDSA and Dilithium keys.
 func EncryptKey(key *Key, auth string, scryptN, scryptP int) ([]byte, error) {
-	keyBytes := math.PaddedBigBytes(key.PrivateKey.D, 32)
+	var keyBytes []byte
+	if key.KeyType == crypto.KeyTypeDilithium {
+		keyBytes = dilithium.MarshalPrivateKey(key.DilithiumKey)
+	} else {
+		keyBytes = math.PaddedBigBytes(key.PrivateKey.D, 32)
+	}
 	cryptoStruct, err := EncryptDataV3(keyBytes, []byte(auth), scryptN, scryptP)
 	if err != nil {
 		return nil, err
 	}
-	encryptedKeyJSONV3 := encryptedKeyJSONV3{
-		hex.EncodeToString(key.Address[:]),
-		cryptoStruct,
-		key.Id.String(),
-		version,
+	// Use a map to include the optional "keytype" field
+	result := map[string]interface{}{
+		"address": hex.EncodeToString(key.Address[:]),
+		"crypto":  cryptoStruct,
+		"id":      key.Id.String(),
+		"version": version,
 	}
-	return json.Marshal(encryptedKeyJSONV3)
+	if key.KeyType == crypto.KeyTypeDilithium {
+		result["keytype"] = "dilithium"
+	}
+	return json.Marshal(result)
 }
 
 // DecryptKey decrypts a key from a json blob, returning the private key itself.
+// Supports both ECDSA and Dilithium keys.
 func DecryptKey(keyjson []byte, auth string) (*Key, error) {
-	// Parse the json into a simple map to fetch the key version
+	// Parse the json into a simple map to fetch the key version and key type
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(keyjson, &m); err != nil {
 		return nil, err
+	}
+	// Determine key type
+	keyType := crypto.KeyTypeECDSA
+	if kt, ok := m["keytype"].(string); ok && kt == "dilithium" {
+		keyType = crypto.KeyTypeDilithium
 	}
 	// Depending on the version try to parse one way or another
 	var (
@@ -229,15 +245,31 @@ func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := crypto.ToECDSAUnsafe(keyBytes)
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
 		return nil, err
 	}
+
+	if keyType == crypto.KeyTypeDilithium {
+		priv, err := dilithium.UnmarshalPrivateKey(keyBytes)
+		if err != nil {
+			return nil, err
+		}
+		pub := priv.Public()
+		return &Key{
+			Id:           id,
+			Address:      dilithium.PubkeyToAddress(pub),
+			KeyType:      crypto.KeyTypeDilithium,
+			DilithiumKey: priv,
+		}, nil
+	}
+	// Default: ECDSA
+	ecdsaKey := crypto.ToECDSAUnsafe(keyBytes)
 	return &Key{
 		Id:         id,
-		Address:    crypto.PubkeyToAddress(key.PublicKey),
-		PrivateKey: key,
+		Address:    crypto.PubkeyToAddress(ecdsaKey.PublicKey),
+		KeyType:    crypto.KeyTypeECDSA,
+		PrivateKey: ecdsaKey,
 	}, nil
 }
 

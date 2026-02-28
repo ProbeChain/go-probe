@@ -23,12 +23,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"golang.org/x/crypto/sha3"
 	"math/big"
 	"math/rand"
 	"reflect"
 	"strings"
+
+	"github.com/probeum/go-probeum/common/bech32"
+	"github.com/probeum/go-probeum/common/hexutil"
+	"golang.org/x/crypto/sha3"
 )
 
 // Lengths of hashes and addresses in bytes.
@@ -50,6 +52,9 @@ const (
 	//LossMarkBitLength is the expected length of loss mark bits
 	LossMarkBitLength = LossMarkLength * 8
 )
+
+// AddressHRP is the human-readable part for Bech32-encoded ProbeChain addresses.
+const AddressHRP = "pro"
 
 var (
 	hashT    = reflect.TypeOf(Hash{})
@@ -247,16 +252,57 @@ func BytesToDposEnode(b []byte) DposEnode {
 func BigToAddress(b *big.Int) Address { return BytesToAddress(b.Bytes()) }
 
 // HexToAddress returns Address with byte values of s.
+// Accepts both 0x-prefixed hex and pro1-prefixed Bech32 format.
 // If s is larger than len(h), s will be cropped from the left.
-func HexToAddress(s string) Address { return BytesToAddress(FromHex(s)) }
+func HexToAddress(s string) Address {
+	if hasProPrefix(s) {
+		addr, err := Bech32ToAddress(s)
+		if err == nil {
+			return addr
+		}
+	}
+	return BytesToAddress(FromHex(s))
+}
 
-// IsHexAddress verifies whprobeer a string can represent a valid hex-encoded
-// Probeum address or not.
+// IsHexAddress verifies whether a string can represent a valid hex-encoded
+// or Bech32-encoded Probeum address.
 func IsHexAddress(s string) bool {
+	if hasProPrefix(s) {
+		return IsProbeAddress(s)
+	}
 	if has0xPrefix(s) {
 		s = s[2:]
 	}
 	return len(s) == 2*AddressLength && isHex(s)
+}
+
+// Bech32ToAddress parses a pro1... Bech32 string to an Address.
+func Bech32ToAddress(s string) (Address, error) {
+	hrp, data, err := bech32.Decode(s)
+	if err != nil {
+		return Address{}, err
+	}
+	if hrp != AddressHRP {
+		return Address{}, fmt.Errorf("invalid HRP: got %q, want %q", hrp, AddressHRP)
+	}
+	if len(data) != AddressLength {
+		return Address{}, fmt.Errorf("invalid address length: got %d, want %d", len(data), AddressLength)
+	}
+	var addr Address
+	copy(addr[:], data)
+	return addr, nil
+}
+
+// IsProbeAddress validates whether s is a valid pro1... Bech32 address.
+func IsProbeAddress(s string) bool {
+	_, err := Bech32ToAddress(s)
+	return err == nil
+}
+
+// AddressToHex returns the 0x-prefixed EIP-55 checksummed hex representation
+// of the address. Useful for debugging and backward compatibility.
+func AddressToHex(a Address) string {
+	return string(a.checksumHex())
 }
 
 // Bytes gets the string representation of the underlying address.
@@ -277,9 +323,14 @@ func (a Address) Last10BitsToUint() uint64 {
 // Hash converts an address to a hash by left-padding it with zeros.
 func (a Address) Hash() Hash { return BytesToHash(a[:]) }
 
-// Hex returns an EIP55-compliant hex string representation of the address.
+// Hex returns the Bech32-encoded pro1... representation of the address.
 func (a Address) Hex() string {
-	return string(a.checksumHex())
+	s, err := bech32.Encode(AddressHRP, a[:])
+	if err != nil {
+		// Fallback to hex on encoding error (should never happen for valid addresses)
+		return string(a.checksumHex())
+	}
+	return s
 }
 
 // String implements fmt.Stringer.
@@ -317,25 +368,26 @@ func (a Address) hex() []byte {
 
 // Format implements fmt.Formatter.
 // Address supports the %v, %s, %v, %x, %X and %d format verbs.
+// %v and %s output Bech32 (pro1...), %x and %X output raw hex.
 func (a Address) Format(s fmt.State, c rune) {
 	switch c {
 	case 'v', 's':
-		s.Write(a.checksumHex())
+		s.Write([]byte(a.Hex()))
 	case 'q':
 		q := []byte{'"'}
 		s.Write(q)
-		s.Write(a.checksumHex())
+		s.Write([]byte(a.Hex()))
 		s.Write(q)
 	case 'x', 'X':
-		// %x disables the checksum.
-		hex := a.hex()
+		// %x outputs raw hex (for debugging).
+		hexBytes := a.hex()
 		if !s.Flag('#') {
-			hex = hex[2:]
+			hexBytes = hexBytes[2:]
 		}
 		if c == 'X' {
-			hex = bytes.ToUpper(hex)
+			hexBytes = bytes.ToUpper(hexBytes)
 		}
-		s.Write(hex)
+		s.Write(hexBytes)
 	case 'd':
 		fmt.Fprint(s, ([len(a)]byte)(a))
 	default:
@@ -359,18 +411,39 @@ func (n *DposEnode) SetBytes(b []byte) {
 	copy(n[DPosEnodeLength-len(b):], b)
 }
 
-// MarshalText returns the hex representation of a.
+// MarshalText returns the Bech32 representation of a.
 func (a Address) MarshalText() ([]byte, error) {
-	return hexutil.Bytes(a[:]).MarshalText()
+	return []byte(a.Hex()), nil
 }
 
-// UnmarshalText parses a hash in hex syntax.
+// UnmarshalText parses an address in Bech32 (pro1...) or hex (0x...) syntax.
 func (a *Address) UnmarshalText(input []byte) error {
+	s := string(input)
+	if hasProPrefix(s) {
+		addr, err := Bech32ToAddress(s)
+		if err != nil {
+			return err
+		}
+		*a = addr
+		return nil
+	}
 	return hexutil.UnmarshalFixedText("Address", input, a[:])
 }
 
-// UnmarshalJSON parses a hash in hex syntax.
+// UnmarshalJSON parses an address in Bech32 (pro1...) or hex (0x...) syntax.
 func (a *Address) UnmarshalJSON(input []byte) error {
+	// Try to unquote JSON string
+	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
+		s := string(input[1 : len(input)-1])
+		if hasProPrefix(s) {
+			addr, err := Bech32ToAddress(s)
+			if err != nil {
+				return err
+			}
+			*a = addr
+			return nil
+		}
+	}
 	return hexutil.UnmarshalFixedJSON(addressT, input, a[:])
 }
 
@@ -396,6 +469,7 @@ func (a Address) Value() (driver.Value, error) {
 func (a Address) ImplementsGraphQLType(name string) bool { return name == "Address" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
+// Accepts both pro1... Bech32 and 0x... hex formats.
 func (a *Address) UnmarshalGraphQL(input interface{}) error {
 	var err error
 	switch input := input.(type) {
@@ -432,29 +506,41 @@ func NewMixedcaseAddress(addr Address) MixedcaseAddress {
 	return MixedcaseAddress{addr: addr, original: addr.Hex()}
 }
 
-// NewMixedcaseAddressFromString is mainly meant for unit-testing
-func NewMixedcaseAddressFromString(hexaddr string) (*MixedcaseAddress, error) {
-	if !IsHexAddress(hexaddr) {
+// NewMixedcaseAddressFromString is mainly meant for unit-testing.
+// Accepts both 0x... hex and pro1... Bech32 formats.
+func NewMixedcaseAddressFromString(addrStr string) (*MixedcaseAddress, error) {
+	if !IsHexAddress(addrStr) {
 		return nil, errors.New("invalid address")
 	}
-	a := FromHex(hexaddr)
-	return &MixedcaseAddress{addr: BytesToAddress(a), original: hexaddr}, nil
+	addr := HexToAddress(addrStr)
+	return &MixedcaseAddress{addr: addr, original: addrStr}, nil
 }
 
-// UnmarshalJSON parses MixedcaseAddress
+// UnmarshalJSON parses MixedcaseAddress from Bech32 or hex JSON string.
 func (ma *MixedcaseAddress) UnmarshalJSON(input []byte) error {
+	var s string
+	if err := json.Unmarshal(input, &s); err != nil {
+		return err
+	}
+	if hasProPrefix(s) {
+		addr, err := Bech32ToAddress(s)
+		if err != nil {
+			return err
+		}
+		ma.addr = addr
+		ma.original = s
+		return nil
+	}
 	if err := hexutil.UnmarshalFixedJSON(addressT, input, ma.addr[:]); err != nil {
 		return err
 	}
-	return json.Unmarshal(input, &ma.original)
+	ma.original = s
+	return nil
 }
 
-// MarshalJSON marshals the original value
+// MarshalJSON marshals the address in Bech32 format.
 func (ma *MixedcaseAddress) MarshalJSON() ([]byte, error) {
-	if strings.HasPrefix(ma.original, "0x") || strings.HasPrefix(ma.original, "0X") {
-		return json.Marshal(fmt.Sprintf("0x%s", ma.original[2:]))
-	}
-	return json.Marshal(fmt.Sprintf("0x%s", ma.original))
+	return json.Marshal(ma.addr.Hex())
 }
 
 // Address returns the address

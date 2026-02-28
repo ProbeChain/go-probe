@@ -49,6 +49,11 @@ func has0xPrefix(str string) bool {
 	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
 }
 
+// hasProPrefix validates str begins with 'pro1' (Bech32 address prefix).
+func hasProPrefix(str string) bool {
+	return len(str) >= 4 && (str[:4] == "pro1" || str[:4] == "PRO1")
+}
+
 // isHexCharacter returns bool of c being a valid hexadecimal.
 func isHexCharacter(c byte) bool {
 	return ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')

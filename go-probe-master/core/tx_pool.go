@@ -49,7 +49,9 @@ const (
 	// non-trivial consequences: larger transactions are significantly harder and
 	// more expensive to propagate; larger transactions also take more resources
 	// to validate whprobeer they fit into the pool or not.
-	txMaxSize = 4 * txSlotSize // 128KB
+	// Increased from 128KB to 160KB to accommodate Dilithium post-quantum
+	// transactions which carry ~3.7KB of additional pubkey + signature data.
+	txMaxSize = 5 * txSlotSize // 160KB
 )
 
 var (
@@ -563,7 +565,7 @@ func (pool *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return err
 	}
 	if tx.To() != nil {
-		switch tx.To().Hex() {
+		switch *tx.To() {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
 			common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
 			common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:

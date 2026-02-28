@@ -1197,7 +1197,7 @@ func (s *StateDB) GetLoss(addr common.Address) *LossAccount {
 
 //GetDPosListAccountStateObj get dPos list account state object
 func (s *StateDB) GetDPosListAccountStateObj() *stateObject {
-	addr := common.HexToAddress(common.SPECIAL_ADDRESS_FOR_DPOS)
+	addr := common.SPECIAL_ADDRESS_FOR_DPOS
 	stateObject := s.getStateObject(addr)
 	if stateObject == nil {
 		stateObject, _ = s.createObjectByAccType(addr, common.ACC_TYPE_OF_DPOS)
@@ -1248,7 +1248,7 @@ func (s *StateDB) Vote(context vm.TxContext) {
 func (s *StateDB) Register(context vm.TxContext) {
 	var newAddress common.Address
 	pledgeAmount := uint64(0)
-	switch context.To.Hex() {
+	switch *context.To {
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
 		newAddress = crypto.CreatePNSAddress(context.From, context.Data)
 		pledgeAmount = common.AMOUNT_OF_PLEDGE_FOR_CREATE_ACCOUNT_OF_PNS
@@ -1324,7 +1324,7 @@ func (s *StateDB) ExchangeAsset(context vm.TxContext) {
 
 //CanLossMark can loss mark
 func (s *StateDB) CanLossMark(lastBitsMark uint32) error {
-	lossMarkAddress := common.HexToAddress(common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE)
+	lossMarkAddress := common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE
 	lossMarkObj := s.getStateObject(lossMarkAddress)
 	if lossMarkObj == nil {
 		lossMarkNewObj, _ := s.createObjectByAccType(lossMarkAddress, common.ACC_TYPE_OF_LOSS_MARK)
@@ -1413,7 +1413,7 @@ func (s *StateDB) TransferLostAssociatedAccount(context vm.TxContext) {
 			lostObj := s.getStateObject(lossStateObj.lossAccount.LostAccount)
 			benefitObj := s.getStateObject(lossStateObj.lossAccount.NewAccount)
 			if lostObj != nil && benefitObj != nil {
-				switch context.To.Hex() {
+				switch *context.To {
 				case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_PNS:
 					pnsObj := s.getStateObject(decode.AssociatedAccount)
 					if pnsObj != nil {
@@ -1500,7 +1500,7 @@ func (s *StateDB) setRegularLossState(addr common.Address, lossSate bool) {
 }
 
 func (s *StateDB) updateLossMark(lastBitsToInt uint32, flag bool) {
-	lossMarkAddress := common.HexToAddress(common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE)
+	lossMarkAddress := common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE
 	lossMarkObj := s.getStateObject(lossMarkAddress)
 	if lossMarkObj == nil {
 		lossMarkNewObj, _ := s.createObjectByAccType(lossMarkAddress, common.ACC_TYPE_OF_LOSS_MARK)

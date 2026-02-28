@@ -297,7 +297,7 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 			// Deriving the signer is expensive, only do if it's actually needed
 			r[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
 		} else {
-			switch txs[i].To().Hex() {
+			switch *txs[i].To() {
 			case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
 				r[i].NewAddress = crypto.CreatePNSAddress(from, txs[i].Data())
 			case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
