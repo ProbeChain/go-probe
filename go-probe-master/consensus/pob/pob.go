@@ -35,6 +35,7 @@ import (
 	"github.com/probeum/go-probeum/accounts"
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/consensus"
+	atomicClock "github.com/probeum/go-probeum/core/atomic"
 	"github.com/probeum/go-probeum/consensus/misc"
 	"github.com/probeum/go-probeum/consensus/probeash"
 	"github.com/probeum/go-probeum/core/state"
@@ -402,6 +403,24 @@ func (c *ProofOfBehavior) verifyHeader(chain consensus.ChainHeaderReader, header
 			if err := pow.PowVerifySeal(chain, parent, false, answer); err != nil {
 				return err
 			}
+		}
+	}
+
+	// Optional AtomicTime validation: if present, verify it is well-formed
+	// and not unreasonably far from the header timestamp. Don't reject blocks
+	// without AtomicTime for backward compatibility.
+	if len(header.AtomicTime) > 0 {
+		at, err := atomicClock.DecodeAtomicTimestamp(header.AtomicTime)
+		if err != nil {
+			return fmt.Errorf("invalid AtomicTime encoding: %v", err)
+		}
+		// AtomicTime seconds should be within 60s of header.Time
+		diff := int64(at.Seconds) - int64(header.Time)
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff > 60 {
+			return fmt.Errorf("AtomicTime diverges from header timestamp by %d seconds", diff)
 		}
 	}
 

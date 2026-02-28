@@ -21,6 +21,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	atomicClock "github.com/probeum/go-probeum/core/atomic"
 	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
 	pob2 "github.com/probeum/go-probeum/consensus/pob"
 	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
@@ -1220,6 +1221,7 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	header.Nonce = types.BlockNonce{}
 	header.MixDigest = common.Hash{}
 	header.Difficulty = probehash2.CalcDifficulty(w.chainConfig, uint64(timestamp), realParent.Header())
+	header.AtomicTime = atomicClock.Now(atomicClock.ClockSourceSystem).Encode()
 
 	log.Info("dposCommitNewWork", "calc Difficulty :  ", header.Difficulty)
 	header.Coinbase = common.Address{}

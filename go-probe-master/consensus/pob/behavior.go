@@ -29,12 +29,13 @@ const (
 
 // BehaviorScore holds the composite and per-dimension scores for a validator.
 type BehaviorScore struct {
-	Total       uint64 `json:"total"`       // Composite score (0-10000 basis points)
-	Liveness    uint64 `json:"liveness"`    // Liveness dimension score
-	Correctness uint64 `json:"correctness"` // Correctness dimension score
-	Cooperation uint64 `json:"cooperation"` // Cooperation dimension score
-	Consistency uint64 `json:"consistency"` // Consistency dimension score
-	LastUpdate  uint64 `json:"lastUpdate"`  // Block number of last score update
+	Total              uint64 `json:"total"`              // Composite score (0-10000 basis points)
+	Liveness           uint64 `json:"liveness"`           // Liveness dimension score
+	Correctness        uint64 `json:"correctness"`        // Correctness dimension score
+	Cooperation        uint64 `json:"cooperation"`        // Cooperation dimension score
+	Consistency        uint64 `json:"consistency"`        // Consistency dimension score
+	SignalSovereignty  uint64 `json:"signalSovereignty"`  // Signal sovereignty dimension score
+	LastUpdate         uint64 `json:"lastUpdate"`         // Block number of last score update
 }
 
 // ValidatorHistory tracks the on-chain actions of a validator for scoring.
@@ -45,20 +46,24 @@ type ValidatorHistory struct {
 	AcksGiven        uint64 `json:"acksGiven"`
 	AcksMissed       uint64 `json:"acksMissed"`
 	SlashCount       uint64 `json:"slashCount"`
+	RydbergVerified  uint64 `json:"rydbergVerified"` // Blocks with verified Rydberg time source
+	RadioSyncs       uint64 `json:"radioSyncs"`      // Successful radio-based time syncs
+	StellarBlocks    uint64 `json:"stellarBlocks"`    // Blocks produced with AtomicTime present
 }
 
 // BehaviorAgent is the AI scoring agent that evaluates validator behavior
-// across four dimensions: liveness, correctness, cooperation, consistency.
+// across five dimensions: liveness, correctness, cooperation, consistency,
+// and signal sovereignty.
 type BehaviorAgent struct {
-	// Weights for each dimension: [liveness, correctness, cooperation, consistency].
+	// Weights for each dimension: [liveness, correctness, cooperation, consistency, signalSovereignty].
 	// Each is expressed as a percentage out of 100 (must sum to 100).
-	weights [4]uint64
+	weights [5]uint64
 }
 
 // NewBehaviorAgent creates a new BehaviorAgent with the default dimension weights.
 func NewBehaviorAgent() *BehaviorAgent {
 	return &BehaviorAgent{
-		weights: [4]uint64{30, 30, 20, 20}, // liveness, correctness, cooperation, consistency
+		weights: [5]uint64{25, 25, 18, 17, 15}, // liveness, correctness, cooperation, consistency, signalSovereignty
 	}
 }
 
@@ -69,21 +74,24 @@ func (ba *BehaviorAgent) EvaluateValidator(addr common.Address, history *Validat
 	correctness := ba.calcCorrectness(history)
 	cooperation := ba.calcCooperation(history)
 	consistency := ba.calcConsistency(history)
+	signalSovereignty := ba.calcSignalSovereignty(history)
 
 	total := (liveness*ba.weights[0] + correctness*ba.weights[1] +
-		cooperation*ba.weights[2] + consistency*ba.weights[3]) / 100
+		cooperation*ba.weights[2] + consistency*ba.weights[3] +
+		signalSovereignty*ba.weights[4]) / 100
 
 	if total > maxScore {
 		total = maxScore
 	}
 
 	return &BehaviorScore{
-		Total:       total,
-		Liveness:    liveness,
-		Correctness: correctness,
-		Cooperation: cooperation,
-		Consistency: consistency,
-		LastUpdate:  blockNumber,
+		Total:             total,
+		Liveness:          liveness,
+		Correctness:       correctness,
+		Cooperation:       cooperation,
+		Consistency:       consistency,
+		SignalSovereignty: signalSovereignty,
+		LastUpdate:        blockNumber,
 	}
 }
 
@@ -125,6 +133,51 @@ func (ba *BehaviorAgent) calcConsistency(h *ValidatorHistory) uint64 {
 	return maxScore - penalty
 }
 
+// calcSignalSovereignty scores based on a validator's Stellar-Class capabilities:
+// Rydberg-verified blocks, radio-based time syncs, and AtomicTime block production.
+// Validators without stellar capabilities receive a neutral baseline score (5000)
+// so they are not penalized below the default starting point.
+func (ba *BehaviorAgent) calcSignalSovereignty(h *ValidatorHistory) uint64 {
+	totalStellarOps := h.RydbergVerified + h.RadioSyncs + h.StellarBlocks
+	if totalStellarOps == 0 {
+		return defaultInitialScore // Neutral baseline — no penalty for non-stellar nodes
+	}
+
+	// Score components:
+	// - Rydberg verification: 40% weight (demonstrates atomic receiver)
+	// - Radio syncs: 30% weight (demonstrates RF time sync capability)
+	// - Stellar blocks: 30% weight (demonstrates AtomicTime block production)
+	var score uint64
+
+	// Rydberg component: proportion of stellar blocks that have Rydberg verification
+	if h.StellarBlocks > 0 {
+		rydbergRatio := (h.RydbergVerified * maxScore) / h.StellarBlocks
+		if rydbergRatio > maxScore {
+			rydbergRatio = maxScore
+		}
+		score += rydbergRatio * 40 / 100
+	}
+
+	// Radio sync component: capped at maxScore for 100+ syncs
+	radioScore := h.RadioSyncs * 100 // Each sync adds 100 bp
+	if radioScore > maxScore {
+		radioScore = maxScore
+	}
+	score += radioScore * 30 / 100
+
+	// Stellar block production component
+	stellarScore := h.StellarBlocks * 50 // Each stellar block adds 50 bp
+	if stellarScore > maxScore {
+		stellarScore = maxScore
+	}
+	score += stellarScore * 30 / 100
+
+	if score > maxScore {
+		score = maxScore
+	}
+	return score
+}
+
 // UpdateScores re-evaluates all validators in the snapshot and returns updated scores.
 func (ba *BehaviorAgent) UpdateScores(validators map[common.Address]*BehaviorScore,
 	histories map[common.Address]*ValidatorHistory, blockNumber uint64) map[common.Address]*BehaviorScore {
@@ -162,11 +215,12 @@ func (ba *BehaviorAgent) ProportionalSlash(score *BehaviorScore, severity uint64
 // DefaultBehaviorScore returns a behavior score initialized to the given initial score.
 func DefaultBehaviorScore(initialScore uint64, blockNumber uint64) *BehaviorScore {
 	return &BehaviorScore{
-		Total:       initialScore,
-		Liveness:    maxScore,
-		Correctness: maxScore,
-		Cooperation: maxScore,
-		Consistency: maxScore,
-		LastUpdate:  blockNumber,
+		Total:             initialScore,
+		Liveness:          maxScore,
+		Correctness:       maxScore,
+		Cooperation:       maxScore,
+		Consistency:       maxScore,
+		SignalSovereignty: defaultInitialScore, // Neutral baseline for non-stellar nodes
+		LastUpdate:        blockNumber,
 	}
 }

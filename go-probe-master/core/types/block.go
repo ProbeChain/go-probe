@@ -178,6 +178,11 @@ type Header struct {
 
 	// BaseFee was added by EIP-1559 and is ignored in legacy headers.
 	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
+
+	// AtomicTime is a 17-byte encoded AtomicTimestamp for Stellar-Class Resilience.
+	// It provides absolute time ordering with clock source metadata and uncertainty bounds.
+	// Optional: old nodes ignore this field via rlp:"optional".
+	AtomicTime []byte `json:"atomicTime" rlp:"optional"`
 }
 
 func (h *Header) String() string {
@@ -206,6 +211,7 @@ func (h *Header) String() string {
 		"GasUsed:" + strconv.FormatUint(h.GasUsed, 10) + "\n" +
 		"Time:" + strconv.FormatUint(h.Time, 10) + "\n" +
 		"Nonce:" + strconv.FormatUint(h.Nonce.Uint64(), 10) + "\n" +
+		"AtomicTime:" + common.Bytes2Hex(h.AtomicTime) + "\n" +
 		"}"
 }
 
@@ -218,6 +224,7 @@ type headerMarshaling struct {
 	Time       hexutil.Uint64
 	Extra      hexutil.Bytes
 	BaseFee    *hexutil.Big
+	AtomicTime hexutil.Bytes
 	Hash       common.Hash `json:"hash"` // adds call to Hash() in MarshalJSON
 }
 
@@ -427,6 +434,10 @@ func CopyHeader(h *Header) *Header {
 	if len(h.DposSig) > 0 {
 		cpy.DposSig = make([]byte, len(h.DposSig))
 		copy(cpy.DposSig, h.DposSig)
+	}
+	if len(h.AtomicTime) > 0 {
+		cpy.AtomicTime = make([]byte, len(h.AtomicTime))
+		copy(cpy.AtomicTime, h.AtomicTime)
 	}
 	return &cpy
 }

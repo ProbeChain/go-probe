@@ -37,6 +37,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		MixDigest        common.Hash     `json:"mixHash"`
 		Nonce            BlockNonce      `json:"nonce"`
 		BaseFee          *hexutil.Big    `json:"baseFeePerGas" rlp:"optional"`
+		AtomicTime       hexutil.Bytes   `json:"atomicTime" rlp:"optional"`
 		Hash             common.Hash     `json:"hash"`
 	}
 	var enc Header
@@ -61,6 +62,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	enc.MixDigest = h.MixDigest
 	enc.Nonce = h.Nonce
 	enc.BaseFee = (*hexutil.Big)(h.BaseFee)
+	enc.AtomicTime = h.AtomicTime
 	enc.Hash = h.Hash()
 	return json.Marshal(&enc)
 }
@@ -89,6 +91,7 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 		MixDigest        *common.Hash    `json:"mixHash"`
 		Nonce            *BlockNonce     `json:"nonce"`
 		BaseFee          *hexutil.Big    `json:"baseFeePerGas" rlp:"optional"`
+		AtomicTime       *hexutil.Bytes  `json:"atomicTime" rlp:"optional"`
 	}
 	var dec Header
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -174,6 +177,9 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	}
 	if dec.BaseFee != nil {
 		h.BaseFee = (*big.Int)(dec.BaseFee)
+	}
+	if dec.AtomicTime != nil {
+		h.AtomicTime = *dec.AtomicTime
 	}
 	return nil
 }
