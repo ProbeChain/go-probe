@@ -25,6 +25,7 @@ import (
 
 	"github.com/probeum/go-probeum/common"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/crypto/dilithium"
 	"github.com/probeum/go-probeum/params"
 )
 
@@ -41,6 +42,8 @@ type sigCache struct {
 func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 	var signer Signer
 	switch {
+	case config.IsDilithium(blockNumber):
+		signer = NewDilithiumSigner(config.ChainID)
 	case config.IsLondon(blockNumber):
 		signer = NewLondonSigner(config.ChainID)
 	case config.IsBerlin(blockNumber):
@@ -64,6 +67,9 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 // have the current block number available, use MakeSigner instead.
 func LatestSigner(config *params.ChainConfig) Signer {
 	if config.ChainID != nil {
+		if config.DilithiumBlock != nil {
+			return NewDilithiumSigner(config.ChainID)
+		}
 		if config.LondonBlock != nil {
 			return NewLondonSigner(config.ChainID)
 		}
@@ -169,6 +175,95 @@ type Signer interface {
 
 	// Equal returns true if the given signer is the same as the receiver.
 	Equal(Signer) bool
+}
+
+// dilithiumSigner extends londonSigner with support for Type 3 Dilithium transactions.
+type dilithiumSigner struct{ londonSigner }
+
+// NewDilithiumSigner returns a signer that accepts
+// - Type 3 Dilithium post-quantum transactions,
+// - EIP-1559 dynamic fee transactions,
+// - EIP-2930 access list transactions,
+// - EIP-155 replay protected transactions, and
+// - legacy Homestead transactions.
+func NewDilithiumSigner(chainId *big.Int) Signer {
+	return dilithiumSigner{londonSigner{eip2930Signer{NewEIP155Signer(chainId)}}}
+}
+
+func (s dilithiumSigner) Sender(tx *Transaction) (common.Address, error) {
+	if tx.Type() != DilithiumTxType {
+		return s.londonSigner.Sender(tx)
+	}
+	dtx, ok := tx.inner.(*DilithiumTx)
+	if !ok {
+		return common.Address{}, ErrTxTypeNotSupported
+	}
+	if dtx.ChainID.Cmp(s.chainId) != 0 {
+		return common.Address{}, ErrInvalidChainId
+	}
+	return recoverDilithium(s.Hash(tx), dtx.PubKey, dtx.Signature)
+}
+
+func (s dilithiumSigner) Equal(s2 Signer) bool {
+	x, ok := s2.(dilithiumSigner)
+	return ok && x.chainId.Cmp(s.chainId) == 0
+}
+
+func (s dilithiumSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
+	if tx.Type() != DilithiumTxType {
+		return s.londonSigner.SignatureValues(tx, sig)
+	}
+	// For Dilithium transactions, V/R/S are not used. Return zeros.
+	return new(big.Int), new(big.Int), new(big.Int), nil
+}
+
+// Hash returns the hash to be signed by the sender.
+func (s dilithiumSigner) Hash(tx *Transaction) common.Hash {
+	if tx.Type() != DilithiumTxType {
+		return s.londonSigner.Hash(tx)
+	}
+	return prefixedRlpHash(
+		tx.Type(),
+		[]interface{}{
+			s.chainId,
+			tx.Nonce(),
+			tx.GasTipCap(),
+			tx.GasFeeCap(),
+			tx.Gas(),
+			tx.To(),
+			tx.Value(),
+			tx.Data(),
+			tx.AccessList(),
+		})
+}
+
+// SignDilithiumTx signs a Dilithium transaction with the given private key.
+func SignDilithiumTx(tx *Transaction, s Signer, priv *dilithium.PrivateKey) (*Transaction, error) {
+	dtx, ok := tx.inner.(*DilithiumTx)
+	if !ok {
+		return nil, ErrTxTypeNotSupported
+	}
+	h := s.Hash(tx)
+	sig := dilithium.Sign(priv, h[:])
+	pub := priv.Public()
+	pubBytes := dilithium.MarshalPublicKey(pub)
+
+	cpy := dtx.copy().(*DilithiumTx)
+	cpy.PubKey = pubBytes
+	cpy.Signature = sig
+	return &Transaction{inner: cpy, time: tx.time}, nil
+}
+
+// recoverDilithium verifies a Dilithium signature and derives the sender address.
+func recoverDilithium(sighash common.Hash, pubkey, sig []byte) (common.Address, error) {
+	pub, err := dilithium.UnmarshalPublicKey(pubkey)
+	if err != nil {
+		return common.Address{}, ErrInvalidSig
+	}
+	if !dilithium.Verify(pub, sighash[:], sig) {
+		return common.Address{}, ErrInvalidSig
+	}
+	return dilithium.PubkeyToAddress(pub), nil
 }
 
 type londonSigner struct{ eip2930Signer }

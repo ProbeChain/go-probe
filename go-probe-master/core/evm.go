@@ -135,7 +135,7 @@ func ContractDeploy(db vm.StateDB, sender common.Address) error {
 
 //CallDB call database for update operation
 func CallDB(db vm.StateDB, txContext vm.TxContext) {
-	switch txContext.To.Hex() {
+	switch *txContext.To {
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS,
 		common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,
 		common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE:

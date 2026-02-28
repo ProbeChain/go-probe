@@ -40,6 +40,7 @@ import (
 	"github.com/probeum/go-probeum/core/state"
 	"github.com/probeum/go-probeum/core/types"
 	"github.com/probeum/go-probeum/crypto"
+	"github.com/probeum/go-probeum/crypto/dilithium"
 	"github.com/probeum/go-probeum/params"
 	"github.com/probeum/go-probeum/probedb"
 	"github.com/probeum/go-probeum/rlp"
@@ -804,7 +805,28 @@ func (c *Greatri) verifySeal(chain consensus.ChainHeaderReader, header *types.He
 	//}
 	return nil
 }
+// RecoverOwner recovers the signer address from the DposSig.
+// Supports both ECDSA (65-byte sig) and Dilithium (pubkey+sig) signatures.
 func (c *Greatri) RecoverOwner(header *types.Header) (common.Address, error) {
+	sigLen := len(header.DposSig)
+	dilithiumSigLen := dilithium.PublicKeySize + dilithium.SignatureSize // 1312 + 2420 = 3732
+
+	if sigLen == dilithiumSigLen {
+		// Dilithium path: DposSig = pubkey(1312) || signature(2420)
+		pubBytes := header.DposSig[:dilithium.PublicKeySize]
+		sigBytes := header.DposSig[dilithium.PublicKeySize:]
+		pub, err := dilithium.UnmarshalPublicKey(pubBytes)
+		if err != nil {
+			return common.Address{}, fmt.Errorf("invalid Dilithium pubkey in DposSig: %v", err)
+		}
+		msg := crypto.Keccak256(GreatriRLP(header))
+		if !dilithium.Verify(pub, msg, sigBytes) {
+			return common.Address{}, fmt.Errorf("invalid Dilithium signature in DposSig")
+		}
+		return dilithium.PubkeyToAddress(pub), nil
+	}
+
+	// ECDSA path (default)
 	pubkey, err := secp256k1.RecoverPubkey(crypto.Keccak256(GreatriRLP(header)), header.DposSig)
 	if err == nil {
 		publicKey, err := crypto.UnmarshalPubkey(pubkey)

@@ -51,6 +51,8 @@ type (
 func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
 	var precompiles map[common.Address]PrecompiledContract
 	switch {
+	case evm.chainRules.IsDilithium:
+		precompiles = PrecompiledContractsDilithium
 	case evm.chainRules.IsBerlin:
 		precompiles = PrecompiledContractsBerlin
 	case evm.chainRules.IsIstanbul:
@@ -235,7 +237,7 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 	}
 	snapshot := evm.StateDB.Snapshot()
 	p, isPrecompile := evm.precompile(to)
-	if !common.IsSpecialAddress(to.Hex()) && !evm.StateDB.Exist(to) {
+	if !common.IsSpecialAddress(to) && !evm.StateDB.Exist(to) {
 		if isPrecompile {
 			evm.StateDB.CreateContractAccount(to)
 		}

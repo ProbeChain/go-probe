@@ -15,7 +15,7 @@ import (
 //validateTxOfRegister validate transaction for register PNS、authorize、lose account
 func (pool *TxPool) validateTxOfRegister(tx *types.Transaction, sender *common.Address) error {
 	var newAccount common.Address
-	switch tx.To().Hex() {
+	switch *tx.To() {
 	case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
 		if len(tx.Data()) == 0 {
 			return errors.New("pns data cannot be empty")
@@ -125,7 +125,7 @@ func (pool *TxPool) validateTxOfRevealLossReport(tx *types.Transaction) error {
 	if lossStateObj.LossAccount().State != common.LOSS_STATE_OF_APPLY {
 		return ErrValidLossState
 	}
-	lossMarkStateObj := pool.currentState.GetStateObject(common.HexToAddress(common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE))
+	lossMarkStateObj := pool.currentState.GetStateObject(common.SPECIAL_ADDRESS_FOR_REGISTER_LOSE)
 	if lossMarkStateObj == nil {
 		return errors.New("loss mark account not exists")
 	}
@@ -421,7 +421,7 @@ func (pool *TxPool) validateTxOfTransferLostAssociatedAccount(tx *types.Transact
 	if newObj.AccountType() != common.ACC_TYPE_OF_REGULAR {
 		return errors.New("invalid new beneficiary account")
 	}
-	switch tx.To().Hex() {
+	switch *tx.To() {
 	case common.SPECIAL_ADDRESS_FOR_TRANSFER_LOST_ACCOUNT_PNS:
 		var pnsObj = pool.currentState.GetStateObject(decode.AssociatedAccount)
 		if pnsObj == nil {

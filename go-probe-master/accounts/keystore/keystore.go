@@ -418,6 +418,18 @@ func (ks *KeyStore) NewAccount(passphrase string) (accounts.Account, error) {
 	return account, nil
 }
 
+// NewDilithiumAccount generates a new Dilithium (post-quantum) key and stores it,
+// encrypting it with the passphrase.
+func (ks *KeyStore) NewDilithiumAccount(passphrase string) (accounts.Account, error) {
+	_, account, err := storeNewDilithiumKey(ks.storage, passphrase)
+	if err != nil {
+		return accounts.Account{}, err
+	}
+	ks.cache.add(account)
+	ks.refreshWallets()
+	return account, nil
+}
+
 // Export exports as a JSON key, encrypted with newPassphrase.
 func (ks *KeyStore) Export(a accounts.Account, passphrase, newPassphrase string) (keyJSON []byte, err error) {
 	_, key, err := ks.getDecryptedKey(a, passphrase)

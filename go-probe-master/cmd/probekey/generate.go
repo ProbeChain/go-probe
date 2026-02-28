@@ -23,10 +23,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/probeum/go-probeum/accounts/keystore"
 	"github.com/probeum/go-probeum/cmd/utils"
 	"github.com/probeum/go-probeum/crypto"
-	"github.com/google/uuid"
+	"github.com/probeum/go-probeum/crypto/dilithium"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -56,6 +57,10 @@ If you want to encrypt an existing private key, it can be specified by setting
 			Name:  "lightkdf",
 			Usage: "use less secure scrypt parameters",
 		},
+		cli.BoolFlag{
+			Name:  "dilithium",
+			Usage: "generate a post-quantum Dilithium key (default: ECDSA)",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		// Check if keyfile path given and make sure it doesn't already exist.
@@ -69,31 +74,49 @@ If you want to encrypt an existing private key, it can be specified by setting
 			utils.Fatalf("Error checking if keyfile exists: %v", err)
 		}
 
-		var privateKey *ecdsa.PrivateKey
-		var err error
-		if file := ctx.String("privatekey"); file != "" {
-			// Load private key from file.
-			privateKey, err = crypto.LoadECDSA(file)
+		var key *keystore.Key
+		if ctx.Bool("dilithium") {
+			// Generate Dilithium (post-quantum) key
+			priv, err := dilithium.GenerateKey()
 			if err != nil {
-				utils.Fatalf("Can't load private key: %v", err)
+				utils.Fatalf("Failed to generate Dilithium key: %v", err)
+			}
+			UUID, err := uuid.NewRandom()
+			if err != nil {
+				utils.Fatalf("Failed to generate random uuid: %v", err)
+			}
+			pub := priv.Public()
+			key = &keystore.Key{
+				Id:           UUID,
+				Address:      dilithium.PubkeyToAddress(pub),
+				KeyType:      crypto.KeyTypeDilithium,
+				DilithiumKey: priv,
 			}
 		} else {
-			// If not loaded, generate random.
-			privateKey, err = crypto.GenerateKey()
-			if err != nil {
-				utils.Fatalf("Failed to generate random private key: %v", err)
+			// Generate ECDSA key (default)
+			var privateKey *ecdsa.PrivateKey
+			var err error
+			if file := ctx.String("privatekey"); file != "" {
+				privateKey, err = crypto.LoadECDSA(file)
+				if err != nil {
+					utils.Fatalf("Can't load private key: %v", err)
+				}
+			} else {
+				privateKey, err = crypto.GenerateKey()
+				if err != nil {
+					utils.Fatalf("Failed to generate random private key: %v", err)
+				}
 			}
-		}
-
-		// Create the keyfile object with a random UUID.
-		UUID, err := uuid.NewRandom()
-		if err != nil {
-			utils.Fatalf("Failed to generate random uuid: %v", err)
-		}
-		key := &keystore.Key{
-			Id:         UUID,
-			Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
-			PrivateKey: privateKey,
+			UUID, err := uuid.NewRandom()
+			if err != nil {
+				utils.Fatalf("Failed to generate random uuid: %v", err)
+			}
+			key = &keystore.Key{
+				Id:         UUID,
+				Address:    crypto.PubkeyToAddress(privateKey.PublicKey),
+				KeyType:    crypto.KeyTypeECDSA,
+				PrivateKey: privateKey,
+			}
 		}
 
 		// Encrypt key with passphrase.

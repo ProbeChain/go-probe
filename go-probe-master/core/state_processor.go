@@ -135,7 +135,7 @@ func applyTransaction(msg types.Message, config *params.ChainConfig, bc ChainCon
 	if msg.To() == nil {
 		receipt.ContractAddress = crypto.CreateAddress(evm.TxContext.Origin, tx.Nonce())
 	} else {
-		switch msg.To().Hex() {
+		switch *msg.To() {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
 			receipt.NewAddress = crypto.CreatePNSAddress(evm.TxContext.Origin, tx.Data())
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE,

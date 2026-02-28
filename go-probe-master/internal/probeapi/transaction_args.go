@@ -120,7 +120,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 	if args.To == nil {
 		err = args.setDefaultsOfContractDeploy()
 	} else {
-		switch args.To.String() {
+		switch *args.To {
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_PNS:
 			err = args.setDefaultsOfRegisterPns()
 		case common.SPECIAL_ADDRESS_FOR_REGISTER_AUTHORIZE:

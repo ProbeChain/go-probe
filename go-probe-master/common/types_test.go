@@ -125,26 +125,37 @@ func TestAddressUnmarshalJSON(t *testing.T) {
 }
 
 func TestAddressHexChecksum(t *testing.T) {
+	// Hex() now returns Bech32. Verify addresses encode/decode correctly.
 	var tests = []struct {
-		Input  string
-		Output string
+		Input string
 	}{
-		// Test cases from https://github.com/probeum/EIPs/blob/master/EIPS/eip-55.md#specification
-		{"0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed", "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"},
-		{"0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359", "0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359"},
-		{"0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb", "0xdbF03B407c01E7cD3CBea99509d93f8DDDC8C6FB"},
-		{"0xd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb", "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb"},
-		// Ensure that non-standard length input values are handled correctly
-		{"0xa", "0x000000000000000000000000000000000000000A"},
-		{"0x0a", "0x000000000000000000000000000000000000000A"},
-		{"0x00a", "0x000000000000000000000000000000000000000A"},
-		{"0x000000000000000000000000000000000000000a", "0x000000000000000000000000000000000000000A"},
+		{"0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"},
+		{"0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359"},
+		{"0xdbf03b407c01e7cd3cbea99509d93f8dddc8c6fb"},
+		{"0xd1220a0cf47c7b9be7a2e6ba89f429762e7b9adb"},
+		{"0xa"},
+		{"0x0a"},
+		{"0x00a"},
+		{"0x000000000000000000000000000000000000000a"},
 	}
 	for i, test := range tests {
-		output := HexToAddress(test.Input).Hex()
-		if output != test.Output {
-			t.Errorf("test #%d: failed to match when it should (%s != %s)", i, output, test.Output)
+		addr := HexToAddress(test.Input)
+		bech32Str := addr.Hex()
+		// Output must start with "pro1"
+		if !strings.HasPrefix(bech32Str, "pro1") {
+			t.Errorf("test #%d: expected pro1 prefix, got %s", i, bech32Str)
 		}
+		// Roundtrip: parse Bech32 back and compare bytes
+		decoded := HexToAddress(bech32Str)
+		if decoded != addr {
+			t.Errorf("test #%d: roundtrip failed: %x != %x", i, decoded, addr)
+		}
+	}
+	// Verify AddressToHex still returns EIP-55 checksummed hex
+	addr := HexToAddress("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+	hexStr := AddressToHex(addr)
+	if hexStr != "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed" {
+		t.Errorf("AddressToHex mismatch: got %s", hexStr)
 	}
 }
 
@@ -156,30 +167,28 @@ func BenchmarkAddressHex(b *testing.B) {
 }
 
 func TestMixedcaseAccount_Address(t *testing.T) {
+	// With Bech32, ValidChecksum compares original string against Bech32 output.
+	// A hex-input address will not match the Bech32 Hex() output, so ValidChecksum
+	// returns false for hex originals. Bech32 originals should match.
+	addr := HexToAddress("0xAe967917c465db8578ca9024c205720b1a3651A9")
+	bech32Addr := addr.Hex()
 
-	// https://github.com/probeum/EIPs/blob/master/EIPS/eip-55.md
-	// Note: 0X{checksum_addr} is not valid according to spec above
-
-	var res []struct {
-		A     MixedcaseAddress
-		Valid bool
+	// Create from Bech32 — should be valid
+	ma1 := NewMixedcaseAddress(addr)
+	if !ma1.ValidChecksum() {
+		t.Errorf("Expected valid checksum for Bech32 address, got invalid: %s", ma1.String())
 	}
-	if err := json.Unmarshal([]byte(`[
-		{"A" : "0xae967917c465db8578ca9024c205720b1a3651A9", "Valid": false},
-		{"A" : "0xAe967917c465db8578ca9024c205720b1a3651A9", "Valid": true},
-		{"A" : "0XAe967917c465db8578ca9024c205720b1a3651A9", "Valid": false},
-		{"A" : "0x1111111111111111111112222222222223333323", "Valid": true}
-		]`), &res); err != nil {
+
+	// Create from Bech32 string — should be valid
+	ma2, err := NewMixedcaseAddressFromString(bech32Addr)
+	if err != nil {
 		t.Fatal(err)
 	}
-
-	for _, r := range res {
-		if got := r.A.ValidChecksum(); got != r.Valid {
-			t.Errorf("Expected checksum %v, got checksum %v, input %v", r.Valid, got, r.A.String())
-		}
+	if !ma2.ValidChecksum() {
+		t.Errorf("Expected valid checksum for Bech32 string, got invalid")
 	}
 
-	//These should throw exceptions:
+	// These should throw exceptions:
 	var r2 []MixedcaseAddress
 	for _, r := range []string{
 		`["0x11111111111111111111122222222222233333"]`,     // Too short
@@ -188,14 +197,12 @@ func TestMixedcaseAccount_Address(t *testing.T) {
 		`["0x111111111111111111111222222222222333332344"]`, // Too long
 		`["1111111111111111111112222222222223333323"]`,     // Missing 0x
 		`["x1111111111111111111112222222222223333323"]`,    // Missing 0
-		`["0xG111111111111111111112222222222223333323"]`,   //Non-hex
+		`["0xG111111111111111111112222222222223333323"]`,   // Non-hex
 	} {
 		if err := json.Unmarshal([]byte(r), &r2); err == nil {
 			t.Errorf("Expected failure, input %v", r)
 		}
-
 	}
-
 }
 
 func TestHash_Scan(t *testing.T) {
@@ -383,6 +390,9 @@ func TestAddress_Format(t *testing.T) {
 	var addr Address
 	addr.SetBytes(b)
 
+	// Expected Bech32 encoding of this address
+	bech32Str := addr.Hex()
+
 	tests := []struct {
 		name string
 		out  string
@@ -391,12 +401,12 @@ func TestAddress_Format(t *testing.T) {
 		{
 			name: "println",
 			out:  fmt.Sprintln(addr),
-			want: "0xB26f2b342AAb24BCF63ea218c6A9274D30Ab9A15\n",
+			want: bech32Str + "\n",
 		},
 		{
 			name: "print",
 			out:  fmt.Sprint(addr),
-			want: "0xB26f2b342AAb24BCF63ea218c6A9274D30Ab9A15",
+			want: bech32Str,
 		},
 		{
 			name: "printf-s",
@@ -405,12 +415,12 @@ func TestAddress_Format(t *testing.T) {
 				fmt.Fprintf(buf, "%s", addr)
 				return buf.String()
 			}(),
-			want: "0xB26f2b342AAb24BCF63ea218c6A9274D30Ab9A15",
+			want: bech32Str,
 		},
 		{
 			name: "printf-q",
 			out:  fmt.Sprintf("%q", addr),
-			want: `"0xB26f2b342AAb24BCF63ea218c6A9274D30Ab9A15"`,
+			want: `"` + bech32Str + `"`,
 		},
 		{
 			name: "printf-x",
@@ -430,7 +440,7 @@ func TestAddress_Format(t *testing.T) {
 		{
 			name: "printf-v",
 			out:  fmt.Sprintf("%v", addr),
-			want: "0xB26f2b342AAb24BCF63ea218c6A9274D30Ab9A15",
+			want: bech32Str,
 		},
 		// The original default formatter for byte slice
 		{
@@ -693,6 +703,6 @@ func TestSpecialAddress(t *testing.T) {
 	}
 	for _, v := range arr {
 		addr := HexToAddress(v)
-		fmt.Println(addr.Hash().Big().Uint64() <= 512)
+		_ = addr.Hash().Big().Uint64() <= 512
 	}
 }
