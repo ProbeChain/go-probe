@@ -212,12 +212,16 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, dataDi
 		return newcfg, common.Hash{}, err
 	}
 	storedcfg := rawdb.ReadChainConfig(db, stored)
-	globalconfig.Epoch = storedcfg.Dpos.Epoch
-	//state.GetDPosCandidates().ConvertToDPosCandidate(storedcfg.Dpos.DposList)
 	if storedcfg == nil {
 		log.Warn("Found genesis block without chain config")
 		rawdb.WriteChainConfig(db, stored, newcfg)
 		return newcfg, stored, nil
+	}
+	if storedcfg.Dpos != nil {
+		globalconfig.Epoch = storedcfg.Dpos.Epoch
+	}
+	if storedcfg.Pob != nil {
+		globalconfig.Epoch = storedcfg.Pob.Epoch
 	}
 	// Special case: don't change the existing config of a non-mainnet chain if no new
 	// config is supplied. These chains would get AllProtocolChanges (and a compat error)
@@ -268,12 +272,20 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	if err != nil {
 		panic(err)
 	}
-	if g.Config.Dpos != nil {
+	if g.Config != nil && g.Config.Dpos != nil {
 		if g.Number == 0 {
 			statedb.InitDPosListAccount(g.Config.Dpos.DposList)
 		}
 	}
+	if g.Config != nil && g.Config.Pob != nil {
+		if g.Number == 0 {
+			statedb.InitDPosListAccount(g.Config.Pob.ValidatorList)
+		}
+	}
 	for addr, account := range g.Alloc {
+		if len(account.Code) > 0 {
+			statedb.CreateContractAccount(addr)
+		}
 		statedb.AddBalance(addr, account.Balance)
 		statedb.SetCode(addr, account.Code)
 		statedb.SetNonce(addr, account.Nonce)

@@ -19,6 +19,7 @@ package probeconfig
 
 import (
 	"github.com/probeum/go-probeum/consensus/greatri"
+	"github.com/probeum/go-probeum/consensus/pob"
 	"math/big"
 	"os"
 	"os/user"
@@ -220,6 +221,11 @@ func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, co
 	// If proof-of-authority is requested, set it up
 	if chainConfig.Clique != nil {
 		return clique.New(chainConfig.Clique, db)
+	}
+
+	if chainConfig.Pob != nil {
+		log.Info("CreateConsensusEngine is pob")
+		return pob.New(chainConfig.Pob, db, powEngine, chainConfig)
 	}
 
 	if chainConfig.Dpos != nil {

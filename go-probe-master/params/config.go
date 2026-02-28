@@ -27,11 +27,11 @@ import (
 
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash   = common.HexToHash("0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3")
-	RopstenGenesisHash   = common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d")
-	RinkebyGenesisHash   = common.HexToHash("0x6341fd3daf94b748c72ced5a5b26028f2474f5f00d824504e4fa37a75767e177")
-	GoerliGenesisHash    = common.HexToHash("0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a")
-	CalaverasGenesisHash = common.HexToHash("0xeb9233d066c275efcdfed8037f4fc082770176aefdbcb7691c71da412a5670f2")
+	MainnetGenesisHash   = common.HexToHash("0x925f6779d1a0780d8070331b662ac2d859e5db3bc3ff7b6a38da5eb9d341a3bc")
+	RopstenGenesisHash   = common.HexToHash("0xe90b3f584d8a5ac38afcd1051e28d6e1b28818c09193f0ca0f744935c04c26ad")
+	RinkebyGenesisHash   = common.HexToHash("0xaa55d82e6a9f67240b93f272a34544e6309d324376ad92a660a97c55a892dcd2")
+	GoerliGenesisHash    = common.HexToHash("0x854d07c55f2a14ca4a48c21739c4f87f84cda655b91a7192927dec67b23e8ca1")
+	CalaverasGenesisHash = common.HexToHash("0xacb0eec7c86b04e188812568e95fd6ae41559beba580b817b4b4d23cbccdb939")
 	VisualBlockExtra     = common.HexToHash("0x76aefdbcb7691c71da412a5670f2")
 )
 
@@ -70,7 +70,7 @@ var (
 		IstanbulBlock:       big.NewInt(9_069_000),
 		MuirGlacierBlock:    big.NewInt(9_200_000),
 		BerlinBlock:         big.NewInt(12_244_000),
-		ShenzhenBlock:       big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(12_244_000),
 		Probeash:            new(ProbeashConfig),
 		Dpos:                new(DposConfig),
 	}
@@ -124,7 +124,7 @@ var (
 		MuirGlacierBlock:    big.NewInt(7_117_117),
 		BerlinBlock:         big.NewInt(9_812_189),
 		LondonBlock:         big.NewInt(10_499_401),
-		ShenzhenBlock:       big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(10_499_401),
 		Probeash:            new(ProbeashConfig),
 	}
 
@@ -166,7 +166,7 @@ var (
 		MuirGlacierBlock:    nil,
 		BerlinBlock:         big.NewInt(8_290_928),
 		LondonBlock:         big.NewInt(8_897_988),
-		ShenzhenBlock:       big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(8_897_988),
 		Clique: &CliqueConfig{
 			Period: 15,
 			Epoch:  30000,
@@ -209,7 +209,7 @@ var (
 		MuirGlacierBlock:    nil,
 		BerlinBlock:         big.NewInt(4_460_644),
 		LondonBlock:         big.NewInt(5_062_605),
-		ShenzhenBlock:       big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(5_062_605),
 		Clique: &CliqueConfig{
 			Period: 15,
 			Epoch:  30000,
@@ -252,7 +252,7 @@ var (
 		MuirGlacierBlock:    nil,
 		BerlinBlock:         big.NewInt(0),
 		LondonBlock:         big.NewInt(500),
-		ShenzhenBlock:       big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(500),
 		Clique: &CliqueConfig{
 			Period: 30,
 			Epoch:  30000,
@@ -264,16 +264,24 @@ var (
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllProbeashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, new(DposConfig), new(ProbeashConfig), nil}
+	AllProbeashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, new(DposConfig), new(ProbeashConfig), nil, nil}
 
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Probeum core developers into the Clique consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, new(ProbeashConfig), nil}
+	// AllGreatriProtocolChanges contains every protocol change (EIPs) introduced
+	// and accepted by the Probeum core developers into the Greatri consensus.
+	AllGreatriProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, &DposConfig{Period: 0, Epoch: 30000}, nil, nil, nil}
+
+	// AllPobProtocolChanges contains every protocol change (EIPs) introduced
+	// and accepted by the Probeum core developers into the PoB consensus.
+	AllPobProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, &PobConfig{Period: 15, Epoch: 30000}}
+
+	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, new(ProbeashConfig), nil, nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -361,6 +369,7 @@ type ChainConfig struct {
 	Dpos     *DposConfig     `json:"dpos,omitempty"`
 	Probeash *ProbeashConfig `json:"probeash,omitempty"`
 	Clique   *CliqueConfig   `json:"clique,omitempty"`
+	Pob      *PobConfig      `json:"pob,omitempty"`
 }
 
 // ProbeashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -404,10 +413,27 @@ func (c *GreatriConfig) String() string {
 	return "greatri"
 }
 
+// PobConfig is the consensus engine configs for Proof-of-Behavior based sealing.
+type PobConfig struct {
+	Period            uint64               `json:"period"`            // Number of seconds between blocks to enforce
+	Epoch             uint64               `json:"epoch"`             // Epoch length for score checkpoints
+	InitialScore      uint64               `json:"initialScore"`      // Starting score for new validators (default 5000)
+	SlashFraction     uint64               `json:"slashFraction"`     // Slash severity in basis points
+	DemotionThreshold uint64               `json:"demotionThreshold"` // Score below which validator is demoted
+	ValidatorList     []common.DPoSAccount `json:"list"`              // Initial validators (reuse DPoSAccount)
+}
+
+// String implements the stringer interface, returning the consensus engine details.
+func (c *PobConfig) String() string {
+	return "pob"
+}
+
 // String implements the fmt.Stringer interface.
 func (c *ChainConfig) String() string {
 	var engine interface{}
 	switch {
+	case c.Pob != nil:
+		engine = c.Pob
 	case c.Probeash != nil:
 		engine = c.Probeash
 	case c.Clique != nil:

@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
+	pob2 "github.com/probeum/go-probeum/consensus/pob"
 	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
 	"math/big"
 	"sync"
@@ -1293,8 +1294,11 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	s := w.current.state.Copy()
 
 	//finalize seal
-	greatri, _ := w.engine.(*greatri2.Greatri)
-	greatri.DposFinalize(w.chain, header, s, w.current.txs, w.current.powAnswerUncles)
+	if greatri, ok := w.engine.(*greatri2.Greatri); ok {
+		greatri.DposFinalize(w.chain, header, s, w.current.txs, w.current.powAnswerUncles)
+	} else if pobEngine, ok := w.engine.(*pob2.ProofOfBehavior); ok {
+		pobEngine.PobFinalize(w.chain, header, s, w.current.txs, w.current.powAnswerUncles)
+	}
 	block := types.DposNewBlock(w.current.header, w.current.txs, w.current.powAnswerUncles, w.current.dposAcks, receipts,
 		trie.NewStackTrie(nil), newBlockType)
 	if err := w.engine.Seal(w.chain, block, nil, nil); err != nil {
