@@ -51,3 +51,4 @@ profile.cov
 # runtime data and binaries
 /node_data/
 /gprobe
+/probekey
