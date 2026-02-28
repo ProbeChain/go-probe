@@ -19,14 +19,14 @@ package rpc
 import (
 	"context"
 	"encoding/json"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that
@@ -231,8 +231,8 @@ func (h *handler) startCallProc(fn func(*callProc)) {
 // handleImmediate executes non-call messages. It returns false if the message is a
 // call or requires a reply.
 func (h *handler) handleImmediate(msg *jsonrpcMessage) bool {
-	if strings.HasPrefix(msg.Method, common.ETH) {
-		msg.Method = strings.Replace(msg.Method, common.ETH, common.PROBE, 1)
+	if strings.HasPrefix(msg.Method, "eth") {
+		msg.Method = strings.Replace(msg.Method, "eth", common.PROBE, 1)
 	}
 	//msg.Method = strings.Replace(msg.Method,"eth_","probe_",-1)
 	start := time.Now()

@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
 )
 
 const (

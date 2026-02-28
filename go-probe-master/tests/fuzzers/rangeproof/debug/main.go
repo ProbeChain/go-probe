@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/probeum/go-probeum/tests/fuzzers/rangeproof"
+	"github.com/probechain/go-probe/tests/fuzzers/rangeproof"
 )
 
 func main() {

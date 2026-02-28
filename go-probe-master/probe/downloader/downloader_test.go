@@ -26,15 +26,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state/snapshot"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state/snapshot"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/trie"
 )
 
 // Reduce some of the parameters to make the tester faster.

@@ -20,10 +20,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/forkid"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/forkid"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // Tests that handshake failures are detected and reported correctly.

@@ -19,7 +19,7 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -28,17 +28,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/trie"
 )
 
 // So we can deterministically seed different blockchains
@@ -75,7 +75,7 @@ func newCanonical(engine consensus.Engine, n int, full bool) (probedb.Database, 
 }
 
 func newGwei(n int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(n), big.NewInt(params.GWei))
+	return new(big.Int).Mul(big.NewInt(n), big.NewInt(params.GPico))
 }
 
 // Test fork of length N starting from block i
@@ -1439,7 +1439,7 @@ func TestEIP161AccountRemoval(t *testing.T) {
 // tests that under weird reorg conditions the blockchain and its internal header-
 // chain return the same latest block/header.
 //
-// https://github.com/probeum/go-probeum/pull/15941
+// https://github.com/probechain/go-probe/pull/15941
 func TestBlockchainHeaderchainReorgConsistency(t *testing.T) {
 	// Generate a canonical chain to act as the main dataset
 	engine := probeash.NewFaker()
@@ -1702,8 +1702,8 @@ func TestIncompleteAncientReceiptChainInsertion(t *testing.T) {
 // overtake the 'canon' chain until after it's passed canon by about 200 blocks.
 //
 // Details at:
-//  - https://github.com/probeum/go-probeum/issues/18977
-//  - https://github.com/probeum/go-probeum/pull/18988
+//  - https://github.com/probechain/go-probe/issues/18977
+//  - https://github.com/probechain/go-probe/pull/18988
 func TestLowDiffLongChain(t *testing.T) {
 	// Generate a canonical chain to act as the main dataset
 	engine := probeash.NewFaker()

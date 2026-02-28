@@ -20,7 +20,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -28,7 +28,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 func tmpKeyStoreIface(t *testing.T, encrypted bool) (dir string, ks keyStore) {

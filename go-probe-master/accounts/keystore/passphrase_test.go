@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 const (

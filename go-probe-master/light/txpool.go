@@ -23,15 +23,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
 )
 
 const (

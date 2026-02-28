@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/types"
 )
 
 var (

@@ -24,13 +24,13 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/trie"
 )
 
 func TestNodeIterator(t *testing.T) {

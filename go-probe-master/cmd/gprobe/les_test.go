@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/rpc"
 )
 
 type gproberpc struct {

@@ -19,16 +19,16 @@ package bind_test
 import (
 	"context"
 	"errors"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"math/big"
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/abi/bind"
-	"github.com/probeum/go-probeum/accounts/abi/bind/backends"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/accounts/abi/bind"
+	"github.com/probechain/go-probe/accounts/abi/bind/backends"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/types"
 )
 
 var testKey, _ = probe.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")

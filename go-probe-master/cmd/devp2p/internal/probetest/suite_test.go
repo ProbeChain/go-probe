@@ -21,11 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/internal/utesting"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
+	"github.com/probechain/go-probe/probe"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/internal/utesting"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
 )
 
 var (

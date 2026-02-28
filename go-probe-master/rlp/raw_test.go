@@ -19,7 +19,7 @@ package rlp
 import (
 	"bytes"
 	"fmt"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"io"
 	"math/big"
 	"reflect"

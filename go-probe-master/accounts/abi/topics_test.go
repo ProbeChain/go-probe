@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
 )
 
 func TestMakeTopics(t *testing.T) {

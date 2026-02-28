@@ -21,10 +21,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // Tests that fast sync is disabled after a successful sync cycle.

@@ -19,7 +19,7 @@ package probeash
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/core/types"
 	"github.com/holiman/uint256"
 )
 

@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/nat"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/nat"
+	"github.com/probechain/go-probe/rpc"
 )
 
 const (

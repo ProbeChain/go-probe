@@ -23,8 +23,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb"
 )
 
 var (

@@ -19,7 +19,7 @@ package state
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // journalEntry is a modification entry in the state change journal that can be

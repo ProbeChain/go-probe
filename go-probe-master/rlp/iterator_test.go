@@ -19,7 +19,7 @@ package rlp
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 // TestIterator tests some basic things about the ListIterator. A more

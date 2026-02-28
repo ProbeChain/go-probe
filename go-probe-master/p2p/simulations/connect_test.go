@@ -19,9 +19,9 @@ package simulations
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/simulations/adapters"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/simulations/adapters"
 )
 
 func newTestNetwork(t *testing.T, nodeCount int) (*Network, []enode.ID) {

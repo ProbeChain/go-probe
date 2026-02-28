@@ -21,7 +21,7 @@ package probe
 import (
 	"crypto/ecdsa"
 
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 )
 
 // Type aliases for ECDSA key types.

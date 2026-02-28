@@ -21,7 +21,7 @@ package metrics
 import (
 	syscall "golang.org/x/sys/unix"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // getProcessCPUTime retrieves the process' CPU time since program startup.

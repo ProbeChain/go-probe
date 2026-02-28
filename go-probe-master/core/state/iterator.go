@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/trie"
 )
 
 // NodeIterator is an iterator to traverse the entire state trie post-order,

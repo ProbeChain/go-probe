@@ -18,19 +18,19 @@ package gasprice
 
 import (
 	"context"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"math"
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rpc"
 )
 
 const testHead = 32
@@ -121,8 +121,8 @@ func newTestBackend(t *testing.T, londonBlock *big.Int, pending bool) *testBacke
 				Nonce:     b.TxNonce(addr),
 				To:        &common.Address{},
 				Gas:       30000,
-				GasFeeCap: big.NewInt(100 * params.GWei),
-				GasTipCap: big.NewInt(int64(i+1) * params.GWei),
+				GasFeeCap: big.NewInt(100 * params.GPico),
+				GasTipCap: big.NewInt(int64(i+1) * params.GPico),
 				Data:      []byte{},
 			}
 			tx = types.NewTx(txdata)
@@ -131,7 +131,7 @@ func newTestBackend(t *testing.T, londonBlock *big.Int, pending bool) *testBacke
 				Nonce:    b.TxNonce(addr),
 				To:       &common.Address{},
 				Gas:      21000,
-				GasPrice: big.NewInt(int64(i+1) * params.GWei),
+				GasPrice: big.NewInt(int64(i+1) * params.GPico),
 				Value:    big.NewInt(100),
 				Data:     []byte{},
 			}
@@ -166,17 +166,17 @@ func TestSuggestTipCap(t *testing.T) {
 	config := Config{
 		Blocks:     3,
 		Percentile: 60,
-		Default:    big.NewInt(params.GWei),
+		Default:    big.NewInt(params.GPico),
 	}
 	var cases = []struct {
 		fork   *big.Int // London fork number
 		expect *big.Int // Expected gasprice suggestion
 	}{
-		{nil, big.NewInt(params.GWei * int64(30))},
-		{big.NewInt(0), big.NewInt(params.GWei * int64(30))},  // Fork point in genesis
-		{big.NewInt(1), big.NewInt(params.GWei * int64(30))},  // Fork point in first block
-		{big.NewInt(32), big.NewInt(params.GWei * int64(30))}, // Fork point in last block
-		{big.NewInt(33), big.NewInt(params.GWei * int64(30))}, // Fork point in the future
+		{nil, big.NewInt(params.GPico * int64(30))},
+		{big.NewInt(0), big.NewInt(params.GPico * int64(30))},  // Fork point in genesis
+		{big.NewInt(1), big.NewInt(params.GPico * int64(30))},  // Fork point in first block
+		{big.NewInt(32), big.NewInt(params.GPico * int64(30))}, // Fork point in last block
+		{big.NewInt(33), big.NewInt(params.GPico * int64(30))}, // Fork point in the future
 	}
 	for _, c := range cases {
 		backend := newTestBackend(t, c.fork, false)

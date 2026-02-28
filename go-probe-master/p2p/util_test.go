@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 func TestExpHeap(t *testing.T) {

@@ -19,13 +19,13 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/core/vm"
 )
 
 // ChainContext supports retrieving headers and consensus parameters from the

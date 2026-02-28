@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/rpc"
 	"github.com/stretchr/testify/assert"
 )
 

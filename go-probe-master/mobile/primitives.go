@@ -22,7 +22,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // Strings represents s slice of strs.

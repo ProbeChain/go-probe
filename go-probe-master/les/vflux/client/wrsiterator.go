@@ -19,9 +19,9 @@ package client
 import (
 	"sync"
 
-	"github.com/probeum/go-probeum/les/utils"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/nodestate"
+	"github.com/probechain/go-probe/les/utils"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/nodestate"
 )
 
 // WrsIterator returns nodes from the specified selectable set with a weighted random

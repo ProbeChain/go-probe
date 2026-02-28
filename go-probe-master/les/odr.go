@@ -22,10 +22,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/light"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/light"
 )
 
 // LesOdr implements light.OdrBackend

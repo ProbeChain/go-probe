@@ -22,18 +22,18 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rpc"
 )
 
 const sampleNumber = 3 // Number of transactions sampled in a block
 
 var (
-	DefaultMaxPrice    = big.NewInt(500 * params.GWei)
-	DefaultIgnorePrice = big.NewInt(2 * params.Wei)
+	DefaultMaxPrice    = big.NewInt(500 * params.GPico)
+	DefaultIgnorePrice = big.NewInt(2 * params.Pico)
 )
 
 type Config struct {

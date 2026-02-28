@@ -21,9 +21,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // Tests that the custom union field encoder and decoder works correctly.

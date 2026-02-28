@@ -20,9 +20,9 @@ import (
 	"container/ring"
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
 )
 
 // chainRetriever is used by the unconfirmed block set to verify whprobeer a previously

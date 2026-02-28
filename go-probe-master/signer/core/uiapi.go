@@ -21,15 +21,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 
 	"io/ioutil"
 	"math/big"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
 )
 
 // SignerUIAPI implements methods Clef provides for a UI to query, in the bidirectional communication
@@ -157,8 +157,8 @@ func (s *UIServerAPI) ChainId() math.HexOrDecimal64 {
 }
 
 // SetChainId sets the chain id to use when signing transactions.
-// Example call to set Ropsten:
-// {"jsonrpc":"2.0","method":"clef_setChainId","params":["3"], "id":8}
+// Example call:
+// {"jsonrpc":"2.0","method":"clef_setChainId","params":["1205"], "id":8}
 func (s *UIServerAPI) SetChainId(id math.HexOrDecimal64) math.HexOrDecimal64 {
 	s.extApi.chainID = new(big.Int).SetUint64(uint64(id))
 	return s.ChainId()

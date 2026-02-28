@@ -207,7 +207,7 @@ func TestAndroid(t *testing.T) {
 		}
 	}
 	// Generate the mobile bindings for Gprobe and add the tester class
-	gobind := exec.Command("gomobile", "bind", "-javapkg", "org.probeum", "github.com/probeum/go-probeum/mobile")
+	gobind := exec.Command("gomobile", "bind", "-javapkg", "org.probeum", "github.com/probechain/go-probe/mobile")
 	if output, err := gobind.CombinedOutput(); err != nil {
 		t.Logf("%s", output)
 		t.Fatalf("failed to run gomobile bind: %v", err)

@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 func (g *G1) one() *PointG1 {

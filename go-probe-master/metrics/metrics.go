@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // Enabled is checked by the constructor functions for all of the

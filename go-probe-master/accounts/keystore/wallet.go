@@ -19,10 +19,10 @@ package keystore
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original

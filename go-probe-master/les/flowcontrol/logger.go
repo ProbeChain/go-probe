@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 // logger collects events in string format and discards events older than the

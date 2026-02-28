@@ -20,17 +20,17 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/params"
 )
 
 // This test case is a repro of an annoying bug that took us forever to catch.
-// In Greatri PoA networks (Rinkeby, Görli, etc), consecutive blocks might have
+// In Greatri PoA networks, consecutive blocks might have
 // the same state root (no block subsidy, empty block). If a node crashes, the
 // chain ends up losing the recent state and needs to regenerate it from blocks
 // already in the database. The bug was that processing the block *prior* to an

@@ -21,8 +21,8 @@ package gprobe
 import (
 	"errors"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/common"
 )
 
 // Subscription represents an event subscription where events are

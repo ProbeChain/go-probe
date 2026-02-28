@@ -22,8 +22,8 @@ package probe
 import (
 	"crypto/rand"
 
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // testPeer is a simulated peer to allow testing direct network calls.

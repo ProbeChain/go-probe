@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // weightedIterator is a iterator with an assigned weight. It is used to prioritise

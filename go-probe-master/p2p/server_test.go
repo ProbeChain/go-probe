@@ -20,8 +20,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/crypto/probe"
 	"io"
 	"math/rand"
 	"net"
@@ -29,11 +29,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/internal/testlog"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/p2p/rlpx"
+	"github.com/probechain/go-probe/internal/testlog"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/p2p/rlpx"
 )
 
 type testTransport struct {

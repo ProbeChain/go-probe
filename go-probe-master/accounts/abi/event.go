@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
 )
 
 // Event is an event potentially triggered by the EVM's LOG mechanism. The Event

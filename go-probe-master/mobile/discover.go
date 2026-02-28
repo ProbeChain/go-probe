@@ -22,7 +22,7 @@ package gprobe
 import (
 	"errors"
 
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // Enode represents a host on the network.

@@ -35,11 +35,11 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/rpc"
 	"github.com/gorilla/websocket"
 )
 

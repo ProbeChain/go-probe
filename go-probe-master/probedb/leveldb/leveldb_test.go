@@ -19,8 +19,8 @@ package leveldb
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/probedb/dbtest"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/probedb/dbtest"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/storage"
 )

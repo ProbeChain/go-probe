@@ -20,7 +20,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 const maxSelectionWeight = 1000000000 // maximum selection weight of each individual node/address group

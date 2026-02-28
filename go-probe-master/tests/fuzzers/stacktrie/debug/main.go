@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/probeum/go-probeum/tests/fuzzers/stacktrie"
+	"github.com/probechain/go-probe/tests/fuzzers/stacktrie"
 )
 
 func main() {

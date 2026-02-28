@@ -1,7 +1,7 @@
 package state
 
 import (
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 //dPosCandidateAccounts  dPos candidate account definition of array

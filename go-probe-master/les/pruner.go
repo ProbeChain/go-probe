@@ -20,10 +20,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/log"
 )
 
 // pruner is responsible for pruning historical light chain data.

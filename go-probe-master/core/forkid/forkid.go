@@ -26,10 +26,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
 )
 
 var (

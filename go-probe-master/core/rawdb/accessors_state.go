@@ -17,9 +17,9 @@
 package rawdb
 
 import (
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/probedb"
 )
 
 // ReadPreimage retrieves a single preimage of the provided hash.

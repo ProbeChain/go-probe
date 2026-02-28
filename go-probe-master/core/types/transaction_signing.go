@@ -23,10 +23,10 @@ import (
 
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/dilithium"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/crypto/dilithium"
+	"github.com/probechain/go-probe/params"
 )
 
 var ErrInvalidChainId = errors.New("invalid chain id for signer")
@@ -191,6 +191,14 @@ func NewDilithiumSigner(chainId *big.Int) Signer {
 }
 
 func (s dilithiumSigner) Sender(tx *Transaction) (common.Address, error) {
+	if tx.Type() == SuperlightTxType {
+		V, R, S := tx.RawSignatureValues()
+		V = new(big.Int).Add(V, big.NewInt(27))
+		if tx.ChainId().Cmp(s.chainId) != 0 {
+			return common.Address{}, ErrInvalidChainId
+		}
+		return recoverPlain(s.Hash(tx), R, S, V, true)
+	}
 	if tx.Type() != DilithiumTxType {
 		return s.londonSigner.Sender(tx)
 	}
@@ -210,6 +218,18 @@ func (s dilithiumSigner) Equal(s2 Signer) bool {
 }
 
 func (s dilithiumSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
+	if tx.Type() == SuperlightTxType {
+		txdata, ok := tx.inner.(*SuperlightTx)
+		if !ok {
+			return nil, nil, nil, ErrTxTypeNotSupported
+		}
+		if txdata.ChainID.Sign() != 0 && txdata.ChainID.Cmp(s.chainId) != 0 {
+			return nil, nil, nil, ErrInvalidChainId
+		}
+		R, S, _ = decodeSignature(sig)
+		V = big.NewInt(int64(sig[64]))
+		return R, S, V, nil
+	}
 	if tx.Type() != DilithiumTxType {
 		return s.londonSigner.SignatureValues(tx, sig)
 	}
@@ -219,6 +239,21 @@ func (s dilithiumSigner) SignatureValues(tx *Transaction, sig []byte) (R, S, V *
 
 // Hash returns the hash to be signed by the sender.
 func (s dilithiumSigner) Hash(tx *Transaction) common.Hash {
+	if tx.Type() == SuperlightTxType {
+		return prefixedRlpHash(
+			tx.Type(),
+			[]interface{}{
+				s.chainId,
+				tx.Nonce(),
+				tx.GasTipCap(),
+				tx.GasFeeCap(),
+				tx.Gas(),
+				tx.To(),
+				tx.Value(),
+				tx.Data(),
+				tx.AccessList(),
+			})
+	}
 	if tx.Type() != DilithiumTxType {
 		return s.londonSigner.Hash(tx)
 	}

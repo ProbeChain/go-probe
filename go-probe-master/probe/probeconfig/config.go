@@ -18,8 +18,8 @@
 package probeconfig
 
 import (
-	"github.com/probeum/go-probeum/consensus/greatri"
-	"github.com/probeum/go-probeum/consensus/pob"
+	"github.com/probechain/go-probe/consensus/greatri"
+	"github.com/probechain/go-probe/consensus/pob"
 	"math/big"
 	"os"
 	"os/user"
@@ -27,18 +27,18 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/consensus/clique"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/miner"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/consensus/clique"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/miner"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/gasprice"
+	"github.com/probechain/go-probe/probedb"
 )
 
 // FullNodeGPO contains default gasprice oracle settings for full node.
@@ -87,7 +87,7 @@ var Defaults = Config{
 	Miner: miner.Config{
 		GasFloor: 8000000,
 		GasCeil:  8000000,
-		GasPrice: big.NewInt(params.GWei),
+		GasPrice: big.NewInt(params.GPico),
 		Recommit: 3 * time.Second,
 	},
 	TxPool:      core.DefaultTxPoolConfig,

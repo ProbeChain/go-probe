@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/signer/core"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/signer/core"
 )
 
 // ValidateTransaction does a number of checks on the supplied transaction, and
@@ -49,7 +49,7 @@ func (db *Database) ValidateTransaction(selector *string, tx *core.SendTxArgs) (
 	if tx.To == nil {
 		// Contract creation should contain sufficient data to deploy a contract. A
 		// typical error is omitting sender due to some quirk in the javascript call
-		// e.g. https://github.com/probeum/go-probeum/issues/16106.
+		// e.g. https://github.com/probechain/go-probe/issues/16106.
 		if len(data) == 0 {
 			// Prevent sending probeer into black hole (show stopper)
 			if tx.Value.ToInt().Cmp(big.NewInt(0)) > 0 {

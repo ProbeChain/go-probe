@@ -17,7 +17,7 @@
 package runtime
 
 import (
-	"github.com/probeum/go-probeum/core/vm/runtime"
+	"github.com/probechain/go-probe/core/vm/runtime"
 )
 
 // Fuzz is the basic entry point for the go-fuzz tool

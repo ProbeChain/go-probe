@@ -21,7 +21,7 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/rlp"
 )
 
 var ErrNoReply = errors.New("no reply for given request")

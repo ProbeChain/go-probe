@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/les/utils"
+	"github.com/probechain/go-probe/les/utils"
 )
 
 func TestTransition(t *testing.T) {

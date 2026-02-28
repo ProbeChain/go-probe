@@ -21,7 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/probeum/go-probeum/tests/fuzzers/les"
+	"github.com/probechain/go-probe/tests/fuzzers/les"
 )
 
 func main() {

@@ -26,7 +26,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/rlp"
 )
 
 var (

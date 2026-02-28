@@ -18,14 +18,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"net"
 
-	"github.com/probeum/go-probeum/cmd/devp2p/internal/probetest"
-	"github.com/probeum/go-probeum/internal/utesting"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/rlpx"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/cmd/devp2p/internal/probetest"
+	"github.com/probechain/go-probe/internal/utesting"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/rlpx"
+	"github.com/probechain/go-probe/rlp"
 	"gopkg.in/urfave/cli.v1"
 )
 

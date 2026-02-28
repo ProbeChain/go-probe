@@ -20,9 +20,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // PublicDownloaderAPI provides an API which gives information about the current synchronisation status.

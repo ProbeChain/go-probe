@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probechain/go-probe/core/vm"
 )
 
 // Iterator for disassembled EVM instructions

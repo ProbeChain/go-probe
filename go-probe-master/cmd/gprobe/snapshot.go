@@ -23,16 +23,16 @@ import (
 	"os"
 	"time"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/state/pruner"
-	"github.com/probeum/go-probeum/core/state/snapshot"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/state/pruner"
+	"github.com/probechain/go-probe/core/state/snapshot"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/trie"
 	cli "gopkg.in/urfave/cli.v1"
 )
 
@@ -60,9 +60,6 @@ var (
 				Flags: []cli.Flag{
 					utils.DataDirFlag,
 					utils.AncientFlag,
-					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 					utils.CacheTrieJournalFlag,
 					utils.BloomFilterSizeFlag,
 				},
@@ -90,9 +87,6 @@ the trie clean cache with default directory will be deleted.
 				Flags: []cli.Flag{
 					utils.DataDirFlag,
 					utils.AncientFlag,
-					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 				},
 				Description: `
 gprobe snapshot verify-state <state-root>
@@ -110,9 +104,6 @@ In other words, this command does the snapshot to trie conversion.
 				Flags: []cli.Flag{
 					utils.DataDirFlag,
 					utils.AncientFlag,
-					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 				},
 				Description: `
 gprobe snapshot traverse-state <state-root>
@@ -132,9 +123,6 @@ It's also usable without snapshot enabled.
 				Flags: []cli.Flag{
 					utils.DataDirFlag,
 					utils.AncientFlag,
-					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 				},
 				Description: `
 gprobe snapshot traverse-rawstate <state-root>
@@ -155,9 +143,6 @@ It's also usable without snapshot enabled.
 				Flags: []cli.Flag{
 					utils.DataDirFlag,
 					utils.AncientFlag,
-					utils.RopstenFlag,
-					utils.RinkebyFlag,
-					utils.GoerliFlag,
 					utils.ExcludeCodeFlag,
 					utils.ExcludeStorageFlag,
 					utils.StartKeyFlag,

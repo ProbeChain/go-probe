@@ -17,8 +17,8 @@
 package les
 
 import (
-	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/p2p"
+	"github.com/probechain/go-probe/metrics"
+	"github.com/probechain/go-probe/p2p"
 )
 
 var (

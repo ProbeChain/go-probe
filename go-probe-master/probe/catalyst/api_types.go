@@ -17,8 +17,8 @@
 package catalyst
 
 import (
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 //go:generate go run github.com/fjl/gencodec -type assembleBlockParams -field-override assembleBlockParamsMarshaling -out gen_blockparams.go

@@ -21,7 +21,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // Handler returns a log handler which logs to the unit test log of t.

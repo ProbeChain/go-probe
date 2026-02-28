@@ -21,36 +21,26 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"golang.org/x/crypto/sha3"
 )
 
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash   = common.HexToHash("0x925f6779d1a0780d8070331b662ac2d859e5db3bc3ff7b6a38da5eb9d341a3bc")
-	RopstenGenesisHash   = common.HexToHash("0xe90b3f584d8a5ac38afcd1051e28d6e1b28818c09193f0ca0f744935c04c26ad")
-	RinkebyGenesisHash   = common.HexToHash("0xaa55d82e6a9f67240b93f272a34544e6309d324376ad92a660a97c55a892dcd2")
-	GoerliGenesisHash    = common.HexToHash("0x854d07c55f2a14ca4a48c21739c4f87f84cda655b91a7192927dec67b23e8ca1")
-	CalaverasGenesisHash = common.HexToHash("0xacb0eec7c86b04e188812568e95fd6ae41559beba580b817b4b4d23cbccdb939")
-	VisualBlockExtra     = common.HexToHash("0x76aefdbcb7691c71da412a5670f2")
+	MainnetGenesisHash = common.HexToHash("0x925f6779d1a0780d8070331b662ac2d859e5db3bc3ff7b6a38da5eb9d341a3bc")
+	VisualBlockExtra   = common.HexToHash("0x76aefdbcb7691c71da412a5670f2")
 )
 
 // TrustedCheckpoints associates each known checkpoint with the genesis hash of
 // the chain it belongs to.
 var TrustedCheckpoints = map[common.Hash]*TrustedCheckpoint{
 	MainnetGenesisHash: MainnetTrustedCheckpoint,
-	RopstenGenesisHash: RopstenTrustedCheckpoint,
-	RinkebyGenesisHash: RinkebyTrustedCheckpoint,
-	GoerliGenesisHash:  GoerliTrustedCheckpoint,
 }
 
 // CheckpointOracles associates each known checkpoint oracles with the genesis hash of
 // the chain it belongs to.
 var CheckpointOracles = map[common.Hash]*CheckpointOracleConfig{
 	MainnetGenesisHash: MainnetCheckpointOracle,
-	RopstenGenesisHash: RopstenCheckpointOracle,
-	RinkebyGenesisHash: RinkebyCheckpointOracle,
-	GoerliGenesisHash:  GoerliCheckpointOracle,
 }
 
 var (
@@ -107,181 +97,29 @@ var (
 		Threshold: 2,
 	}
 
-	// RopstenChainConfig contains the chain parameters to run a node on the Ropsten test network.
-	RopstenChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(3),
-		HomesteadBlock:      big.NewInt(0),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(0),
-		EIP150Hash:          common.HexToHash("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d"),
-		EIP155Block:         big.NewInt(10),
-		EIP158Block:         big.NewInt(10),
-		ByzantiumBlock:      big.NewInt(1_700_000),
-		ConstantinopleBlock: big.NewInt(4_230_000),
-		PetersburgBlock:     big.NewInt(4_939_394),
-		IstanbulBlock:       big.NewInt(6_485_846),
-		MuirGlacierBlock:    big.NewInt(7_117_117),
-		BerlinBlock:         big.NewInt(9_812_189),
-		LondonBlock:         big.NewInt(10_499_401),
-		ShenzhenBlock:       big.NewInt(10_499_401),
-		Probeash:            new(ProbeashConfig),
-	}
-
-	// RopstenTrustedCheckpoint contains the light client trusted checkpoint for the Ropsten test network.
-	RopstenTrustedCheckpoint = &TrustedCheckpoint{
-		SectionIndex: 279,
-		SectionHead:  common.HexToHash("0x4a4912848d4c06090097073357c10015d11c6f4544a0f93cbdd584701c3b7d58"),
-		CHTRoot:      common.HexToHash("0x9053b7867ae921e80a4e2f5a4b15212e4af3d691ca712fb33dc150e9c6ea221c"),
-		BloomRoot:    common.HexToHash("0x3dc04cb1be7ddc271f3f83469b47b76184a79d7209ef51d85b1539ea6d25a645"),
-	}
-
-	// RopstenCheckpointOracle contains a set of configs for the Ropsten test network oracle.
-	RopstenCheckpointOracle = &CheckpointOracleConfig{
-		Address: common.HexToAddress("0xEF79475013f154E6A65b54cB2742867791bf0B84"),
-		Signers: []common.Address{
-			common.HexToAddress("0x32162F3581E88a5f62e8A61892B42C46E2c18f7b"), // Peter
-			common.HexToAddress("0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"), // Martin
-			common.HexToAddress("0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"), // Zsolt
-			common.HexToAddress("0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"), // Gary
-			common.HexToAddress("0x0DF8fa387C602AE62559cC4aFa4972A7045d6707"), // Guillaume
-		},
-		Threshold: 2,
-	}
-
-	// RinkebyChainConfig contains the chain parameters to run a node on the Rinkeby test network.
-	RinkebyChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(4),
-		HomesteadBlock:      big.NewInt(1),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2),
-		EIP150Hash:          common.HexToHash("0x9b095b36c15eaf13044373aef8ee0bd3a382a5abb92e402afa44b8249c3a90e9"),
-		EIP155Block:         big.NewInt(3),
-		EIP158Block:         big.NewInt(3),
-		ByzantiumBlock:      big.NewInt(1_035_301),
-		ConstantinopleBlock: big.NewInt(3_660_663),
-		PetersburgBlock:     big.NewInt(4_321_234),
-		IstanbulBlock:       big.NewInt(5_435_345),
-		MuirGlacierBlock:    nil,
-		BerlinBlock:         big.NewInt(8_290_928),
-		LondonBlock:         big.NewInt(8_897_988),
-		ShenzhenBlock:       big.NewInt(8_897_988),
-		Clique: &CliqueConfig{
-			Period: 15,
-			Epoch:  30000,
-		},
-	}
-
-	// RinkebyTrustedCheckpoint contains the light client trusted checkpoint for the Rinkeby test network.
-	RinkebyTrustedCheckpoint = &TrustedCheckpoint{
-		SectionIndex: 266,
-		SectionHead:  common.HexToHash("0xf5655caa59689790e9d7a8ed50081f0c4f447730d279f069ca64b29f075c8688"),
-		CHTRoot:      common.HexToHash("0x2af6a663aa8c89d72f4140567c99b3c93c25ac3bb21f80a5d8380bd7c801f422"),
-		BloomRoot:    common.HexToHash("0x367d2a2eb41e48c7c4983b93ed87781ef29bd2c6fcb7d4fd4bee96f1775f783f"),
-	}
-
-	// RinkebyCheckpointOracle contains a set of configs for the Rinkeby test network oracle.
-	RinkebyCheckpointOracle = &CheckpointOracleConfig{
-		Address: common.HexToAddress("0xebe8eFA441B9302A0d7eaECc277c09d20D684540"),
-		Signers: []common.Address{
-			common.HexToAddress("0xd9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3"), // Peter
-			common.HexToAddress("0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"), // Martin
-			common.HexToAddress("0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"), // Zsolt
-			common.HexToAddress("0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"), // Gary
-		},
-		Threshold: 2,
-	}
-
-	// GoerliChainConfig contains the chain parameters to run a node on the Görli test network.
-	GoerliChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(5),
-		HomesteadBlock:      big.NewInt(0),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(0),
-		EIP155Block:         big.NewInt(0),
-		EIP158Block:         big.NewInt(0),
-		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: big.NewInt(0),
-		PetersburgBlock:     big.NewInt(0),
-		IstanbulBlock:       big.NewInt(1_561_651),
-		MuirGlacierBlock:    nil,
-		BerlinBlock:         big.NewInt(4_460_644),
-		LondonBlock:         big.NewInt(5_062_605),
-		ShenzhenBlock:       big.NewInt(5_062_605),
-		Clique: &CliqueConfig{
-			Period: 15,
-			Epoch:  30000,
-		},
-	}
-
-	// GoerliTrustedCheckpoint contains the light client trusted checkpoint for the Görli test network.
-	GoerliTrustedCheckpoint = &TrustedCheckpoint{
-		SectionIndex: 150,
-		SectionHead:  common.HexToHash("0x5294a0cf00895e94f2e5c556ebed1cacab400ab5b8e62bf5ffc3e1d8d3def23e"),
-		CHTRoot:      common.HexToHash("0x4cd8776300a2e8ea37d99d3a2e6381642dac53b0d3c5d5b1acaa1188601fd1ce"),
-		BloomRoot:    common.HexToHash("0x2bd3b7626c6a23060ed2ea0f92fe5d8f7ee8adc689079e3ad6595b2354981691"),
-	}
-
-	// GoerliCheckpointOracle contains a set of configs for the Goerli test network oracle.
-	GoerliCheckpointOracle = &CheckpointOracleConfig{
-		Address: common.HexToAddress("0x18CA0E045F0D772a851BC7e48357Bcaab0a0795D"),
-		Signers: []common.Address{
-			common.HexToAddress("0x4769bcaD07e3b938B7f43EB7D278Bc7Cb9efFb38"), // Peter
-			common.HexToAddress("0x78d1aD571A1A09D60D9BBf25894b44e4C8859595"), // Martin
-			common.HexToAddress("0x286834935f4A8Cfb4FF4C77D5770C2775aE2b0E7"), // Zsolt
-			common.HexToAddress("0xb86e2B0Ab5A4B1373e40c51A7C712c70Ba2f9f8E"), // Gary
-			common.HexToAddress("0x0DF8fa387C602AE62559cC4aFa4972A7045d6707"), // Guillaume
-		},
-		Threshold: 2,
-	}
-
-	CalaverasChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(123),
-		HomesteadBlock:      big.NewInt(0),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(0),
-		EIP155Block:         big.NewInt(0),
-		EIP158Block:         big.NewInt(0),
-		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: big.NewInt(0),
-		PetersburgBlock:     big.NewInt(0),
-		IstanbulBlock:       big.NewInt(0),
-		MuirGlacierBlock:    nil,
-		BerlinBlock:         big.NewInt(0),
-		LondonBlock:         big.NewInt(500),
-		ShenzhenBlock:       big.NewInt(500),
-		Clique: &CliqueConfig{
-			Period: 30,
-			Epoch:  30000,
-		},
-	}
-
 	// AllProbeashProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Probeum core developers into the Probeash consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllProbeashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, new(DposConfig), new(ProbeashConfig), nil, nil}
+	AllProbeashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, new(DposConfig), new(ProbeashConfig), nil, nil, nil, nil}
 
 	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Probeum core developers into the Clique consensus.
 	//
 	// This configuration is intentionally not using keyed fields to force anyone
 	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil}
+	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil, nil, nil}
 
 	// AllGreatriProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Probeum core developers into the Greatri consensus.
-	AllGreatriProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, &DposConfig{Period: 0, Epoch: 30000}, nil, nil, nil}
+	AllGreatriProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, &DposConfig{Period: 0, Epoch: 30000}, nil, nil, nil, nil, nil}
 
 	// AllPobProtocolChanges contains every protocol change (EIPs) introduced
 	// and accepted by the Probeum core developers into the PoB consensus.
-	AllPobProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil, &PobConfig{Period: 15, Epoch: 30000}}
+	AllPobProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil, nil, nil, &PobConfig{Period: 15, Epoch: 30000}, nil, nil}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, new(ProbeashConfig), nil, nil}
+	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil, new(ProbeashConfig), nil, nil, nil, nil}
 	TestRules       = TestChainConfig.Rules(new(big.Int))
 )
 
@@ -364,6 +202,10 @@ type ChainConfig struct {
 
 	DilithiumBlock *big.Int `json:"dilithiumBlock,omitempty"` // Dilithium switch block (nil = no fork, 0 = already on dilithium)
 
+	StellarSpeedBlock *big.Int `json:"stellarSpeedBlock,omitempty"` // StellarSpeed switch block (nil = no fork, 0 = already active)
+
+	SuperlightBlock *big.Int `json:"superlightBlock,omitempty"` // Superlight DEX switch block (nil = no fork, 0 = already active)
+
 	EWASMBlock    *big.Int `json:"ewasmBlock,omitempty"`    // EWASM switch block (nil = no fork, 0 = already activated)
 	CatalystBlock *big.Int `json:"catalystBlock,omitempty"` // Catalyst switch block (nil = no fork, 0 = already on catalyst)
 
@@ -372,6 +214,12 @@ type ChainConfig struct {
 	Probeash *ProbeashConfig `json:"probeash,omitempty"`
 	Clique   *CliqueConfig   `json:"clique,omitempty"`
 	Pob      *PobConfig      `json:"pob,omitempty"`
+
+	// StellarSpeed sub-second block production config
+	StellarSpeed *StellarSpeedConfig `json:"stellarSpeed,omitempty"`
+
+	// Superlight DEX config
+	Superlight *SuperlightConfig `json:"superlight,omitempty"`
 }
 
 // ProbeashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -428,6 +276,28 @@ type PobConfig struct {
 // String implements the stringer interface, returning the consensus engine details.
 func (c *PobConfig) String() string {
 	return "pob"
+}
+
+// StellarSpeedConfig holds configuration for sub-second block production.
+type StellarSpeedConfig struct {
+	Enabled          bool   `json:"enabled"`          // Whether StellarSpeed mode is active
+	TickIntervalMs   uint64 `json:"tickIntervalMs"`   // Tick interval in milliseconds (default 400)
+	PipelineEnabled  bool   `json:"pipelineEnabled"`  // Begin next block prep immediately after seal
+	ReducedAckQuorum bool   `json:"reducedAckQuorum"` // Use reduced DPOS ACK quorum for fast blocks
+	MaxTxPerTick     uint64 `json:"maxTxPerTick"`     // Max transactions per tick (0 = unlimited)
+}
+
+// String implements the stringer interface, returning the config details.
+func (c *StellarSpeedConfig) String() string {
+	return fmt.Sprintf("stellarspeed(tick=%dms, pipeline=%v)", c.TickIntervalMs, c.PipelineEnabled)
+}
+
+// SuperlightConfig holds configuration for the Superlight hybrid DEX.
+type SuperlightConfig struct {
+	Enabled       bool    `json:"enabled"`       // Whether Superlight DEX is active
+	MakerFeeBps   uint64  `json:"makerFeeBps"`   // Maker fee in basis points (default 10 = 0.1%)
+	TakerFeeBps   uint64  `json:"takerFeeBps"`   // Taker fee in basis points (default 30 = 0.3%)
+	MaxOrdersPerAccount uint64 `json:"maxOrdersPerAccount"` // Max open orders per account (default 100)
 }
 
 // String implements the fmt.Stringer interface.
@@ -547,6 +417,16 @@ func (c *ChainConfig) IsDilithium(num *big.Int) bool {
 	return isForked(c.DilithiumBlock, num)
 }
 
+// IsStellarSpeed returns whether num is either equal to the StellarSpeed fork block or greater.
+func (c *ChainConfig) IsStellarSpeed(num *big.Int) bool {
+	return isForked(c.StellarSpeedBlock, num)
+}
+
+// IsSuperlight returns whether num is either equal to the Superlight fork block or greater.
+func (c *ChainConfig) IsSuperlight(num *big.Int) bool {
+	return isForked(c.SuperlightBlock, num)
+}
+
 // CheckCompatible checks whprobeer scheduled fork transitions have been imported
 // with a mismatching chain configuration.
 func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64) *ConfigCompatError {
@@ -589,6 +469,8 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 		{name: "londonBlock", block: c.LondonBlock, optional: true},
 		{name: "shenzhenBlock", block: c.ShenzhenBlock, optional: true},
 		{name: "dilithiumBlock", block: c.DilithiumBlock, optional: true},
+		{name: "stellarSpeedBlock", block: c.StellarSpeedBlock, optional: true},
+		{name: "superlightBlock", block: c.SuperlightBlock, optional: true},
 	} {
 		if lastFork.name != "" {
 			// Next one must be higher number

@@ -20,7 +20,7 @@ import (
 	"math"
 	"sync"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 // ExpiredValue is a scalar value that is continuously expired (decreased

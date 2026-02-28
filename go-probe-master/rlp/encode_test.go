@@ -27,7 +27,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/probeum/go-probeum/common/math"
+	"github.com/probechain/go-probe/common/math"
 )
 
 type testEncoder struct {

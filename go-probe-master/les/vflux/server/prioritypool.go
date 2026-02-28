@@ -21,11 +21,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/common/prque"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/nodestate"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/common/prque"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/nodestate"
 )
 
 const (

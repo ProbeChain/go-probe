@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/node"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/node"
 	"github.com/graph-gophers/graphql-go"
 )
 

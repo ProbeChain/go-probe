@@ -19,7 +19,7 @@ package snap
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"github.com/holiman/uint256"
 )
 

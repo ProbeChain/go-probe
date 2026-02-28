@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 )
 
 // Forks table defines supported forks and their chain config.

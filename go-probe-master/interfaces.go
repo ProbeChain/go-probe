@@ -22,8 +22,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // NotFound is returned by API methods if the requested item does not exist.

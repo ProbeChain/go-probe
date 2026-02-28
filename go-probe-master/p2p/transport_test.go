@@ -18,13 +18,13 @@ package p2p
 
 import (
 	"errors"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"reflect"
 	"sync"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/probeum/go-probeum/p2p/simulations/pipes"
+	"github.com/probechain/go-probe/p2p/simulations/pipes"
 )
 
 func TestProtocolHandshake(t *testing.T) {

@@ -19,8 +19,8 @@ package probe
 import (
 	"time"
 
-	"github.com/probeum/go-probeum/common/bitutil"
-	"github.com/probeum/go-probeum/core/rawdb"
+	"github.com/probechain/go-probe/common/bitutil"
+	"github.com/probechain/go-probe/core/rawdb"
 )
 
 const (

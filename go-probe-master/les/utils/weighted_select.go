@@ -20,7 +20,7 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 type (

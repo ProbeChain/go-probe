@@ -23,9 +23,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/params"
 )
 
 // Genesis block for nodes which don't care about the DAO fork (i.e. not configured)

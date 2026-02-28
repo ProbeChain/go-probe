@@ -19,7 +19,7 @@ package snap
 import (
 	"time"
 
-	"github.com/probeum/go-probeum/p2p/tracker"
+	"github.com/probechain/go-probe/p2p/tracker"
 )
 
 // requestTracker is a singleton tracker for request times.

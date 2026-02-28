@@ -21,25 +21,25 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	atomicClock "github.com/probeum/go-probeum/core/atomic"
-	greatri2 "github.com/probeum/go-probeum/consensus/greatri"
-	pob2 "github.com/probeum/go-probeum/consensus/pob"
-	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
+	atomicClock "github.com/probechain/go-probe/core/atomic"
+	greatri2 "github.com/probechain/go-probe/consensus/greatri"
+	pob2 "github.com/probechain/go-probe/consensus/pob"
+	probehash2 "github.com/probechain/go-probe/consensus/probeash"
 	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/trie"
 )
 
 const (
@@ -250,7 +250,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	worker := &worker{
 		config:               config,
 		chainConfig:          chainConfig,
-		coinbase:             config.Probeerbase,
+		coinbase:             config.Probebase,
 		engine:               engine,
 		powEngine:            powEngine,
 		probe:                probe,
@@ -302,6 +302,11 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 
 	go worker.commitAckLoop()
 
+	// Start StellarSpeed loop if configured
+	if chainConfig.StellarSpeed != nil && chainConfig.StellarSpeed.Enabled {
+		go worker.stellarSpeedLoop()
+	}
+
 	// Submit first work to initialize pending state.
 	if init {
 		//worker.startCh <- struct{}{}
@@ -329,8 +334,8 @@ func (w *worker) commitAckLoop() {
 	}
 }
 
-// setProbeerbase sets the probeerbase used to initialize the block coinbase field.
-func (w *worker) setProbeerbase(addr common.Address) {
+// setProbebase sets the probebase used to initialize the block coinbase field.
+func (w *worker) setProbebase(addr common.Address) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	w.coinbase = addr
@@ -1204,8 +1209,15 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	realParent := w.chain.GetRealBlockByNumber(parentBlockNum.Uint64())
 
 	timestamp := time.Now().Unix()
-	if parent.Time() >= uint64(timestamp) {
-		timestamp = int64(parent.Time() + 1)
+	if w.chainConfig.IsStellarSpeed(newBlockNumber) {
+		// In StellarSpeed mode, allow same-second blocks (ordered by AtomicTime)
+		if parent.Time() > uint64(timestamp) {
+			timestamp = int64(parent.Time())
+		}
+	} else {
+		if parent.Time() >= uint64(timestamp) {
+			timestamp = int64(parent.Time() + 1)
+		}
 	}
 
 	header := &types.Header{
@@ -1281,8 +1293,16 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	} else {
 		w.current.dposAcks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeOppose)
 	}
-	if len(w.current.dposAcks) < int(LeastDposWitness) {
-		log.Error("not enough dposAck in blockchain! something error", "parentBlockNum", parentBlockNum)
+	requiredAcks := int(LeastDposWitness)
+	if w.chainConfig.IsStellarSpeed(newBlockNumber) && w.chainConfig.StellarSpeed != nil && w.chainConfig.StellarSpeed.ReducedAckQuorum {
+		// In StellarSpeed mode with reduced quorum, require only half the normal ACKs (min 1)
+		requiredAcks = int(LeastDposWitness) / 2
+		if requiredAcks < 1 {
+			requiredAcks = 1
+		}
+	}
+	if len(w.current.dposAcks) < requiredAcks {
+		log.Error("not enough dposAck in blockchain!", "parentBlockNum", parentBlockNum, "have", len(w.current.dposAcks), "need", requiredAcks)
 		return nil
 	}
 	ackCount := types.DposAckCount{
@@ -1334,6 +1354,66 @@ func (w *worker) postSideBlock(event core.ChainSideEvent) {
 	select {
 	case w.chainSideCh <- event:
 	case <-w.exitCh:
+	}
+}
+
+// stellarSpeedLoop is a fast-path block production loop for StellarSpeed mode.
+// It uses a fixed 400ms ticker to produce blocks at sub-second intervals.
+func (w *worker) stellarSpeedLoop() {
+	cfg := w.chainConfig.StellarSpeed
+	if cfg == nil || !cfg.Enabled {
+		return
+	}
+	tickInterval := time.Duration(cfg.TickIntervalMs) * time.Millisecond
+	if tickInterval == 0 {
+		tickInterval = 400 * time.Millisecond
+	}
+	ticker := time.NewTicker(tickInterval)
+	defer ticker.Stop()
+
+	log.Info("StellarSpeed loop started", "tickInterval", tickInterval)
+
+	for {
+		select {
+		case <-ticker.C:
+			if !w.isRunning() {
+				continue
+			}
+			currentBlock := w.chain.CurrentBlock()
+			if currentBlock == nil {
+				continue
+			}
+			// Only produce in StellarSpeed mode if fork is active
+			if !w.chainConfig.IsStellarSpeed(currentBlock.Number()) {
+				continue
+			}
+			// Check if we are a valid producer
+			if !w.imDposWorkNode(currentBlock.Number()) {
+				continue
+			}
+			nextNumber := new(big.Int).Add(currentBlock.Number(), big.NewInt(1))
+			effectNumber := w.effectBlockNumber
+
+			// Determine block type (alternate visual/effect based on sequence)
+			blockType := types.BlockTypeVisual
+			if nextNumber.Uint64()%2 == 0 {
+				blockType = types.BlockTypeEffect
+			}
+
+			log.Debug("StellarSpeed tick", "nextBlock", nextNumber, "type", blockType)
+
+			// Use the standard dposCommitNewWork path
+			w.dposCommitNewWork(nil, false, effectNumber, nextNumber, blockType)
+
+			// Pipeline: if enabled, immediately prep next state
+			if cfg.PipelineEnabled {
+				// Signal readiness for next block by not waiting for propagation
+				log.Trace("StellarSpeed pipeline: ready for next tick")
+			}
+		case <-w.exitCh:
+			log.Info("StellarSpeed loop exited")
+			return
+		}
 	}
 }
 

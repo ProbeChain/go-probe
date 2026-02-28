@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // randomHash generates a random blob of data and returns it as a hash.

@@ -22,8 +22,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
 )
 
 // packBytesSlice packs the given bytes as [L, V] as the canonical representation

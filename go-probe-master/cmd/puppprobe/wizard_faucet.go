@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/log"
 )
 
 // deployFaucet queries the user for various input on deploying a faucet, after

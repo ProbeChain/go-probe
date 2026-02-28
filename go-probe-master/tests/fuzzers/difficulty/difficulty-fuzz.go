@@ -23,8 +23,8 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core/types"
 )
 
 type fuzzer struct {

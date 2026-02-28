@@ -26,10 +26,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/internal/testlog"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/internal/testlog"
+	"github.com/probechain/go-probe/log"
 )
 
 // Tests whprobeer remote HTTP servers are correctly notified of new work.

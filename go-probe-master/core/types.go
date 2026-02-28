@@ -17,9 +17,9 @@
 package core
 
 import (
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
 )
 
 // Validator is an interface which defines the standard for block validation. It

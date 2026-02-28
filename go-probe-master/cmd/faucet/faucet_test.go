@@ -19,7 +19,7 @@ package main
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 func TestFacebook(t *testing.T) {

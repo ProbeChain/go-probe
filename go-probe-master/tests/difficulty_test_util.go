@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
 )
 
 //go:generate gencodec -type DifficultyTest -field-override difficultyTestMarshaling -out gen_difficultytest.go

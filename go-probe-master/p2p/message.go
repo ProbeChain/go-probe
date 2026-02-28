@@ -25,9 +25,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // Msg defines the structure of a p2p message.

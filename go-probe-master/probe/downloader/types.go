@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // peerDropFn is a callback type for dropping a peer detected as malicious.

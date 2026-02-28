@@ -23,8 +23,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // nonceHeap is a heap.Interface implementation over 64bit unsigned integers for

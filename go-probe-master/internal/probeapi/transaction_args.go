@@ -20,12 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rpc"
 	"math/big"
 )
 

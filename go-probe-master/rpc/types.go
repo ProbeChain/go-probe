@@ -23,8 +23,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 // API describes the set of methods offered over the RPC interface

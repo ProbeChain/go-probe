@@ -24,9 +24,9 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/metrics/exp"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
+	"github.com/probechain/go-probe/metrics/exp"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"gopkg.in/urfave/cli.v1"

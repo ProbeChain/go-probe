@@ -23,9 +23,9 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/params"
 	"github.com/holiman/uint256"
 )
 

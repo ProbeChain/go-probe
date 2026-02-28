@@ -19,8 +19,8 @@ package runtime_test
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/vm/runtime"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/vm/runtime"
 )
 
 func ExampleExecute() {

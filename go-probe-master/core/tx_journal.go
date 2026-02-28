@@ -21,10 +21,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // errNoActiveJournal is returned if a transaction is attempted to be inserted

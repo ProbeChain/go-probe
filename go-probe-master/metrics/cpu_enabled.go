@@ -19,7 +19,7 @@
 package metrics
 
 import (
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 	"github.com/shirou/gopsutil/cpu"
 )
 

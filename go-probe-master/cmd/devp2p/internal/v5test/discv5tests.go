@@ -22,10 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/internal/utesting"
-	"github.com/probeum/go-probeum/p2p/discover/v5wire"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/netutil"
+	"github.com/probechain/go-probe/internal/utesting"
+	"github.com/probechain/go-probe/p2p/discover/v5wire"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/netutil"
 )
 
 // Suite is the discv5 test suite.

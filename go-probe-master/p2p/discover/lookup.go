@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // lookup performs a network search for nodes close to the given target. It approaches the

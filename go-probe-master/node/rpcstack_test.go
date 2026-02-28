@@ -25,9 +25,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/internal/testlog"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/internal/testlog"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rpc"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 )

@@ -26,8 +26,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
 )
 
 // nodeDockerfile is the Dockerfile required to run an Probeum node.
@@ -42,7 +42,7 @@ ADD genesis.json /genesis.json
 RUN \
   echo 'gprobe --cache 512 init /genesis.json' > gprobe.sh && \{{if .Unlock}}
 	echo 'mkdir -p /root/.probeum/keystore/ && cp /signer.json /root/.probeum/keystore/' >> gprobe.sh && \{{end}}
-	echo $'exec gprobe --networkid {{.NetworkID}} --cache 512 --port {{.Port}} --nat extip:{{.IP}} --maxpeers {{.Peers}} {{.LightFlag}} --probestats \'{{.Probestats}}\' {{if .Bootnodes}}--bootnodes {{.Bootnodes}}{{end}} {{if .Probeerbase}}--miner.probeerbase {{.Probeerbase}} --mine --miner.threads 1{{end}} {{if .Unlock}}--unlock 0 --password /signer.pass --mine{{end}} --miner.gastarget {{.GasTarget}} --miner.gaslimit {{.GasLimit}} --miner.gasprice {{.GasPrice}}' >> gprobe.sh
+	echo $'exec gprobe --networkid {{.NetworkID}} --cache 512 --port {{.Port}} --nat extip:{{.IP}} --maxpeers {{.Peers}} {{.LightFlag}} --probestats \'{{.Probestats}}\' {{if .Bootnodes}}--bootnodes {{.Bootnodes}}{{end}} {{if .Probebase}}--miner.probebase {{.Probebase}} --mine --miner.threads 1{{end}} {{if .Unlock}}--unlock 0 --password /signer.pass --mine{{end}} --miner.gastarget {{.GasTarget}} --miner.gaslimit {{.GasLimit}} --miner.gasprice {{.GasPrice}}' >> gprobe.sh
 
 ENTRYPOINT ["/bin/sh", "gprobe.sh"]
 `
@@ -67,7 +67,7 @@ services:
       - TOTAL_PEERS={{.TotalPeers}}
       - LIGHT_PEERS={{.LightPeers}}
       - STATS_NAME={{.Probestats}}
-      - MINER_NAME={{.Probeerbase}}
+      - MINER_NAME={{.Probebase}}
       - GAS_TARGET={{.GasTarget}}
       - GAS_LIMIT={{.GasLimit}}
       - GAS_PRICE={{.GasPrice}}
@@ -84,7 +84,7 @@ services:
 // already exists there, it will be overwritten!
 func deployNode(client *sshClient, network string, bootnodes []string, config *nodeInfos, nocache bool) ([]byte, error) {
 	kind := "sealnode"
-	if config.keyJSON == "" && config.probeerbase == "" {
+	if config.keyJSON == "" && config.probebase == "" {
 		kind = "bootnode"
 		bootnodes = make([]string, 0)
 	}
@@ -105,7 +105,7 @@ func deployNode(client *sshClient, network string, bootnodes []string, config *n
 		"LightFlag": lightFlag,
 		"Bootnodes": strings.Join(bootnodes, ","),
 		"Probestats":  config.probestats,
-		"Probeerbase": config.probeerbase,
+		"Probebase": config.probebase,
 		"GasTarget": uint64(1000000 * config.gasTarget),
 		"GasLimit":  uint64(1000000 * config.gasLimit),
 		"GasPrice":  uint64(1000000000 * config.gasPrice),
@@ -124,7 +124,7 @@ func deployNode(client *sshClient, network string, bootnodes []string, config *n
 		"Light":      config.peersLight > 0,
 		"LightPeers": config.peersLight,
 		"Probestats":   config.probestats[:strings.Index(config.probestats, ":")],
-		"Probeerbase":  config.probeerbase,
+		"Probebase":  config.probebase,
 		"GasTarget":  config.gasTarget,
 		"GasLimit":   config.gasLimit,
 		"GasPrice":   config.gasPrice,
@@ -161,7 +161,7 @@ type nodeInfos struct {
 	enode      string
 	peersTotal int
 	peersLight int
-	probeerbase  string
+	probebase  string
 	keyJSON    string
 	keyPass    string
 	gasTarget  float64
@@ -185,10 +185,10 @@ func (info *nodeInfos) Report() map[string]string {
 		report["Gas floor (baseline target)"] = fmt.Sprintf("%0.3f MGas", info.gasTarget)
 		report["Gas ceil  (target maximum)"] = fmt.Sprintf("%0.3f MGas", info.gasLimit)
 
-		if info.probeerbase != "" {
+		if info.probebase != "" {
 			// Probeash proof-of-work miner
 			report["Probeash directory"] = info.probeashdir
-			report["Miner account"] = info.probeerbase
+			report["Miner account"] = info.probebase
 		}
 		if info.keyJSON != "" {
 			// Clique proof-of-authority signer
@@ -260,7 +260,7 @@ func checkNode(client *sshClient, network string, boot bool) (*nodeInfos, error)
 		peersTotal: totalPeers,
 		peersLight: lightPeers,
 		probestats:   infos.envvars["STATS_NAME"],
-		probeerbase:  infos.envvars["MINER_NAME"],
+		probebase:  infos.envvars["MINER_NAME"],
 		keyJSON:    keyJSON,
 		keyPass:    keyPass,
 		gasTarget:  gasTarget,

@@ -17,7 +17,7 @@
 package vm
 
 import (
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 )
 
 func minSwapStack(n int) int {

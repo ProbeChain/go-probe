@@ -21,7 +21,7 @@ package p2p
 import (
 	"net"
 
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/metrics"
 )
 
 const (

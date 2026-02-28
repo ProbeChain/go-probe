@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 )
 
 // FunctionType represents different types of functions a contract might have.

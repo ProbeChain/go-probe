@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/probeum/go-probeum/internal/cmdtest"
+	"github.com/probechain/go-probe/internal/cmdtest"
 )
 
 type testProbekey struct {

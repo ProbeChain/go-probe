@@ -20,13 +20,13 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"encoding/binary"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 
 	"time"
 
 	"github.com/hashicorp/golang-lru/simplelru"
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 const handshakeTimeout = time.Second

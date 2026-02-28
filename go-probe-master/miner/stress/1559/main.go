@@ -19,7 +19,7 @@ package main
 
 import (
 	"crypto/ecdsa"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
@@ -27,21 +27,21 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/fdlimit"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/miner"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/fdlimit"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/miner"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probe"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/probeconfig"
 )
 
 var (
@@ -60,7 +60,7 @@ func main() {
 	// Pre-generate the probeash mining DAG so we don't race
 	probeash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".probeash"))
 
-	// Create an Probeash network based off of the Ropsten config
+	// Create an Probeash network based off of the Probeash config
 	genesis := makeGenesis(faucets)
 
 	var (
@@ -133,7 +133,7 @@ func main() {
 		}
 
 		// Wait if the basefee is raised too fast
-		if baseFee != nil && baseFee.Cmp(new(big.Int).Mul(big.NewInt(100), big.NewInt(params.GWei))) > 0 {
+		if baseFee != nil && baseFee.Cmp(new(big.Int).Mul(big.NewInt(100), big.NewInt(params.GPico))) > 0 {
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
@@ -186,7 +186,7 @@ func makeTransaction(nonce uint64, privKey *ecdsa.PrivateKey, signer types.Signe
 // makeGenesis creates a custom Ethash genesis block based on some pre-defined
 // faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
-	genesis := core.DefaultRopstenGenesisBlock()
+	genesis := core.DefaultGenesisBlock()
 
 	genesis.Config = params.AllProbeashProtocolChanges
 	genesis.Config.LondonBlock = londonBlock

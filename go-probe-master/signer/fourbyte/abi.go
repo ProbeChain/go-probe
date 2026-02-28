@@ -23,8 +23,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/probeum/go-probeum/accounts/abi"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/accounts/abi"
+	"github.com/probechain/go-probe/common"
 )
 
 // decodedCallData is an internal type to represent a method call parsed according

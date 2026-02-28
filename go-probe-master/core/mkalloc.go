@@ -34,8 +34,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/rlp"
 )
 
 type allocItem struct{ Addr, Balance *big.Int }

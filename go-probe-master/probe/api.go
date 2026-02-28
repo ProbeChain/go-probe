@@ -28,16 +28,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/rpc"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/rpc"
+	"github.com/probechain/go-probe/trie"
 )
 
 // PublicProbeumAPI provides an API to access Probeum full node-related
@@ -51,14 +51,14 @@ func NewPublicProbeumAPI(e *Probeum) *PublicProbeumAPI {
 	return &PublicProbeumAPI{e}
 }
 
-// Probeerbase is the address that mining rewards will be send to
-func (api *PublicProbeumAPI) Probeerbase() (common.Address, error) {
-	return api.e.Probeerbase()
+// Probebase is the address that mining rewards will be send to
+func (api *PublicProbeumAPI) Probebase() (common.Address, error) {
+	return api.e.Probebase()
 }
 
-// Coinbase is the address that mining rewards will be send to (alias for Probeerbase)
+// Coinbase is the address that mining rewards will be send to (alias for Probebase)
 func (api *PublicProbeumAPI) Coinbase() (common.Address, error) {
-	return api.Probeerbase()
+	return api.Probebase()
 }
 
 // Hashrate returns the POW hashrate
@@ -129,9 +129,9 @@ func (api *PrivateMinerAPI) SetGasPrice(gasPrice hexutil.Big) bool {
 	return true
 }
 
-// SetProbeerbase sets the probeerbase of the miner
-func (api *PrivateMinerAPI) SetProbeerbase(probeerbase common.Address) bool {
-	api.e.SetProbeerbase(probeerbase)
+// SetProbebase sets the probebase of the miner
+func (api *PrivateMinerAPI) SetProbebase(probebase common.Address) bool {
+	api.e.SetProbebase(probebase)
 	return true
 }
 

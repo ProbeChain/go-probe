@@ -19,9 +19,9 @@ package state
 import (
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
 )
 
 var (

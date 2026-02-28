@@ -22,16 +22,16 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probe/downloader"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probe/downloader"
 )
 
 // Backend wraps all methods required for mining.
@@ -42,7 +42,7 @@ type Backend interface {
 
 // Config is the configuration parameters of mining.
 type Config struct {
-	Probeerbase common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
+	Probebase common.Address `toml:",omitempty"` // Public address for block mining rewards (default = first account)
 	Notify      []string       `toml:",omitempty"` // HTTP URL list to be notified of new work packages (only useful in probeash).
 	NotifyFull  bool           `toml:",omitempty"` // Notify with pending block headers instead of work packages
 	ExtraData   hexutil.Bytes  `toml:",omitempty"` // Block extra data set by the miner
@@ -118,20 +118,20 @@ func (miner *Miner) update() {
 			case downloader.FailedEvent:
 				canStart = true
 				if shouldStart {
-					miner.SetProbeerbase(miner.coinbase)
+					miner.SetProbebase(miner.coinbase)
 					miner.worker.start()
 				}
 			case downloader.DoneEvent:
 				canStart = true
 				if shouldStart {
-					miner.SetProbeerbase(miner.coinbase)
+					miner.SetProbebase(miner.coinbase)
 					miner.worker.start()
 				}
 				// Stop reacting to downloader events
 				events.Unsubscribe()
 			}
 		case addr := <-miner.startCh:
-			miner.SetProbeerbase(addr)
+			miner.SetProbebase(addr)
 			if canStart {
 				miner.worker.start()
 			}
@@ -201,9 +201,9 @@ func (miner *Miner) PendingBlockAndReceipts() (*types.Block, types.Receipts) {
 	return miner.worker.pendingBlockAndReceipts()
 }
 
-func (miner *Miner) SetProbeerbase(addr common.Address) {
+func (miner *Miner) SetProbebase(addr common.Address) {
 	miner.coinbase = addr
-	miner.worker.setProbeerbase(addr)
+	miner.worker.setProbebase(addr)
 }
 
 // EnablePreseal turns on the preseal mining feature. It's enabled by default.

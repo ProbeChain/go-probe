@@ -25,13 +25,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // filter is a helper struct that holds meta information over the filter type

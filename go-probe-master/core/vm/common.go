@@ -17,10 +17,10 @@
 package vm
 
 import (
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
-	//uint256 "github.com/probeum/go-probeum/core/vm/uint256"
-	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
+	//uint256 "github.com/probechain/go-probe/core/vm/uint256"
+	uint256 "github.com/probechain/go-probe/core/vm/uint256"
 )
 
 // calcMemSize64 calculates the required memory size, and returns

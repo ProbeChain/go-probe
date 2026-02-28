@@ -26,8 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/rlp"
 	bloomfilter "github.com/holiman/bloomfilter/v2"
 )
 

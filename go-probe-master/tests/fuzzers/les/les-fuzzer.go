@@ -22,17 +22,17 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
-	l "github.com/probeum/go-probeum/les"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/crypto"
+	l "github.com/probechain/go-probe/les"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/trie"
 )
 
 var (
@@ -74,7 +74,7 @@ func makechain() (bc *core.BlockChain, addrHashes, txHashes []common.Hash) {
 				addr = crypto.CreateAddress(bankAddr, nonce)
 			} else {
 				addr = common.BigToAddress(big.NewInt(int64(i)))
-				tx, _ = types.SignTx(types.NewTransaction(nonce, addr, big.NewInt(10000), params.TxGas, big.NewInt(params.GWei), nil), signer, bankKey)
+				tx, _ = types.SignTx(types.NewTransaction(nonce, addr, big.NewInt(10000), params.TxGas, big.NewInt(params.GPico), nil), signer, bankKey)
 			}
 			gen.AddTx(tx)
 			addrHashes = append(addrHashes, crypto.Keccak256Hash(addr[:]))

@@ -27,14 +27,14 @@ import (
 
 	"gopkg.in/urfave/cli.v1"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/probe/catalyst"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/probe/catalyst"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/params"
 	"github.com/naoina/toml"
 )
 

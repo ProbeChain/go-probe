@@ -17,10 +17,10 @@
 package les
 
 import (
-	"github.com/probeum/go-probeum/core/forkid"
-	"github.com/probeum/go-probeum/p2p/dnsdisc"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/core/forkid"
+	"github.com/probechain/go-probe/p2p/dnsdisc"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // lesEntry is the "les" ENR entry. This is set for LES servers only.

@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 func TestInterfaceGetSet(t *testing.T) {

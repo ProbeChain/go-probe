@@ -2,8 +2,8 @@ package state
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/rlp"
 	"math/big"
 	"os"
 	"testing"

@@ -24,12 +24,12 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	vfc "github.com/probeum/go-probeum/les/vflux/client"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	vfc "github.com/probechain/go-probe/les/vflux/client"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // Constants to match up protocol versions and messages

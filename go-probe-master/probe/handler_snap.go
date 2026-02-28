@@ -17,9 +17,9 @@
 package probe
 
 import (
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probe/protocols/snap"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/probe/protocols/snap"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 // snapHandler implements the snap.Backend interface to handle the various network

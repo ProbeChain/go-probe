@@ -27,12 +27,12 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/usbwallet/trezor"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/usbwallet/trezor"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
 	"github.com/golang/protobuf/proto"
 )
 

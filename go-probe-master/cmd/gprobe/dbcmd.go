@@ -24,14 +24,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/console/prompt"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/console/prompt"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/trie"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -72,10 +72,6 @@ Remove blockchain and state databases`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 		},
 		Usage:       "Inspect the storage size for each type of data in the database",
 		Description: `This commands iterates the entire database. If the optional 'prefix' and 'start' arguments are provided, then the iteration is limited to the given subset of data.`,
@@ -88,10 +84,6 @@ Remove blockchain and state databases`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 		},
 	}
 	dbCompactCmd = cli.Command{
@@ -102,10 +94,6 @@ Remove blockchain and state databases`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 			utils.CacheFlag,
 			utils.CacheDatabaseFlag,
 		},
@@ -122,10 +110,6 @@ corruption if it is aborted during execution'!`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 		},
 		Description: "This command looks up the specified database key from the database.",
 	}
@@ -138,10 +122,6 @@ corruption if it is aborted during execution'!`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 		},
 		Description: `This command deletes the specified database key from the database. 
 WARNING: This is a low-level operation which may cause database corruption!`,
@@ -155,10 +135,6 @@ WARNING: This is a low-level operation which may cause database corruption!`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 		},
 		Description: `This command sets a given database key to the given value. 
 WARNING: This is a low-level operation which may cause database corruption!`,
@@ -172,10 +148,6 @@ WARNING: This is a low-level operation which may cause database corruption!`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 		},
 		Description: "This command looks up the specified database key from the database.",
 	}
@@ -188,10 +160,6 @@ WARNING: This is a low-level operation which may cause database corruption!`,
 			utils.DataDirFlag,
 			utils.SyncModeFlag,
 			utils.MainnetFlag,
-			utils.RopstenFlag,
-			utils.RinkebyFlag,
-			utils.GoerliFlag,
-			utils.CalaverasFlag,
 		},
 		Description: "This command displays information about the freezer index.",
 	}

@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/probeum/go-probeum/internal/debug"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/internal/debug"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/params"
 	"gopkg.in/urfave/cli.v1"
 )
 

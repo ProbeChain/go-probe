@@ -5891,7 +5891,7 @@ require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof requ
      * @author Alex Beregszaszi <alex@rtfs.hu>
      * @date 2016
      *
-     * Reference: https://github.com/probeum/go-probeum/blob/swarm/internal/web3ext/web3ext.go#L33
+     * Reference: https://github.com/probechain/go-probe/blob/swarm/internal/web3ext/web3ext.go#L33
      */
 
     "use strict";

@@ -19,8 +19,8 @@ package client
 import (
 	"io"
 
-	"github.com/probeum/go-probeum/les/utils"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/les/utils"
+	"github.com/probechain/go-probe/rlp"
 )
 
 const basketFactor = 1000000 // reference basket amount and value scale factor

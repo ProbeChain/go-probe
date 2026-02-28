@@ -25,8 +25,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 const jsonIndent = "    "

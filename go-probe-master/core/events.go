@@ -17,8 +17,8 @@
 package core
 
 import (
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // NewTxsEvent is posted when a batch of transactions enter the transaction pool.

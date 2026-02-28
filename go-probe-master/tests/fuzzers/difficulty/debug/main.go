@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/probeum/go-probeum/tests/fuzzers/difficulty"
+	"github.com/probechain/go-probe/tests/fuzzers/difficulty"
 )
 
 func main() {

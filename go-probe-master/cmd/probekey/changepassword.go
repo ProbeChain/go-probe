@@ -21,8 +21,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/cmd/utils"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/cmd/utils"
 	"gopkg.in/urfave/cli.v1"
 )
 

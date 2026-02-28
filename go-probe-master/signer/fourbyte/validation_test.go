@@ -20,9 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/signer/core"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/signer/core"
 )
 
 func mixAddr(a string) (*common.MixedcaseAddress, error) {

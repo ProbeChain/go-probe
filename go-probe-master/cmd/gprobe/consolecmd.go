@@ -18,14 +18,12 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/console"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/console"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -121,22 +119,7 @@ func remoteConsole(ctx *cli.Context) error {
 			path = ctx.GlobalString(utils.DataDirFlag.Name)
 		}
 		if path != "" {
-			if ctx.GlobalBool(utils.RopstenFlag.Name) {
-				// Maintain compatibility with older Gprobe configurations storing the
-				// Ropsten database in `testnet` instead of `ropsten`.
-				legacyPath := filepath.Join(path, "testnet")
-				if _, err := os.Stat(legacyPath); !os.IsNotExist(err) {
-					path = legacyPath
-				} else {
-					path = filepath.Join(path, "ropsten")
-				}
-			} else if ctx.GlobalBool(utils.RinkebyFlag.Name) {
-				path = filepath.Join(path, "rinkeby")
-			} else if ctx.GlobalBool(utils.GoerliFlag.Name) {
-				path = filepath.Join(path, "goerli")
-			} else if ctx.GlobalBool(utils.CalaverasFlag.Name) {
-				path = filepath.Join(path, "calaveras")
-			}
+			// path stays as-is for mainnet
 		}
 		endpoint = fmt.Sprintf("%s/gprobe.ipc", path)
 	}

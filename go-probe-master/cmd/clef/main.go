@@ -35,24 +35,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/internal/flags"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/rpc"
-	"github.com/probeum/go-probeum/signer/core"
-	"github.com/probeum/go-probeum/signer/fourbyte"
-	"github.com/probeum/go-probeum/signer/rules"
-	"github.com/probeum/go-probeum/signer/storage"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/internal/flags"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/rpc"
+	"github.com/probechain/go-probe/signer/core"
+	"github.com/probechain/go-probe/signer/fourbyte"
+	"github.com/probechain/go-probe/signer/rules"
+	"github.com/probechain/go-probe/signer/storage"
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
@@ -100,7 +100,7 @@ var (
 	chainIdFlag = cli.Int64Flag{
 		Name:  "chainid",
 		Value: params.MainnetChainConfig.ChainID.Int64(),
-		Usage: "Chain id to use for signing (1=mainnet, 3=Ropsten, 4=Rinkeby, 5=Goerli)",
+		Usage: "Chain id to use for signing (1=mainnet, 1205=ProbeChain)",
 	}
 	rpcPortFlag = cli.IntFlag{
 		Name:  "http.port",
@@ -795,7 +795,7 @@ func checkFile(filename string) error {
 	}
 	// Check the unix permission bits
 	// However, on windows, we cannot use the unix perm-bits, see
-	// https://github.com/probeum/go-probeum/issues/20123
+	// https://github.com/probechain/go-probe/issues/20123
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0377 != 0 {
 		return fmt.Errorf("file (%v) has insecure file permissions (%v)", filename, info.Mode().String())
 	}

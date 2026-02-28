@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 	"gopkg.in/urfave/cli.v1"
 )
 

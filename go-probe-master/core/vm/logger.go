@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
-	//uint256 "github.com/probeum/go-probeum/core/vm/uint256"
-	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
+	//uint256 "github.com/probechain/go-probe/core/vm/uint256"
+	uint256 "github.com/probechain/go-probe/core/vm/uint256"
 )
 
 // Storage represents a contract's storage.

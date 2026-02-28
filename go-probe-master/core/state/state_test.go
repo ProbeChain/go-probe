@@ -21,10 +21,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/probedb"
 )
 
 type stateTest struct {

@@ -19,15 +19,15 @@ package main
 import (
 	"strconv"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/abi/bind"
-	"github.com/probeum/go-probeum/accounts/external"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/contracts/checkpointoracle"
-	"github.com/probeum/go-probeum/probeclient"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/abi/bind"
+	"github.com/probechain/go-probe/accounts/external"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/contracts/checkpointoracle"
+	"github.com/probechain/go-probe/probeclient"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rpc"
 	"gopkg.in/urfave/cli.v1"
 )
 

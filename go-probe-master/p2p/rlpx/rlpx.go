@@ -36,9 +36,9 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/ecies"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/crypto/ecies"
+	"github.com/probechain/go-probe/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

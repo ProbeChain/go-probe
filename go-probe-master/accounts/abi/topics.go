@@ -23,8 +23,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
 )
 
 // MakeTopics converts a filter query argument list into a filter topic set.

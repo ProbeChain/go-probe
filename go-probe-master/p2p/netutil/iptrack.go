@@ -19,7 +19,7 @@ package netutil
 import (
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 // IPTracker predicts the external endpoint, i.e. IP address and port, of the local host

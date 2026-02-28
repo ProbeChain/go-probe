@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
 )
 
 // The ABI holds information about a contract's context and available

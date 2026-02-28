@@ -19,7 +19,7 @@ package bitutil
 import (
 	"bytes"
 
-	"github.com/probeum/go-probeum/common/bitutil"
+	"github.com/probechain/go-probe/common/bitutil"
 )
 
 // Fuzz implements a go-fuzz fuzzer method to test various encoding method

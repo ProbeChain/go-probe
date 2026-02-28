@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
 	"gopkg.in/urfave/cli.v1"
 )
 

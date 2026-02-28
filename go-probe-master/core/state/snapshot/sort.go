@@ -19,7 +19,7 @@ package snapshot
 import (
 	"bytes"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 // hashes is a helper to implement sort.Interface.

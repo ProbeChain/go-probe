@@ -18,19 +18,19 @@ package probe
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 	"math/big"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/metrics"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/trie"
 )
 
 const (
@@ -135,7 +135,7 @@ func MakeProtocols(backend Backend, network uint64, dnsdisc enode.Iterator) []p2
 // NodeInfo represents a short summary of the `probe` sub-protocol metadata
 // known about the host peer.
 type NodeInfo struct {
-	Network    uint64              `json:"network"`    // Probeum network ID (1=Frontier, 2=Morden, Ropsten=3, Rinkeby=4)
+	Network    uint64              `json:"network"`    // Probeum network ID (1=Mainnet, 1205=ProbeChain)
 	Difficulty *big.Int            `json:"difficulty"` // Total difficulty of the host's blockchain
 	Genesis    common.Hash         `json:"genesis"`    // SHA3 hash of the host's genesis block
 	Config     *params.ChainConfig `json:"config"`     // Chain configuration for the fork rules

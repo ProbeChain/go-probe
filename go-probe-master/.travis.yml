@@ -1,5 +1,5 @@
 language: go
-go_import_path: github.com/probeum/go-probeum
+go_import_path: github.com/probechain/go-probe
 sudo: false
 jobs:
   allow_failures:
@@ -185,7 +185,7 @@ jobs:
       script:
         # Build the Android archive and upload it to Maven Central and Azure
         - mkdir -p $GOPATH/src/github.com/probeum
-        - ln -s `pwd` $GOPATH/src/github.com/probeum/go-probeum
+        - ln -s `pwd` $GOPATH/src/github.com/probechain/go-probe
         - go run build/ci.go aar -signer ANDROID_SIGNING_KEY -signify SIGNIFY_KEY  -deploy https://oss.sonatype.org -upload gprobestore/builds
 
     # This builder does the OSX Azure, iOS CocoaPods and iOS Azure uploads

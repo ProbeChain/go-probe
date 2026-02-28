@@ -24,10 +24,10 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/crypto/dilithium"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/crypto/dilithium"
 	"gopkg.in/urfave/cli.v1"
 )
 

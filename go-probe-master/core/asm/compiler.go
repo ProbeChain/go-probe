@@ -22,8 +22,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core/vm"
 )
 
 // Compiler contains information about the parsed source

@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/probeum/go-probeum/core/asm"
+	"github.com/probechain/go-probe/core/asm"
 	"gopkg.in/urfave/cli.v1"
 )
 

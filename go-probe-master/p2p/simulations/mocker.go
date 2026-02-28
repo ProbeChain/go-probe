@@ -24,9 +24,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/simulations/adapters"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/simulations/adapters"
 )
 
 //a map of mocker names to its function

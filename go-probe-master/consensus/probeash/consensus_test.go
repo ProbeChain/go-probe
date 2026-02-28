@@ -25,10 +25,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
 )
 
 type diffTest struct {

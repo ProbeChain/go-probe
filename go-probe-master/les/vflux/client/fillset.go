@@ -19,8 +19,8 @@ package client
 import (
 	"sync"
 
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/nodestate"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/nodestate"
 )
 
 // FillSet tries to read nodes from an input iterator and add them to a node set by

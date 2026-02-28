@@ -18,13 +18,13 @@ package core
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/trie"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and

@@ -24,9 +24,9 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/internal/utesting"
-	"github.com/probeum/go-probeum/p2p/discover/v4wire"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/internal/utesting"
+	"github.com/probechain/go-probe/p2p/discover/v4wire"
 )
 
 const (

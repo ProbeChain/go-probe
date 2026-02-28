@@ -19,7 +19,7 @@ package types
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 )
 
 //go:generate gencodec -type AccessTuple -out gen_access_tuple.go

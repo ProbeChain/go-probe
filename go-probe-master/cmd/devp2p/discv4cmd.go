@@ -22,12 +22,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/cmd/devp2p/internal/v4test"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/p2p/discover"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/cmd/devp2p/internal/v4test"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/p2p/discover"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/params"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -276,7 +276,7 @@ func listen(ln *enode.LocalNode, addr string) *net.UDPConn {
 }
 
 func parseBootnodes(ctx *cli.Context) ([]*enode.Node, error) {
-	s := params.RinkebyBootnodes
+	s := params.MainnetBootnodes
 	if ctx.IsSet(bootnodesFlag.Name) {
 		input := ctx.String(bootnodesFlag.Name)
 		if input == "" {

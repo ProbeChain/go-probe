@@ -2,7 +2,7 @@ package state
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"math/big"
 	"strings"
 	"testing"

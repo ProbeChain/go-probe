@@ -27,9 +27,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/p2p/netutil"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/p2p/netutil"
 )
 
 const (

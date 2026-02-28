@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/common/prque"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/common/prque"
 )
 
 // cmNodeFields are ClientNode fields used by the client manager

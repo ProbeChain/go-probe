@@ -25,12 +25,12 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/log"
 	"gopkg.in/olebedev/go-duktape.v3"
 )
 

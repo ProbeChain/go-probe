@@ -23,12 +23,12 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // Client is a wrapper around rpc.Client that implements gprobe-specific functionality.

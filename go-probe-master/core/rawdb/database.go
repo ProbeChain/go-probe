@@ -24,11 +24,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/probedb/leveldb"
-	"github.com/probeum/go-probeum/probedb/memorydb"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/probedb/leveldb"
+	"github.com/probechain/go-probe/probedb/memorydb"
+	"github.com/probechain/go-probe/log"
 	"github.com/olekukonko/tablewriter"
 )
 

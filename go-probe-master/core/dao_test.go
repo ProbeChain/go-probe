@@ -20,10 +20,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/params"
 )
 
 // Tests that DAO-fork enabled clients can properly filter out fork-commencing

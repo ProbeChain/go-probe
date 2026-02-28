@@ -21,7 +21,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/probeum/go-probeum/common/hexutil"
+	"github.com/probechain/go-probe/common/hexutil"
 )
 
 // Tests that data bitset encoding and decoding works and is bijective.

@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/rpc"
 )
 
 func TestFeeHistory(t *testing.T) {

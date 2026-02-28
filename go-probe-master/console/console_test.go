@@ -26,15 +26,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/console/prompt"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/internal/jsre"
-	"github.com/probeum/go-probeum/miner"
-	"github.com/probeum/go-probeum/node"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/console/prompt"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/probe"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/internal/jsre"
+	"github.com/probechain/go-probe/miner"
+	"github.com/probechain/go-probe/node"
 )
 
 const (
@@ -101,7 +101,7 @@ func newTester(t *testing.T, confOverride func(*probeconfig.Config)) *tester {
 	probeConf := &probeconfig.Config{
 		Genesis: core.DeveloperGenesisBlock(15, common.Address{}),
 		Miner: miner.Config{
-			Probeerbase: common.HexToAddress(testAddress),
+			Probebase: common.HexToAddress(testAddress),
 		},
 		Probeash: probeash.Config{
 			PowMode: probeash.ModeTest,

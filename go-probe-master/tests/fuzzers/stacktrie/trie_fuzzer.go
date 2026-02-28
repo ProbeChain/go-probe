@@ -25,9 +25,9 @@ import (
 	"io"
 	"sort"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/trie"
 	"golang.org/x/crypto/sha3"
 )
 

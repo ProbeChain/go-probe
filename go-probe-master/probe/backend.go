@@ -20,43 +20,44 @@ package probe
 import (
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/consensus/greatri"
-	probehash2 "github.com/probeum/go-probeum/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/greatri"
+	probehash2 "github.com/probechain/go-probe/consensus/probeash"
 	"math/big"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/consensus"
-	"github.com/probeum/go-probeum/consensus/clique"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/bloombits"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state/pruner"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/miner"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/dnsdisc"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/filters"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/probe/protocols/snap"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/consensus"
+	"github.com/probechain/go-probe/consensus/clique"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/bloombits"
+	"github.com/probechain/go-probe/core/superlight"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state/pruner"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/miner"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/dnsdisc"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/filters"
+	"github.com/probechain/go-probe/probe/gasprice"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/probe/protocols/snap"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/rpc"
 )
 
 // Config contains the configuration options of the ETH protocol.
@@ -90,14 +91,16 @@ type Probeum struct {
 
 	miner       *miner.Miner
 	gasPrice    *big.Int
-	probeerbase common.Address
+	probebase common.Address
 
 	networkID     uint64
 	netRPCService *probeapi.PublicNetAPI
 
 	p2pServer *p2p.Server
 
-	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and probeerbase)
+	superlightDEX *superlight.Manager // Superlight DEX manager (nil if not enabled)
+
+	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and probebase)
 }
 
 // New creates a new Probeum object (including the
@@ -151,7 +154,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		closeBloomHandler: make(chan struct{}),
 		networkID:         config.NetworkId,
 		gasPrice:          config.Miner.GasPrice,
-		probeerbase:       config.Miner.Probeerbase,
+		probebase:       config.Miner.Probebase,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		p2pServer:         stack.Server(),
@@ -244,9 +247,15 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 	probe.miner.SetMinDifficulty(originDifficulty)
 	probe.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
-	coinbase, err := probe.Probeerbase()
+	coinbase, err := probe.Probebase()
 	if err == nil {
-		probe.SetProbeerbase(coinbase)
+		probe.SetProbebase(coinbase)
+	}
+
+	// Initialize Superlight DEX if configured
+	if chainConfig.Superlight != nil && chainConfig.Superlight.Enabled {
+		probe.superlightDEX = superlight.NewManager(chainConfig.Superlight)
+		log.Info("Superlight DEX initialized")
 	}
 
 	probe.APIBackend = &ProbeAPIBackend{stack.Config().ExtRPCEnabled(), stack.Config().AllowUnprotectedTxs, probe, nil}
@@ -332,8 +341,8 @@ func (s *Probeum) APIs() []rpc.API {
 	// Append any APIs exposed explicitly by the consensus engine
 	apis = append(apis, s.engine.APIs(s.BlockChain())...)
 
-	// Append all the local APIs and return
-	return append(apis, []rpc.API{
+	// Append all the local APIs
+	apis = append(apis, []rpc.API{
 		{
 			Namespace: "probe",
 			Version:   "1.0",
@@ -379,40 +388,52 @@ func (s *Probeum) APIs() []rpc.API {
 			Public:    true,
 		},
 	}...)
+
+	// Register Superlight DEX API if enabled
+	if s.superlightDEX != nil {
+		apis = append(apis, rpc.API{
+			Namespace: "superlight",
+			Version:   "1.0",
+			Service:   superlight.NewPublicSuperlightAPI(s.superlightDEX),
+			Public:    true,
+		})
+	}
+
+	return apis
 }
 
 func (s *Probeum) ResetWithGenesisBlock(gb *types.Block) {
 	s.blockchain.ResetWithGenesisBlock(gb)
 }
 
-func (s *Probeum) Probeerbase() (eb common.Address, err error) {
+func (s *Probeum) Probebase() (eb common.Address, err error) {
 	s.lock.RLock()
-	probeerbase := s.probeerbase
+	probebase := s.probebase
 	s.lock.RUnlock()
 
-	if probeerbase != (common.Address{}) {
-		return probeerbase, nil
+	if probebase != (common.Address{}) {
+		return probebase, nil
 	}
 	if wallets := s.AccountManager().Wallets(); len(wallets) > 0 {
 		if accounts := wallets[0].Accounts(); len(accounts) > 0 {
-			probeerbase := accounts[0].Address
+			probebase := accounts[0].Address
 
 			s.lock.Lock()
-			s.probeerbase = probeerbase
+			s.probebase = probebase
 			s.lock.Unlock()
 
-			log.Info("Probeerbase automatically configured", "address", probeerbase)
-			return probeerbase, nil
+			log.Info("Probebase automatically configured", "address", probebase)
+			return probebase, nil
 		}
 	}
-	log.Info("probeerbase must be explicitly specified")
-	return common.Address{}, fmt.Errorf("probeerbase must be explicitly specified")
+	log.Info("probebase must be explicitly specified")
+	return common.Address{}, fmt.Errorf("probebase must be explicitly specified")
 }
 
 // isLocalBlock checks whprobeer the specified block is mined
 // by local miner accounts.
 //
-// We regard two types of accounts as local miner account: probeerbase
+// We regard two types of accounts as local miner account: probebase
 // and accounts specified via `txpool.locals` flag.
 func (s *Probeum) isLocalBlock(block *types.Block) bool {
 	author, err := s.engine.Author(block.Header())
@@ -420,11 +441,11 @@ func (s *Probeum) isLocalBlock(block *types.Block) bool {
 		log.Warn("Failed to retrieve block author", "number", block.NumberU64(), "hash", block.Hash(), "err", err)
 		return false
 	}
-	// Check whprobeer the given address is probeerbase.
+	// Check whprobeer the given address is probebase.
 	s.lock.RLock()
-	probeerbase := s.probeerbase
+	probebase := s.probebase
 	s.lock.RUnlock()
-	if author == probeerbase {
+	if author == probebase {
 		return true
 	}
 	// Check whprobeer the given address is specified by `txpool.local`
@@ -463,13 +484,13 @@ func (s *Probeum) shouldPreserve(block *types.Block) bool {
 	return s.isLocalBlock(block)
 }
 
-// SetProbeerbase sets the mining reward address.
-func (s *Probeum) SetProbeerbase(probeerbase common.Address) {
+// SetProbebase sets the mining reward address.
+func (s *Probeum) SetProbebase(probebase common.Address) {
 	s.lock.Lock()
-	s.probeerbase = probeerbase
+	s.probebase = probebase
 	s.lock.Unlock()
 
-	s.miner.SetProbeerbase(probeerbase)
+	s.miner.SetProbebase(probebase)
 }
 
 // StartMining starts the miner with the given number of CPU threads. If mining
@@ -496,15 +517,15 @@ func (s *Probeum) StartMining(threads int) error {
 		s.txPool.SetGasPrice(price)
 
 		// Configure the local mining address
-		eb, err := s.Probeerbase()
+		eb, err := s.Probebase()
 		if err != nil {
-			log.Error("Cannot start mining without probeerbase", "err", err)
-			return fmt.Errorf("probeerbase missing: %v", err)
+			log.Error("Cannot start mining without probebase", "err", err)
+			return fmt.Errorf("probebase missing: %v", err)
 		}
 		//if clique, ok := s.engine.(*clique.Clique); ok {
 		//	wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
 		//	if wallet == nil || err != nil {
-		//		log.Error("Probeerbase account unavailable locally", "err", err)
+		//		log.Error("Probebase account unavailable locally", "err", err)
 		//		return fmt.Errorf("signer missing: %v", err)
 		//	}
 		//	clique.Authorize(eb, wallet.SignData)

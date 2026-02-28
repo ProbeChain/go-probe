@@ -22,7 +22,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 func init() {

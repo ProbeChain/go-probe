@@ -19,7 +19,7 @@ package server
 import (
 	"reflect"
 
-	"github.com/probeum/go-probeum/p2p/nodestate"
+	"github.com/probechain/go-probe/p2p/nodestate"
 )
 
 type peerWrapper struct{ clientPeer } // the NodeStateMachine type system needs this wrapper

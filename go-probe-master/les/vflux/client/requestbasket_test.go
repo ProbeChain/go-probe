@@ -20,7 +20,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/probeum/go-probeum/les/utils"
+	"github.com/probechain/go-probe/les/utils"
 )
 
 func checkU64(t *testing.T, name string, value, exp uint64) {

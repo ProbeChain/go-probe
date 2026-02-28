@@ -19,7 +19,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 )
 
 func TestTransaction(t *testing.T) {

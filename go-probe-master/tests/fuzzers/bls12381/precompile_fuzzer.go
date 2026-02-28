@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/vm"
 )
 
 const (

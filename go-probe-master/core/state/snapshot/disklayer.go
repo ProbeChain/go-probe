@@ -21,11 +21,11 @@ import (
 	"sync"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/trie"
 )
 
 // diskLayer is a low level persistent snapshot built on top of a key-value store.

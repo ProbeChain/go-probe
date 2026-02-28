@@ -19,8 +19,8 @@ package core
 import (
 	"sync"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/state"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/state"
 )
 
 // txNoncer is a tiny virtual state database to manage the executable nonces of

@@ -23,9 +23,9 @@ import (
 	"io"
 	"sort"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/probedb/memorydb"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/probedb/memorydb"
+	"github.com/probechain/go-probe/trie"
 )
 
 type kv struct {

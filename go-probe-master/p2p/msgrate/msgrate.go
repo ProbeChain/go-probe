@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // measurementImpact is the impact a single measurement has on a peer's final

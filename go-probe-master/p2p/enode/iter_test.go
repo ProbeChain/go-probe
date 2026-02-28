@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/p2p/enr"
+	"github.com/probechain/go-probe/p2p/enr"
 )
 
 func TestReadNodes(t *testing.T) {

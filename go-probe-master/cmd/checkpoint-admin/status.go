@@ -19,8 +19,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common"
 	"gopkg.in/urfave/cli.v1"
 )
 

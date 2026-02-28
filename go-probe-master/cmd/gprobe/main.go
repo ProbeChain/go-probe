@@ -25,20 +25,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/console/prompt"
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probeclient"
-	"github.com/probeum/go-probeum/internal/debug"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/internal/flags"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/node"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/console/prompt"
+	"github.com/probechain/go-probe/probe"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probeclient"
+	"github.com/probechain/go-probe/internal/debug"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/internal/flags"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
+	"github.com/probechain/go-probe/node"
 	"gopkg.in/urfave/cli.v1"
 )
 
@@ -121,7 +121,7 @@ var (
 		utils.MinerGasTargetFlag,
 		utils.MinerGasLimitFlag,
 		utils.MinerGasPriceFlag,
-		utils.MinerProbeerbaseFlag,
+		utils.MinerProbebaseFlag,
 		utils.MinerExtraDataFlag,
 		utils.MinerRecommitIntervalFlag,
 		utils.MinerNoVerfiyFlag,
@@ -135,10 +135,6 @@ var (
 		utils.MainnetFlag,
 		utils.DeveloperFlag,
 		utils.DeveloperPeriodFlag,
-		utils.RopstenFlag,
-		utils.RinkebyFlag,
-		utils.GoerliFlag,
-		utils.CalaverasFlag,
 		utils.VMEnableDebugFlag,
 		utils.NetworkIdFlag,
 		utils.ProbeStatsURLFlag,
@@ -268,18 +264,6 @@ func main() {
 func prepare(ctx *cli.Context) {
 	// If we're running a known preset, log it for convenience.
 	switch {
-	case ctx.GlobalIsSet(utils.RopstenFlag.Name):
-		log.Info("Starting Gprobe on Ropsten testnet...")
-
-	case ctx.GlobalIsSet(utils.RinkebyFlag.Name):
-		log.Info("Starting Gprobe on Rinkeby testnet...")
-
-	case ctx.GlobalIsSet(utils.GoerliFlag.Name):
-		log.Info("Starting Gprobe on Görli testnet...")
-
-	case ctx.GlobalIsSet(utils.CalaverasFlag.Name):
-		log.Info("Starting Gprobe on Calaveras testnet...")
-
 	case ctx.GlobalIsSet(utils.DeveloperFlag.Name):
 		log.Info("Starting Gprobe in ephemeral dev mode...")
 
@@ -288,9 +272,8 @@ func prepare(ctx *cli.Context) {
 	}
 	// If we're a full node on mainnet without --cache specified, bump default cache allowance
 	if ctx.GlobalString(utils.SyncModeFlag.Name) != "light" && !ctx.GlobalIsSet(utils.CacheFlag.Name) && !ctx.GlobalIsSet(utils.NetworkIdFlag.Name) {
-		// Make sure we're not on any supported preconfigured testnet either
-		if !ctx.GlobalIsSet(utils.RopstenFlag.Name) && !ctx.GlobalIsSet(utils.RinkebyFlag.Name) && !ctx.GlobalIsSet(utils.GoerliFlag.Name) && !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
-			// Nope, we're really on mainnet. Bump that cache up!
+		if !ctx.GlobalIsSet(utils.DeveloperFlag.Name) {
+			// We're really on mainnet. Bump that cache up!
 			log.Info("Bumping default cache on mainnet", "provided", ctx.GlobalInt(utils.CacheFlag.Name), "updated", 4096)
 			ctx.GlobalSet(utils.CacheFlag.Name, strconv.Itoa(4096))
 		}

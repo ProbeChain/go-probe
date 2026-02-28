@@ -19,9 +19,9 @@ package vm
 import (
 	"math/big"
 
-	"github.com/probeum/go-probeum/common"
-	//uint256 "github.com/probeum/go-probeum/core/vm/uint256"
-	uint256 "github.com/probeum/go-probeum/core/vm/uint256"
+	"github.com/probechain/go-probe/common"
+	//uint256 "github.com/probechain/go-probe/core/vm/uint256"
+	uint256 "github.com/probechain/go-probe/core/vm/uint256"
 )
 
 // ContractRef is a reference to the contract's backing object

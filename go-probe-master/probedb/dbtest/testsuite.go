@@ -22,7 +22,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/probedb"
 )
 
 // TestDatabaseSuite runs a suite of tests against a KeyValueStore database

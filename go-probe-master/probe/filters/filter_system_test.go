@@ -26,17 +26,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/bloombits"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/event"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/bloombits"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/event"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/rpc"
 )
 
 var (

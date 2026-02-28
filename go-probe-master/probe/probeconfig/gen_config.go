@@ -6,13 +6,13 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/consensus/probeash"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/gasprice"
-	"github.com/probeum/go-probeum/miner"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/gasprice"
+	"github.com/probechain/go-probe/miner"
+	"github.com/probechain/go-probe/params"
 )
 
 // MarshalTOML marshals as TOML.

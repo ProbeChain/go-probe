@@ -22,14 +22,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/common"
 	"io"
 	"math/big"
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/probeum/go-probeum/common/math"
+	"github.com/probechain/go-probe/common/math"
 )
 
 func TestStreamKind(t *testing.T) {

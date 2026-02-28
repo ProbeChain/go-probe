@@ -25,15 +25,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/probeum/go-probeum"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/common/math"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/probe/filters"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/common/math"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/probe/filters"
+	"github.com/probechain/go-probe/rpc"
 )
 
 var (

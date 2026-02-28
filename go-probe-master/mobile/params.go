@@ -19,44 +19,14 @@
 package gprobe
 
 import (
-	"encoding/json"
-
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/params"
 )
 
 // MainnetGenesis returns the JSON spec to use for the main Probeum network. It
 // is actually empty since that defaults to the hard coded binary genesis block.
 func MainnetGenesis() string {
 	return ""
-}
-
-// RopstenGenesis returns the JSON spec to use for the Ropsten test network.
-func RopstenGenesis() string {
-	enc, err := json.Marshal(core.DefaultRopstenGenesisBlock())
-	if err != nil {
-		panic(err)
-	}
-	return string(enc)
-}
-
-// RinkebyGenesis returns the JSON spec to use for the Rinkeby test network
-func RinkebyGenesis() string {
-	enc, err := json.Marshal(core.DefaultRinkebyGenesisBlock())
-	if err != nil {
-		panic(err)
-	}
-	return string(enc)
-}
-
-// GoerliGenesis returns the JSON spec to use for the Goerli test network
-func GoerliGenesis() string {
-	enc, err := json.Marshal(core.DefaultGoerliGenesisBlock())
-	if err != nil {
-		panic(err)
-	}
-	return string(enc)
 }
 
 // FoundationBootnodes returns the enode URLs of the P2P bootstrap nodes operated

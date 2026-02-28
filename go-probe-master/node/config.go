@@ -19,7 +19,7 @@ package node
 import (
 	"crypto/ecdsa"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 
 	"io/ioutil"
 	"os"
@@ -28,16 +28,16 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/external"
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/accounts/scwallet"
-	"github.com/probeum/go-probeum/accounts/usbwallet"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/external"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/accounts/scwallet"
+	"github.com/probechain/go-probe/accounts/usbwallet"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/rpc"
 )
 
 const (

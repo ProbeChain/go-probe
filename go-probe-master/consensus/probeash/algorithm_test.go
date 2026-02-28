@@ -26,9 +26,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/core/types"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/core/types"
 )
 
 // prepare converts an probeash cache or dataset from a byte stream into the internal

@@ -19,7 +19,7 @@
 package downloader
 
 import (
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/metrics"
 )
 
 var (

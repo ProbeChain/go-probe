@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/params"
 	"gopkg.in/urfave/cli.v1"
 )
 

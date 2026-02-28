@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // explorerDockerfile is the Dockerfile required to run a block explorer.

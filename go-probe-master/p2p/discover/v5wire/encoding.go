@@ -29,10 +29,10 @@ import (
 
 	"hash"
 
-	"github.com/probeum/go-probeum/common/mclock"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/p2p/enr"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common/mclock"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/p2p/enr"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // TODO concurrent WHOAREYOU tie-breaker

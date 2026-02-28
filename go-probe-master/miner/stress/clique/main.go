@@ -20,27 +20,27 @@ package main
 import (
 	"bytes"
 	"crypto/ecdsa"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 	"io/ioutil"
 	"math/big"
 	"math/rand"
 	"os"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/common/fdlimit"
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/miner"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/enode"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probe"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/common/fdlimit"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/miner"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/enode"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probe"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/probeconfig"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 	for i := 0; i < len(sealers); i++ {
 		sealers[i], _ = crypto.GenerateKey()
 	}
-	// Create a Clique network based off of the Rinkeby config
+	// Create a Clique network based off of AllCliqueProtocolChanges config
 	genesis := makeGenesis(faucets, sealers)
 
 	var (
@@ -130,10 +130,12 @@ func main() {
 // makeGenesis creates a custom Clique genesis block based on some pre-defined
 // signer and faucet accounts.
 func makeGenesis(faucets []*ecdsa.PrivateKey, sealers []*ecdsa.PrivateKey) *core.Genesis {
-	// Create a Clique network based off of the Rinkeby config
-	genesis := core.DefaultRinkebyGenesisBlock()
-	genesis.GasLimit = 25000000
-
+	// Create a Clique network with AllCliqueProtocolChanges config
+	genesis := &core.Genesis{
+		Config:     params.AllCliqueProtocolChanges,
+		GasLimit:   25000000,
+		Difficulty: big.NewInt(1),
+	}
 	genesis.Config.ChainID = big.NewInt(18)
 	genesis.Config.Clique.Period = 1
 	genesis.Config.EIP150Hash = common.Hash{}

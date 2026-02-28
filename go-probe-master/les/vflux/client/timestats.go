@@ -21,8 +21,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/probeum/go-probeum/les/utils"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/les/utils"
+	"github.com/probechain/go-probe/rlp"
 )
 
 const (

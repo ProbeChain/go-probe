@@ -19,7 +19,7 @@ package keystore
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -31,8 +31,8 @@ import (
 
 	"github.com/cespare/cp"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/common"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/common"
 )
 
 var (

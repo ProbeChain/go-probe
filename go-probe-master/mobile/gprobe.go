@@ -24,17 +24,17 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/probeum/go-probeum/core"
-	"github.com/probeum/go-probeum/internal/debug"
-	"github.com/probeum/go-probeum/les"
-	"github.com/probeum/go-probeum/node"
-	"github.com/probeum/go-probeum/p2p"
-	"github.com/probeum/go-probeum/p2p/nat"
-	"github.com/probeum/go-probeum/params"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/probeconfig"
-	"github.com/probeum/go-probeum/probeclient"
-	"github.com/probeum/go-probeum/probestats"
+	"github.com/probechain/go-probe/core"
+	"github.com/probechain/go-probe/internal/debug"
+	"github.com/probechain/go-probe/les"
+	"github.com/probechain/go-probe/node"
+	"github.com/probechain/go-probe/p2p"
+	"github.com/probechain/go-probe/p2p/nat"
+	"github.com/probechain/go-probe/params"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/probeconfig"
+	"github.com/probechain/go-probe/probeclient"
+	"github.com/probechain/go-probe/probestats"
 )
 
 // NodeConfig represents the collection of configuration values to fine tune the Gprobe
@@ -155,27 +155,6 @@ func NewNode(datadir string, config *NodeConfig) (stack *Node, _ error) {
 		genesis = new(core.Genesis)
 		if err := json.Unmarshal([]byte(config.ProbeumGenesis), genesis); err != nil {
 			return nil, fmt.Errorf("invalid genesis spec: %v", err)
-		}
-		// If we have the Ropsten testnet, hard code the chain configs too
-		if config.ProbeumGenesis == RopstenGenesis() {
-			genesis.Config = params.RopstenChainConfig
-			if config.ProbeumNetworkID == 1 {
-				config.ProbeumNetworkID = 3
-			}
-		}
-		// If we have the Rinkeby testnet, hard code the chain configs too
-		if config.ProbeumGenesis == RinkebyGenesis() {
-			genesis.Config = params.RinkebyChainConfig
-			if config.ProbeumNetworkID == 1 {
-				config.ProbeumNetworkID = 4
-			}
-		}
-		// If we have the Goerli testnet, hard code the chain configs too
-		if config.ProbeumGenesis == GoerliGenesis() {
-			genesis.Config = params.GoerliChainConfig
-			if config.ProbeumNetworkID == 1 {
-				config.ProbeumNetworkID = 5
-			}
 		}
 	}
 	// Register the Probeum protocol if requested

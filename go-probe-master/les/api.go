@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/probeum/go-probeum/common/hexutil"
-	"github.com/probeum/go-probeum/common/mclock"
-	vfs "github.com/probeum/go-probeum/les/vflux/server"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common/hexutil"
+	"github.com/probechain/go-probe/common/mclock"
+	vfs "github.com/probechain/go-probe/les/vflux/server"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 var (

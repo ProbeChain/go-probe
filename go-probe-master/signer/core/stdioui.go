@@ -19,9 +19,9 @@ package core
 import (
 	"context"
 
-	"github.com/probeum/go-probeum/internal/probeapi"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/rpc"
+	"github.com/probechain/go-probe/internal/probeapi"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/rpc"
 )
 
 type StdIOUI struct {

@@ -19,7 +19,7 @@ package utils
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/common/mclock"
+	"github.com/probechain/go-probe/common/mclock"
 )
 
 func TestValueExpiration(t *testing.T) {

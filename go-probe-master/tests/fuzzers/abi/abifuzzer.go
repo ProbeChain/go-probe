@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/probeum/go-probeum/accounts/abi"
+	"github.com/probechain/go-probe/accounts/abi"
 	fuzz "github.com/google/gofuzz"
 )
 

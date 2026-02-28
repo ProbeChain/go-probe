@@ -22,13 +22,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/types"
-	"github.com/probeum/go-probeum/probe/downloader"
-	"github.com/probeum/go-probeum/probe/protocols/probe"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/types"
+	"github.com/probechain/go-probe/probe/downloader"
+	"github.com/probechain/go-probe/probe/protocols/probe"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/p2p/enode"
 )
 
 const (

@@ -17,7 +17,7 @@
 package rawdb
 
 import (
-	"github.com/probeum/go-probeum/probedb"
+	"github.com/probechain/go-probe/probedb"
 )
 
 // table is a wrapper around a database that prefixes each key access with a pre-

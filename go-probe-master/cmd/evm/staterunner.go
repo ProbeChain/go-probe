@@ -23,10 +23,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/tests"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/tests"
 
 	"gopkg.in/urfave/cli.v1"
 )

@@ -26,9 +26,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
 	"github.com/golang/snappy"
 )
 

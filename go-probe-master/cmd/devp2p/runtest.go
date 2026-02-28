@@ -19,9 +19,9 @@ package main
 import (
 	"os"
 
-	"github.com/probeum/go-probeum/cmd/devp2p/internal/v4test"
-	"github.com/probeum/go-probeum/internal/utesting"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/cmd/devp2p/internal/v4test"
+	"github.com/probechain/go-probe/internal/utesting"
+	"github.com/probechain/go-probe/log"
 	"gopkg.in/urfave/cli.v1"
 )
 

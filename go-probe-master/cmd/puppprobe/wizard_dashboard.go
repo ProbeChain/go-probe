@@ -19,7 +19,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/log"
 )
 
 // deployDashboard queries the user for various input on deploying a web-service

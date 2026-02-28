@@ -19,7 +19,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/probeum/go-probeum/core/vm"
+	"github.com/probechain/go-probe/core/vm"
 )
 
 func TestVM(t *testing.T) {

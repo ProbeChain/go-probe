@@ -20,15 +20,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/probeum/go-probeum/crypto/probe"
+	"github.com/probechain/go-probe/crypto/probe"
 	"math/big"
 	"math/rand"
 	"reflect"
 	"testing"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/rlp"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/rlp"
 )
 
 // The values in those tests are from the Transaction Tests

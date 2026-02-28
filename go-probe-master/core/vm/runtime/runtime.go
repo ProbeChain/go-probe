@@ -21,12 +21,12 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/core/state"
-	"github.com/probeum/go-probeum/core/vm"
-	"github.com/probeum/go-probeum/crypto"
-	"github.com/probeum/go-probeum/params"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/vm"
+	"github.com/probechain/go-probe/crypto"
+	"github.com/probechain/go-probe/params"
 )
 
 // Config is a basic type specifying certain configuration flags for running

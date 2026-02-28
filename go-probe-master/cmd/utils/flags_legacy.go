@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/probeum/go-probeum/node"
+	"github.com/probechain/go-probe/node"
 	"gopkg.in/urfave/cli.v1"
 )
 

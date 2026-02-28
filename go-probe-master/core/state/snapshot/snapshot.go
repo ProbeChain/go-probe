@@ -24,13 +24,13 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/core/rawdb"
-	"github.com/probeum/go-probeum/probedb"
-	"github.com/probeum/go-probeum/log"
-	"github.com/probeum/go-probeum/metrics"
-	"github.com/probeum/go-probeum/rlp"
-	"github.com/probeum/go-probeum/trie"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/core/rawdb"
+	"github.com/probechain/go-probe/probedb"
+	"github.com/probechain/go-probe/log"
+	"github.com/probechain/go-probe/metrics"
+	"github.com/probechain/go-probe/rlp"
+	"github.com/probechain/go-probe/trie"
 )
 
 var (

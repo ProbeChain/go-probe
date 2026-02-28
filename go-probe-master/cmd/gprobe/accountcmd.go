@@ -18,13 +18,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/probeum/go-probeum/crypto"
+	"github.com/probechain/go-probe/crypto"
 	"io/ioutil"
 
-	"github.com/probeum/go-probeum/accounts"
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/cmd/utils"
-	"github.com/probeum/go-probeum/log"
+	"github.com/probechain/go-probe/accounts"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/cmd/utils"
+	"github.com/probechain/go-probe/log"
 	"gopkg.in/urfave/cli.v1"
 )
 

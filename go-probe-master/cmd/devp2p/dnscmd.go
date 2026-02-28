@@ -25,11 +25,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/probeum/go-probeum/accounts/keystore"
-	"github.com/probeum/go-probeum/common"
-	"github.com/probeum/go-probeum/console/prompt"
-	"github.com/probeum/go-probeum/p2p/dnsdisc"
-	"github.com/probeum/go-probeum/p2p/enode"
+	"github.com/probechain/go-probe/accounts/keystore"
+	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/console/prompt"
+	"github.com/probechain/go-probe/p2p/dnsdisc"
+	"github.com/probechain/go-probe/p2p/enode"
 	"gopkg.in/urfave/cli.v1"
 )
 
