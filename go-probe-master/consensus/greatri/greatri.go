@@ -24,8 +24,6 @@ import (
 	"github.com/probeum/go-probeum/consensus/probeash"
 	"github.com/probeum/go-probeum/crypto/secp256k1"
 
-	//"github.com/probeum/go-probeum/crypto/probecrypto"
-	//"github.com/probeum/go-probeum/crypto/secp256k1"
 	"github.com/probeum/go-probeum/log"
 	"io"
 	"math/big"

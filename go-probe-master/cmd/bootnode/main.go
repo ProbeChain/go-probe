@@ -20,7 +20,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	probe "github.com/probeum/go-probeum/crypto/probecrypto"
+	"github.com/probeum/go-probeum/crypto/probe"
 	"net"
 	"os"
 

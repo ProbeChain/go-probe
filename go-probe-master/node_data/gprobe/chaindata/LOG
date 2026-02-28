@@ -1,0 +1,28 @@
+=============== Feb 28, 2026 (HKT) ===============
+16:00:07.657418 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+16:00:07.705001 db@open opening
+16:00:07.707470 version@stat F·[] S·0B[] Sc·[]
+16:00:07.725707 db@janitor F·2 G·0
+16:00:07.725764 db@open done T·20.733416ms
+16:00:07.735378 db@close closing
+16:00:07.735470 db@close done T·90.667µs
+=============== Feb 28, 2026 (HKT) ===============
+16:02:51.822690 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+16:02:51.825320 version@stat F·[] S·0B[] Sc·[]
+16:02:51.825345 db@open opening
+16:02:51.825397 journal@recovery F·1
+16:02:51.826467 journal@recovery recovering @1
+16:02:51.836920 memdb@flush created L0@2 N·29 S·2KiB "\v\x9cA..\xc1'\x8f,v13":"\xd7\\\xa8..?\x1e<,v19"
+16:02:51.837798 version@stat F·[1] S·2KiB[2KiB] Sc·[0.25]
+16:02:51.861581 db@janitor F·3 G·0
+16:02:51.861887 db@open done T·36.531791ms
+=============== Feb 28, 2026 (HKT) ===============
+17:25:26.738036 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+17:25:26.738250 version@stat F·[1] S·2KiB[2KiB] Sc·[0.25]
+17:25:26.738265 db@open opening
+17:25:26.738306 journal@recovery F·1
+17:25:26.738509 journal@recovery recovering @3
+17:25:26.756166 memdb@flush created L0@5 N·6 S·329B "Dat..ion,v31":"unc..own,v36"
+17:25:26.756616 version@stat F·[2] S·2KiB[2KiB] Sc·[0.50]
+17:25:26.787745 db@janitor F·4 G·0
+17:25:26.787777 db@open done T·49.503083ms
