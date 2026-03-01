@@ -1,25 +1,24 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
 import (
 	"fmt"
-	greatri2 "github.com/probechain/go-probe/consensus/greatri"
-	pob2 "github.com/probechain/go-probe/consensus/pob"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/crypto"
 
 	"math/big"
@@ -52,7 +51,7 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consen
 	}
 }
 
-// Process processes the state changes according to the Probeum rules by running
+// Process processes the state changes according to the ProbeChain rules by running
 // the transaction messages using the statedb and applying any rewards to both
 // the processor (coinbase) and any included uncles.
 //
@@ -90,10 +89,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		allLogs = append(allLogs, receipt.Logs...)
 	}
 
-	if g, ok := p.engine.(*greatri2.Greatri); ok {
-		g.DposFinalize(p.bc, header, statedb, block.Transactions(), block.PowAnswerUncles())
-	} else if pb, ok := p.engine.(*pob2.ProofOfBehavior); ok {
-		pb.PobFinalize(p.bc, header, statedb, block.Transactions(), block.PowAnswerUncles())
+	if pb, ok := p.engine.(*pob.ProofOfBehavior); ok {
+		pb.PobFinalize(p.bc, header, statedb, block.Transactions(), block.BehaviorProofUncles())
 	} else {
 		p.engine.Finalize(p.bc, header, statedb, block.Transactions(), block.Uncles())
 	}

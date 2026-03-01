@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -35,7 +35,7 @@ var gitDate = ""
 var app *cli.App
 
 func init() {
-	app = flags.NewApp(gitCommit, gitDate, "an Probeum key manager")
+	app = flags.NewApp(gitCommit, gitDate, "a ProbeChain key manager")
 	app.Commands = []cli.Command{
 		commandGenerate,
 		commandInspect,

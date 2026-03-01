@@ -1,18 +1,18 @@
-// Copyright 2018 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2018 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package dnsdisc
 
@@ -90,8 +90,8 @@ func TestParseEntry(t *testing.T) {
 		},
 		// Links
 		{
-			input: "enrtree://AKPYQIUQIL7PSIACI32J7FGZW56E5FKHEFCCOFHILBIMW3M6LWXS2@nodes.example.org",
-			e:     &linkEntry{"AKPYQIUQIL7PSIACI32J7FGZW56E5FKHEFCCOFHILBIMW3M6LWXS2@nodes.example.org", "nodes.example.org", &testkey.PublicKey},
+			input: "enrtree://AK26R6A66XUBG7W4GXANKXJSLNVZM65ZVEHNUBAKA35B7L7INZ64C@nodes.example.org",
+			e:     &linkEntry{"AK26R6A66XUBG7W4GXANKXJSLNVZM65ZVEHNUBAKA35B7L7INZ64C@nodes.example.org", "nodes.example.org", &testkey.PublicKey},
 		},
 		{
 			input: "enrtree://nodes.example.org",
@@ -107,7 +107,7 @@ func TestParseEntry(t *testing.T) {
 		},
 		// ENRs
 		{
-			input: "enr:-HW4QES8QIeXTYlDzbfr1WEzE-XKY4f8gJFJzjJL-9D7TC9lJb4Z3JPRRz1lP4pL_N_QpT6rGQjAU9Apnc-C1iMP36OAgmlkgnY0iXNlY3AyNTZrMaED5IdwfMxdmR8W37HqSFdQLjDkIwBd4Q_MjxgZifgKSdM",
+			input: "enr:-HW4QMCrUdrdXh47DhduKKRcDbG5f7ssyA4K75-FH4m64CVtCn1fsnF7B7I6JdKt1r6BUyswMj_Vr5F8ZZDZIKLNFnqAgmlkgnY0iXNlY3AyNTZrMaECDglhpJZx8rUoF0rPxs7EB0CdFBvFj7iBmJbxiYL-k1Q",
 			e:     &enrEntry{node: testNode(nodesSeed1)},
 		},
 		{

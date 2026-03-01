@@ -1,18 +1,18 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package p2p
 
@@ -212,13 +212,13 @@ func TestServerDial(t *testing.T) {
 func TestServerRemovePeerDisconnect(t *testing.T) {
 	srv1 := &Server{Config: Config{
 		PrivateKey:  newkey(),
-		MaxPeers:    1,
+		MaxPeers:    10,
 		NoDiscovery: true,
 		Logger:      testlog.Logger(t, log.LvlTrace).New("server", "1"),
 	}}
 	srv2 := &Server{Config: Config{
 		PrivateKey:  newkey(),
-		MaxPeers:    1,
+		MaxPeers:    10,
 		NoDiscovery: true,
 		NoDial:      true,
 		ListenAddr:  "127.0.0.1:0",
@@ -246,7 +246,7 @@ func TestServerAtCap(t *testing.T) {
 	srv := &Server{
 		Config: Config{
 			PrivateKey:   newkey(),
-			MaxPeers:     10,
+			MaxPeers:     20,
 			NoDial:       true,
 			NoDiscovery:  true,
 			TrustedNodes: []*enode.Node{newNode(trustedID, "")},

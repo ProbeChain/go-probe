@@ -1,25 +1,23 @@
-// Copyright 2017 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2017 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package keystore
 
 import (
-	"encoding/hex"
 	"fmt"
-	"github.com/probechain/go-probe/crypto"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -407,18 +405,3 @@ func forceCopyFile(dst, src string) error {
 	return ioutil.WriteFile(dst, data, 0644)
 }
 
-func TestKeystoreToPrivateKey(t *testing.T) {
-	keyjson, err := ioutil.ReadFile("E:\\probeData\\06\\01\\keystore\\0x1a36Bf08A0dCEc2d7DCeb447ED410A6E34790912.json")
-	if err != nil {
-		fmt.Println("read keyjson file failed：", err)
-	}
-	unlockedKey, err := DecryptKey(keyjson, "")
-	if err != nil {
-
-		fmt.Println("err ")
-
-	}
-	privKey := hex.EncodeToString(unlockedKey.PrivateKey.D.Bytes())
-	addr := crypto.PubkeyToAddress(unlockedKey.PrivateKey.PublicKey)
-	fmt.Println("privKey ", privKey, addr.String())
-}

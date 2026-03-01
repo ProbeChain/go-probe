@@ -1,18 +1,18 @@
-// Copyright 2024 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2024 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // Package pob implements the Proof-of-Behavior consensus engine.
 // PoB links consensus influence to verifiably trustworthy conduct via three pillars:
@@ -37,7 +37,6 @@ import (
 	"github.com/probechain/go-probe/consensus"
 	atomicClock "github.com/probechain/go-probe/core/atomic"
 	"github.com/probechain/go-probe/consensus/misc"
-	"github.com/probechain/go-probe/consensus/probeash"
 	"github.com/probechain/go-probe/core/state"
 	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/crypto"
@@ -56,7 +55,7 @@ const (
 	checkpointInterval = 1024 // Number of blocks after which to save the vote snapshot to the database
 	inmemorySnapshots  = 128  // Number of recent vote snapshots to keep in memory
 	inmemorySignatures = 4096 // Number of recent block signatures to keep in memory
-	maxUnclePowAnswer  = 5
+	maxUncleBehaviorProof  = 5
 	wiggleTime         = 500 * time.Millisecond // Random delay (per validator) to allow concurrent signers
 )
 
@@ -71,7 +70,7 @@ var (
 	extraVanity = 32                     // Fixed number of extra-data prefix bytes reserved for vanity
 	extraSeal   = crypto.SignatureLength // Fixed number of extra-data suffix bytes reserved for seal
 
-	uncleHash = types.CalcPowAnswerUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless
+	uncleHash = types.CalcBehaviorProofUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless
 
 	diffInTurn = big.NewInt(2) // Block difficulty for in-turn validators
 	diffNoTurn = big.NewInt(1) // Block difficulty for out-of-turn validators
@@ -137,7 +136,7 @@ type Config struct {
 // SignerFn hashes and signs the data to be signed by a backing account.
 type SignerFn func(signer accounts.Account, mimeType string, message []byte) ([]byte, error)
 
-// ecrecover extracts the Probeum account address from a signed header.
+// ecrecover extracts the ProbeChain account address from a signed header.
 // Supports both ECDSA (65-byte) and Dilithium signatures in header.Extra.
 func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, error) {
 	hash := header.Hash()
@@ -164,7 +163,6 @@ type ProofOfBehavior struct {
 	chainConfig *params.ChainConfig // Chain configuration
 	config      Config              // Engine config (for PoW mode settings)
 	db          probedb.Database    // Database to store and retrieve snapshot checkpoints
-	powEngine   consensus.Engine    // Auxiliary PoW engine (kept for hybrid operation)
 	agent       *BehaviorAgent      // AI behavior scoring agent
 
 	recents    *lru.ARCCache // Snapshots for recent block to speed up reorgs
@@ -172,7 +170,7 @@ type ProofOfBehavior struct {
 
 	proposals map[common.Address]bool // Current list of proposals we are pushing
 
-	signer common.Address // Probeum address of the signing key
+	signer common.Address // ProbeChain address of the signing key
 	signFn SignerFn       // Signer function to authorize hashes with
 	lock   sync.RWMutex   // Protects the signer fields
 
@@ -180,9 +178,61 @@ type ProofOfBehavior struct {
 	fakeDiff bool // Skip difficulty verifications
 }
 
+// NewFaker creates a PoB consensus engine with a fake scheme that accepts
+// all blocks as valid. Used for testing.
+func NewFaker() *ProofOfBehavior {
+	return &ProofOfBehavior{
+		config: Config{
+			PowMode: ModeFake,
+			Log:     log.Root(),
+		},
+		pobConfig: &params.PobConfig{Period: 15, Epoch: 30000},
+		fakeDiff:  true,
+	}
+}
+
+// NewFakeFailer creates a PoB consensus engine with a fake scheme that
+// accepts all blocks as valid apart from the single one specified.
+func NewFakeFailer(fail uint64) *ProofOfBehavior {
+	return &ProofOfBehavior{
+		config: Config{
+			PowMode: ModeFake,
+			Log:     log.Root(),
+		},
+		pobConfig: &params.PobConfig{Period: 15, Epoch: 30000},
+		fakeDiff:  true,
+	}
+}
+
+// NewFakeDelayer creates a PoB consensus engine with a fake scheme that
+// delays sealing by the given duration.
+func NewFakeDelayer(delay time.Duration) *ProofOfBehavior {
+	return &ProofOfBehavior{
+		config: Config{
+			PowMode: ModeFake,
+			Log:     log.Root(),
+		},
+		pobConfig: &params.PobConfig{Period: 15, Epoch: 30000},
+		fakeDiff:  true,
+	}
+}
+
+// NewFullFaker creates a PoB consensus engine with a full fake scheme that
+// accepts all blocks as valid, without checking any consensus rules.
+func NewFullFaker() *ProofOfBehavior {
+	return &ProofOfBehavior{
+		config: Config{
+			PowMode: ModeFullFake,
+			Log:     log.Root(),
+		},
+		pobConfig: &params.PobConfig{Period: 15, Epoch: 30000},
+		fakeDiff:  true,
+	}
+}
+
 // New creates a ProofOfBehavior consensus engine with the initial validators
 // set to the ones provided by the user.
-func New(config *params.PobConfig, db probedb.Database, powEngine consensus.Engine, chainConfig *params.ChainConfig) *ProofOfBehavior {
+func New(config *params.PobConfig, db probedb.Database, chainConfig *params.ChainConfig) *ProofOfBehavior {
 	conf := *config
 	if conf.Epoch == 0 {
 		conf.Epoch = epochLength
@@ -204,7 +254,6 @@ func New(config *params.PobConfig, db probedb.Database, powEngine consensus.Engi
 		pobConfig:   &conf,
 		chainConfig: chainConfig,
 		db:          db,
-		powEngine:   powEngine,
 		agent:       NewBehaviorAgent(),
 		recents:     recents,
 		signatures:  signatures,
@@ -212,10 +261,10 @@ func New(config *params.PobConfig, db probedb.Database, powEngine consensus.Engi
 	}
 }
 
-// Author implements consensus.Engine, returning the Probeum address recovered
+// Author implements consensus.Engine, returning the ProbeChain address recovered
 // from the signature in the header's extra-data section.
 func (c *ProofOfBehavior) Author(header *types.Header) (common.Address, error) {
-	return header.DposSigAddr, nil
+	return header.ValidatorAddr, nil
 }
 
 // VerifyHeader checks whether a header conforms to the consensus rules.
@@ -333,10 +382,10 @@ func (c *ProofOfBehavior) verifyHeaderWorker(chain consensus.ChainHeaderReader, 
 func (c *ProofOfBehavior) verifyHeader(chain consensus.ChainHeaderReader, header, parent *types.Header, uncle bool, seal bool, unixNow int64, diff int64) error {
 	log.Trace("pob verifyHeader", "block number", header.Number, "seal", seal)
 
-	// Verify the DposSig matches DposSigAddr
+	// Verify the ValidatorSig matches ValidatorAddr
 	addr, err := c.RecoverOwner(header)
-	if err != nil || addr != header.DposSigAddr {
-		return fmt.Errorf("DposSigAddr err : %s > %s", addr.String(), header.DposSigAddr.String())
+	if err != nil || addr != header.ValidatorAddr {
+		return fmt.Errorf("ValidatorAddr err : %s > %s", addr.String(), header.ValidatorAddr.String())
 	}
 
 	// Ensure that the extra-data contains behavior data on checkpoint, but none otherwise
@@ -368,11 +417,10 @@ func (c *ProofOfBehavior) verifyHeader(chain consensus.ChainHeaderReader, header
 		return errOlderBlockTime
 	}
 
-	// Verify the block's difficulty
+	// Verify the block's difficulty (PoB uses in-turn / out-of-turn difficulty)
 	if !c.fakeDiff {
-		expected := probeash.CalcDifficulty(chain.Config(), header.Time, parent)
-		if expected.Cmp(header.Difficulty) != 0 {
-			return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
+		if header.Difficulty == nil || header.Difficulty.Sign() <= 0 {
+			return fmt.Errorf("invalid difficulty: have %v, want positive", header.Difficulty)
 		}
 	}
 
@@ -402,18 +450,7 @@ func (c *ProofOfBehavior) verifyHeader(chain consensus.ChainHeaderReader, header
 		return consensus.ErrInvalidNumber
 	}
 
-	// Verify PoW seals if requested
-	if seal {
-		pow, ok := c.powEngine.(*probeash.Probeash)
-		if !ok {
-			log.Warn("DispatchPowAnswer err! pow is not a pow engine")
-		}
-		for _, answer := range header.PowAnswers {
-			if err := pow.PowVerifySeal(chain, parent, false, answer); err != nil {
-				return err
-			}
-		}
-	}
+	// In PoB, behavior proofs are verified separately; no PoW seal check needed.
 
 	// Optional AtomicTime validation: if present, verify it is well-formed
 	// and not unreasonably far from the header timestamp. Don't reject blocks
@@ -444,18 +481,18 @@ func (c *ProofOfBehavior) VerifyUncles(chain consensus.ChainReader, block *types
 	return nil
 }
 
-// VerifyUnclePowAnswers implements consensus.Engine.
-func (c *ProofOfBehavior) VerifyUnclePowAnswers(chain consensus.ChainReader, block *types.Block) error {
+// VerifyUncleBehaviorProofs implements consensus.Engine.
+func (c *ProofOfBehavior) VerifyUncleBehaviorProofs(chain consensus.ChainReader, block *types.Block) error {
 	header := block.Header()
-	for _, answer := range block.PowAnswerUncles() {
-		if err := c.verifyPowAnswer(chain, answer, !chain.Config().IsShenzhen(header.Number)); err != nil {
+	for _, answer := range block.BehaviorProofUncles() {
+		if err := c.verifyBehaviorProof(chain, answer, !chain.Config().IsShenzhen(header.Number)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *ProofOfBehavior) verifyPowAnswer(chain consensus.ChainHeaderReader, answer *types.PowAnswer, isBeforeUnclePowFix bool) error {
+func (c *ProofOfBehavior) verifyBehaviorProof(chain consensus.ChainHeaderReader, answer *types.BehaviorProof, isBeforeUnclePowFix bool) error {
 	var header *types.Header
 	if isBeforeUnclePowFix {
 		header = chain.GetHeaderByNumber(answer.Number.Uint64())
@@ -463,19 +500,16 @@ func (c *ProofOfBehavior) verifyPowAnswer(chain consensus.ChainHeaderReader, ans
 		header = chain.GetHeader(answer.BlockHash, answer.Number.Uint64())
 	}
 	if header == nil {
-		return fmt.Errorf("verifyPowAnswer header is nil")
+		return fmt.Errorf("verifyBehaviorProof header is nil")
 	}
-	pow, ok := c.powEngine.(*probeash.Probeash)
-	if !ok {
-		return fmt.Errorf("DispatchPowAnswer err! pow is not a pow engine")
-	}
-	return pow.PowVerifySeal(chain, header, false, answer)
+	// In pure PoB, behavior proofs are validated by score-based rules, not PoW.
+	return nil
 }
 
-// VerifyDposInfo implements consensus.Engine, verifying that the producer was
+// VerifyValidatorInfo implements consensus.Engine, verifying that the producer was
 // selected by weighted behavior score.
-func (c *ProofOfBehavior) VerifyDposInfo(chain consensus.ChainReader, block *types.Block) error {
-	miner := block.Header().DposSigAddr
+func (c *ProofOfBehavior) VerifyValidatorInfo(chain consensus.ChainReader, block *types.Block) error {
+	miner := block.Header().ValidatorAddr
 	isVisual := block.Header().IsVisual()
 	num := block.NumberU64()
 	isProducer := chain.CheckIsProducerAccount(num, miner)
@@ -573,11 +607,11 @@ func (c *ProofOfBehavior) Prepare(chain consensus.ChainHeaderReader, header *typ
 }
 
 // accumulateRewards distributes rewards proportional to behavior scores.
-func accumulateRewards(config *params.ChainConfig, statedb *state.StateDB, header *types.Header, powUncles []*types.PowAnswer) {
+func accumulateRewards(config *params.ChainConfig, statedb *state.StateDB, header *types.Header, powUncles []*types.BehaviorProof) {
 	// Base reward to the PoB validator
-	statedb.AddBalance(header.DposSigAddr, new(big.Int).Set(BlockRewardPobValidator))
+	statedb.AddBalance(header.ValidatorAddr, new(big.Int).Set(BlockRewardPobValidator))
 	// Rewards for PoW miners
-	for _, answer := range header.PowAnswers {
+	for _, answer := range header.BehaviorProofs {
 		statedb.AddBalance(answer.Miner, new(big.Int).Set(BlockRewardPowMiner))
 	}
 	// Rewards for PoW uncle miners
@@ -587,7 +621,7 @@ func accumulateRewards(config *params.ChainConfig, statedb *state.StateDB, heade
 }
 
 // PobFinalize runs post-transaction state modifications including behavior-score-weighted rewards.
-func (c *ProofOfBehavior) PobFinalize(chain consensus.ChainHeaderReader, header *types.Header, statedb *state.StateDB, txs []*types.Transaction, powUncles []*types.PowAnswer) {
+func (c *ProofOfBehavior) PobFinalize(chain consensus.ChainHeaderReader, header *types.Header, statedb *state.StateDB, txs []*types.Transaction, powUncles []*types.BehaviorProof) {
 	accumulateRewards(chain.Config(), statedb, header, powUncles)
 	header.Root = statedb.IntermediateRoot(chain.Config().IsEIP158(header.Number))
 }
@@ -598,7 +632,7 @@ func (c *ProofOfBehavior) Finalize(chain consensus.ChainHeaderReader, header *ty
 }
 
 // FinalizeAndAssemble implements consensus.Engine.
-func (c *ProofOfBehavior) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *types.Header, statedb *state.StateDB, txs []*types.Transaction, uncles []*types.PowAnswer, receipts []*types.Receipt) (*types.Block, error) {
+func (c *ProofOfBehavior) FinalizeAndAssemble(chain consensus.ChainHeaderReader, header *types.Header, statedb *state.StateDB, txs []*types.Transaction, uncles []*types.BehaviorProof, receipts []*types.Receipt) (*types.Block, error) {
 	c.Finalize(chain, header, statedb, txs, nil)
 	return types.NewBlock(header, txs, nil, receipts, trie.NewStackTrie(nil)), nil
 }
@@ -625,13 +659,13 @@ func (c *ProofOfBehavior) Seal(chain consensus.ChainHeaderReader, block *types.B
 	if err != nil {
 		return err
 	}
-	block.SetDposSig(sighash)
+	block.SetValidatorSig(sighash)
 	return nil
 }
 
-// DposAckSig signs a DPOS acknowledgment.
-func (c *ProofOfBehavior) DposAckSig(ack *types.DposAck) ([]byte, error) {
-	sighash, err := c.signFn(accounts.Account{Address: c.signer}, accounts.MimetypeDataWithValidator, PobDposAckRLP(ack))
+// AckSig signs a PoB acknowledgment.
+func (c *ProofOfBehavior) AckSig(ack *types.Ack) ([]byte, error) {
+	sighash, err := c.signFn(accounts.Account{Address: c.signer}, accounts.MimetypeDataWithValidator, PobAckRLP(ack))
 	if err != nil {
 		return nil, err
 	}
@@ -671,29 +705,29 @@ func (c *ProofOfBehavior) APIs(chain consensus.ChainHeaderReader) []rpc.API {
 	}}
 }
 
-// RecoverOwner recovers the signer address from the DposSig.
+// RecoverOwner recovers the signer address from the ValidatorSig.
 // Supports both ECDSA (65-byte sig) and Dilithium (pubkey+sig) signatures.
 func (c *ProofOfBehavior) RecoverOwner(header *types.Header) (common.Address, error) {
-	sigLen := len(header.DposSig)
+	sigLen := len(header.ValidatorSig)
 	dilithiumSigLen := dilithium.PublicKeySize + dilithium.SignatureSize // 1312 + 2420 = 3732
 
 	if sigLen == dilithiumSigLen {
-		// Dilithium path: DposSig = pubkey(1312) || signature(2420)
-		pubBytes := header.DposSig[:dilithium.PublicKeySize]
-		sigBytes := header.DposSig[dilithium.PublicKeySize:]
+		// Dilithium path: ValidatorSig = pubkey(1312) || signature(2420)
+		pubBytes := header.ValidatorSig[:dilithium.PublicKeySize]
+		sigBytes := header.ValidatorSig[dilithium.PublicKeySize:]
 		pub, err := dilithium.UnmarshalPublicKey(pubBytes)
 		if err != nil {
-			return common.Address{}, fmt.Errorf("invalid Dilithium pubkey in DposSig: %v", err)
+			return common.Address{}, fmt.Errorf("invalid Dilithium pubkey in ValidatorSig: %v", err)
 		}
 		msg := crypto.Keccak256(PobRLP(header))
 		if !dilithium.Verify(pub, msg, sigBytes) {
-			return common.Address{}, fmt.Errorf("invalid Dilithium signature in DposSig")
+			return common.Address{}, fmt.Errorf("invalid Dilithium signature in ValidatorSig")
 		}
 		return dilithium.PubkeyToAddress(pub), nil
 	}
 
 	// ECDSA path (default)
-	pubkey, err := secp256k1.RecoverPubkey(crypto.Keccak256(PobRLP(header)), header.DposSig)
+	pubkey, err := secp256k1.RecoverPubkey(crypto.Keccak256(PobRLP(header)), header.ValidatorSig)
 	if err == nil {
 		publicKey, err := crypto.UnmarshalPubkey(pubkey)
 		if err == nil {
@@ -722,10 +756,10 @@ func PobRLP(header *types.Header) []byte {
 
 func encodeSigHeader(w io.Writer, header *types.Header) {
 	enc := []interface{}{
-		header.DposSigAddr,
-		header.DposAckCountList,
-		header.DposAcksHash,
-		header.PowAnswers,
+		header.ValidatorAddr,
+		header.AckCountList,
+		header.AcksHash,
+		header.BehaviorProofs,
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,
@@ -748,19 +782,19 @@ func encodeSigHeader(w io.Writer, header *types.Header) {
 	}
 }
 
-// PobDposAckRLP returns the RLP bytes for signing a DposAck.
-func PobDposAckRLP(dposAck *types.DposAck) []byte {
+// PobAckRLP returns the RLP bytes for signing a Ack.
+func PobAckRLP(ack *types.Ack) []byte {
 	b := new(bytes.Buffer)
-	encodeSigDposAck(b, dposAck)
+	encodeSigAck(b, ack)
 	return b.Bytes()
 }
 
-func encodeSigDposAck(w io.Writer, dposAck *types.DposAck) {
+func encodeSigAck(w io.Writer, ack *types.Ack) {
 	enc := []interface{}{
-		dposAck.EpochPosition,
-		dposAck.Number,
-		dposAck.BlockHash,
-		dposAck.AckType,
+		ack.EpochPosition,
+		ack.Number,
+		ack.BlockHash,
+		ack.AckType,
 	}
 	if err := rlp.Encode(w, enc); err != nil {
 		panic("can't encode: " + err.Error())

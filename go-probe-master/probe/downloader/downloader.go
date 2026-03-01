@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // Package downloader contains the manual full chain synchronisation.
 package downloader
@@ -1270,7 +1270,7 @@ func (d *Downloader) fetchBodies(from uint64) error {
 	var (
 		deliver = func(packet dataPack) (int, error) {
 			pack := packet.(*bodyPack)
-			return d.queue.DeliverBodies(pack.peerID, pack.transactions, pack.uncles, pack.powAnswerUncles, pack.dposAcks)
+			return d.queue.DeliverBodies(pack.peerID, pack.transactions, pack.uncles, pack.powAnswerUncles, pack.acks)
 		}
 		expire   = func() map[string]int { return d.queue.ExpireBodies(d.peers.rates.TargetTimeout()) }
 		fetch    = func(p *peerConnection, req *fetchRequest) error { return p.FetchBodies(req) }
@@ -1719,8 +1719,8 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 	)
 	blocks := make([]*types.Block, len(results))
 	for i, result := range results {
-		blocks[i] = types.NewBlockWithHeader(result.Header).WithBodyGreatri(result.Transactions, result.Uncles, result.PowAnswerUncles, result.DposAcks)
-		//blocks[i].CopyPowAnswerUncles(result.PowAnswerUncles)
+		blocks[i] = types.NewBlockWithHeader(result.Header).WithBodyProofOfBehavior(result.Transactions, result.Uncles, result.BehaviorProofUncles, result.Acks)
+		//blocks[i].CopyBehaviorProofUncles(result.BehaviorProofUncles)
 	}
 	if index, err := d.blockchain.InsertChain(blocks); err != nil {
 		if index < len(results) {
@@ -1907,8 +1907,8 @@ func (d *Downloader) commitFastSyncData(results []*fetchResult, stateSync *state
 	blocks := make([]*types.Block, len(results))
 	receipts := make([]types.Receipts, len(results))
 	for i, result := range results {
-		log.Debug("results ", "DposAcks:", len(result.DposAcks))
-		blocks[i] = types.NewBlockWithHeader(result.Header).WithBodyGreatri(result.Transactions, result.Uncles, result.PowAnswerUncles, result.DposAcks)
+		log.Debug("results ", "Acks:", len(result.Acks))
+		blocks[i] = types.NewBlockWithHeader(result.Header).WithBodyProofOfBehavior(result.Transactions, result.Uncles, result.BehaviorProofUncles, result.Acks)
 		receipts[i] = result.Receipts
 	}
 	if index, err := d.blockchain.InsertReceiptChain(blocks, receipts, d.ancientLimit); err != nil {
@@ -1919,7 +1919,7 @@ func (d *Downloader) commitFastSyncData(results []*fetchResult, stateSync *state
 }
 
 func (d *Downloader) commitPivotBlock(result *fetchResult) error {
-	block := types.NewBlockWithHeader(result.Header).WithBodyGreatri(result.Transactions, result.Uncles, result.PowAnswerUncles, result.DposAcks)
+	block := types.NewBlockWithHeader(result.Header).WithBodyProofOfBehavior(result.Transactions, result.Uncles, result.BehaviorProofUncles, result.Acks)
 	log.Debug("Committing fast sync pivot as new head", "number", block.Number(), "hash", block.Hash())
 
 	// Commit the pivot block as the new head, will require full sync from here on
@@ -1950,9 +1950,9 @@ func (d *Downloader) DeliverHeaders(id string, headers []*types.Header) error {
 
 // DeliverBodies injects a new batch of block bodies received from a remote node.
 func (d *Downloader) DeliverBodies(id string, transactions [][]*types.Transaction, uncles [][]*types.Header,
-	powAnswerUncles [][]*types.PowAnswer, dposAcks [][]*types.DposAck) error {
+	powAnswerUncles [][]*types.BehaviorProof, acks [][]*types.Ack) error {
 	return d.deliver(d.bodyCh, &bodyPack{id, transactions, uncles,
-		powAnswerUncles, dposAcks}, bodyInMeter, bodyDropMeter)
+		powAnswerUncles, acks}, bodyInMeter, bodyDropMeter)
 }
 
 // DeliverReceipts injects a new batch of receipts received from a remote node.

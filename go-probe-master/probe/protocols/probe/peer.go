@@ -1,18 +1,18 @@
-// Copyright 2020 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2020 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package probe
 
@@ -37,13 +37,13 @@ const (
 	// before starting to randomly evict them.
 	maxKnownBlocks = 1024
 
-	// maxPowAnswers is the maximum pow answer to keep in the known list
+	// maxBehaviorProofs is the maximum pow answer to keep in the known list
 	// before starting to randomly evict them.
-	maxPowAnswers = 1024
+	maxBehaviorProofs = 1024
 
-	// maxDposAcks is the maximum dpos ack to keep in the known list
+	// maxAcks is the maximum validator ack to keep in the known list
 	// before starting to randomly evict them.
-	maxDposAcks = 10240
+	maxAcks = 10240
 
 	// maxQueuedTxs is the maximum number of transactions to queue up before dropping
 	// older broadcasts.
@@ -63,7 +63,7 @@ const (
 	// above some healthy uncle limit, so use that.
 	maxQueuedBlockAnns = 4
 
-	maxPeerPowAnswers = 7
+	maxPeerBehaviorProofs = 7
 
 	maxPeerAcks = 7
 )
@@ -96,11 +96,11 @@ type Peer struct {
 	txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
 	txAnnounce  chan []common.Hash // Channel used to queue transaction announcement requests
 
-	knowPowAnswers     mapset.Set
-	powAnswerBroadcast chan *types.PowAnswer // Channel used to queue transaction propagation requests
+	knowBehaviorProofs     mapset.Set
+	powAnswerBroadcast chan *types.BehaviorProof // Channel used to queue transaction propagation requests
 
-	knowDposAcks     mapset.Set
-	dposAckBroadcast chan *types.DposAck // Channel used to queue transaction announcement requests
+	knowAcks     mapset.Set
+	ackBroadcast chan *types.Ack // Channel used to queue transaction announcement requests
 
 	term chan struct{} // Termination channel to stop the broadcasters
 	lock sync.RWMutex  // Mutex protecting the internal fields
@@ -116,21 +116,21 @@ func NewPeer(version uint, p *p2p.Peer, rw p2p.MsgReadWriter, txpool TxPool) *Pe
 		version:            version,
 		knownTxs:           mapset.NewSet(),
 		knownBlocks:        mapset.NewSet(),
-		knowPowAnswers:     mapset.NewSet(),
-		knowDposAcks:       mapset.NewSet(),
+		knowBehaviorProofs:     mapset.NewSet(),
+		knowAcks:       mapset.NewSet(),
 		queuedBlocks:       make(chan *blockPropagation, maxQueuedBlocks),
 		queuedBlockAnns:    make(chan *types.Block, maxQueuedBlockAnns),
 		txBroadcast:        make(chan []common.Hash),
 		txAnnounce:         make(chan []common.Hash),
-		powAnswerBroadcast: make(chan *types.PowAnswer, maxPeerPowAnswers),
-		dposAckBroadcast:   make(chan *types.DposAck, maxPeerAcks),
+		powAnswerBroadcast: make(chan *types.BehaviorProof, maxPeerBehaviorProofs),
+		ackBroadcast:   make(chan *types.Ack, maxPeerAcks),
 		txpool:             txpool,
 		term:               make(chan struct{}),
 	}
 	// Start up all the broadcasters
 	go peer.broadcastBlocks()
 	go peer.broadcastTransactions()
-	go peer.broadcastDposInfo()
+	go peer.broadcastValidatorInfo()
 	if version >= ETH65 {
 		go peer.announceTransactions()
 	}
@@ -182,14 +182,14 @@ func (p *Peer) KnownTransaction(hash common.Hash) bool {
 	return p.knownTxs.Contains(hash)
 }
 
-// KnownPowAnswer returns whprobeer peer is known to already have a powAnswer.
-func (p *Peer) KnownPowAnswer(id common.Hash) bool {
-	return p.knowPowAnswers.Contains(id)
+// KnownBehaviorProof returns whprobeer peer is known to already have a powAnswer.
+func (p *Peer) KnownBehaviorProof(id common.Hash) bool {
+	return p.knowBehaviorProofs.Contains(id)
 }
 
-// KnownDposAck returns whprobeer peer is known to already have a dpos ack.
-func (p *Peer) KnownDposAck(id common.Hash) bool {
-	return p.knowDposAcks.Contains(id)
+// KnownAck returns whprobeer peer is known to already have a validator ack.
+func (p *Peer) KnownAck(id common.Hash) bool {
+	return p.knowAcks.Contains(id)
 }
 
 // markBlock marks a block as known for the peer, ensuring that the block will
@@ -212,24 +212,24 @@ func (p *Peer) markTransaction(hash common.Hash) {
 	p.knownTxs.Add(hash)
 }
 
-// MarkPowAnswer marks a pow answer as known for the peer, ensuring that it
+// MarkBehaviorProof marks a pow answer as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
-func (p *Peer) MarkPowAnswer(id common.Hash) {
+func (p *Peer) MarkBehaviorProof(id common.Hash) {
 	// If we reached the memory allowance, drop a previously known pow answer hash
-	for p.knowPowAnswers.Cardinality() >= maxPowAnswers {
-		p.knowPowAnswers.Pop()
+	for p.knowBehaviorProofs.Cardinality() >= maxBehaviorProofs {
+		p.knowBehaviorProofs.Pop()
 	}
-	p.knowPowAnswers.Add(id)
+	p.knowBehaviorProofs.Add(id)
 }
 
-// MarkDposAck marks a dpos ack as known for the peer, ensuring that it
+// MarkAck marks a validator ack as known for the peer, ensuring that it
 // will never be propagated to this particular peer.
-func (p *Peer) MarkDposAck(id common.Hash) {
+func (p *Peer) MarkAck(id common.Hash) {
 	// If we reached the memory allowance, drop a previously known pow answer hash
-	for p.knowDposAcks.Cardinality() >= maxDposAcks {
-		p.knowDposAcks.Pop()
+	for p.knowAcks.Cardinality() >= maxAcks {
+		p.knowAcks.Pop()
 	}
-	p.knowDposAcks.Add(id)
+	p.knowAcks.Add(id)
 }
 
 // SendTransactions sends transactions to the peer and includes the hashes
@@ -399,37 +399,37 @@ func (p *Peer) AsyncSendNewBlock(block *types.Block, td *big.Int) {
 	}
 }
 
-//  AsyncSendPowAnswer
-func (p *Peer) AsyncSendPowAnswer(powAnswer *types.PowAnswer) {
+//  AsyncSendBehaviorProof
+func (p *Peer) AsyncSendBehaviorProof(powAnswer *types.BehaviorProof) {
 	select {
 	case p.powAnswerBroadcast <- powAnswer:
 	default:
-		p.Log().Debug("Dropping AsyncSendPowAnswer propagation", "number", powAnswer.Number, "hash", powAnswer.BlockHash.String())
+		p.Log().Debug("Dropping AsyncSendBehaviorProof propagation", "number", powAnswer.Number, "hash", powAnswer.BlockHash.String())
 	}
 }
 
-//AsyncSendDposAck
-func (p *Peer) AsyncSendDposAck(ack *types.DposAck) {
+//AsyncSendAck
+func (p *Peer) AsyncSendAck(ack *types.Ack) {
 	select {
-	case p.dposAckBroadcast <- ack:
+	case p.ackBroadcast <- ack:
 	default:
-		p.Log().Debug("Dropping AsyncSendDposAck propagation", "peer", p.id, "number", ack.Number, "hash", ack.BlockHash.String(), "WitnessSig", common.BytesToHash(ack.WitnessSig))
+		p.Log().Debug("Dropping AsyncSendAck propagation", "peer", p.id, "number", ack.Number, "hash", ack.BlockHash.String(), "WitnessSig", common.BytesToHash(ack.WitnessSig))
 	}
 }
 
-// SendNewPowAnswer send a pow answer to a remote peer.
-func (p *Peer) SendNewPowAnswer(powAnswer *types.PowAnswer) error {
-	p.MarkPowAnswer(powAnswer.Id())
-	return p2p.Send(p.rw, PowAnswerMsg, &NewPowAnswerPacket{
-		PowAnswer: powAnswer,
+// SendNewBehaviorProof send a pow answer to a remote peer.
+func (p *Peer) SendNewBehaviorProof(powAnswer *types.BehaviorProof) error {
+	p.MarkBehaviorProof(powAnswer.Id())
+	return p2p.Send(p.rw, BehaviorProofMsg, &NewBehaviorProofPacket{
+		BehaviorProof: powAnswer,
 	})
 }
 
-// SendNewDposAck send a dpos ack to a remote peer.
-func (p *Peer) SendNewDposAck(dposAck *types.DposAck) error {
-	p.MarkDposAck(dposAck.Id())
-	return p2p.Send(p.rw, DposAckMsg, &NewDposAckPacket{
-		DposAck: dposAck,
+// SendNewAck send a validator ack to a remote peer.
+func (p *Peer) SendNewAck(ack *types.Ack) error {
+	p.MarkAck(ack.Id())
+	return p2p.Send(p.rw, AckMsg, &NewAckPacket{
+		Ack: ack,
 	})
 }
 

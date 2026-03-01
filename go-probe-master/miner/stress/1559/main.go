@@ -1,18 +1,18 @@
-// Copyright 2021 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2021 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains a miner stress test for eip 1559.
 package main
@@ -24,13 +24,11 @@ import (
 	"math/big"
 	"math/rand"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/probechain/go-probe/accounts/keystore"
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/fdlimit"
-	"github.com/probechain/go-probe/consensus/probeash"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/log"
@@ -57,10 +55,7 @@ func main() {
 	for i := 0; i < len(faucets); i++ {
 		faucets[i], _ = crypto.GenerateKey()
 	}
-	// Pre-generate the probeash mining DAG so we don't race
-	probeash.MakeDataset(1, filepath.Join(os.Getenv("HOME"), ".probeash"))
-
-	// Create an Probeash network based off of the Probeash config
+	// Create a PoB network based off of the PoB config
 	genesis := makeGenesis(faucets)
 
 	var (
@@ -188,7 +183,7 @@ func makeTransaction(nonce uint64, privKey *ecdsa.PrivateKey, signer types.Signe
 func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 	genesis := core.DefaultGenesisBlock()
 
-	genesis.Config = params.AllProbeashProtocolChanges
+	genesis.Config = params.AllPobProtocolChanges
 	genesis.Config.LondonBlock = londonBlock
 	genesis.Difficulty = params.MinimumDifficulty
 
@@ -213,7 +208,7 @@ func makeGenesis(faucets []*ecdsa.PrivateKey) *core.Genesis {
 }
 
 func makeMiner(genesis *core.Genesis) (*node.Node, *probe.Probeum, error) {
-	// Define the basic configurations for the Probeum node
+	// Define the basic configurations for the ProbeChain node
 	datadir, _ := ioutil.TempDir("", "")
 
 	config := &node.Config{

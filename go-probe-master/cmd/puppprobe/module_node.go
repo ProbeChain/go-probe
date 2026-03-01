@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ import (
 	"github.com/probechain/go-probe/log"
 )
 
-// nodeDockerfile is the Dockerfile required to run an Probeum node.
+// nodeDockerfile is the Dockerfile required to run a ProbeChain node.
 var nodeDockerfile = `
 FROM probeum/client-go:latest
 
@@ -48,7 +48,7 @@ ENTRYPOINT ["/bin/sh", "gprobe.sh"]
 `
 
 // nodeComposefile is the docker-compose.yml file required to deploy and maintain
-// an Probeum node (bootnode or miner for now).
+// a ProbeChain node (bootnode or miner for now).
 var nodeComposefile = `
 version: '2'
 services:
@@ -60,8 +60,7 @@ services:
       - "{{.Port}}:{{.Port}}"
       - "{{.Port}}:{{.Port}}/udp"
     volumes:
-      - {{.Datadir}}:/root/.probeum{{if .Probeashdir}}
-      - {{.Probeashdir}}:/root/.probeash{{end}}
+      - {{.Datadir}}:/root/.probeum
     environment:
       - PORT={{.Port}}/tcp
       - TOTAL_PEERS={{.TotalPeers}}
@@ -117,7 +116,6 @@ func deployNode(client *sshClient, network string, bootnodes []string, config *n
 	template.Must(template.New("").Parse(nodeComposefile)).Execute(composefile, map[string]interface{}{
 		"Type":       kind,
 		"Datadir":    config.datadir,
-		"Probeashdir":  config.probeashdir,
 		"Network":    network,
 		"Port":       config.port,
 		"TotalPeers": config.peersTotal,
@@ -155,7 +153,6 @@ type nodeInfos struct {
 	genesis    []byte
 	network    int64
 	datadir    string
-	probeashdir  string
 	probestats   string
 	port       int
 	enode      string
@@ -186,12 +183,10 @@ func (info *nodeInfos) Report() map[string]string {
 		report["Gas ceil  (target maximum)"] = fmt.Sprintf("%0.3f MGas", info.gasLimit)
 
 		if info.probebase != "" {
-			// Probeash proof-of-work miner
-			report["Probeash directory"] = info.probeashdir
 			report["Miner account"] = info.probebase
 		}
 		if info.keyJSON != "" {
-			// Clique proof-of-authority signer
+			// Pob signer
 			var key struct {
 				Address string `json:"address"`
 			}
@@ -255,7 +250,6 @@ func checkNode(client *sshClient, network string, boot bool) (*nodeInfos, error)
 	stats := &nodeInfos{
 		genesis:    genesis,
 		datadir:    infos.volumes["/root/.probeum"],
-		probeashdir:  infos.volumes["/root/.probeash"],
 		port:       port,
 		peersTotal: totalPeers,
 		peersLight: lightPeers,

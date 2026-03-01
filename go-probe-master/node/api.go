@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package node
 
@@ -125,8 +125,8 @@ func (api *privateAdminAPI) RemoveTrustedPeer(url string) (bool, error) {
 	return true, nil
 }
 
-// AddDposPeer allows a remote node to always connect, even if slots are full
-func (api *privateAdminAPI) AddDposPeer(url string) (bool, error) {
+// AddValidatorPeer allows a remote node to always connect, even if slots are full
+func (api *privateAdminAPI) AddValidatorPeer(url string) (bool, error) {
 	// Make sure the server is running, fail otherwise
 	server := api.node.Server()
 	if server == nil {
@@ -136,13 +136,13 @@ func (api *privateAdminAPI) AddDposPeer(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid enode: %v", err)
 	}
-	server.AddDposPeer(node)
+	server.AddValidatorPeer(node)
 	return true, nil
 }
 
-// RemoveDposPeer removes a remote dpos node from the trusted peer set, but it
+// RemoveValidatorPeer removes a remote validator node from the trusted peer set, but it
 // does not disconnect it automatically.
-func (api *privateAdminAPI) RemoveDposPeer(url string) (bool, error) {
+func (api *privateAdminAPI) RemoveValidatorPeer(url string) (bool, error) {
 	// Make sure the server is running, fail otherwise
 	server := api.node.Server()
 	if server == nil {
@@ -152,7 +152,7 @@ func (api *privateAdminAPI) RemoveDposPeer(url string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid enode: %v", err)
 	}
-	server.RemoveDposPeer(node)
+	server.RemoveValidatorPeer(node)
 	return true, nil
 }
 

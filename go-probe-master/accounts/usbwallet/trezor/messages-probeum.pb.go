@@ -124,7 +124,7 @@ func (m *ProbeumPublicKey) GetXpub() string {
 }
 
 //*
-// Request: Ask device for Probeum address corresponding to address_n path
+// Request: Ask device for ProbeChain address corresponding to address_n path
 // @start
 // @next ProbeumAddress
 // @next Failure
@@ -176,7 +176,7 @@ func (m *ProbeumGetAddress) GetShowDisplay() bool {
 }
 
 //*
-// Response: Contains an Probeum address derived from device private seed
+// Response: Contains an ProbeChain address derived from device private seed
 // @end
 type ProbeumAddress struct {
 	AddressBin           []byte   `protobuf:"bytes,1,opt,name=addressBin" json:"addressBin,omitempty"`

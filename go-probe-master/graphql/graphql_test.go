@@ -1,18 +1,18 @@
-// Copyright 2019 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2019 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package graphql
 
@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/probechain/go-probe/common"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/core/vm"
@@ -238,12 +238,12 @@ func createGQLService(t *testing.T, stack *node.Node) {
 	// create backend
 	probeConf := &probeconfig.Config{
 		Genesis: &core.Genesis{
-			Config:     params.AllProbeashProtocolChanges,
+			Config:     params.AllPobProtocolChanges,
 			GasLimit:   11500000,
 			Difficulty: big.NewInt(1048576),
 		},
-		Probeash: probeash.Config{
-			PowMode: probeash.ModeFake,
+		Probeash: pob.Config{
+			PowMode: pob.ModeFake,
 		},
 		NetworkId:               1337,
 		TrieCleanCache:          5,
@@ -258,8 +258,8 @@ func createGQLService(t *testing.T, stack *node.Node) {
 		t.Fatalf("could not create probe backend: %v", err)
 	}
 	// Create some blocks and import them
-	chain, _ := core.GenerateChain(params.AllProbeashProtocolChanges, probeBackend.BlockChain().Genesis(),
-		probeash.NewFaker(), probeBackend.ChainDb(), 10, func(i int, gen *core.BlockGen) {})
+	chain, _ := core.GenerateChain(params.AllPobProtocolChanges, probeBackend.BlockChain().Genesis(),
+		pob.NewFaker(), probeBackend.ChainDb(), 10, func(i int, gen *core.BlockGen) {})
 	_, err = probeBackend.BlockChain().InsertChain(chain)
 	if err != nil {
 		t.Fatalf("could not create import blocks: %v", err)
@@ -280,7 +280,7 @@ func createGQLServiceWithTransactions(t *testing.T, stack *node.Node) {
 
 	probeConf := &probeconfig.Config{
 		Genesis: &core.Genesis{
-			Config:     params.AllProbeashProtocolChanges,
+			Config:     params.AllPobProtocolChanges,
 			GasLimit:   11500000,
 			Difficulty: big.NewInt(1048576),
 			Alloc: core.GenesisAlloc{
@@ -299,8 +299,8 @@ func createGQLServiceWithTransactions(t *testing.T, stack *node.Node) {
 			},
 			BaseFee: big.NewInt(params.InitialBaseFee),
 		},
-		Probeash: probeash.Config{
-			PowMode: probeash.ModeFake,
+		Probeash: pob.Config{
+			PowMode: pob.ModeFake,
 		},
 		NetworkId:               1337,
 		TrieCleanCache:          5,
@@ -338,8 +338,8 @@ func createGQLServiceWithTransactions(t *testing.T, stack *node.Node) {
 	})
 
 	// Create some blocks and import them
-	chain, _ := core.GenerateChain(params.AllProbeashProtocolChanges, probeBackend.BlockChain().Genesis(),
-		probeash.NewFaker(), probeBackend.ChainDb(), 1, func(i int, b *core.BlockGen) {
+	chain, _ := core.GenerateChain(params.AllPobProtocolChanges, probeBackend.BlockChain().Genesis(),
+		pob.NewFaker(), probeBackend.ChainDb(), 1, func(i int, b *core.BlockGen) {
 			b.SetCoinbase(common.Address{1})
 			b.AddTx(legacyTx)
 			b.AddTx(envelopTx)

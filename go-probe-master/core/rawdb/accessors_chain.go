@@ -1,18 +1,18 @@
-// Copyright 2018 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2018 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package rawdb
 
@@ -646,7 +646,7 @@ func ReadBlock(db probedb.Reader, hash common.Hash, number uint64) *types.Block 
 	if body == nil {
 		return nil
 	}
-	return types.NewBlockWithHeader(header).WithBodyGreatri(body.Transactions, body.Uncles, body.PowAnswerUncles, body.DposAcks)
+	return types.NewBlockWithHeader(header).WithBodyProofOfBehavior(body.Transactions, body.Uncles, body.BehaviorProofUncles, body.Acks)
 }
 
 // WriteBlock serializes a block into the database, header and body separately.
@@ -852,8 +852,8 @@ func ReadHeadBlock(db probedb.Reader) *types.Block {
 	return ReadBlock(db, headBlockHash, *headBlockNumber)
 }
 
-// WriteDPos save dPos node list with specified round id
-func WriteDPos(db probedb.KeyValueWriter, roundId uint64, list []common.DPoSAccount) {
+// WriteDPos save validator node list with specified round id
+func WriteDPos(db probedb.KeyValueWriter, roundId uint64, list []common.Validator) {
 	arr, err := rlp.EncodeToBytes(list)
 	if err != nil {
 		log.Crit("Failed to EncodeToBytes dPos", "err", err)
@@ -864,9 +864,9 @@ func WriteDPos(db probedb.KeyValueWriter, roundId uint64, list []common.DPoSAcco
 	}
 }
 
-// ReadDPos returns the dPos node list with specified round id
-func ReadDPos(db probedb.KeyValueReader, roundId uint64) []common.DPoSAccount {
-	var arr []common.DPoSAccount
+// ReadDPos returns the validator node list with specified round id
+func ReadDPos(db probedb.KeyValueReader, roundId uint64) []common.Validator {
+	var arr []common.Validator
 	key := DPosKey(roundId)
 	data, _ := db.Get(key)
 	err := rlp.DecodeBytes(data, &arr)

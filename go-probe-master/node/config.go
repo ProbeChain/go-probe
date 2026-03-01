@@ -1,18 +1,18 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package node
 
@@ -45,7 +45,7 @@ const (
 	datadirDefaultKeyStore = "keystore"           // Path within the datadir to the keystore
 	datadirStaticNodes     = "static-nodes.json"  // Path within the datadir to the static node list
 	datadirTrustedNodes    = "trusted-nodes.json" // Path within the datadir to the trusted node list
-	datadirDposNodes       = "dpos-nodes.json"    // Path within the datadir to the dpos node list
+	datadirValidatorNodes       = "dpos-nodes.json"    // Path within the datadir to the validator node list
 	datadirNodeDatabase    = "nodes"              // Path within the datadir to store the node infos
 )
 
@@ -192,7 +192,7 @@ type Config struct {
 
 	staticNodesWarning       bool
 	trustedNodesWarning      bool
-	dposNodesWarning         bool
+	validatorNodesWarning         bool
 	oldGprobeResourceWarning bool
 
 	// AllowUnprotectedTxs allows non EIP-155 protected transactions to be send over RPC.
@@ -399,9 +399,9 @@ func (c *Config) TrustedNodes() []*enode.Node {
 	return c.parsePersistentNodes(&c.trustedNodesWarning, c.ResolvePath(datadirTrustedNodes))
 }
 
-// DposNodes returns a list of node enode URLs configured as dpos nodes.
-func (c *Config) DposNodes() []*enode.Node {
-	return c.parsePersistentNodes(&c.dposNodesWarning, c.ResolvePath(datadirDposNodes))
+// ValidatorNodes returns a list of node enode URLs configured as validator nodes.
+func (c *Config) ValidatorNodes() []*enode.Node {
+	return c.parsePersistentNodes(&c.validatorNodesWarning, c.ResolvePath(datadirValidatorNodes))
 }
 
 // parsePersistentNodes parses a list of discovery node URLs loaded from a .json

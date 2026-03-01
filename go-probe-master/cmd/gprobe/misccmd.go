@@ -1,4 +1,4 @@
-// Copyright 2016 The go-probeum Authors
+// Copyright 2016 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -20,11 +20,9 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/probechain/go-probe/cmd/utils"
-	"github.com/probechain/go-probe/consensus/probeash"
 	"github.com/probechain/go-probe/params"
 	"gopkg.in/urfave/cli.v1"
 )
@@ -41,32 +39,6 @@ var (
 		Value: fmt.Sprintf("Gprobe/v%v/%v-%v/%v",
 			params.VersionWithCommit(gitCommit, gitDate),
 			runtime.GOOS, runtime.GOARCH, runtime.Version()),
-	}
-	makecacheCommand = cli.Command{
-		Action:    utils.MigrateFlags(makecache),
-		Name:      "makecache",
-		Usage:     "Generate probeash verification cache (for testing)",
-		ArgsUsage: "<blockNum> <outputDir>",
-		Category:  "MISCELLANEOUS COMMANDS",
-		Description: `
-The makecache command generates an probeash cache in <outputDir>.
-
-This command exists to support the system testing project.
-Regular users do not need to execute it.
-`,
-	}
-	makedagCommand = cli.Command{
-		Action:    utils.MigrateFlags(makedag),
-		Name:      "makedag",
-		Usage:     "Generate probeash mining DAG (for testing)",
-		ArgsUsage: "<blockNum> <outputDir>",
-		Category:  "MISCELLANEOUS COMMANDS",
-		Description: `
-The makedag command generates an probeash DAG in <outputDir>.
-
-This command exists to support the system testing project.
-Regular users do not need to execute it.
-`,
 	}
 	versionCommand = cli.Command{
 		Action:    utils.MigrateFlags(version),
@@ -101,36 +73,6 @@ and displays information about any security vulnerabilities that affect the curr
 		Category:  "MISCELLANEOUS COMMANDS",
 	}
 )
-
-// makecache generates an probeash verification cache into the provided folder.
-func makecache(ctx *cli.Context) error {
-	args := ctx.Args()
-	if len(args) != 2 {
-		utils.Fatalf(`Usage: gprobe makecache <block number> <outputdir>`)
-	}
-	block, err := strconv.ParseUint(args[0], 0, 64)
-	if err != nil {
-		utils.Fatalf("Invalid block number: %v", err)
-	}
-	probeash.MakeCache(block, args[1])
-
-	return nil
-}
-
-// makedag generates an probeash mining DAG into the provided folder.
-func makedag(ctx *cli.Context) error {
-	args := ctx.Args()
-	if len(args) != 2 {
-		utils.Fatalf(`Usage: gprobe makedag <block number> <outputdir>`)
-	}
-	block, err := strconv.ParseUint(args[0], 0, 64)
-	if err != nil {
-		utils.Fatalf("Invalid block number: %v", err)
-	}
-	probeash.MakeDataset(block, args[1])
-
-	return nil
-}
 
 func version(ctx *cli.Context) error {
 	fmt.Println(strings.Title(clientIdentifier))

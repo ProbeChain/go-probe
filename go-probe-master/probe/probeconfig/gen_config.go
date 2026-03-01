@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/probechain/go-probe/common"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/probe/downloader"
 	"github.com/probechain/go-probe/probe/gasprice"
@@ -49,7 +49,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapshotCache           int
 		Preimages               bool
 		Miner                   miner.Config
-		Probeash                  probeash.Config
+		Probeash                  pob.Config
 		TxPool                  core.TxPoolConfig
 		GPO                     gasprice.Config
 		EnablePreimageRecording bool
@@ -143,7 +143,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		SnapshotCache           *int
 		Preimages               *bool
 		Miner                   *miner.Config
-		Probeash                  *probeash.Config
+		Probeash                  *pob.Config
 		TxPool                  *core.TxPoolConfig
 		GPO                     *gasprice.Config
 		EnablePreimageRecording *bool

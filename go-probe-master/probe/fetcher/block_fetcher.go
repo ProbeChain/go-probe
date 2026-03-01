@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // Package fetcher contains the announcement based header, blocks or transaction synchronisation.
 package fetcher
@@ -124,8 +124,8 @@ type bodyFilterTask struct {
 	peer            string                 // The source peer of block bodies
 	transactions    [][]*types.Transaction // Collection of transactions per block bodies
 	uncles          [][]*types.Header      // Collection of uncles per block bodies
-	powAnswerUncles [][]*types.PowAnswer
-	dposAcks        [][]*types.DposAck
+	powAnswerUncles [][]*types.BehaviorProof
+	acks        [][]*types.Ack
 	time            time.Time // Arrival time of the blocks' contents
 }
 
@@ -304,8 +304,8 @@ func (f *BlockFetcher) FilterHeaders(peer string, headers []*types.Header, time 
 // FilterBodies extracts all the block bodies that were explicitly requested by
 // the fetcher, returning those that should be handled differently.
 func (f *BlockFetcher) FilterBodies(peer string, transactions [][]*types.Transaction,
-	uncles [][]*types.Header, powAnswerUncles [][]*types.PowAnswer, dposAcks [][]*types.DposAck,
-	time time.Time) ([][]*types.Transaction, [][]*types.Header, [][]*types.PowAnswer, [][]*types.DposAck) {
+	uncles [][]*types.Header, powAnswerUncles [][]*types.BehaviorProof, acks [][]*types.Ack,
+	time time.Time) ([][]*types.Transaction, [][]*types.Header, [][]*types.BehaviorProof, [][]*types.Ack) {
 	log.Trace("Filtering bodies", "peer", peer, "txs", len(transactions), "uncles", len(uncles))
 
 	// Send the filter channel to the fetcher
@@ -319,14 +319,14 @@ func (f *BlockFetcher) FilterBodies(peer string, transactions [][]*types.Transac
 	// Request the filtering of the body list
 	select {
 	case filter <- &bodyFilterTask{peer: peer, transactions: transactions, uncles: uncles,
-		powAnswerUncles: powAnswerUncles, dposAcks: dposAcks, time: time}:
+		powAnswerUncles: powAnswerUncles, acks: acks, time: time}:
 	case <-f.quit:
 		return nil, nil, nil, nil
 	}
 	// Retrieve the bodies remaining after filtering
 	select {
 	case task := <-filter:
-		return task.transactions, task.uncles, task.powAnswerUncles, task.dposAcks
+		return task.transactions, task.uncles, task.powAnswerUncles, task.acks
 	case <-f.quit:
 		return nil, nil, nil, nil
 	}
@@ -611,7 +611,7 @@ func (f *BlockFetcher) loop() {
 			blocks := []*types.Block{}
 			// abort early if there's nothing explicitly requested
 			if len(f.completing) > 0 {
-				for i := 0; i < len(task.transactions) && i < len(task.uncles) && i < len(task.powAnswerUncles) && i < len(task.dposAcks); i++ {
+				for i := 0; i < len(task.transactions) && i < len(task.uncles) && i < len(task.powAnswerUncles) && i < len(task.acks); i++ {
 					// Match up a body to any possible completion request
 					var (
 						matched   = false
@@ -623,7 +623,7 @@ func (f *BlockFetcher) loop() {
 							continue
 						}
 						if uncleHash == (common.Hash{}) {
-							uncleHash = types.CalcPowAnswerUncleHash(task.powAnswerUncles[i])
+							uncleHash = types.CalcBehaviorProofUncleHash(task.powAnswerUncles[i])
 						}
 						if uncleHash != announce.header.UncleHash {
 							continue
@@ -637,8 +637,8 @@ func (f *BlockFetcher) loop() {
 						// Mark the body matched, reassemble if still unknown
 						matched = true
 						if f.getBlock(hash) == nil {
-							block := types.NewBlockWithHeader(announce.header).WithBodyGreatri(task.transactions[i], task.uncles[i],
-								task.powAnswerUncles[i], task.dposAcks[i])
+							block := types.NewBlockWithHeader(announce.header).WithBodyProofOfBehavior(task.transactions[i], task.uncles[i],
+								task.powAnswerUncles[i], task.acks[i])
 							block.ReceivedAt = task.time
 							blocks = append(blocks, block)
 						} else {
@@ -650,7 +650,7 @@ func (f *BlockFetcher) loop() {
 						task.transactions = append(task.transactions[:i], task.transactions[i+1:]...)
 						task.uncles = append(task.uncles[:i], task.uncles[i+1:]...)
 						task.powAnswerUncles = append(task.powAnswerUncles[:i], task.powAnswerUncles[i+1:]...)
-						task.dposAcks = append(task.dposAcks[:i], task.dposAcks[i+1:]...)
+						task.acks = append(task.acks[:i], task.acks[i+1:]...)
 						i--
 						continue
 					}

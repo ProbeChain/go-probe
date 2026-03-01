@@ -1,18 +1,18 @@
-// Copyright 2017 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2017 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains the implementation for interacting with the Ledger hardware
 // wallets. The wire protocol spec can be found in the Ledger Blue GitHub repo:
@@ -49,10 +49,10 @@ type ledgerParam1 byte
 type ledgerParam2 byte
 
 const (
-	ledgerOpRetrieveAddress  ledgerOpcode = 0x02 // Returns the public key and Probeum address for a given BIP 32 path
-	ledgerOpSignTransaction  ledgerOpcode = 0x04 // Signs an Probeum transaction after having the user validate the parameters
+	ledgerOpRetrieveAddress  ledgerOpcode = 0x02 // Returns the public key and ProbeChain address for a given BIP 32 path
+	ledgerOpSignTransaction  ledgerOpcode = 0x04 // Signs a ProbeChain transaction after having the user validate the parameters
 	ledgerOpGetConfiguration ledgerOpcode = 0x06 // Returns specific wallet application configuration
-	ledgerOpSignTypedMessage ledgerOpcode = 0x0c // Signs an Probeum message following the EIP 712 specification
+	ledgerOpSignTypedMessage ledgerOpcode = 0x0c // Signs a ProbeChain message following the EIP 712 specification
 
 	ledgerP1DirectlyFetchAddress    ledgerParam1 = 0x00 // Return address directly from the wallet
 	ledgerP1InitTypedMessageData    ledgerParam1 = 0x00 // First chunk of Typed Message data
@@ -101,7 +101,7 @@ func (w *ledgerDriver) Status() (string, error) {
 	return fmt.Sprintf("Probeum app v%d.%d.%d online", w.version[0], w.version[1], w.version[2]), w.failure
 }
 
-// offline returns whprobeer the wallet and the Probeum app is offline or not.
+// offline returns whprobeer the wallet and the ProbeChain app is offline or not.
 //
 // The method assumes that the state lock is held!
 func (w *ledgerDriver) offline() bool {
@@ -122,7 +122,7 @@ func (w *ledgerDriver) Open(device io.ReadWriter, passphrase string) error {
 		}
 		return nil
 	}
-	// Try to resolve the Probeum app's version, will fail prior to v1.0.2
+	// Try to resolve the ProbeChain app's version, will fail prior to v1.0.2
 	if w.version, err = w.ledgerVersion(); err != nil {
 		w.version = [3]byte{1, 0, 0} // Assume worst case, can't verify if v1.0.0 or v1.0.1
 	}
@@ -147,7 +147,7 @@ func (w *ledgerDriver) Heartbeat() error {
 }
 
 // Derive implements usbwallet.driver, sending a derivation request to the Ledger
-// and returning the Probeum address located on that derivation path.
+// and returning the ProbeChain address located on that derivation path.
 func (w *ledgerDriver) Derive(path accounts.DerivationPath) (common.Address, error) {
 	return w.ledgerDerive(path)
 }
@@ -155,11 +155,11 @@ func (w *ledgerDriver) Derive(path accounts.DerivationPath) (common.Address, err
 // SignTx implements usbwallet.driver, sending the transaction to the Ledger and
 // waiting for the user to confirm or deny the transaction.
 //
-// Note, if the version of the Probeum application running on the Ledger wallet is
+// Note, if the version of the ProbeChain application running on the Ledger wallet is
 // too old to sign EIP-155 transactions, but such is requested nonprobeeless, an error
 // will be returned opposed to silently signing in Homestead mode.
 func (w *ledgerDriver) SignTx(path accounts.DerivationPath, tx *types.Transaction, chainID *big.Int) (common.Address, *types.Transaction, error) {
-	// If the Probeum app doesn't run, abort
+	// If the ProbeChain app doesn't run, abort
 	if w.offline() {
 		return common.Address{}, nil, accounts.ErrWalletClosed
 	}
@@ -177,7 +177,7 @@ func (w *ledgerDriver) SignTx(path accounts.DerivationPath, tx *types.Transactio
 //
 // Note: this was introduced in the ledger 1.5.0 firmware
 func (w *ledgerDriver) SignTypedMessage(path accounts.DerivationPath, domainHash []byte, messageHash []byte) ([]byte, error) {
-	// If the Probeum app doesn't run, abort
+	// If the ProbeChain app doesn't run, abort
 	if w.offline() {
 		return nil, accounts.ErrWalletClosed
 	}
@@ -190,7 +190,7 @@ func (w *ledgerDriver) SignTypedMessage(path accounts.DerivationPath, domainHash
 	return w.ledgerSignTypedMessage(path, domainHash, messageHash)
 }
 
-// ledgerVersion retrieves the current version of the Probeum wallet app running
+// ledgerVersion retrieves the current version of the ProbeChain wallet app running
 // on the Ledger wallet.
 //
 // The version retrieval protocol is defined as follows:
@@ -222,7 +222,7 @@ func (w *ledgerDriver) ledgerVersion() ([3]byte, error) {
 	return version, nil
 }
 
-// ledgerDerive retrieves the currently active Probeum address from a Ledger
+// ledgerDerive retrieves the currently active ProbeChain address from a Ledger
 // wallet at the specified derivation path.
 //
 // The address derivation protocol is defined as follows:
@@ -250,8 +250,8 @@ func (w *ledgerDriver) ledgerVersion() ([3]byte, error) {
 //   ------------------------+-------------------
 //   Public Key length       | 1 byte
 //   Uncompressed Public Key | arbitrary
-//   Probeum address length | 1 byte
-//   Probeum address        | 40 bytes hex ascii
+//   ProbeChain address length | 1 byte
+//   ProbeChain address        | 40 bytes hex ascii
 //   Chain code if requested | 32 bytes
 func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) (common.Address, error) {
 	// Flatten the derivation path into the Ledger request
@@ -271,13 +271,13 @@ func (w *ledgerDriver) ledgerDerive(derivationPath []uint32) (common.Address, er
 	}
 	reply = reply[1+int(reply[0]):]
 
-	// Extract the Probeum hex address string
+	// Extract the ProbeChain hex address string
 	if len(reply) < 1 || len(reply) < 1+int(reply[0]) {
 		return common.Address{}, errors.New("reply lacks address entry")
 	}
 	hexstr := reply[1 : 1+int(reply[0])]
 
-	// Decode the hex sting into an Probeum address and return
+	// Decode the hex sting into an ProbeChain address and return
 	var address common.Address
 	if _, err = hex.Decode(address[:], hexstr); err != nil {
 		return common.Address{}, err
@@ -362,7 +362,7 @@ func (w *ledgerDriver) ledgerSign(derivationPath []uint32, tx *types.Transaction
 		payload = payload[chunk:]
 		op = ledgerP1ContTransactionData
 	}
-	// Extract the Probeum signature and do a sanity validation
+	// Extract the ProbeChain signature and do a sanity validation
 	if len(reply) != crypto.SignatureLength {
 		return common.Address{}, nil, errors.New("reply lacks signature")
 	}
@@ -441,7 +441,7 @@ func (w *ledgerDriver) ledgerSignTypedMessage(derivationPath []uint32, domainHas
 		return nil, err
 	}
 
-	// Extract the Probeum signature and do a sanity validation
+	// Extract the ProbeChain signature and do a sanity validation
 	if len(reply) != crypto.SignatureLength {
 		return nil, errors.New("reply lacks signature")
 	}

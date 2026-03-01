@@ -1,18 +1,18 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package state
 
@@ -59,7 +59,7 @@ func (s Storage) Copy() Storage {
 	return cpy
 }
 
-// stateObject represents an Probeum account which is being modified.
+// stateObject represents an ProbeChain account which is being modified.
 //
 // The usage pattern is as follows:
 // First you need to obtain a state object.
@@ -78,7 +78,7 @@ type stateObject struct {
 	authorizeAccount AuthorizeAccount
 	lossAccount      LossAccount
 	lossMarkAccount  LossMarkAccount
-	dPosListAccount  DPosListAccount
+	validatorListAccount  ValidatorListAccount
 	// DB error.
 	// State objects are used by the consensus core and VM which are
 	// unable to deal with database-level errors. Any error that occurs
@@ -153,29 +153,29 @@ type LossMarkAccount struct {
 	AccType  byte            //Account type
 }
 
-type DPosListAccount struct {
-	DPosCandidateAccounts dPosCandidateAccounts //dPoS candidate accounts, max length 64,see common.DPosNodeLength
+type ValidatorListAccount struct {
+	ValidatorCandidates validatorCandidates //validator candidate accounts, max length 64,see common.ValidatorNodeLength
 	RoundId               uint64                //round id
 	AccType               byte                  //Account type
 }
 
-func (d *DPosListAccount) AddDPosCandidate(curNode common.DPoSCandidateAccount) {
+func (d *ValidatorListAccount) AddValidatorCandidate(curNode common.DPoSCandidateAccount) {
 	exist := false
-	if d.DPosCandidateAccounts.Len() > 0 {
-		for i, node := range d.DPosCandidateAccounts {
+	if d.ValidatorCandidates.Len() > 0 {
+		for i, node := range d.ValidatorCandidates {
 			if node.VoteAccount == curNode.VoteAccount {
-				d.DPosCandidateAccounts[i] = curNode
+				d.ValidatorCandidates[i] = curNode
 				exist = true
 				break
 			}
 		}
 	}
 	if !exist {
-		d.DPosCandidateAccounts = append(d.DPosCandidateAccounts, curNode)
+		d.ValidatorCandidates = append(d.ValidatorCandidates, curNode)
 	}
-	sort.Sort(d.DPosCandidateAccounts)
-	if d.DPosCandidateAccounts.Len() > common.DPosNodeLength {
-		d.DPosCandidateAccounts = d.DPosCandidateAccounts[0:common.DPosNodeLength]
+	sort.Sort(d.ValidatorCandidates)
+	if d.ValidatorCandidates.Len() > common.ValidatorNodeLength {
+		d.ValidatorCandidates = d.ValidatorCandidates[0:common.ValidatorNodeLength]
 	}
 }
 
@@ -186,7 +186,7 @@ type Wrapper struct {
 	assetAccount     ContractAccount
 	authorizeAccount AuthorizeAccount
 	lossAccount      LossAccount
-	dPoSListAccount  DPosListAccount
+	validatorListAccount  ValidatorListAccount
 	lossMarkAccount  LossMarkAccount
 }
 
@@ -214,7 +214,7 @@ type RPCAccountInfo struct {
 	Info                  string                 `json:"info,omitempty"`
 	AccType               string                 `json:"accType,omitempty"`
 	LastBits              string                 `json:"lastBits,omitempty"`
-	DPosCandidateAccounts *dPosCandidateAccounts `json:"dPosCandidateAccounts,omitempty"`
+	ValidatorCandidates *validatorCandidates `json:"validatorCandidates,omitempty"`
 	RoundId               uint64                 `json:"roundId,omitempty"`
 }
 
@@ -250,9 +250,9 @@ func DecodeRLP(encodedBytes []byte, accountType byte) (*Wrapper, error) {
 		err = rlp.DecodeBytes(encodedBytes, &data)
 		wrapper.lossMarkAccount = data
 	case common.ACC_TYPE_OF_DPOS:
-		var data DPosListAccount
+		var data ValidatorListAccount
 		err = rlp.DecodeBytes(encodedBytes, &data)
-		wrapper.dPoSListAccount = data
+		wrapper.validatorListAccount = data
 	default:
 		err = accounts.ErrUnknownAccount
 	}
@@ -275,7 +275,7 @@ func newObjectByWrapper(db *StateDB, address common.Address, wrapper *Wrapper) *
 		authorizeAccount: wrapper.authorizeAccount,
 		lossAccount:      wrapper.lossAccount,
 		lossMarkAccount:  wrapper.lossMarkAccount,
-		dPosListAccount:  wrapper.dPoSListAccount,
+		validatorListAccount:  wrapper.validatorListAccount,
 		originStorage:    make(Storage),
 		pendingStorage:   make(Storage),
 		dirtyStorage:     make(Storage),
@@ -387,15 +387,15 @@ func newLossMarkAccount(db *StateDB, address common.Address, data LossMarkAccoun
 	}
 }
 
-// newDPoSListAccount creates a state object.
-func newDPoSListAccount(db *StateDB, address common.Address, data DPosListAccount) *stateObject {
+// newValidatorListAccount creates a state object.
+func newValidatorListAccount(db *StateDB, address common.Address, data ValidatorListAccount) *stateObject {
 	data.AccType = common.ACC_TYPE_OF_DPOS
 	return &stateObject{
 		db:              db,
 		address:         address,
 		addrHash:        crypto.Keccak256Hash(address[:]),
 		accountType:     common.ACC_TYPE_OF_DPOS,
-		dPosListAccount: data,
+		validatorListAccount: data,
 		originStorage:   make(Storage),
 		pendingStorage:  make(Storage),
 		dirtyStorage:    make(Storage),
@@ -418,7 +418,7 @@ func (s *stateObject) EncodeRLP(w io.Writer) error {
 	case common.ACC_TYPE_OF_LOSS_MARK:
 		return rlp.Encode(w, s.lossMarkAccount)
 	case common.ACC_TYPE_OF_DPOS:
-		return rlp.Encode(w, s.dPosListAccount)
+		return rlp.Encode(w, s.validatorListAccount)
 	default:
 		return accounts.ErrUnknownAccount
 	}
@@ -794,7 +794,7 @@ func (s *stateObject) getNewStateObjectByAddr(db *StateDB, accountType byte) *st
 	case common.ACC_TYPE_OF_LOSS_MARK:
 		state = newLossMarkAccount(db, s.address, s.lossMarkAccount)
 	case common.ACC_TYPE_OF_DPOS:
-		state = newDPoSListAccount(db, s.address, s.dPosListAccount)
+		state = newValidatorListAccount(db, s.address, s.validatorListAccount)
 	default:
 		state = nil
 	}
@@ -944,8 +944,8 @@ func (s *stateObject) AccountInfo() *RPCAccountInfo {
 		lossMarkedIndex := s.lossMarkAccount.LossMark.GetMarkedIndex()
 		accountInfo.LossMarkedIndex = &lossMarkedIndex
 	case common.ACC_TYPE_OF_DPOS:
-		accountInfo.DPosCandidateAccounts = &s.dPosListAccount.DPosCandidateAccounts
-		accountInfo.RoundId = s.dPosListAccount.RoundId
+		accountInfo.ValidatorCandidates = &s.validatorListAccount.ValidatorCandidates
+		accountInfo.RoundId = s.validatorListAccount.RoundId
 	}
 	return accountInfo
 }

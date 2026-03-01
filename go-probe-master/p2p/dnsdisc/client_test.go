@@ -1,18 +1,18 @@
-// Copyright 2018 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2018 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package dnsdisc
 
@@ -41,22 +41,18 @@ const (
 )
 
 func TestClientSyncTree(t *testing.T) {
-	r := mapResolver{
-		"n":                            "enrtree-root:v1 e=JWXYDBPXYWG6FX3GMDIBFA6CJ4 l=C7HRFPF3BLGF3YR4DY5KX3SMBE seq=1 sig=o908WmNp7LibOfPsr4btQwatZJ5URBr2ZAuxvK4UWHlsB9sUOTJQaGAlLPVAhM__XJesCHxLISo94z5Z2a463gA",
-		"C7HRFPF3BLGF3YR4DY5KX3SMBE.n": "enrtree://AM5FCQLWIZX2QFPNJAP7VUERCCRNGRHWZG3YYHIUV7BVDQ5FDPRT2@morenodes.example.org",
-		"JWXYDBPXYWG6FX3GMDIBFA6CJ4.n": "enrtree-branch:2XS2367YHAXJFGLZHVAWLQD4ZY,H4FHT4B454P6UXFD7JCYQ5PWDY,MHTDO6TMUBRIA2XWG5LUDACK24",
-		"2XS2367YHAXJFGLZHVAWLQD4ZY.n": "enr:-HW4QOFzoVLaFJnNhbgMoDXPnOvcdVuj7pDpqRvh6BRDO68aVi5ZcjB3vzQRZH2IcLBGHzo8uUN3snqmgTiE56CH3AMBgmlkgnY0iXNlY3AyNTZrMaECC2_24YYkYHEgdzxlSNKQEnHhuNAbNlMlWJxrJxbAFvA",
-		"H4FHT4B454P6UXFD7JCYQ5PWDY.n": "enr:-HW4QAggRauloj2SDLtIHN1XBkvhFZ1vtf1raYQp9TBW2RD5EEawDzbtSmlXUfnaHcvwOizhVYLtr7e6vw7NAf6mTuoCgmlkgnY0iXNlY3AyNTZrMaECjrXI8TLNXU0f8cthpAMxEshUyQlK-AM0PW2wfrnacNI",
-		"MHTDO6TMUBRIA2XWG5LUDACK24.n": "enr:-HW4QLAYqmrwllBEnzWWs7I5Ev2IAs7x_dZlbYdRdMUx5EyKHDXp7AV5CkuPGUPdvbv1_Ms1CPfhcGCvSElSosZmyoqAgmlkgnY0iXNlY3AyNTZrMaECriawHKWdDRk2xeZkrOXBQ0dfMFLHY4eENZwdufn1S1o",
-	}
 	var (
 		wantNodes = testNodes(0x29452, 3)
 		wantLinks = []string{"enrtree://AM5FCQLWIZX2QFPNJAP7VUERCCRNGRHWZG3YYHIUV7BVDQ5FDPRT2@morenodes.example.org"}
 		wantSeq   = uint(1)
 	)
 
+	// Dynamically generate tree fixtures from the expected nodes so they always match.
+	tree, url := makeTestTree("n", wantNodes, wantLinks)
+	r := mapResolver(tree.ToTXT("n"))
+
 	c := NewClient(Config{Resolver: r, Logger: testlog.Logger(t, log.LvlTrace)})
-	stree, err := c.SyncTree("enrtree://AKPYQIUQIL7PSIACI32J7FGZW56E5FKHEFCCOFHILBIMW3M6LWXS2@n")
+	stree, err := c.SyncTree(url)
 	if err != nil {
 		t.Fatal("sync error:", err)
 	}
@@ -392,11 +388,23 @@ func makeTestTree(domain string, nodes []*enode.Node, links []string) (*Tree, st
 }
 
 // testKeys creates deterministic private keys for testing.
+// Uses crypto.ToECDSA with deterministic random bytes instead of ecdsa.GenerateKey,
+// because ecdsa.GenerateKey in Go 1.20+ mixes in system entropy and is non-deterministic.
 func testKeys(seed int64, n int) []*ecdsa.PrivateKey {
-	rand := rand.New(rand.NewSource(seed))
+	r := rand.New(rand.NewSource(seed))
 	keys := make([]*ecdsa.PrivateKey, n)
 	for i := 0; i < n; i++ {
-		key, err := ecdsa.GenerateKey(crypto.S256(), rand)
+		var b [32]byte
+		for j := range b {
+			b[j] = byte(r.Intn(256))
+		}
+		// Ensure the key is valid for secp256k1 (non-zero and less than curve order).
+		// Set the first byte to a small value to avoid exceeding the order.
+		b[0] &= 0x7f
+		if b[0] == 0 {
+			b[0] = 1
+		}
+		key, err := crypto.ToECDSA(b[:])
 		if err != nil {
 			panic("can't generate key: " + err.Error())
 		}

@@ -53,29 +53,29 @@ func DeployCheckpointOracle(auth *bind.TransactOpts, backend bind.ContractBacken
 	return address, tx, &CheckpointOracle{CheckpointOracleCaller: CheckpointOracleCaller{contract: contract}, CheckpointOracleTransactor: CheckpointOracleTransactor{contract: contract}, CheckpointOracleFilterer: CheckpointOracleFilterer{contract: contract}}, nil
 }
 
-// CheckpointOracle is an auto generated Go binding around an Probeum contract.
+// CheckpointOracle is an auto generated Go binding around a ProbeChain contract.
 type CheckpointOracle struct {
 	CheckpointOracleCaller     // Read-only binding to the contract
 	CheckpointOracleTransactor // Write-only binding to the contract
 	CheckpointOracleFilterer   // Log filterer for contract events
 }
 
-// CheckpointOracleCaller is an auto generated read-only Go binding around an Probeum contract.
+// CheckpointOracleCaller is an auto generated read-only Go binding around a ProbeChain contract.
 type CheckpointOracleCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// CheckpointOracleTransactor is an auto generated write-only Go binding around an Probeum contract.
+// CheckpointOracleTransactor is an auto generated write-only Go binding around a ProbeChain contract.
 type CheckpointOracleTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// CheckpointOracleFilterer is an auto generated log filtering Go binding around an Probeum contract events.
+// CheckpointOracleFilterer is an auto generated log filtering Go binding around a ProbeChain contract events.
 type CheckpointOracleFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// CheckpointOracleSession is an auto generated Go binding around an Probeum contract,
+// CheckpointOracleSession is an auto generated Go binding around a ProbeChain contract,
 // with pre-set call and transact options.
 type CheckpointOracleSession struct {
 	Contract     *CheckpointOracle // Generic contract binding to set the session for
@@ -83,31 +83,31 @@ type CheckpointOracleSession struct {
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// CheckpointOracleCallerSession is an auto generated read-only Go binding around an Probeum contract,
+// CheckpointOracleCallerSession is an auto generated read-only Go binding around a ProbeChain contract,
 // with pre-set call options.
 type CheckpointOracleCallerSession struct {
 	Contract *CheckpointOracleCaller // Generic contract caller binding to set the session for
 	CallOpts bind.CallOpts           // Call options to use throughout this session
 }
 
-// CheckpointOracleTransactorSession is an auto generated write-only Go binding around an Probeum contract,
+// CheckpointOracleTransactorSession is an auto generated write-only Go binding around a ProbeChain contract,
 // with pre-set transact options.
 type CheckpointOracleTransactorSession struct {
 	Contract     *CheckpointOracleTransactor // Generic contract transactor binding to set the session for
 	TransactOpts bind.TransactOpts           // Transaction auth options to use throughout this session
 }
 
-// CheckpointOracleRaw is an auto generated low-level Go binding around an Probeum contract.
+// CheckpointOracleRaw is an auto generated low-level Go binding around a ProbeChain contract.
 type CheckpointOracleRaw struct {
 	Contract *CheckpointOracle // Generic contract binding to access the raw methods on
 }
 
-// CheckpointOracleCallerRaw is an auto generated low-level read-only Go binding around an Probeum contract.
+// CheckpointOracleCallerRaw is an auto generated low-level read-only Go binding around a ProbeChain contract.
 type CheckpointOracleCallerRaw struct {
 	Contract *CheckpointOracleCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// CheckpointOracleTransactorRaw is an auto generated low-level write-only Go binding around an Probeum contract.
+// CheckpointOracleTransactorRaw is an auto generated low-level write-only Go binding around a ProbeChain contract.
 type CheckpointOracleTransactorRaw struct {
 	Contract *CheckpointOracleTransactor // Generic write-only contract binding to access the raw methods on
 }

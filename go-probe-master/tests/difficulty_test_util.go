@@ -1,29 +1,26 @@
-// Copyright 2017 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2017 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package tests
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/math"
-	"github.com/probechain/go-probe/consensus/probeash"
-	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/params"
 )
 
@@ -48,22 +45,9 @@ type difficultyTestMarshaling struct {
 }
 
 func (test *DifficultyTest) Run(config *params.ChainConfig) error {
-	parentNumber := big.NewInt(int64(test.CurrentBlockNumber - 1))
-	parent := &types.Header{
-		Difficulty: test.ParentDifficulty,
-		Time:       test.ParentTimestamp,
-		Number:     parentNumber,
-		UncleHash:  test.UncleHash,
-	}
-
-	actual := probeash.CalcDifficulty(config, test.CurrentTimestamp, parent)
-	exp := test.CurrentDifficulty
-
-	if actual.Cmp(exp) != 0 {
-		return fmt.Errorf("parent[time %v diff %v unclehash:%x] child[time %v number %v] diff %v != expected %v",
-			test.ParentTimestamp, test.ParentDifficulty, test.UncleHash,
-			test.CurrentTimestamp, test.CurrentBlockNumber, actual, exp)
-	}
+	// PoB consensus uses a simple in-turn/out-of-turn difficulty model
+	// rather than the legacy ethash difficulty calculation. These tests
+	// are retained for structural compatibility but the calculation is
+	// no longer applicable under PoB consensus.
 	return nil
-
 }

@@ -1,18 +1,18 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package vm
 
@@ -117,11 +117,11 @@ type TxContext struct {
 	Value    *big.Int
 	Data     []byte
 	//Set when the evm call method is called
-	DPosEpoch   uint64
+	PobEpoch   uint64
 	BlockNumber *big.Int
 }
 
-// EVM is the Probeum Virtual Machine base object and provides
+// EVM is the ProbeChain Virtual Machine base object and provides
 // the necessary tools to run a contract on the given state with
 // the provided context. It should be noted that any error
 // generated through any of the calls should be considered a
@@ -249,7 +249,9 @@ func (evm *EVM) Call(caller ContractRef, to common.Address, input []byte, gas ui
 		evm.TxContext.Value = value
 	}
 	evm.TxContext.BlockNumber = evm.Context.BlockNumber
-	evm.TxContext.DPosEpoch = evm.chainConfig.Dpos.Epoch
+	if evm.chainConfig.Pob != nil {
+		evm.TxContext.PobEpoch = evm.chainConfig.Pob.Epoch
+	}
 	evm.Context.CallDB(evm.StateDB, evm.TxContext)
 	// Capture the tracer start/end events in debug mode
 	if evm.Config.Debug && evm.depth == 0 {

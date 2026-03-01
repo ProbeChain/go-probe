@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/probechain/go-probe/accounts/keystore"
-	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/log"
 )
 
@@ -67,16 +66,6 @@ func (w *wizard) deployNode(boot bool) {
 		fmt.Printf("Where should data be stored on the remote machine? (default = %s)\n", infos.datadir)
 		infos.datadir = w.readDefaultString(infos.datadir)
 	}
-	if w.conf.Genesis.Config.Probeash != nil && !boot {
-		fmt.Println()
-		if infos.probeashdir == "" {
-			fmt.Printf("Where should the probeash mining DAGs be stored on the remote machine?\n")
-			infos.probeashdir = w.readString()
-		} else {
-			fmt.Printf("Where should the probeash mining DAGs be stored on the remote machine? (default = %s)\n", infos.probeashdir)
-			infos.probeashdir = w.readDefaultString(infos.probeashdir)
-		}
-	}
 	// Figure out which port to listen on
 	fmt.Println()
 	fmt.Printf("Which TCP/UDP port to listen on? (default = %d)\n", infos.port)
@@ -103,48 +92,31 @@ func (w *wizard) deployNode(boot bool) {
 	}
 	// If the node is a miner/signer, load up needed credentials
 	if !boot {
-		if w.conf.Genesis.Config.Probeash != nil {
-			// Probeash based miners only need an probebase to mine against
-			fmt.Println()
-			if infos.probebase == "" {
-				fmt.Printf("What address should the miner use?\n")
-				for {
-					if address := w.readAddress(); address != nil {
-						infos.probebase = address.Hex()
-						break
-					}
-				}
+		// If a previous signer was already set, offer to reuse it
+		if infos.keyJSON != "" {
+			if key, err := keystore.DecryptKey([]byte(infos.keyJSON), infos.keyPass); err != nil {
+				infos.keyJSON, infos.keyPass = "", ""
 			} else {
-				fmt.Printf("What address should the miner use? (default = %s)\n", infos.probebase)
-				infos.probebase = w.readDefaultAddress(common.HexToAddress(infos.probebase)).Hex()
-			}
-		} else if w.conf.Genesis.Config.Clique != nil {
-			// If a previous signer was already set, offer to reuse it
-			if infos.keyJSON != "" {
-				if key, err := keystore.DecryptKey([]byte(infos.keyJSON), infos.keyPass); err != nil {
+				fmt.Println()
+				fmt.Printf("Reuse previous (%s) signing account (y/n)? (default = yes)\n", key.Address.Hex())
+				if !w.readDefaultYesNo(true) {
 					infos.keyJSON, infos.keyPass = "", ""
-				} else {
-					fmt.Println()
-					fmt.Printf("Reuse previous (%s) signing account (y/n)? (default = yes)\n", key.Address.Hex())
-					if !w.readDefaultYesNo(true) {
-						infos.keyJSON, infos.keyPass = "", ""
-					}
 				}
 			}
-			// Clique based signers need a keyfile and unlock password, ask if unavailable
-			if infos.keyJSON == "" {
-				fmt.Println()
-				fmt.Println("Please paste the signer's key JSON:")
-				infos.keyJSON = w.readJSON()
+		}
+		// Pob signers need a keyfile and unlock password, ask if unavailable
+		if infos.keyJSON == "" {
+			fmt.Println()
+			fmt.Println("Please paste the signer's key JSON:")
+			infos.keyJSON = w.readJSON()
 
-				fmt.Println()
-				fmt.Println("What's the unlock password for the account? (won't be echoed)")
-				infos.keyPass = w.readPassword()
+			fmt.Println()
+			fmt.Println("What's the unlock password for the account? (won't be echoed)")
+			infos.keyPass = w.readPassword()
 
-				if _, err := keystore.DecryptKey([]byte(infos.keyJSON), infos.keyPass); err != nil {
-					log.Error("Failed to decrypt key with given password")
-					return
-				}
+			if _, err := keystore.DecryptKey([]byte(infos.keyJSON), infos.keyPass); err != nil {
+				log.Error("Failed to decrypt key with given password")
+				return
 			}
 		}
 		// Establish the gas dynamics to be enforced by the signer

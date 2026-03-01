@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package node
 
@@ -132,8 +132,8 @@ func New(conf *Config) (*Node, error) {
 	if node.server.Config.TrustedNodes == nil {
 		node.server.Config.TrustedNodes = node.config.TrustedNodes()
 	}
-	node.server.Config.StaticNodes = append(node.server.Config.StaticNodes, node.config.DposNodes()...)
-	node.server.Config.TrustedNodes = append(node.server.Config.TrustedNodes, node.config.DposNodes()...)
+	node.server.Config.StaticNodes = append(node.server.Config.StaticNodes, node.config.ValidatorNodes()...)
+	node.server.Config.TrustedNodes = append(node.server.Config.TrustedNodes, node.config.ValidatorNodes()...)
 
 	if node.server.Config.NodeDatabase == "" {
 		node.server.Config.NodeDatabase = node.config.NodeDB()

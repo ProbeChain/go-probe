@@ -52,7 +52,7 @@ func TestStellarSpeedConfig(t *testing.T) {
 // at the correct block number.
 func TestStellarSpeedForkActivation(t *testing.T) {
 	cfg := &params.ChainConfig{
-		ChainID:           big.NewInt(1205),
+		ChainID:           big.NewInt(142857),
 		StellarSpeedBlock: big.NewInt(1000),
 	}
 
@@ -71,7 +71,7 @@ func TestStellarSpeedForkActivation(t *testing.T) {
 // blocks with the same unix timestamp are allowed when ordered by AtomicTime.
 func TestStellarSpeedSameSecondBlocks(t *testing.T) {
 	cfg := &params.ChainConfig{
-		ChainID:           big.NewInt(1205),
+		ChainID:           big.NewInt(142857),
 		StellarSpeedBlock: big.NewInt(0), // active from genesis
 	}
 

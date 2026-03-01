@@ -1,20 +1,20 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
-// Package state provides a caching layer atop the Probeum state trie.
+// Package state provides a caching layer atop the ProbeChain state trie.
 package state
 
 import (
@@ -369,11 +369,11 @@ func (s *StateDB) GetCommittedState(addr common.Address, hash common.Hash) commo
 	return common.Hash{}
 }
 
-// GetDPosCandidateAccounts return dPos candidate node list
-func (s *StateDB) GetDPosCandidateAccounts(roundId uint64) dPosCandidateAccounts {
-	dPosListAccount := s.GetDPosListAccountStateObj().dPosListAccount
-	if roundId == dPosListAccount.RoundId {
-		return dPosListAccount.DPosCandidateAccounts
+// GetValidatorCandidates return validator candidate node list
+func (s *StateDB) GetValidatorCandidates(roundId uint64) validatorCandidates {
+	validatorListAccount := s.GetValidatorListAccountStateObj().validatorListAccount
+	if roundId == validatorListAccount.RoundId {
+		return validatorListAccount.ValidatorCandidates
 	}
 	return nil
 }
@@ -764,7 +764,7 @@ func (db *StateDB) ForEachStorage(addr common.Address, cb func(key, value common
 func (s *StateDB) Copy() *StateDB {
 	// Copy all the basic fields, initialize the memory ones
 	/*	if s.dposList != nil {
-		dbDposList = s.copyDposList()
+		dbValidatorList = s.copyValidatorList()
 	}*/
 	state := &StateDB{
 		db:                  s.db,
@@ -1195,8 +1195,8 @@ func (s *StateDB) GetLoss(addr common.Address) *LossAccount {
 	return nil
 }
 
-//GetDPosListAccountStateObj get dPos list account state object
-func (s *StateDB) GetDPosListAccountStateObj() *stateObject {
+//GetValidatorListAccountStateObj get validator list account state object
+func (s *StateDB) GetValidatorListAccountStateObj() *stateObject {
 	addr := common.SPECIAL_ADDRESS_FOR_DPOS
 	stateObject := s.getStateObject(addr)
 	if stateObject == nil {
@@ -1606,34 +1606,34 @@ func (s *StateDB) ApplyToBeDPoSNode(context vm.TxContext) {
 			})
 
 			dPosCandidateAccount := common.DPoSCandidateAccount{
-				Enode:       common.BytesToDposEnode([]byte(decode.NodeInfo)),
+				Enode:       common.BytesToValidatorEnode([]byte(decode.NodeInfo)),
 				Owner:       authorizeAccount.Owner,
 				VoteAccount: decode.VoteAddress,
 				VoteValue:   authorizeAccount.VoteValue,
 			}
-			dPosListAccountStateObj := s.GetDPosListAccountStateObj()
-			dPosListAccountStateObj.db.journal.append(dPosCandidateChange{
-				account:               &dPosListAccountStateObj.address,
-				dPosCandidateAccounts: dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts,
-				roundId:               dPosListAccountStateObj.dPosListAccount.RoundId,
+			validatorListAccountStateObj := s.GetValidatorListAccountStateObj()
+			validatorListAccountStateObj.db.journal.append(dPosCandidateChange{
+				account:               &validatorListAccountStateObj.address,
+				validatorCandidates: validatorListAccountStateObj.validatorListAccount.ValidatorCandidates,
+				roundId:               validatorListAccountStateObj.validatorListAccount.RoundId,
 			})
-			roundId := common.CalcDPosNodeRoundId(context.BlockNumber.Uint64(), context.DPosEpoch)
-			if roundId != dPosListAccountStateObj.dPosListAccount.RoundId {
-				dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts = *new(dPosCandidateAccounts)
-				dPosListAccountStateObj.dPosListAccount.RoundId = roundId
+			roundId := common.CalcValidatorRoundId(context.BlockNumber.Uint64(), context.PobEpoch)
+			if roundId != validatorListAccountStateObj.validatorListAccount.RoundId {
+				validatorListAccountStateObj.validatorListAccount.ValidatorCandidates = *new(validatorCandidates)
+				validatorListAccountStateObj.validatorListAccount.RoundId = roundId
 			}
-			dPosListAccountStateObj.dPosListAccount.AddDPosCandidate(dPosCandidateAccount)
+			validatorListAccountStateObj.validatorListAccount.AddValidatorCandidate(dPosCandidateAccount)
 		}
 	}
 }
 
-//InitDPosListAccount initialization DPos list account
-func (s *StateDB) InitDPosListAccount(accounts []common.DPoSAccount) {
-	log.Info(fmt.Sprintf("initialization DPos list account"))
+//InitValidatorListAccount initialization Validator list account
+func (s *StateDB) InitValidatorListAccount(accounts []common.Validator) {
+	log.Info(fmt.Sprintf("initialization Validator list account"))
 	rawdb.WriteDPos(s.db.TrieDB().DiskDB(), uint64(0), accounts)
-	dPosListAccountStateObj := s.GetDPosListAccountStateObj()
-	dPosListAccountStateObj.dPosListAccount.RoundId = uint64(0)
-	dPosListAccountStateObj.dPosListAccount.DPosCandidateAccounts = nil
+	validatorListAccountStateObj := s.GetValidatorListAccountStateObj()
+	validatorListAccountStateObj.validatorListAccount.RoundId = uint64(0)
+	validatorListAccountStateObj.validatorListAccount.ValidatorCandidates = nil
 }
 
 //newAccountDataByAddr create new account by account type
@@ -1703,14 +1703,14 @@ func (s *StateDB) newAccountDataByAddr(addr common.Address, enc []byte, accountT
 		}
 		return newLossMarkAccount(s, addr, *data), false
 	case common.ACC_TYPE_OF_DPOS:
-		data := new(DPosListAccount)
+		data := new(ValidatorListAccount)
 		if enc != nil {
 			if err := rlp.DecodeBytes(enc, data); err != nil {
 				log.Error("Failed to decode state object", "addr", addr, "err", err)
 				return nil, true
 			}
 		}
-		return newDPoSListAccount(s, addr, *data), false
+		return newValidatorListAccount(s, addr, *data), false
 	default:
 		return nil, true
 	}

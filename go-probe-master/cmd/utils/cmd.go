@@ -1,4 +1,4 @@
-// Copyright 2014 The go-probeum Authors
+// Copyright 2014 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify

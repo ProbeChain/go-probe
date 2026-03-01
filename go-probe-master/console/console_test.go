@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package console
 
@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/probechain/go-probe/common"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/console/prompt"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/probe"
@@ -93,7 +93,7 @@ func newTester(t *testing.T, confOverride func(*probeconfig.Config)) *tester {
 		t.Fatalf("failed to create temporary keystore: %v", err)
 	}
 
-	// Create a networkless protocol stack and start an Probeum service within
+	// Create a networkless protocol stack and start a ProbeChain service within
 	stack, err := node.New(&node.Config{DataDir: workspace, UseLightweightKDF: true, Name: testInstance})
 	if err != nil {
 		t.Fatalf("failed to create node: %v", err)
@@ -103,8 +103,8 @@ func newTester(t *testing.T, confOverride func(*probeconfig.Config)) *tester {
 		Miner: miner.Config{
 			Probebase: common.HexToAddress(testAddress),
 		},
-		Probeash: probeash.Config{
-			PowMode: probeash.ModeTest,
+		Probeash: pob.Config{
+			PowMode: pob.ModeTest,
 		},
 	}
 	if confOverride != nil {
@@ -112,7 +112,7 @@ func newTester(t *testing.T, confOverride func(*probeconfig.Config)) *tester {
 	}
 	probeBackend, err := probe.New(stack, probeConf)
 	if err != nil {
-		t.Fatalf("failed to register Probeum protocol: %v", err)
+		t.Fatalf("failed to register ProbeChain protocol: %v", err)
 	}
 	// Start the node and assemble the JavaScript console around it
 	if err = stack.Start(); err != nil {

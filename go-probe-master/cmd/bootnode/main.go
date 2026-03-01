@@ -1,4 +1,4 @@
-// Copyright 2015 The go-probeum Authors
+// Copyright 2015 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with go-probeum. If not, see <http://www.gnu.org/licenses/>.
 
-// bootnode runs a bootstrap node for the Probeum Discovery Protocol.
+// bootnode runs a bootstrap node for the ProbeChain Discovery Protocol.
 package main
 
 import (

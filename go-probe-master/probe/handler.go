@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package probe
 
@@ -53,7 +53,7 @@ var (
 )
 
 // txPool defines the methods needed from a transaction pool implementation to
-// support all the operations needed by the Probeum chain protocols.
+// support all the operations needed by the ProbeChain chain protocols.
 type txPool interface {
 	// Has returns an indicator whprobeer txpool has a transaction
 	// cached with the given hash.
@@ -116,7 +116,7 @@ type handler struct {
 	txsSub        event.Subscription
 	minedBlockSub *event.TypeMuxSubscription
 	powAnswerSub  *event.TypeMuxSubscription
-	dposAckSub    *event.TypeMuxSubscription
+	ackSub    *event.TypeMuxSubscription
 
 	whitelist map[uint64]common.Hash
 
@@ -254,7 +254,7 @@ func (h *handler) runProbePeer(peer *probe.Peer, handler probe.Handler) error {
 	h.peerWG.Add(1)
 	defer h.peerWG.Done()
 
-	// Execute the Probeum handshake
+	// Execute the ProbeChain handshake
 	var (
 		genesis = h.chain.Genesis()
 		head    = h.chain.CurrentHeader()
@@ -413,13 +413,13 @@ func (h *handler) Start(maxPeers int) {
 
 	// broadcast powAnswer
 	h.wg.Add(1)
-	h.powAnswerSub = h.eventMux.Subscribe(core.PowAnswerEvent{})
+	h.powAnswerSub = h.eventMux.Subscribe(core.BehaviorProofEvent{})
 	go h.powAnswerBroadcastLoop()
 
-	// broadcast dposAck
+	// broadcast ack
 	h.wg.Add(1)
-	h.dposAckSub = h.eventMux.Subscribe(core.DposAckEvent{})
-	go h.dposAckBroadcastLoop()
+	h.ackSub = h.eventMux.Subscribe(core.AckEvent{})
+	go h.ackBroadcastLoop()
 
 	// start sync handlers
 	h.wg.Add(2)
@@ -431,7 +431,7 @@ func (h *handler) Stop() {
 	h.txsSub.Unsubscribe()        // quits txBroadcastLoop
 	h.minedBlockSub.Unsubscribe() // quits blockBroadcastLoop
 	h.powAnswerSub.Unsubscribe()  // quits powAnswerBroadcastLoop
-	h.dposAckSub.Unsubscribe()    // quits dposAckBroadcastLoop
+	h.ackSub.Unsubscribe()    // quits ackBroadcastLoop
 
 	// Quit chainSync and txsync64.
 	// After this is done, no new peers will be accepted.
@@ -445,7 +445,7 @@ func (h *handler) Stop() {
 	h.peers.close()
 	h.peerWG.Wait()
 
-	log.Info("Probeum protocol stopped")
+	log.Info("ProbeChain protocol stopped")
 }
 
 // BroadcastBlock will either propagate a block to a subset of its peers, or
@@ -525,37 +525,37 @@ func (h *handler) BroadcastTransactions(txs types.Transactions) {
 		"tx packs", directPeers, "broadcast txs", directCount)
 }
 
-// BroadcastPowAnswer broadcast PowAnswer to all peers
-func (h *handler) BroadcastPowAnswer(powAnswer *types.PowAnswer) {
-	if h.chain.CheckPowAnswerSketchy(powAnswer) {
-		h.chain.HandlePowAnswer(powAnswer)
-		peers := h.peers.peersWithoutPowAnswers(powAnswer)
+// BroadcastBehaviorProof broadcast BehaviorProof to all peers
+func (h *handler) BroadcastBehaviorProof(powAnswer *types.BehaviorProof) {
+	if h.chain.CheckBehaviorProofSketchy(powAnswer) {
+		h.chain.HandleBehaviorProof(powAnswer)
+		peers := h.peers.peersWithoutBehaviorProofs(powAnswer)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
-			peer.MarkPowAnswer(powAnswer.Id())
-			peer.AsyncSendPowAnswer(powAnswer)
+			peer.MarkBehaviorProof(powAnswer.Id())
+			peer.AsyncSendBehaviorProof(powAnswer)
 		}
-		log.Debug("PowAnswer broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
+		log.Debug("BehaviorProof broadcast", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner)
 	} else {
-		log.Debug("PowAnswer broadcast fail, because the pow answer is too old", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner, "Chain Number", h.chain.CurrentBlock().NumberU64())
+		log.Debug("BehaviorProof broadcast fail, because the pow answer is too old", "number", powAnswer.Number, "nonce", powAnswer.Nonce.Uint64(), "miner", powAnswer.Miner, "Chain Number", h.chain.CurrentBlock().NumberU64())
 	}
 }
 
-// BroadcastDposAck broadcast dpos ack to all peers
-func (h *handler) BroadcastDposAck(dposAck *types.DposAck) {
-	check := h.chain.CheckDposAckSketchy(dposAck)
+// BroadcastAck broadcast validator ack to all peers
+func (h *handler) BroadcastAck(ack *types.Ack) {
+	check := h.chain.CheckAckSketchy(ack)
 	if check {
-		h.chain.HandleDposAck(dposAck)
-		peers := h.peers.peersWithoutDposAcks(dposAck)
+		h.chain.HandleAck(ack)
+		peers := h.peers.peersWithoutAcks(ack)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
-			//log.Debug("BroadcastDposAck", "ack", common.BytesToHash(dposAck.WitnessSig))
-			peer.MarkDposAck(dposAck.Id())
-			peer.AsyncSendDposAck(dposAck)
+			//log.Debug("BroadcastAck", "ack", common.BytesToHash(ack.WitnessSig))
+			peer.MarkAck(ack.Id())
+			peer.AsyncSendAck(ack)
 		}
-		log.Debug("DposAck broadcast", "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
+		log.Debug("Ack broadcast", "number", ack.Number, "witnessSig", hexutils.BytesToHex(ack.WitnessSig), "BlockHash", ack.BlockHash, "Type", ack.AckType)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", hexutils.BytesToHex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
+		log.Debug("Ack broadcast fail, because the validator ack is illegality", "check", check, "number", ack.Number, "witnessSig", hexutils.BytesToHex(ack.WitnessSig), "BlockHash", ack.BlockHash, "Type", ack.AckType)
 	}
 }
 
@@ -589,20 +589,20 @@ func (h *handler) powAnswerBroadcastLoop() {
 	defer h.wg.Done()
 
 	for obj := range h.powAnswerSub.Chan() {
-		if ev, ok := obj.Data.(core.PowAnswerEvent); ok {
-			h.BroadcastPowAnswer(ev.PowAnswer)
+		if ev, ok := obj.Data.(core.BehaviorProofEvent); ok {
+			h.BroadcastBehaviorProof(ev.BehaviorProof)
 		}
 	}
 }
 
-// dposAckBroadcastLoop sends dpos ack to connected peers.
-func (h *handler) dposAckBroadcastLoop() {
+// ackBroadcastLoop sends validator ack to connected peers.
+func (h *handler) ackBroadcastLoop() {
 	defer h.wg.Done()
 
-	for obj := range h.dposAckSub.Chan() {
-		if ev, ok := obj.Data.(core.DposAckEvent); ok {
-			//log.Debug("dposAckBroadcastLoop", "ack", common.BytesToHash(ev.DposAck.WitnessSig))
-			h.BroadcastDposAck(ev.DposAck)
+	for obj := range h.ackSub.Chan() {
+		if ev, ok := obj.Data.(core.AckEvent); ok {
+			//log.Debug("ackBroadcastLoop", "ack", common.BytesToHash(ev.Ack.WitnessSig))
+			h.BroadcastAck(ev.Ack)
 		}
 	}
 }

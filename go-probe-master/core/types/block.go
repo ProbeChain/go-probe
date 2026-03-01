@@ -1,20 +1,20 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
-// Package types contains data types related to Probeum consensus.
+// Package types contains data types related to ProbeChain consensus.
 package types
 
 import (
@@ -42,16 +42,16 @@ var (
 	EmptyRootHash           = common.HexToHash("56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421")
 	VisualBlockRootHash     = common.HexToHash("0000000000000000000000000000000000000000000000000000000000000000")
 	EmptyUncleHash          = rlpHash([]*Header(nil))
-	EmptyPowAnswerUncleHash = rlpHash([]*PowAnswer(nil))
-	EmptyDposAckHash        = rlpHash([]*DposAck(nil))
+	EmptyBehaviorProofUncleHash = rlpHash([]*BehaviorProof(nil))
+	EmptyAckHash        = rlpHash([]*Ack(nil))
 )
 
-type DposAckType uint8
+type AckType uint8
 
 const (
-	AckTypeAgree  DposAckType = 0
-	AckTypeOppose DposAckType = 1
-	AckTypeAll    DposAckType = 255
+	AckTypeAgree  AckType = 0
+	AckTypeOppose AckType = 1
+	AckTypeAll    AckType = 255
 )
 
 type BlockType uint8
@@ -90,7 +90,7 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 }
 
 //send from pow miner
-type PowAnswer struct {
+type BehaviorProof struct {
 	Number    *big.Int       `json:"number"           gencodec:"required"`
 	MixDigest common.Hash    `json:"mixHash"          gencodec:"required"`
 	Nonce     BlockNonce     `json:"nonce"            gencodec:"required"`
@@ -99,38 +99,38 @@ type PowAnswer struct {
 }
 
 // Id returns the pow answer unique id
-func (powAnswer *PowAnswer) Id() common.Hash {
+func (powAnswer *BehaviorProof) Id() common.Hash {
 	return powAnswer.MixDigest
 }
 
-//send from dpos witness node
-type DposAck struct {
+//send from validator witness node
+type Ack struct {
 	EpochPosition uint8       `json:"epochPosition"   gencodec:"required"`
 	Number        *big.Int    `json:"number"          gencodec:"required"`
 	BlockHash     common.Hash `json:"blockHash"       gencodec:"required"`
-	AckType       DposAckType `json:"ackType"         gencodec:"required"`
+	AckType       AckType `json:"ackType"         gencodec:"required"`
 	WitnessSig    []byte      `json:"witnessSig"      gencodec:"required"`
 }
 
 // Id returns the pow answer unique id
-func (dposAck *DposAck) Id() common.Hash {
+func (ack *Ack) Id() common.Hash {
 	// We assume that the miners will only give one answer in a given block number
-	return common.BytesToHash(dposAck.WitnessSig)
+	return common.BytesToHash(ack.WitnessSig)
 }
 
-type DposAckCount struct {
+type AckCount struct {
 	BlockNumber *big.Int `json:"blockNumber"        gencodec:"required"`
 	AckCount    uint     `json:"ackCount"           gencodec:"required"`
 }
 
-// Hash returns the dpos ack Keccak256
-func (dposAck *DposAck) Hash() []byte {
+// Hash returns the validator ack Keccak256
+func (ack *Ack) Hash() []byte {
 	b := new(bytes.Buffer)
 	enc := []interface{}{
-		dposAck.EpochPosition,
-		dposAck.Number,
-		dposAck.BlockHash,
-		dposAck.AckType,
+		ack.EpochPosition,
+		ack.Number,
+		ack.BlockHash,
+		ack.AckType,
 	}
 	if err := rlp.Encode(b, enc); err != nil {
 		panic("can't encode: " + err.Error())
@@ -139,9 +139,9 @@ func (dposAck *DposAck) Hash() []byte {
 	return crypto.Keccak256(b.Bytes())
 }
 
-// RecoverOwner returns the dpos ack pubkey
-func (dposAck *DposAck) RecoverOwner() (common.Address, error) {
-	pubkey, err := secp256k1.RecoverPubkey(dposAck.Hash(), dposAck.WitnessSig)
+// RecoverOwner returns the validator ack pubkey
+func (ack *Ack) RecoverOwner() (common.Address, error) {
+	pubkey, err := secp256k1.RecoverPubkey(ack.Hash(), ack.WitnessSig)
 	if err == nil {
 		publicKey, err := crypto.UnmarshalPubkey(pubkey)
 		if err == nil {
@@ -153,13 +153,13 @@ func (dposAck *DposAck) RecoverOwner() (common.Address, error) {
 
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
 
-// Header represents a block header in the Probeum blockchain.
+// Header represents a block header in the ProbeChain blockchain.
 type Header struct {
-	DposSigAddr      common.Address  `json:"dposMiner"        gencodec:"required"`
-	DposSig          []byte          `json:"dposSig"          gencodec:"required"`
-	DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
-	DposAcksHash     common.Hash     `json:"dposAcksHash"     gencodec:"required"`
-	PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
+	ValidatorAddr      common.Address  `json:"validatorMiner"        gencodec:"required"`
+	ValidatorSig          []byte          `json:"validatorSig"          gencodec:"required"`
+	AckCountList []*AckCount `json:"ackCountList" gencodec:"required"`
+	AcksHash     common.Hash     `json:"acksHash"     gencodec:"required"`
+	BehaviorProofs       []*BehaviorProof    `json:"behaviorProofs"       gencodec:"required"`
 	ParentHash       common.Hash     `json:"parentHash"       gencodec:"required"`
 	UncleHash        common.Hash     `json:"sha3Uncles"       gencodec:"required"`
 	Coinbase         common.Address  `json:"miner"            gencodec:"required"`
@@ -186,17 +186,17 @@ type Header struct {
 }
 
 func (h *Header) String() string {
-	for _, count := range h.DposAckCountList {
-		log.Info("DposAckCountList:", "count.BlockNumber", count.BlockNumber, "count.AckCount", count.AckCount)
+	for _, count := range h.AckCountList {
+		log.Info("AckCountList:", "count.BlockNumber", count.BlockNumber, "count.AckCount", count.AckCount)
 	}
-	for _, answer := range h.PowAnswers {
-		log.Info("PowAnswers:", " answer.Number", answer.Number, " answer.Number", answer.MixDigest.String())
+	for _, answer := range h.BehaviorProofs {
+		log.Info("BehaviorProofs:", " answer.Number", answer.Number, " answer.Number", answer.MixDigest.String())
 	}
 	log.Info("hash:", " hash ", h.Hash().String())
 	return "{" + "\n" +
-		"DposSigAddr" + h.DposSigAddr.String() + "\n" +
-		"DposSig" + common.Bytes2Hex(h.DposSig) + "\n" +
-		"DposAcksHash" + h.DposAcksHash.String() + "\n" +
+		"ValidatorAddr" + h.ValidatorAddr.String() + "\n" +
+		"ValidatorSig" + common.Bytes2Hex(h.ValidatorSig) + "\n" +
+		"AcksHash" + h.AcksHash.String() + "\n" +
 		"ParentHash" + h.ParentHash.String() + "\n" +
 		"UncleHash" + h.UncleHash.String() + "\n" +
 		"Coinbase" + h.Coinbase.String() + "\n" +
@@ -282,17 +282,17 @@ type Body struct {
 	Transactions []*Transaction
 	//todo:remove
 	Uncles          []*Header
-	PowAnswerUncles []*PowAnswer
-	DposAcks        []*DposAck
+	BehaviorProofUncles []*BehaviorProof
+	Acks        []*Ack
 }
 
-// Block represents an entire block in the Probeum blockchain.
+// Block represents an entire block in the ProbeChain blockchain.
 type Block struct {
 	header          *Header
 	uncles          []*Header
 	transactions    Transactions
-	powAnswerUncles []*PowAnswer
-	dposAcks        []*DposAck
+	powAnswerUncles []*BehaviorProof
+	acks        []*Ack
 
 	// caches
 	hash atomic.Value
@@ -313,8 +313,8 @@ type extblock struct {
 	Header          *Header
 	Txs             []*Transaction
 	Uncles          []*Header
-	PowAnswerUncles []*PowAnswer
-	DposAcks        []*DposAck
+	BehaviorProofUncles []*BehaviorProof
+	Acks        []*Ack
 }
 
 // NewBlock creates a new block. The input data is copied,
@@ -356,7 +356,7 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 	return b
 }
 
-func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnswer, dposAcks []*DposAck, receipts []*Receipt,
+func ValidatorNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*BehaviorProof, acks []*Ack, receipts []*Receipt,
 	hasher TrieHasher, blockType BlockType) *Block {
 	b := &Block{header: CopyHeader(header), td: new(big.Int)}
 
@@ -379,17 +379,17 @@ func DposNewBlock(header *Header, txs []*Transaction, powAnswerUncles []*PowAnsw
 	if len(powAnswerUncles) == 0 {
 		b.header.UncleHash = EmptyUncleHash
 	} else {
-		b.header.UncleHash = CalcPowAnswerUncleHash(powAnswerUncles)
-		b.powAnswerUncles = make([]*PowAnswer, len(powAnswerUncles))
+		b.header.UncleHash = CalcBehaviorProofUncleHash(powAnswerUncles)
+		b.powAnswerUncles = make([]*BehaviorProof, len(powAnswerUncles))
 		copy(b.powAnswerUncles, powAnswerUncles)
 	}
 
-	if len(dposAcks) == 0 {
-		b.header.DposAcksHash = EmptyDposAckHash
+	if len(acks) == 0 {
+		b.header.AcksHash = EmptyAckHash
 	} else {
-		b.header.DposAcksHash = CalcDposAckHash(dposAcks)
-		b.dposAcks = make([]*DposAck, len(dposAcks))
-		copy(b.dposAcks, dposAcks)
+		b.header.AcksHash = CalcAckHash(acks)
+		b.acks = make([]*Ack, len(acks))
+		copy(b.acks, acks)
 	}
 
 	//TODO：remove
@@ -408,8 +408,8 @@ func NewBlockWithHeader(header *Header) *Block {
 func CopyMostHeader(h *Header) *Header {
 	re := CopyHeader(h)
 
-	//re.DposAcksHash = h.DposAcksHash
-	//re.DposAckCountList = h.DposAckCountList
+	//re.AcksHash = h.AcksHash
+	//re.AckCountList = h.AckCountList
 
 	return re
 }
@@ -431,9 +431,9 @@ func CopyHeader(h *Header) *Header {
 		cpy.Extra = make([]byte, len(h.Extra))
 		copy(cpy.Extra, h.Extra)
 	}
-	if len(h.DposSig) > 0 {
-		cpy.DposSig = make([]byte, len(h.DposSig))
-		copy(cpy.DposSig, h.DposSig)
+	if len(h.ValidatorSig) > 0 {
+		cpy.ValidatorSig = make([]byte, len(h.ValidatorSig))
+		copy(cpy.ValidatorSig, h.ValidatorSig)
 	}
 	if len(h.AtomicTime) > 0 {
 		cpy.AtomicTime = make([]byte, len(h.AtomicTime))
@@ -442,26 +442,26 @@ func CopyHeader(h *Header) *Header {
 	return &cpy
 }
 
-// DecodeRLP decodes the Probeum
+// DecodeRLP decodes the ProbeChain
 func (b *Block) DecodeRLP(s *rlp.Stream) error {
 	var eb extblock
 	_, size, _ := s.Kind()
 	if err := s.Decode(&eb); err != nil {
 		return err
 	}
-	b.header, b.uncles, b.transactions, b.powAnswerUncles, b.dposAcks = eb.Header, eb.Uncles, eb.Txs, eb.PowAnswerUncles, eb.DposAcks
+	b.header, b.uncles, b.transactions, b.powAnswerUncles, b.acks = eb.Header, eb.Uncles, eb.Txs, eb.BehaviorProofUncles, eb.Acks
 	b.size.Store(common.StorageSize(rlp.ListSize(size)))
 	return nil
 }
 
-// EncodeRLP serializes b into the Probeum RLP block format.
+// EncodeRLP serializes b into the ProbeChain RLP block format.
 func (b *Block) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, extblock{
 		Header:          b.header,
 		Txs:             b.transactions,
 		Uncles:          b.uncles,
-		PowAnswerUncles: b.powAnswerUncles,
-		DposAcks:        b.dposAcks,
+		BehaviorProofUncles: b.powAnswerUncles,
+		Acks:        b.acks,
 	})
 }
 
@@ -469,9 +469,9 @@ func (b *Block) EncodeRLP(w io.Writer) error {
 
 func (b *Block) Uncles() []*Header             { return b.uncles }
 func (b *Block) Transactions() Transactions    { return b.transactions }
-func (b *Block) PowAnswerUncles() []*PowAnswer { return b.powAnswerUncles }
-func (b *Block) PowAnswers() []*PowAnswer      { return b.header.PowAnswers }
-func (b *Block) DposAcks() []*DposAck          { return b.dposAcks }
+func (b *Block) BehaviorProofUncles() []*BehaviorProof { return b.powAnswerUncles }
+func (b *Block) BehaviorProofs() []*BehaviorProof      { return b.header.BehaviorProofs }
+func (b *Block) Acks() []*Ack          { return b.acks }
 
 func (b *Block) Transaction(hash common.Hash) *Transaction {
 	for _, transaction := range b.transactions {
@@ -500,8 +500,8 @@ func (b *Block) ReceiptHash() common.Hash { return b.header.ReceiptHash }
 func (b *Block) UncleHash() common.Hash   { return b.header.UncleHash }
 func (b *Block) Extra() []byte            { return common.CopyBytes(b.header.Extra) }
 
-func (b *Block) SetDposSig(dposSig []byte) bool {
-	b.header.DposSig = append(b.header.DposSig, dposSig...)
+func (b *Block) SetValidatorSig(validatorSig []byte) bool {
+	b.header.ValidatorSig = append(b.header.ValidatorSig, validatorSig...)
 	return true
 }
 
@@ -517,14 +517,14 @@ func (b *Block) Header() *Header { return CopyHeader(b.header) }
 func (b *Block) CopyMostHeader() *Header {
 	re := CopyHeader(b.header)
 
-	//re.DposAcksHash = b.header.DposAcksHash
-	//re.DposAckCountList = b.header.DposAckCountList
+	//re.AcksHash = b.header.AcksHash
+	//re.AckCountList = b.header.AckCountList
 
 	return re
 }
 
 // Body returns the non-header content of the block.
-func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles, b.powAnswerUncles, b.dposAcks} }
+func (b *Block) Body() *Body { return &Body{b.transactions, b.uncles, b.powAnswerUncles, b.acks} }
 
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.
@@ -558,18 +558,18 @@ func CalcUncleHash(uncles []*Header) common.Hash {
 	return rlpHash(uncles)
 }
 
-func CalcPowAnswerUncleHash(powAnswerUncles []*PowAnswer) common.Hash {
+func CalcBehaviorProofUncleHash(powAnswerUncles []*BehaviorProof) common.Hash {
 	if len(powAnswerUncles) == 0 {
-		return EmptyPowAnswerUncleHash
+		return EmptyBehaviorProofUncleHash
 	}
 	return rlpHash(powAnswerUncles)
 }
 
-func CalcDposAckHash(dposAcks []*DposAck) common.Hash {
-	if len(dposAcks) == 0 {
-		return EmptyDposAckHash
+func CalcAckHash(acks []*Ack) common.Hash {
+	if len(acks) == 0 {
+		return EmptyAckHash
 	}
-	return rlpHash(dposAcks)
+	return rlpHash(acks)
 }
 
 // WithSeal returns a new block with the data from b but the header replaced with
@@ -584,7 +584,7 @@ func (b *Block) WithSeal(header *Header) *Block {
 	}
 }
 
-func (b *Block) DposWithSeal(header *Header) *Block {
+func (b *Block) ValidatorWithSeal(header *Header) *Block {
 	cpy := *header
 
 	return &Block{
@@ -610,17 +610,17 @@ func (b *Block) WithBody(transactions []*Transaction, uncles []*Header) *Block {
 }
 
 // WithBody returns a new block with the given transaction and uncle contents.
-func (b *Block) WithBodyGreatri(transactions []*Transaction, uncles []*Header, powAnswerUncles []*PowAnswer, dposAcks []*DposAck) *Block {
+func (b *Block) WithBodyProofOfBehavior(transactions []*Transaction, uncles []*Header, powAnswerUncles []*BehaviorProof, acks []*Ack) *Block {
 	block := &Block{
 		header:          CopyHeader(b.header),
 		transactions:    make([]*Transaction, len(transactions)),
 		uncles:          make([]*Header, len(uncles)),
-		powAnswerUncles: make([]*PowAnswer, len(powAnswerUncles)),
-		dposAcks:        make([]*DposAck, len(dposAcks)),
+		powAnswerUncles: make([]*BehaviorProof, len(powAnswerUncles)),
+		acks:        make([]*Ack, len(acks)),
 	}
 	copy(block.transactions, transactions)
 	copy(block.powAnswerUncles, powAnswerUncles)
-	copy(block.dposAcks, dposAcks)
+	copy(block.acks, acks)
 	for i := range uncles {
 		block.uncles[i] = CopyHeader(uncles[i])
 	}
@@ -638,9 +638,9 @@ func (b *Block) Hash() common.Hash {
 	return v
 }
 
-func (b *Block) CopyPowAnswerUncles(PowAnswerUncles []*PowAnswer) {
-	b.powAnswerUncles = make([]*PowAnswer, len(PowAnswerUncles))
-	copy(b.powAnswerUncles, PowAnswerUncles)
+func (b *Block) CopyBehaviorProofUncles(BehaviorProofUncles []*BehaviorProof) {
+	b.powAnswerUncles = make([]*BehaviorProof, len(BehaviorProofUncles))
+	copy(b.powAnswerUncles, BehaviorProofUncles)
 }
 
 type Blocks []*Block
