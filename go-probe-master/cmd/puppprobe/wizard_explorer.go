@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -105,7 +105,7 @@ func (w *wizard) deployExplorer() {
 		fmt.Printf("Should the explorer be built from scratch (y/n)? (default = no)\n")
 		nocache = w.readDefaultYesNo(false)
 	}
-	if out, err := deployExplorer(client, w.network, w.conf.bootnodes, infos, nocache, w.conf.Genesis.Config.Clique != nil); err != nil {
+	if out, err := deployExplorer(client, w.network, w.conf.bootnodes, infos, nocache); err != nil {
 		log.Error("Failed to deploy explorer container", "err", err)
 		if len(out) > 0 {
 			fmt.Printf("%s\n", out)

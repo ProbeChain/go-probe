@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "puppprobe"
-	app.Usage = "assemble and maintain private Probeum networks"
+	app.Usage = "assemble and maintain private ProbeChain networks"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "network",

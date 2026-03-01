@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package backends
 
@@ -30,7 +30,7 @@ import (
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/hexutil"
 	"github.com/probechain/go-probe/common/math"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/bloombits"
 	"github.com/probechain/go-probe/core/rawdb"
@@ -61,7 +61,7 @@ var (
 // DeployBackend, GasEstimator, GasPricer, LogFilterer, PendingContractCaller, TransactionReader, and TransactionSender
 type SimulatedBackend struct {
 	database   probedb.Database // In memory database to store our testing data
-	blockchain *core.BlockChain // Probeum blockchain to handle the consensus
+	blockchain *core.BlockChain // ProbeChain blockchain to handle the consensus
 
 	mu           sync.Mutex
 	pendingBlock *types.Block   // Currently pending block that will be imported on request
@@ -76,9 +76,9 @@ type SimulatedBackend struct {
 // and uses a simulated blockchain for testing purposes.
 // A simulated backend always uses chainID 1337.
 func NewSimulatedBackendWithDatabase(database probedb.Database, alloc core.GenesisAlloc, gasLimit uint64) *SimulatedBackend {
-	genesis := core.Genesis{Config: params.AllProbeashProtocolChanges, GasLimit: gasLimit, Alloc: alloc}
+	genesis := core.Genesis{Config: params.AllPobProtocolChanges, GasLimit: gasLimit, Alloc: alloc}
 	genesis.MustCommit(database)
-	blockchain, _ := core.NewBlockChain(database, nil, genesis.Config, probeash.NewFaker(), vm.Config{}, nil, nil, nil, nil)
+	blockchain, _ := core.NewBlockChain(database, nil, genesis.Config, pob.NewFaker(), vm.Config{}, nil, nil, nil)
 
 	backend := &SimulatedBackend{
 		database:   database,
@@ -126,7 +126,7 @@ func (b *SimulatedBackend) Rollback() {
 }
 
 func (b *SimulatedBackend) rollback(parent *types.Block) {
-	blocks, _ := core.GenerateChain(b.config, parent, probeash.NewFaker(), b.database, 1, func(int, *core.BlockGen) {})
+	blocks, _ := core.GenerateChain(b.config, parent, pob.NewFaker(), b.database, 1, func(int, *core.BlockGen) {})
 
 	b.pendingBlock = blocks[0]
 	b.pendingState, _ = state.New(b.pendingBlock.Root(), b.blockchain.StateCache(), nil)
@@ -643,7 +643,7 @@ func (b *SimulatedBackend) SendTransaction(ctx context.Context, tx *types.Transa
 		panic(fmt.Errorf("invalid transaction nonce: got %d, want %d", tx.Nonce(), nonce))
 	}
 	// Include tx in chain
-	blocks, _ := core.GenerateChain(b.config, block, probeash.NewFaker(), b.database, 1, func(number int, block *core.BlockGen) {
+	blocks, _ := core.GenerateChain(b.config, block, pob.NewFaker(), b.database, 1, func(number int, block *core.BlockGen) {
 		for _, tx := range b.pendingBlock.Transactions() {
 			block.AddTxWithChain(b.blockchain, tx)
 		}
@@ -761,7 +761,7 @@ func (b *SimulatedBackend) AdjustTime(adjustment time.Duration) error {
 		return errors.New("Could not adjust time on non-empty block")
 	}
 
-	blocks, _ := core.GenerateChain(b.config, b.blockchain.CurrentBlock(), probeash.NewFaker(), b.database, 1, func(number int, block *core.BlockGen) {
+	blocks, _ := core.GenerateChain(b.config, b.blockchain.CurrentBlock(), pob.NewFaker(), b.database, 1, func(number int, block *core.BlockGen) {
 		block.OffsetTime(int64(adjustment.Seconds()))
 	})
 	stateDB, _ := b.blockchain.State()

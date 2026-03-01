@@ -1,4 +1,4 @@
-// Copyright 2015 The go-probeum Authors
+// Copyright 2015 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -72,19 +72,6 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 		Flags: []cli.Flag{
 			utils.DeveloperFlag,
 			utils.DeveloperPeriodFlag,
-		},
-	},
-	{
-		Name: "ETHASH",
-		Flags: []cli.Flag{
-			utils.ProbeashCacheDirFlag,
-			utils.ProbeashCachesInMemoryFlag,
-			utils.ProbeashCachesOnDiskFlag,
-			utils.ProbeashCachesLockMmapFlag,
-			utils.ProbeashDatasetDirFlag,
-			utils.ProbeashDatasetsInMemoryFlag,
-			utils.ProbeashDatasetsOnDiskFlag,
-			utils.ProbeashDatasetsLockMmapFlag,
 		},
 	},
 	{

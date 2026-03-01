@@ -1,4 +1,4 @@
-// Copyright 2016 The go-probeum Authors
+// Copyright 2016 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -24,7 +24,6 @@ import (
 	"github.com/probechain/go-probe/params"
 	"io/ioutil"
 	"math/big"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -342,49 +341,18 @@ Fatal: None of the listed files could be unlocked.
 }
 
 func TestGenesisJsonImport(t *testing.T) {
-	var csli []common.DPoSAccount
-
-	csli = append(csli, common.DPoSAccount{Enode: common.BytesToDposEnode([]byte("enode://0039e8bb4a4780b7f924460b6032ac1f49bc50fa14abebe989@127.0.0.1:8080")), Owner: common.HexToAddress("0x031C98b32Cf0990eCAeB2706E3Fb70F6ad04663c199dC96463")})
-	csli = append(csli, common.DPoSAccount{Enode: common.BytesToDposEnode([]byte("enode://0039e8bb4a4780b7f924460b6032ac1f49bc50fa14abebe989@127.0.0.1:8082")), Owner: common.HexToAddress("0x031C98b32Cf0990eCAeB2706E3Fb70F6ad04663c199dC96463")})
-	dposConfig := &params.DposConfig{
-		Period:   3,
-		Epoch:    5,
-		DposList: csli,
-	}
 	chainConfig := &params.ChainConfig{
 		ChainID:        big.NewInt(663),
 		EIP150Hash:     common.BytesToHash(common.FromHex("0x0039e8bb4a4780b7f924460b6032ac1f49bc50fa14abebe98900000000000000")),
 		HomesteadBlock: big.NewInt(0),
 	}
 	genesis1 := &core.Genesis{
-		chainConfig,
-		dposConfig,
-		0,
-		0,
-		nil,
-		0,
-		nil,
-		common.BytesToHash(common.FromHex("0x0000000000000000000000000000000000000000000000000000000000000000")),
-		common.Address{},
-		nil,
-		0,
-		0,
-		common.BytesToHash(common.FromHex("0x0000000000000000000000000000000000000000000000000000000000000000")),
-		nil,
+		Config:     chainConfig,
+		Mixhash:    common.BytesToHash(common.FromHex("0x0000000000000000000000000000000000000000000000000000000000000000")),
+		ParentHash: common.BytesToHash(common.FromHex("0x0000000000000000000000000000000000000000000000000000000000000000")),
 	}
 
 	s1, _ := json.Marshal(genesis1)
 	fmt.Println(s1)
 	fmt.Println(string(s1))
-	fmt.Println("********************")
-	file, err := os.Open("E:\\probeData\\genesis.json")
-	if err != nil {
-		fmt.Println("Failed to read genesis file:", err)
-	}
-	defer file.Close()
-	genesis := new(core.Genesis)
-	if err := json.NewDecoder(file).Decode(genesis); err != nil {
-		fmt.Println("invalid genesis file:", err)
-	}
-	fmt.Println("********************")
 }

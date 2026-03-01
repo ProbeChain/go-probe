@@ -1,4 +1,4 @@
-// Copyright 2015 The go-probeum Authors
+// Copyright 2015 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -40,8 +40,7 @@ import (
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/fdlimit"
 	"github.com/probechain/go-probe/consensus"
-	"github.com/probechain/go-probe/consensus/clique"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/rawdb"
 	"github.com/probechain/go-probe/core/vm"
@@ -233,7 +232,7 @@ var (
 	}
 	ConsensusFlag = cli.StringFlag{
 		Name:  "consensus",
-		Usage: "Choose the miner type is pow or dpos",
+		Usage: "Choose the miner type is pow or pob",
 		Value: probeconfig.Defaults.Consensus,
 	}
 	// Light server and client settings
@@ -278,44 +277,6 @@ var (
 	LightNoSyncServeFlag = cli.BoolFlag{
 		Name:  "light.nosyncserve",
 		Usage: "Enables serving light clients before syncing",
-	}
-	// Probeash settings
-	ProbeashCacheDirFlag = DirectoryFlag{
-		Name:  "probeash.cachedir",
-		Usage: "Directory to store the probeash verification caches (default = inside the datadir)",
-	}
-	ProbeashCachesInMemoryFlag = cli.IntFlag{
-		Name:  "probeash.cachesinmem",
-		Usage: "Number of recent probeash caches to keep in memory (16MB each)",
-		Value: probeconfig.Defaults.Probeash.CachesInMem,
-	}
-	ProbeashCachesOnDiskFlag = cli.IntFlag{
-		Name:  "probeash.cachesondisk",
-		Usage: "Number of recent probeash caches to keep on disk (16MB each)",
-		Value: probeconfig.Defaults.Probeash.CachesOnDisk,
-	}
-	ProbeashCachesLockMmapFlag = cli.BoolFlag{
-		Name:  "probeash.cacheslockmmap",
-		Usage: "Lock memory maps of recent probeash caches",
-	}
-	ProbeashDatasetDirFlag = DirectoryFlag{
-		Name:  "probeash.dagdir",
-		Usage: "Directory to store the probeash mining DAGs",
-		Value: DirectoryString(probeconfig.Defaults.Probeash.DatasetDir),
-	}
-	ProbeashDatasetsInMemoryFlag = cli.IntFlag{
-		Name:  "probeash.dagsinmem",
-		Usage: "Number of recent probeash mining DAGs to keep in memory (1+GB each)",
-		Value: probeconfig.Defaults.Probeash.DatasetsInMem,
-	}
-	ProbeashDatasetsOnDiskFlag = cli.IntFlag{
-		Name:  "probeash.dagsondisk",
-		Usage: "Number of recent probeash mining DAGs to keep on disk (1+GB each)",
-		Value: probeconfig.Defaults.Probeash.DatasetsOnDisk,
-	}
-	ProbeashDatasetsLockMmapFlag = cli.BoolFlag{
-		Name:  "probeash.dagslockmmap",
-		Usage: "Lock memory maps for recent probeash mining DAGs",
 	}
 	// Transaction pool settings
 	TxPoolLocalsFlag = cli.StringFlag{
@@ -1309,33 +1270,6 @@ func setTxPool(ctx *cli.Context, cfg *core.TxPoolConfig) {
 	}
 }
 
-func setProbeash(ctx *cli.Context, cfg *probeconfig.Config) {
-	if ctx.GlobalIsSet(ProbeashCacheDirFlag.Name) {
-		cfg.Probeash.CacheDir = ctx.GlobalString(ProbeashCacheDirFlag.Name)
-	}
-	if ctx.GlobalIsSet(ProbeashDatasetDirFlag.Name) {
-		cfg.Probeash.DatasetDir = ctx.GlobalString(ProbeashDatasetDirFlag.Name)
-	}
-	if ctx.GlobalIsSet(ProbeashCachesInMemoryFlag.Name) {
-		cfg.Probeash.CachesInMem = ctx.GlobalInt(ProbeashCachesInMemoryFlag.Name)
-	}
-	if ctx.GlobalIsSet(ProbeashCachesOnDiskFlag.Name) {
-		cfg.Probeash.CachesOnDisk = ctx.GlobalInt(ProbeashCachesOnDiskFlag.Name)
-	}
-	if ctx.GlobalIsSet(ProbeashCachesLockMmapFlag.Name) {
-		cfg.Probeash.CachesLockMmap = ctx.GlobalBool(ProbeashCachesLockMmapFlag.Name)
-	}
-	if ctx.GlobalIsSet(ProbeashDatasetsInMemoryFlag.Name) {
-		cfg.Probeash.DatasetsInMem = ctx.GlobalInt(ProbeashDatasetsInMemoryFlag.Name)
-	}
-	if ctx.GlobalIsSet(ProbeashDatasetsOnDiskFlag.Name) {
-		cfg.Probeash.DatasetsOnDisk = ctx.GlobalInt(ProbeashDatasetsOnDiskFlag.Name)
-	}
-	if ctx.GlobalIsSet(ProbeashDatasetsLockMmapFlag.Name) {
-		cfg.Probeash.DatasetsLockMmap = ctx.GlobalBool(ProbeashDatasetsLockMmapFlag.Name)
-	}
-}
-
 func setMiner(ctx *cli.Context, cfg *miner.Config) {
 	if ctx.GlobalIsSet(MinerNotifyFlag.Name) {
 		cfg.Notify = strings.Split(ctx.GlobalString(MinerNotifyFlag.Name), ",")
@@ -1445,7 +1379,6 @@ func SetProbeConfig(ctx *cli.Context, stack *node.Node, cfg *probeconfig.Config)
 	setProbebase(ctx, ks, cfg)
 	setGPO(ctx, &cfg.GPO, ctx.GlobalString(SyncModeFlag.Name) == "light")
 	setTxPool(ctx, &cfg.TxPool)
-	setProbeash(ctx, cfg)
 	setMiner(ctx, &cfg.Miner)
 	setWhitelist(ctx, cfg)
 	setLes(ctx, cfg)
@@ -1644,21 +1577,21 @@ func SetDNSDiscoveryDefaults(cfg *probeconfig.Config, genesis common.Hash) {
 	}
 }
 
-// RegisterProbeService adds an Probeum client to the stack.
+// RegisterProbeService adds a ProbeChain client to the stack.
 // The second return value is the full node instance, which may be nil if the
 // node is running as a light client.
 func RegisterProbeService(stack *node.Node, cfg *probeconfig.Config) (probeapi.Backend, *probe.Probeum) {
 	if cfg.SyncMode == downloader.LightSync {
 		backend, err := les.New(stack, cfg)
 		if err != nil {
-			Fatalf("Failed to register the Probeum service: %v", err)
+			Fatalf("Failed to register the ProbeChain service: %v", err)
 		}
 		stack.RegisterAPIs(tracers.APIs(backend.ApiBackend))
 		return backend.ApiBackend, nil
 	}
 	backend, err := probe.New(stack, cfg)
 	if err != nil {
-		Fatalf("Failed to register the Probeum service: %v", err)
+		Fatalf("Failed to register the ProbeChain service: %v", err)
 	}
 	if cfg.LightServ > 0 {
 		_, err := les.NewLesServer(stack, backend, cfg)
@@ -1670,11 +1603,11 @@ func RegisterProbeService(stack *node.Node, cfg *probeconfig.Config) (probeapi.B
 	return backend.APIBackend, backend
 }
 
-// RegisterProbeStatsService configures the Probeum Stats daemon and adds it to
+// RegisterProbeStatsService configures the ProbeChain Stats daemon and adds it to
 // the given node.
 func RegisterProbeStatsService(stack *node.Node, backend probeapi.Backend, url string) {
 	if err := probestats.New(stack, backend, backend.Engine(), url); err != nil {
-		Fatalf("Failed to register the Probeum Stats service: %v", err)
+		Fatalf("Failed to register the ProbeChain Stats service: %v", err)
 	}
 }
 
@@ -1772,22 +1705,13 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 		Fatalf("%v", err)
 	}
 	var engine consensus.Engine
-	if config.Clique != nil {
-		engine = clique.New(config.Clique, chainDb)
+	if config.Pob != nil {
+		engine = pob.New(config.Pob, chainDb, config)
+	} else if ctx.GlobalBool(FakePoWFlag.Name) {
+		engine = pob.NewFaker()
 	} else {
-		engine = probeash.NewFaker()
-		if !ctx.GlobalBool(FakePoWFlag.Name) {
-			engine = probeash.New(probeash.Config{
-				CacheDir:         stack.ResolvePath(probeconfig.Defaults.Probeash.CacheDir),
-				CachesInMem:      probeconfig.Defaults.Probeash.CachesInMem,
-				CachesOnDisk:     probeconfig.Defaults.Probeash.CachesOnDisk,
-				CachesLockMmap:   probeconfig.Defaults.Probeash.CachesLockMmap,
-				DatasetDir:       stack.ResolvePath(probeconfig.Defaults.Probeash.DatasetDir),
-				DatasetsInMem:    probeconfig.Defaults.Probeash.DatasetsInMem,
-				DatasetsOnDisk:   probeconfig.Defaults.Probeash.DatasetsOnDisk,
-				DatasetsLockMmap: probeconfig.Defaults.Probeash.DatasetsLockMmap,
-			}, nil, false)
-		}
+		pobConfig := &params.PobConfig{Period: 15, Epoch: 30000}
+		engine = pob.New(pobConfig, chainDb, config)
 	}
 	if gcmode := ctx.GlobalString(GCModeFlag.Name); gcmode != "full" && gcmode != "archive" {
 		Fatalf("--%s must be either 'full' or 'archive'", GCModeFlag.Name)
@@ -1818,7 +1742,7 @@ func MakeChain(ctx *cli.Context, stack *node.Node) (chain *core.BlockChain, chai
 
 	// TODO(rjl493456442) disable snapshot generation/wiping if the chain is read only.
 	// Disable transaction indexing/unindexing by default.
-	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg, nil, nil, nil, nil)
+	chain, err = core.NewBlockChain(chainDb, cache, config, engine, vmcfg, nil, nil, nil)
 	if err != nil {
 		Fatalf("Can't create BlockChain: %v", err)
 	}

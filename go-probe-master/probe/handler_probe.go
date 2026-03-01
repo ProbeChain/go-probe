@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package probe
 
@@ -69,8 +69,8 @@ func (h *probeHandler) Handle(peer *probe.Peer, packet probe.Packet) error {
 		return h.handleHeaders(peer, *packet)
 
 	case *probe.BlockBodiesPacket:
-		txset, uncleset, powAnswerUncles, dposAcks := packet.Unpack()
-		return h.handleBodies(peer, txset, uncleset, powAnswerUncles, dposAcks)
+		txset, uncleset, powAnswerUncles, acks := packet.Unpack()
+		return h.handleBodies(peer, txset, uncleset, powAnswerUncles, acks)
 
 	case *probe.NodeDataPacket:
 		if err := h.downloader.DeliverNodeData(peer.ID(), *packet); err != nil {
@@ -91,12 +91,12 @@ func (h *probeHandler) Handle(peer *probe.Peer, packet probe.Packet) error {
 	case *probe.NewBlockPacket:
 		return h.handleBlockBroadcast(peer, packet.Block, packet.TD)
 
-	case *probe.NewPowAnswerPacket:
-		return h.handlePowAnswerBroadcast(peer, packet.PowAnswer)
+	case *probe.NewBehaviorProofPacket:
+		return h.handleBehaviorProofBroadcast(peer, packet.BehaviorProof)
 
-	case *probe.NewDposAckPacket:
-		//log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(packet.DposAck.WitnessSig))
-		return h.handleDposAckBroadcast(peer, packet.DposAck)
+	case *probe.NewAckPacket:
+		//log.Debug("handleAckBroadcast", "ack", common.BytesToHash(packet.Ack.WitnessSig))
+		return h.handleAckBroadcast(peer, packet.Ack)
 
 	case *probe.NewPooledTransactionHashesPacket:
 		return h.txFetcher.Notify(peer.ID(), *packet)
@@ -170,14 +170,14 @@ func (h *probeHandler) handleHeaders(peer *probe.Peer, headers []*types.Header) 
 // handleBodies is invoked from a peer's message handler when it transmits a batch
 // of block bodies for the local node to process.
 func (h *probeHandler) handleBodies(peer *probe.Peer, txs [][]*types.Transaction, uncles [][]*types.Header,
-	powAnswerUncles [][]*types.PowAnswer, dposAcks [][]*types.DposAck) error {
+	powAnswerUncles [][]*types.BehaviorProof, acks [][]*types.Ack) error {
 	// Filter out any explicitly requested bodies, deliver the rest to the downloader
 	filter := len(txs) > 0 || len(uncles) > 0
 	if filter {
-		txs, uncles, powAnswerUncles, dposAcks = h.blockFetcher.FilterBodies(peer.ID(), txs, uncles, powAnswerUncles, dposAcks, time.Now())
+		txs, uncles, powAnswerUncles, acks = h.blockFetcher.FilterBodies(peer.ID(), txs, uncles, powAnswerUncles, acks, time.Now())
 	}
-	if len(txs) > 0 || len(uncles) > 0 || len(powAnswerUncles) > 0 || len(dposAcks) > 0 || !filter {
-		err := h.downloader.DeliverBodies(peer.ID(), txs, uncles, powAnswerUncles, dposAcks)
+	if len(txs) > 0 || len(uncles) > 0 || len(powAnswerUncles) > 0 || len(acks) > 0 || !filter {
+		err := h.downloader.DeliverBodies(peer.ID(), txs, uncles, powAnswerUncles, acks)
 		if err != nil {
 			log.Debug("Failed to deliver bodies", "err", err)
 		}
@@ -225,45 +225,45 @@ func (h *probeHandler) handleBlockBroadcast(peer *probe.Peer, block *types.Block
 	return nil
 }
 
-// handlePowAnswerBroadcast is invoked from a peer's message handler when it transmits a
+// handleBehaviorProofBroadcast is invoked from a peer's message handler when it transmits a
 // pow answer broadcast for the local node to process.
-func (h *probeHandler) handlePowAnswerBroadcast(peer *probe.Peer, powAnswer *types.PowAnswer) error {
+func (h *probeHandler) handleBehaviorProofBroadcast(peer *probe.Peer, powAnswer *types.BehaviorProof) error {
 	// boardcast pow answer again
-	if h.chain.CheckPowAnswerSketchy(powAnswer) {
-		peer.MarkPowAnswer(powAnswer.Id())
-		peers := h.peers.peersWithoutPowAnswers(powAnswer)
+	if h.chain.CheckBehaviorProofSketchy(powAnswer) {
+		peer.MarkBehaviorProof(powAnswer.Id())
+		peers := h.peers.peersWithoutBehaviorProofs(powAnswer)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
-			peer.MarkPowAnswer(powAnswer.Id())
-			peer.AsyncSendPowAnswer(powAnswer)
+			peer.MarkBehaviorProof(powAnswer.Id())
+			peer.AsyncSendBehaviorProof(powAnswer)
 		}
-		//	peer.AsyncSendPowAnswer(powAnswer)
-		h.chain.HandlePowAnswer(powAnswer)
+		//	peer.AsyncSendBehaviorProof(powAnswer)
+		h.chain.HandleBehaviorProof(powAnswer)
 	} else {
-		log.Debug("CheckPowAnswer Fail", "powAnswer.Number", powAnswer.Number.Uint64(), "Chain Number", h.chain.CurrentBlock().NumberU64())
+		log.Debug("CheckBehaviorProof Fail", "powAnswer.Number", powAnswer.Number.Uint64(), "Chain Number", h.chain.CurrentBlock().NumberU64())
 	}
 	return nil
 }
 
-// handleDposAckBroadcast is invoked from a peer's message handler when it transmits a
-// dpos ack for the local node to process.
-func (h *probeHandler) handleDposAckBroadcast(peer *probe.Peer, dposAck *types.DposAck) error {
-	check := h.chain.CheckDposAckSketchy(dposAck)
+// handleAckBroadcast is invoked from a peer's message handler when it transmits a
+// validator ack for the local node to process.
+func (h *probeHandler) handleAckBroadcast(peer *probe.Peer, ack *types.Ack) error {
+	check := h.chain.CheckAckSketchy(ack)
 	if check {
-		peer.MarkDposAck(dposAck.Id())
-		peers := h.peers.peersWithoutDposAcks(dposAck)
+		peer.MarkAck(ack.Id())
+		peers := h.peers.peersWithoutAcks(ack)
 		filter := peers[:int(math.Sqrt(float64(len(peers))))]
 		for _, peer := range filter {
-			//log.Debug("handleDposAckBroadcast", "ack", common.BytesToHash(dposAck.WitnessSig))
-			peer.MarkDposAck(dposAck.Id())
-			peer.AsyncSendDposAck(dposAck)
+			//log.Debug("handleAckBroadcast", "ack", common.BytesToHash(ack.WitnessSig))
+			peer.MarkAck(ack.Id())
+			peer.AsyncSendAck(ack)
 		}
 
-		//peer.AsyncSendDposAck(dposAck)
+		//peer.AsyncSendAck(ack)
 
-		h.chain.HandleDposAck(dposAck)
+		h.chain.HandleAck(ack)
 	} else {
-		log.Debug("DposAck broadcast fail, because the dpos ack is illegality", "check", check, "number", dposAck.Number, "witnessSig", common.Bytes2Hex(dposAck.WitnessSig), "BlockHash", dposAck.BlockHash, "Type", dposAck.AckType)
+		log.Debug("Ack broadcast fail, because the validator ack is illegality", "check", check, "number", ack.Number, "witnessSig", common.Bytes2Hex(ack.WitnessSig), "BlockHash", ack.BlockHash, "Type", ack.AckType)
 	}
 	return nil
 }

@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package miner
 
@@ -22,9 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	atomicClock "github.com/probechain/go-probe/core/atomic"
-	greatri2 "github.com/probechain/go-probe/consensus/greatri"
-	pob2 "github.com/probechain/go-probe/consensus/pob"
-	probehash2 "github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -57,7 +55,7 @@ const (
 	// chainSideChanSize is the size of channel listening to ChainSideEvent.
 	chainSideChanSize = 10
 
-	// powAnswerChanSize is the size of channel listening to PowAnswerEvent.
+	// powAnswerChanSize is the size of channel listening to BehaviorProofEvent.
 	powAnswerChanSize = 10
 
 	// resubmitAdjustChanSize is the size of resubmitting interval adjustment channel.
@@ -90,19 +88,19 @@ const (
 )
 
 var (
-	// DposWitnessNumber is the total number of dpos witness nodes.
+	// ValidatorWitnessCount is the total number of validator witness nodes.
 	//@todo just for oneNode test
-	DposWitnessNumber uint = 5
+	ValidatorWitnessCount uint = 5
 
-	// MostDposWitness number of witness to product stabilizing block
-	MostDposWitness = DposWitnessNumber*2/3 + 1
+	// MostValidatorWitness number of witness to product stabilizing block
+	MostValidatorWitness = ValidatorWitnessCount*2/3 + 1
 
-	// LeastDposWitness the least number of witness to product block
-	LeastDposWitness = DposWitnessNumber*1/3 + 1
-	//LeastDposWitness = DposWitnessNumber*1/2 + 1
+	// LeastValidatorWitness the least number of witness to product block
+	LeastValidatorWitness = ValidatorWitnessCount*1/3 + 1
+	//LeastValidatorWitness = ValidatorWitnessCount*1/2 + 1
 
-	// dposAckChanSize is the size of channel listening to DposAckEvent.
-	dposAckChanSize = DposWitnessNumber * 10
+	// ackChanSize is the size of channel listening to AckEvent.
+	ackChanSize = ValidatorWitnessCount * 10
 
 	// min diffcult
 	minDifficulty int64 = 5000000
@@ -121,8 +119,8 @@ type environment struct {
 
 	header          *types.Header
 	txs             []*types.Transaction
-	powAnswerUncles []*types.PowAnswer
-	dposAcks        []*types.DposAck
+	powAnswerUncles []*types.BehaviorProof
+	acks        []*types.Ack
 
 	receipts []*types.Receipt
 }
@@ -162,7 +160,6 @@ type worker struct {
 	config      *Config
 	chainConfig *params.ChainConfig
 	engine      consensus.Engine
-	powEngine   consensus.Engine
 	probe       Backend
 	chain       *core.BlockChain
 
@@ -178,11 +175,11 @@ type worker struct {
 	chainSideCh  chan core.ChainSideEvent
 	chainSideSub event.Subscription
 
-	powAnswerCh  chan core.PowAnswerEvent
+	powAnswerCh  chan core.BehaviorProofEvent
 	powAnswerSub event.Subscription
 
-	dposAckCh  chan core.DposAckEvent
-	dposAckSub event.Subscription
+	ackCh  chan core.AckEvent
+	ackSub event.Subscription
 
 	// Channels
 	newWorkCh          chan *newWorkReq
@@ -193,7 +190,7 @@ type worker struct {
 	resubmitAdjustCh   chan *intervalAdjust
 
 	//pow miner
-	powMinerResultCh chan *types.PowAnswer
+	powMinerResultCh chan *types.BehaviorProof
 
 	current      *environment                 // An environment for current running cycle.
 	localUncles  map[common.Hash]*types.Block // A set of side blocks generated locally as the possible uncle blocks.
@@ -238,21 +235,20 @@ type worker struct {
 	delaySealBlockNumber *big.Int
 }
 
-func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, powEngine consensus.Engine, probe Backend, mux *event.TypeMux,
+func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus.Engine, probe Backend, mux *event.TypeMux,
 	isLocalBlock func(*types.Block) bool, init bool) *worker {
 	chain := probe.BlockChain()
 	number := chain.CurrentHeader().Number.Uint64()
-	size := chain.GetDposAccountSize(number)
-	updateDposParams(size)
-	log.Info("UpdateDposParams newWorker", "blockNumber", number, "size", size, "DposWitnessNumber", DposWitnessNumber,
-		"MostDposWitness", MostDposWitness, "LeastDposWitness", LeastDposWitness)
+	size := chain.GetValidatorSize(number)
+	updateValidatorParams(size)
+	log.Info("UpdateValidatorParams newWorker", "blockNumber", number, "size", size, "ValidatorWitnessCount", ValidatorWitnessCount,
+		"MostValidatorWitness", MostValidatorWitness, "LeastValidatorWitness", LeastValidatorWitness)
 
 	worker := &worker{
 		config:               config,
 		chainConfig:          chainConfig,
 		coinbase:             config.Probebase,
 		engine:               engine,
-		powEngine:            powEngine,
 		probe:                probe,
 		mux:                  mux,
 		chain:                chain,
@@ -264,15 +260,15 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 		txsCh:                make(chan core.NewTxsEvent, txChanSize),
 		chainHeadCh:          make(chan core.ChainHeadEvent, chainHeadChanSize),
 		chainSideCh:          make(chan core.ChainSideEvent, chainSideChanSize),
-		powAnswerCh:          make(chan core.PowAnswerEvent, powAnswerChanSize),
-		dposAckCh:            make(chan core.DposAckEvent, dposAckChanSize),
+		powAnswerCh:          make(chan core.BehaviorProofEvent, powAnswerChanSize),
+		ackCh:            make(chan core.AckEvent, ackChanSize),
 		newWorkCh:            make(chan *newWorkReq),
 		taskCh:               make(chan *task),
 		exitCh:               make(chan struct{}),
 		startCh:              make(chan struct{}, 1),
 		resubmitIntervalCh:   make(chan time.Duration),
 		resubmitAdjustCh:     make(chan *intervalAdjust, resubmitAdjustChanSize),
-		powMinerResultCh:     make(chan *types.PowAnswer, powMinerResultChanSize),
+		powMinerResultCh:     make(chan *types.BehaviorProof, powMinerResultChanSize),
 		visualBlockNumber:    new(big.Int).SetUint64(0),
 		effectBlockNumber:    new(big.Int).SetUint64(0),
 		effectHeader:         chain.CurrentHeader(),
@@ -284,8 +280,8 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 	worker.chainHeadSub = probe.BlockChain().SubscribeChainHeadEvent(worker.chainHeadCh)
 	worker.chainSideSub = probe.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
 
-	worker.powAnswerSub = probe.BlockChain().SubscribePowAnswerEvent(worker.powAnswerCh)
-	worker.dposAckSub = probe.BlockChain().SubscribeDposAckEvent(worker.dposAckCh)
+	worker.powAnswerSub = probe.BlockChain().SubscribeBehaviorProofEvent(worker.powAnswerCh)
+	worker.ackSub = probe.BlockChain().SubscribeAckEvent(worker.ackCh)
 
 	// Sanitize recommit interval if the user-specified one is too short.
 	recommit := worker.config.Recommit
@@ -316,7 +312,7 @@ func newWorker(config *Config, chainConfig *params.ChainConfig, engine consensus
 
 func (w *worker) commitAckLoop() {
 	now := w.chain.CurrentBlock().NumberU64()
-	if !w.imDposWorkNode(w.chain.CurrentBlock().Number()) {
+	if !w.imValidatorWorkNode(w.chain.CurrentBlock().Number()) {
 		return
 	}
 
@@ -409,9 +405,9 @@ func (w *worker) isRunning() bool {
 }
 
 func (w *worker) imProducerOnSpecBlock(blockNumber uint64) bool {
-	account := w.chain.GetSealDposAccount(blockNumber)
+	account := w.chain.GetSealValidator(blockNumber)
 	if account == nil {
-		log.Error("somprobeing wrong in get dpos account, neeQd to check", "blockNumber", blockNumber)
+		log.Error("somprobeing wrong in get validator account, neeQd to check", "blockNumber", blockNumber)
 		return false
 	}
 	log.Debug("producer ", "blockNumber:", blockNumber, "mine:", w.coinbase, " curOwner:", account.Owner, " curNode:", account.Enode.String(), " eq:", account.Owner == w.coinbase)
@@ -422,9 +418,9 @@ func (w *worker) imProducer(blockNumber uint64) bool {
 	return w.imProducerOnSpecBlock(blockNumber)
 }
 
-func (w *worker) imDposWorkNode(blockNumber *big.Int) bool {
-	ret := w.chain.CheckIsDposAccount(blockNumber.Uint64(), w.coinbase)
-	log.Trace("check if i'm dpos node", "ret", ret, "block Number", blockNumber.Uint64(), "addr", w.coinbase)
+func (w *worker) imValidatorWorkNode(blockNumber *big.Int) bool {
+	ret := w.chain.CheckIsValidator(blockNumber.Uint64(), w.coinbase)
+	log.Trace("check if i'm validator node", "ret", ret, "block Number", blockNumber.Uint64(), "addr", w.coinbase)
 	return ret
 }
 
@@ -460,13 +456,13 @@ func recalcRecommit(minRecommit, prev time.Duration, target float64, inc bool) t
 	return time.Duration(int64(next))
 }
 
-func (w *worker) sendAck(blockNumber uint64, ackType types.DposAckType) error {
-	position, err := w.chain.GetDposAccountIndex(blockNumber, w.coinbase)
+func (w *worker) sendAck(blockNumber uint64, ackType types.AckType) error {
+	position, err := w.chain.GetValidatorIndex(blockNumber, w.coinbase)
 	if err != nil {
-		log.Error("somprobeing wrong in get dpos account postion", "blockNumber", blockNumber)
+		log.Error("somprobeing wrong in get validator account postion", "blockNumber", blockNumber)
 		return err
 	}
-	ack := &types.DposAck{
+	ack := &types.Ack{
 		EpochPosition: uint8(position),
 		Number:        new(big.Int).SetUint64(blockNumber),
 		AckType:       ackType,
@@ -477,20 +473,20 @@ func (w *worker) sendAck(blockNumber uint64, ackType types.DposAckType) error {
 		ack.BlockHash = types.EmptyUncleHash
 	}
 
-	greatri, ok := w.engine.(*greatri2.Greatri)
+	pobEngine, ok := w.engine.(*pob.ProofOfBehavior)
 	if !ok {
-		log.Error("somprobeing wrong in produce dposAck", "blockNumber", blockNumber)
+		log.Error("somprobeing wrong in produce ack", "blockNumber", blockNumber)
 		return err
 	}
-	ackSig, err := greatri.DposAckSig(ack)
+	ackSig, err := pobEngine.AckSig(ack)
 	if err != nil {
-		log.Error("somprobeing wrong in DposAckSig", "blockNumber", blockNumber)
+		log.Error("somprobeing wrong in AckSig", "blockNumber", blockNumber)
 		return err
 	}
 	ack.WitnessSig = append(ack.WitnessSig, ackSig...)
 
 	log.Debug("sendAck", "ack", common.BytesToHash(ack.WitnessSig))
-	w.mux.Post(core.DposAckEvent{DposAck: ack})
+	w.mux.Post(core.AckEvent{Ack: ack})
 	return nil
 }
 
@@ -503,10 +499,10 @@ func (w *worker) sendAck(blockNumber uint64, ackType types.DposAckType) error {
 //	}
 //}
 
-func (w *worker) checkPowAnswerNumber(blockNumber *big.Int, header *types.Header) (bool, int) {
+func (w *worker) checkBehaviorProofNumber(blockNumber *big.Int, header *types.Header) (bool, int) {
 	visualBlockCount := new(big.Int)
 	visualBlockCount.Sub(blockNumber, header.Number)
-	answerNumber := len(w.chain.GetPowAnswers(header.Number, header.Hash()))
+	answerNumber := len(w.chain.GetBehaviorProofs(header.Number, header.Hash()))
 	log.Debug("check answer", "answerNumber", answerNumber, "int(visualBlockCount.Uint64() + 1)", int(visualBlockCount.Uint64()+1))
 	return answerNumber >= int(visualBlockCount.Uint64()+1), answerNumber
 }
@@ -536,14 +532,13 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 	var (
 		interrupt               *int32
 		minRecommit             = recommit // minimal resubmit interval specified by user.
-		stopCh                  chan struct{}
 		timerSealDealineSetFlag = false
 		timerDelaySealSetFlag   = false
 		rejectBlockNumber       = new(big.Int).SetUint64(0)
 		sealedBlockNumber       uint64
 	)
 
-	//used when not received enough dposAck
+	//used when not received enough ack
 	timerDelaySeal := time.NewTimer(0)
 	defer timerDelaySeal.Stop()
 	<-timerDelaySeal.C // discard the initial tick
@@ -594,13 +589,6 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		}
 		w.pendingMu.Unlock()
 	}
-	// interrupt aborts the in-flight sealing task.
-	interruptSeal := func() {
-		if stopCh != nil {
-			close(stopCh)
-			stopCh = nil
-		}
-	}
 
 	for {
 		select {
@@ -623,7 +611,7 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			if blockNumber.Uint64() != 0 && blockNumber.Uint64() <= w.visualBlockNumber.Uint64() {
 				log.Debug("received a block that we have reject",
 					"current block number", w.visualBlockNumber, "effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber)
-				if newBlock.Header().DposSigAddr == w.coinbase && blockNumber.Uint64() > w.effectBlockNumber.Uint64() {
+				if newBlock.Header().ValidatorAddr == w.coinbase && blockNumber.Uint64() > w.effectBlockNumber.Uint64() {
 					if commit(false, commitInterruptNewHead, blockNumber.Uint64()+1) {
 						log.Info("my job to continue producing block", "addr", w.coinbase,
 							"current block number", w.visualBlockNumber, "effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber)
@@ -643,9 +631,9 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 				timerDelaySealSetFlag = false
 			}
 			//if w.imProducer(blockNumber.Uint64() + 1) {
-			//	dposAgreeAckNum := w.chain.GetDposAckSize(blockNumber, types.AckTypeAgree)
-			//	if nil != w.chain.GetLatestPowAnswer(blockNumber) &&
-			//		dposAgreeAckNum >= int(MostDposWitness) {
+			//	agreeAckNum := w.chain.GetAckSize(blockNumber, types.AckTypeAgree)
+			//	if nil != w.chain.GetLatestBehaviorProof(blockNumber) &&
+			//		agreeAckNum >= int(MostValidatorWitness) {
 			//		//received powAnswer and received 2/3 witness node ack
 			//		if commit(false, commitInterruptNewHead, blockNumber) {
 			//			log.Info("received new base block, is my turn to produce new block", "addr", w.coinbase,
@@ -654,156 +642,144 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 			//	}
 			//}
 
-			if w.imDposWorkNode(blockNumber) {
+			if w.imValidatorWorkNode(blockNumber) {
 				//todo: send oppose ack if i received a disorganized block
 				if nil == w.sendAck(blockNumber.Uint64(), types.AckTypeAgree) {
-					log.Info("received new block, send dposAck to all success", "addr", w.coinbase,
+					log.Info("received new block, send ack to all success", "addr", w.coinbase,
 						"current block number", blockNumber)
 				} else {
-					log.Info("received new block, send dposAck to all failed", "addr", w.coinbase,
+					log.Info("received new block, send ack to all failed", "addr", w.coinbase,
 						"current block number", blockNumber)
 				}
 			}
 
-			if w.chainConfig.Probeash != nil {
-				interruptSeal()
-				stopCh = make(chan struct{})
-				probeash, ok := w.powEngine.(*probehash2.Probeash)
-				if !ok {
-					log.Error("somprobeing wrong in produce dposAck", "blockNumber", blockNumber)
-					continue
-				}
-
-				if err := probeash.PowSeal(w.chain, newBlock, w.powMinerResultCh, stopCh, w.coinbase); err != nil {
-					log.Warn("pow Miner failed", "err", err)
-				}
-			}
+			// PoB: no PoW sealing needed
 
 		case sideChainBlock := <-w.chainSideCh:
 			log.Trace("new side block", "block number", sideChainBlock.Block.Number())
 
-		case ack := <-w.dposAckCh:
-			log.Trace("receive ack", "blockNumber", ack.DposAck.Number, "type", ack.DposAck.AckType, "sig", hex.EncodeToString(ack.DposAck.WitnessSig))
-			if w.visualBlockNumber.Uint64() != ack.DposAck.Number.Uint64() {
+		case ack := <-w.ackCh:
+			log.Trace("receive ack", "blockNumber", ack.Ack.Number, "type", ack.Ack.AckType, "sig", hex.EncodeToString(ack.Ack.WitnessSig))
+			if w.visualBlockNumber.Uint64() != ack.Ack.Number.Uint64() {
 				continue
 			}
 
-			var dposAgreeAckNum = 0
+			var agreeAckNum = 0
 			if w.visualBlockNumber.Uint64() == w.chain.CurrentBlock().NumberU64() {
-				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
+				agreeAckNum = w.chain.GetAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			}
-			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
+			opposeAckNum := w.chain.GetAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
 
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
-				if ret && (dposAgreeAckNum >= int(MostDposWitness) || dposOpposeAckNum >= int(MostDposWitness)) {
+				ret, answerNumber := w.checkBehaviorProofNumber(w.visualBlockNumber, w.effectHeader)
+				if ret && (agreeAckNum >= int(MostValidatorWitness) || opposeAckNum >= int(MostValidatorWitness)) {
 					//received powAnswer and received 2/3 witness node ack
 					timerDelaySeal.Stop()
 					if commit(false, commitInterruptNewHead, w.effectBlockNumber.Uint64()+1) {
-						log.Info("received enough dposAcks, is my turn to produce new block", "addr", w.coinbase,
+						log.Info("received enough acks, is my turn to produce new block", "addr", w.coinbase,
 							"current block number", w.visualBlockNumber)
 					}
-				} else if !timerDelaySealSetFlag && ret && (dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness)) {
+				} else if !timerDelaySealSetFlag && ret && (agreeAckNum >= int(LeastValidatorWitness) || opposeAckNum >= int(LeastValidatorWitness)) {
 					timerDelaySealSetFlag = true
 					timerDelaySeal.Reset(consensus.Time2delaySeal * time.Second)
 					w.delaySealBlockNumber.Add(w.effectBlockNumber, common.Big1)
-					log.Debug("received dposAck, but not enough dposAck, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
+					log.Debug("received ack, but not enough ack, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber)
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum, "answerNumber", answerNumber)
 				} else {
 					log.Trace("i'm producer, but nothing to do", "timerDelaySealSetFlag", timerDelaySealSetFlag, "answer check", ret,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum)
 				}
-			} else if w.imDposWorkNode(w.visualBlockNumber) {
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
+			} else if w.imValidatorWorkNode(w.visualBlockNumber) {
+				ret, answerNumber := w.checkBehaviorProofNumber(w.visualBlockNumber, w.effectHeader)
 				if !timerSealDealineSetFlag && ret &&
-					(dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness)) {
+					(agreeAckNum >= int(LeastValidatorWitness) || opposeAckNum >= int(LeastValidatorWitness)) {
 					timerSealDealineSetFlag = true
 					rejectBlockNumber.Add(w.visualBlockNumber, common.Big1)
 					timerSealDealine.Reset(consensus.Time2SealDeadline * time.Second)
 					log.Debug("received enough acks, not my turn to produce, setup a timer to wait new block", "addr", w.coinbase,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber)
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum, "answerNumber", answerNumber)
 				} else {
-					log.Trace("i'm dpos node, but nothing to do", "timerSealDealineSetFlag", timerSealDealineSetFlag, "answer check", ret,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
+					log.Trace("i'm validator node, but nothing to do", "timerSealDealineSetFlag", timerSealDealineSetFlag, "answer check", ret,
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum)
 				}
 			}
 
 		case answer := <-w.powAnswerCh:
-			log.Trace("receive answer", "blockNumber", answer.PowAnswer.Number, "miner", answer.PowAnswer.Miner)
-			if w.effectBlockNumber.Uint64() != answer.PowAnswer.Number.Uint64() {
+			log.Trace("receive answer", "blockNumber", answer.BehaviorProof.Number, "miner", answer.BehaviorProof.Miner)
+			if w.effectBlockNumber.Uint64() != answer.BehaviorProof.Number.Uint64() {
 				log.Debug("the block number in powAnser is mismatch", "effectBlockNumber", w.effectBlockNumber.Uint64(),
-					"powAnswer block number", answer.PowAnswer.Number.Uint64())
+					"powAnswer block number", answer.BehaviorProof.Number.Uint64())
 				continue
 			}
 
-			var dposAgreeAckNum = 0
+			var agreeAckNum = 0
 			if w.visualBlockNumber.Uint64() == w.chain.CurrentBlock().NumberU64() {
-				dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
+				agreeAckNum = w.chain.GetAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			}
-			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
+			opposeAckNum := w.chain.GetAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
 
 			if w.imProducer(w.visualBlockNumber.Uint64() + 1) {
 				//is the producer
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
-				if ret && (dposAgreeAckNum >= int(MostDposWitness) || dposOpposeAckNum >= int(MostDposWitness)) {
+				ret, answerNumber := w.checkBehaviorProofNumber(w.visualBlockNumber, w.effectHeader)
+				if ret && (agreeAckNum >= int(MostValidatorWitness) || opposeAckNum >= int(MostValidatorWitness)) {
 					//received 2/3 witness node ack
 					timerDelaySeal.Stop()
 					if commit(false, commitInterruptNewHead, w.effectBlockNumber.Uint64()+1) {
 						log.Info("received powAnswer, is my turn to produce new block", "addr", w.coinbase,
 							"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-							"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber)
+							"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum, "answerNumber", answerNumber)
 					}
-				} else if !timerDelaySealSetFlag && ret && (dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness)) {
+				} else if !timerDelaySealSetFlag && ret && (agreeAckNum >= int(LeastValidatorWitness) || opposeAckNum >= int(LeastValidatorWitness)) {
 					timerDelaySealSetFlag = true
 					timerDelaySeal.Reset(consensus.Time2delaySeal * time.Second)
 					w.delaySealBlockNumber.Add(w.effectBlockNumber, common.Big1)
-					log.Debug("received powAnswer, but not enough dposAck, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
+					log.Debug("received powAnswer, but not enough ack, wait...", "addr", w.coinbase, "waitTime", consensus.Time2delaySeal,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
 				} else {
 					log.Trace("i'm producer, but nothing to do", "timerDelaySealSetFlag", timerDelaySealSetFlag, "answer check", ret,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum)
 				}
-			} else if w.imDposWorkNode(w.visualBlockNumber) {
+			} else if w.imValidatorWorkNode(w.visualBlockNumber) {
 				//not the producer
-				ret, answerNumber := w.checkPowAnswerNumber(w.visualBlockNumber, w.effectHeader)
+				ret, answerNumber := w.checkBehaviorProofNumber(w.visualBlockNumber, w.effectHeader)
 				if !timerSealDealineSetFlag && ret &&
-					(dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness)) {
-					//todo: consider if i should wait MostDposWitness to start a timer?
+					(agreeAckNum >= int(LeastValidatorWitness) || opposeAckNum >= int(LeastValidatorWitness)) {
+					//todo: consider if i should wait MostValidatorWitness to start a timer?
 					timerSealDealineSetFlag = true
 					rejectBlockNumber.Add(w.visualBlockNumber, common.Big1)
 					timerSealDealine.Reset(consensus.Time2SealDeadline * time.Second)
 					log.Debug("received powAnswer, not my turn to produce, setup a timer to wait new block", "addr", w.coinbase,
 						"effectBlockNumber", w.effectBlockNumber, "visualBlockNumber", w.visualBlockNumber,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum, "answerNumber", answerNumber, "rejectBlockNumber:", rejectBlockNumber)
 				} else {
-					log.Trace("i'm dpos node, but nothing to do", "timerSealDealineSetFlag", timerSealDealineSetFlag, "answer check", ret,
-						"dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum)
+					log.Trace("i'm validator node, but nothing to do", "timerSealDealineSetFlag", timerSealDealineSetFlag, "answer check", ret,
+						"agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum)
 				}
 			}
 
 		case <-timerDelaySeal.C:
 			baseBlockNumber := new(big.Int).Sub(w.delaySealBlockNumber, common.Big1)
-			dposAgreeAckNum := w.chain.GetDposAckSize(w.effectHeader.Number, w.effectHeader.Hash(), types.AckTypeAgree)
+			agreeAckNum := w.chain.GetAckSize(w.effectHeader.Number, w.effectHeader.Hash(), types.AckTypeAgree)
 			//if w.visualBlockNumber == w.chain.CurrentBlock().Number() {
-			//	dposAgreeAckNum = w.chain.GetDposAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
+			//	agreeAckNum = w.chain.GetAckSize(w.visualBlockNumber, w.chain.CurrentBlock().Hash(), types.AckTypeAgree)
 			//}
-			dposOpposeAckNum := w.chain.GetDposAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
+			opposeAckNum := w.chain.GetAckSize(w.visualBlockNumber, common.Hash{}, types.AckTypeOppose)
 
-			if dposAgreeAckNum >= int(LeastDposWitness) || dposOpposeAckNum >= int(LeastDposWitness) {
+			if agreeAckNum >= int(LeastValidatorWitness) || opposeAckNum >= int(LeastValidatorWitness) {
 				//received 1/3 witness node ack
 				if commit(false, commitInterruptNewHead, w.delaySealBlockNumber.Uint64()) {
-					log.Info("timerDelaySeal is expired, we have LeastDposWitness to produce new block",
-						"addr", w.coinbase, "dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum,
+					log.Info("timerDelaySeal is expired, we have LeastValidatorWitness to produce new block",
+						"addr", w.coinbase, "agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum,
 						"current block number", baseBlockNumber)
 				}
 			} else {
 				//todo: warning, consider another 3 seconds timer to seal
-				log.Info("timerDelaySeal is expired, we DON'T have LeastDposWitness to produce new block",
-					"addr", w.coinbase, "dposAgreeAckNum", dposAgreeAckNum, "dposOpposeAckNum", dposOpposeAckNum,
+				log.Info("timerDelaySeal is expired, we DON'T have LeastValidatorWitness to produce new block",
+					"addr", w.coinbase, "agreeAckNum", agreeAckNum, "opposeAckNum", opposeAckNum,
 					"current block number", baseBlockNumber)
 			}
 			timerDelaySealSetFlag = false
@@ -811,10 +787,10 @@ func (w *worker) newWorkLoop(recommit time.Duration) {
 		case <-timerSealDealine.C:
 			if rejectBlockNumber.Uint64() == (w.visualBlockNumber.Uint64() + 1) {
 				if nil == w.sendAck(rejectBlockNumber.Uint64(), types.AckTypeOppose) {
-					log.Info("timerSealDealine expired, send reject ack to all dpos node success", "addr", w.coinbase,
+					log.Info("timerSealDealine expired, send reject ack to all validator node success", "addr", w.coinbase,
 						"rejectBlockNumber", rejectBlockNumber)
 				} else {
-					log.Info("timerSealDealine expired, send reject ack to all dpos node failed", "addr", w.coinbase,
+					log.Info("timerSealDealine expired, send reject ack to all validator node failed", "addr", w.coinbase,
 						"rejectBlockNumber", rejectBlockNumber)
 				}
 				w.visualBlockNumber.Set(rejectBlockNumber)
@@ -872,7 +848,7 @@ func (w *worker) mainLoop() {
 	for {
 		select {
 		case req := <-w.newWorkCh:
-			w.dposCommitNewWork(req.interrupt, req.noempty, req.currentEffectBlockNumber, req.newBlockNumber, req.newBlockType)
+			w.validatorCommitNewWork(req.interrupt, req.noempty, req.currentEffectBlockNumber, req.newBlockNumber, req.newBlockType)
 		case <-w.txsCh:
 			continue
 		case <-w.exitCh:
@@ -885,7 +861,7 @@ func (w *worker) mainLoop() {
 			return
 		case <-w.powAnswerSub.Err():
 			return
-		case <-w.dposAckSub.Err():
+		case <-w.ackSub.Err():
 			return
 		}
 	}
@@ -956,7 +932,7 @@ func (w *worker) powMinerResultLoop() {
 		select {
 		case powMinerResult := <-w.powMinerResultCh:
 			log.Info("new powMinerResult", ":", powMinerResult)
-			w.mux.Post(core.PowAnswerEvent{PowAnswer: powMinerResult})
+			w.mux.Post(core.BehaviorProofEvent{BehaviorProof: powMinerResult})
 
 		case <-w.exitCh:
 			return
@@ -1192,7 +1168,7 @@ func (w *worker) commitTransactions(txs *types.TransactionsByPriceAndNonce, coin
 func (w *worker) commitNewWork(interrupt *int32, noempty bool, timestamp int64) {
 }
 
-func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffectBlockNumber *big.Int, newBlockNumber *big.Int,
+func (w *worker) validatorCommitNewWork(interrupt *int32, noempty bool, currentEffectBlockNumber *big.Int, newBlockNumber *big.Int,
 	newBlockType types.BlockType) *types.Block {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
@@ -1232,12 +1208,12 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 	}
 	header.Nonce = types.BlockNonce{}
 	header.MixDigest = common.Hash{}
-	header.Difficulty = probehash2.CalcDifficulty(w.chainConfig, uint64(timestamp), realParent.Header())
+	header.Difficulty = w.engine.CalcDifficulty(w.chain, uint64(timestamp), realParent.Header())
 	header.AtomicTime = atomicClock.Now(atomicClock.ClockSourceSystem).Encode()
 
-	log.Info("dposCommitNewWork", "calc Difficulty :  ", header.Difficulty)
+	log.Info("validatorCommitNewWork", "calc Difficulty :  ", header.Difficulty)
 	header.Coinbase = common.Address{}
-	header.DposSigAddr = w.coinbase
+	header.ValidatorAddr = w.coinbase
 
 	// Could potentially happen if starting to mine in an odd state.
 	err := w.makeCurrent(parent, header)
@@ -1246,12 +1222,12 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 		return nil
 	}
 
-	answers := w.probe.BlockChain().GetLatestPowAnswer(parent, realParent.Number(), realParent.Hash())
+	answers := w.probe.BlockChain().GetLatestBehaviorProof(parent, realParent.Number(), realParent.Hash())
 	if answers == nil {
-		log.Error("Refusing to mine without PowAnswers, something error, need to check")
+		log.Error("Refusing to mine without BehaviorProofs, something error, need to check")
 		return nil
 	}
-	w.current.header.PowAnswers = append(w.current.header.PowAnswers, answers)
+	w.current.header.BehaviorProofs = append(w.current.header.BehaviorProofs, answers)
 
 	if newBlockType == types.BlockTypeEffect {
 		//Process txs
@@ -1282,46 +1258,44 @@ func (w *worker) dposCommitNewWork(interrupt *int32, noempty bool, currentEffect
 			}
 		}
 
-		w.current.powAnswerUncles = w.probe.BlockChain().GetUnclePowAnswers(realParent.Header(), w.current.header.PowAnswers, parent)
+		w.current.powAnswerUncles = w.probe.BlockChain().GetUncleBehaviorProofs(realParent.Header(), w.current.header.BehaviorProofs, parent)
 	}
 
-	//process powAnswers and dposAcks
+	//process powAnswers and acks
 	//if newBlockNumber.Uint64()-currentEffectBlockNumber.Uint64() == 1 {
 
 	if !parent.Header().IsVisual() {
-		w.current.dposAcks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeAgree)
+		w.current.acks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeAgree)
 	} else {
-		w.current.dposAcks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeOppose)
+		w.current.acks = w.probe.BlockChain().CheckAndGetNumAcks(parentBlockNum.Uint64(), parent.Hash(), types.AckTypeOppose)
 	}
-	requiredAcks := int(LeastDposWitness)
+	requiredAcks := int(LeastValidatorWitness)
 	if w.chainConfig.IsStellarSpeed(newBlockNumber) && w.chainConfig.StellarSpeed != nil && w.chainConfig.StellarSpeed.ReducedAckQuorum {
 		// In StellarSpeed mode with reduced quorum, require only half the normal ACKs (min 1)
-		requiredAcks = int(LeastDposWitness) / 2
+		requiredAcks = int(LeastValidatorWitness) / 2
 		if requiredAcks < 1 {
 			requiredAcks = 1
 		}
 	}
-	if len(w.current.dposAcks) < requiredAcks {
-		log.Error("not enough dposAck in blockchain!", "parentBlockNum", parentBlockNum, "have", len(w.current.dposAcks), "need", requiredAcks)
+	if len(w.current.acks) < requiredAcks {
+		log.Error("not enough ack in blockchain!", "parentBlockNum", parentBlockNum, "have", len(w.current.acks), "need", requiredAcks)
 		return nil
 	}
-	ackCount := types.DposAckCount{
+	ackCount := types.AckCount{
 		parentBlockNum,
-		uint(len(w.current.dposAcks)),
+		uint(len(w.current.acks)),
 	}
-	w.current.header.DposAckCountList = append(w.current.header.DposAckCountList, &ackCount)
+	w.current.header.AckCountList = append(w.current.header.AckCountList, &ackCount)
 
 	// Deep copy receipts here to avoid interaction between different tasks.
 	receipts := copyReceipts(w.current.receipts)
 	s := w.current.state.Copy()
 
 	//finalize seal
-	if greatri, ok := w.engine.(*greatri2.Greatri); ok {
-		greatri.DposFinalize(w.chain, header, s, w.current.txs, w.current.powAnswerUncles)
-	} else if pobEngine, ok := w.engine.(*pob2.ProofOfBehavior); ok {
+	if pobEngine, ok := w.engine.(*pob.ProofOfBehavior); ok {
 		pobEngine.PobFinalize(w.chain, header, s, w.current.txs, w.current.powAnswerUncles)
 	}
-	block := types.DposNewBlock(w.current.header, w.current.txs, w.current.powAnswerUncles, w.current.dposAcks, receipts,
+	block := types.ValidatorNewBlock(w.current.header, w.current.txs, w.current.powAnswerUncles, w.current.acks, receipts,
 		trie.NewStackTrie(nil), newBlockType)
 	if err := w.engine.Seal(w.chain, block, nil, nil); err != nil {
 		log.Warn("Block sealing failed", "err", err)
@@ -1388,7 +1362,7 @@ func (w *worker) stellarSpeedLoop() {
 				continue
 			}
 			// Check if we are a valid producer
-			if !w.imDposWorkNode(currentBlock.Number()) {
+			if !w.imValidatorWorkNode(currentBlock.Number()) {
 				continue
 			}
 			nextNumber := new(big.Int).Add(currentBlock.Number(), big.NewInt(1))
@@ -1402,8 +1376,8 @@ func (w *worker) stellarSpeedLoop() {
 
 			log.Debug("StellarSpeed tick", "nextBlock", nextNumber, "type", blockType)
 
-			// Use the standard dposCommitNewWork path
-			w.dposCommitNewWork(nil, false, effectNumber, nextNumber, blockType)
+			// Use the standard validatorCommitNewWork path
+			w.validatorCommitNewWork(nil, false, effectNumber, nextNumber, blockType)
 
 			// Pipeline: if enabled, immediately prep next state
 			if cfg.PipelineEnabled {
@@ -1470,11 +1444,11 @@ func calcDifficulty(time uint64, parent *types.Header) *big.Int {
 	return x
 }
 
-// updateDposParams
-func updateDposParams(dposSize int) {
-	DposWitnessNumber = uint(dposSize)
-	MostDposWitness = DposWitnessNumber*2/3 + 1
-	LeastDposWitness = DposWitnessNumber*1/3 + 1
-	//LeastDposWitness = DposWitnessNumber*1/2 + 1
-	dposAckChanSize = DposWitnessNumber * 10
+// updateValidatorParams
+func updateValidatorParams(validatorSize int) {
+	ValidatorWitnessCount = uint(validatorSize)
+	MostValidatorWitness = ValidatorWitnessCount*2/3 + 1
+	LeastValidatorWitness = ValidatorWitnessCount*1/3 + 1
+	//LeastValidatorWitness = ValidatorWitnessCount*1/2 + 1
+	ackChanSize = ValidatorWitnessCount * 10
 }

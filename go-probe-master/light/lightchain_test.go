@@ -1,18 +1,18 @@
-// Copyright 2016 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2016 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package light
 
@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/probechain/go-probe/common"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/rawdb"
 	"github.com/probechain/go-probe/core/types"
@@ -39,7 +39,7 @@ var (
 
 // makeHeaderChain creates a deterministic chain of headers rooted at parent.
 func makeHeaderChain(parent *types.Header, n int, db probedb.Database, seed int) []*types.Header {
-	blocks, _ := core.GenerateChain(params.TestChainConfig, types.NewBlockWithHeader(parent), probeash.NewFaker(), db, n, func(i int, b *core.BlockGen) {
+	blocks, _ := core.GenerateChain(params.TestChainConfig, types.NewBlockWithHeader(parent), pob.NewFaker(), db, n, func(i int, b *core.BlockGen) {
 		b.SetCoinbase(common.Address{0: byte(seed), 19: byte(i)})
 	})
 	headers := make([]*types.Header, len(blocks))
@@ -56,7 +56,7 @@ func newCanonical(n int) (probedb.Database, *LightChain, error) {
 	db := rawdb.NewMemoryDatabase()
 	gspec := core.Genesis{Config: params.TestChainConfig}
 	genesis := gspec.MustCommit(db)
-	blockchain, _ := NewLightChain(&dummyOdr{db: db, indexerConfig: TestClientIndexerConfig}, gspec.Config, probeash.NewFaker(), nil)
+	blockchain, _ := NewLightChain(&dummyOdr{db: db, indexerConfig: TestClientIndexerConfig}, gspec.Config, pob.NewFaker(), nil)
 
 	// Create and inject the requested chain
 	if n == 0 {
@@ -76,7 +76,7 @@ func newTestLightChain() *LightChain {
 		Config:     params.TestChainConfig,
 	}
 	gspec.MustCommit(db)
-	lc, err := NewLightChain(&dummyOdr{db: db}, gspec.Config, probeash.NewFullFaker(), nil)
+	lc, err := NewLightChain(&dummyOdr{db: db}, gspec.Config, pob.NewFullFaker(), nil)
 	if err != nil {
 		panic(err)
 	}
@@ -345,7 +345,7 @@ func TestReorgBadHeaderHashes(t *testing.T) {
 	defer func() { delete(core.BadHashes, headers[3].Hash()) }()
 
 	// Create a new LightChain and check that it rolled back the state.
-	ncm, err := NewLightChain(&dummyOdr{db: bc.chainDb}, params.TestChainConfig, probeash.NewFaker(), nil)
+	ncm, err := NewLightChain(&dummyOdr{db: bc.chainDb}, params.TestChainConfig, pob.NewFaker(), nil)
 	if err != nil {
 		t.Fatalf("failed to create new chain manager: %v", err)
 	}

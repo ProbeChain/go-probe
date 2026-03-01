@@ -1,27 +1,25 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
-// Package probe implements the Probeum protocol.
+// Package probe implements the ProbeChain protocol.
 package probe
 
 import (
 	"errors"
 	"fmt"
-	"github.com/probechain/go-probe/consensus/greatri"
-	probehash2 "github.com/probechain/go-probe/consensus/probeash"
 	"math/big"
 	"runtime"
 	"sync"
@@ -32,7 +30,7 @@ import (
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/hexutil"
 	"github.com/probechain/go-probe/consensus"
-	"github.com/probechain/go-probe/consensus/clique"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/bloombits"
 	"github.com/probechain/go-probe/core/superlight"
@@ -64,7 +62,7 @@ import (
 // Deprecated: use probeconfig.Config instead.
 type Config = probeconfig.Config
 
-// Probeum implements the Probeum full node service.
+// Probeum implements the ProbeChain full node service.
 type Probeum struct {
 	config *probeconfig.Config
 
@@ -80,7 +78,6 @@ type Probeum struct {
 
 	eventMux       *event.TypeMux
 	engine         consensus.Engine
-	powEngine      consensus.Engine
 	accountManager *accounts.Manager
 
 	bloomRequests     chan chan *bloombits.Retrieval // Channel receiving bloom data retrieval requests
@@ -103,8 +100,8 @@ type Probeum struct {
 	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and probebase)
 }
 
-// New creates a new Probeum object (including the
-// initialisation of the common Probeum object)
+// New creates a new ProbeChain object (including the
+// initialisation of the common ProbeChain object)
 func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 	// Ensure configuration values are compatible and sane
 	if config.SyncMode == downloader.LightSync {
@@ -129,10 +126,10 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 	log.Info("Allocated trie memory caches", "clean", common.StorageSize(config.TrieCleanCache)*1024*1024, "dirty", common.StorageSize(config.TrieDirtyCache)*1024*1024)
 
 	// Transfer mining-related config to the probeash config.
-	probeashConfig := config.Probeash
-	probeashConfig.NotifyFull = config.Miner.NotifyFull
+	pobEngineConfig := config.Probeash
+	pobEngineConfig.NotifyFull = config.Miner.NotifyFull
 
-	// Assemble the Probeum object
+	// Assemble the ProbeChain object
 	chainDb, err := stack.OpenDatabaseWithFreezer("chaindata", config.DatabaseCache, config.DatabaseHandles, config.DatabaseFreezer, "probe/db/chaindata/", false)
 	if err != nil {
 		return nil, err
@@ -160,17 +157,14 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		p2pServer:         stack.Server(),
 	}
 
-	if chainConfig.Probeash != nil {
-		probe.powEngine = probeconfig.CreatePowConsensusEngine(stack, chainConfig, &probeashConfig, config.Miner.Notify, config.Miner.Noverify, chainDb)
-	}
-	probe.engine = probeconfig.CreateConsensusEngine(stack, chainConfig, &probeashConfig, config.Miner.Notify, config.Miner.Noverify, chainDb, probe.powEngine)
+	probe.engine = probeconfig.CreateConsensusEngine(stack, chainConfig, &pobEngineConfig, config.Miner.Notify, config.Miner.Noverify, chainDb)
 
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
 	var dbVer = "<nil>"
 	if bcVersion != nil {
 		dbVer = fmt.Sprintf("%d", *bcVersion)
 	}
-	log.Info("Initialising Probeum protocol", "network", config.NetworkId, "dbversion", dbVer)
+	log.Info("Initialising ProbeChain protocol", "network", config.NetworkId, "dbversion", dbVer)
 
 	if !config.SkipBcVersionCheck {
 		if bcVersion != nil && *bcVersion > core.BlockChainVersion {
@@ -201,14 +195,11 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 			DataDir:             stack.DataDir(),
 		}
 	)
-	probe.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, probe.engine, vmConfig, probe.shouldPreserve, &config.TxLookupLimit, probe.p2pServer, probe.powEngine)
-	originDifficulty := probe.blockchain.GetBlockByNumber(0).Difficulty().Int64()
-	if probeash, ok := probe.powEngine.(*probehash2.Probeash); ok {
-		probeash.SetMinDifficulty(originDifficulty)
-	}
+	probe.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, chainConfig, probe.engine, vmConfig, probe.shouldPreserve, &config.TxLookupLimit, probe.p2pServer)
 	if err != nil {
 		return nil, err
 	}
+	originDifficulty := probe.blockchain.GetBlockByNumber(0).Difficulty().Int64()
 
 	// Rewind the chain in case of an incompatible config upgrade.
 	if compat, ok := genesisErr.(*params.ConfigCompatError); ok {
@@ -243,7 +234,7 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		return nil, err
 	}
 
-	probe.miner = miner.New(probe, &config.Miner, chainConfig, probe.EventMux(), probe.engine, probe.powEngine, probe.isLocalBlock)
+	probe.miner = miner.New(probe, &config.Miner, chainConfig, probe.EventMux(), probe.engine, probe.isLocalBlock)
 	probe.miner.SetMinDifficulty(originDifficulty)
 	probe.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
@@ -300,15 +291,15 @@ func New(stack *node.Node, config *probeconfig.Config) (*Probeum, error) {
 		}
 	}
 
-	dposAccounts := probe.blockchain.GetDposAccounts(probe.blockchain.CurrentHeader().Number.Uint64())
-	nodes := make([]*enode.Node, 0, len(dposAccounts))
-	for _, account := range dposAccounts {
-		dposEnode, err := enode.Parse(enode.ValidSchemes, string(account.Enode[:]))
+	validators := probe.blockchain.GetValidators(probe.blockchain.CurrentHeader().Number.Uint64())
+	nodes := make([]*enode.Node, 0, len(validators))
+	for _, account := range validators {
+		validatorEnode, err := enode.Parse(enode.ValidSchemes, string(account.Enode[:]))
 		if err != nil {
 			log.Error(fmt.Sprintf("Node URL %s: %v\n", string(account.Enode[:]), err))
 			continue
 		}
-		nodes = append(nodes, dposEnode)
+		nodes = append(nodes, validatorEnode)
 	}
 	probe.p2pServer.Config.StaticNodes = append(probe.p2pServer.Config.StaticNodes, nodes...)
 	probe.p2pServer.Config.TrustedNodes = append(probe.p2pServer.Config.TrustedNodes, nodes...)
@@ -462,7 +453,7 @@ func (s *Probeum) isLocalBlock(block *types.Block) bool {
 // during the chain reorg depending on whprobeer the author of block
 // is a local account.
 func (s *Probeum) shouldPreserve(block *types.Block) bool {
-	// The reason we need to disable the self-reorg preserving for clique
+	// The reason we need to disable the self-reorg preserving for PoB
 	// is it can be probable to introduce a deadlock.
 	//
 	// e.g. If there are 7 available signers
@@ -478,7 +469,7 @@ func (s *Probeum) shouldPreserve(block *types.Block) bool {
 	// is A, F and G sign the block of round5 and reject the block of opponents
 	// and in the round6, the last available signer B is offline, the whole
 	// network is stuck.
-	if _, ok := s.engine.(*clique.Clique); ok {
+	if _, ok := s.engine.(*pob.ProofOfBehavior); ok {
 		return false
 	}
 	return s.isLocalBlock(block)
@@ -501,7 +492,7 @@ func (s *Probeum) StartMining(threads int) error {
 	type threaded interface {
 		SetThreads(threads int)
 	}
-	if th, ok := s.powEngine.(threaded); ok {
+	if th, ok := s.engine.(threaded); ok {
 		log.Info("Updated mining threads", "threads", threads)
 		if threads == 0 {
 			threads = -1 // Disable the miner from within
@@ -522,22 +513,13 @@ func (s *Probeum) StartMining(threads int) error {
 			log.Error("Cannot start mining without probebase", "err", err)
 			return fmt.Errorf("probebase missing: %v", err)
 		}
-		//if clique, ok := s.engine.(*clique.Clique); ok {
-		//	wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
-		//	if wallet == nil || err != nil {
-		//		log.Error("Probebase account unavailable locally", "err", err)
-		//		return fmt.Errorf("signer missing: %v", err)
-		//	}
-		//	clique.Authorize(eb, wallet.SignData)
-		//}
-
-		if greatri, ok := s.engine.(*greatri.Greatri); ok {
+		if pobEngine, ok := s.engine.(*pob.ProofOfBehavior); ok {
 			wallet, err := s.accountManager.Find(accounts.Account{Address: eb})
 			if wallet == nil || err != nil {
 				log.Error("Coinbase account unavailable locally", "err", err)
 				return fmt.Errorf("signer missing: %v", err)
 			}
-			greatri.Authorize(eb, wallet.SignData)
+			pobEngine.Authorize(eb, wallet.SignData)
 		}
 
 		// If mining is started, we can disable the transaction rejection mechanism
@@ -589,7 +571,7 @@ func (s *Probeum) Protocols() []p2p.Protocol {
 }
 
 // Start implements node.Lifecycle, starting all internal goroutines needed by the
-// Probeum protocol implementation.
+// ProbeChain protocol implementation.
 func (s *Probeum) Start() error {
 	probe.StartENRUpdater(s.blockchain, s.p2pServer.LocalNode())
 
@@ -611,7 +593,7 @@ func (s *Probeum) Start() error {
 }
 
 // Stop implements node.Lifecycle, terminating all internal goroutines used by the
-// Probeum protocol.
+// ProbeChain protocol.
 func (s *Probeum) Stop() error {
 	// Stop all the peer-related stuff first.
 	s.probeDialCandidates.Close()

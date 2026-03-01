@@ -16,11 +16,11 @@ var _ = (*headerMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (h Header) MarshalJSON() ([]byte, error) {
 	type Header struct {
-		DposSigAddr      common.Address  `json:"dposMiner"        gencodec:"required"`
-		DposSig          []byte          `json:"dposSig"          gencodec:"required"`
-		DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
-		DposAcksHash     common.Hash     `json:"dposAcksHash"     gencodec:"required"`
-		PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
+		ValidatorAddr      common.Address  `json:"validatorMiner"        gencodec:"required"`
+		ValidatorSig          []byte          `json:"validatorSig"          gencodec:"required"`
+		AckCountList []*AckCount `json:"ackCountList" gencodec:"required"`
+		AcksHash     common.Hash     `json:"acksHash"     gencodec:"required"`
+		BehaviorProofs       []*BehaviorProof    `json:"behaviorProofs"       gencodec:"required"`
 		ParentHash       common.Hash     `json:"parentHash"       gencodec:"required"`
 		UncleHash        common.Hash     `json:"sha3Uncles"       gencodec:"required"`
 		Coinbase         common.Address  `json:"miner"            gencodec:"required"`
@@ -41,11 +41,11 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		Hash             common.Hash     `json:"hash"`
 	}
 	var enc Header
-	enc.DposSigAddr = h.DposSigAddr
-	enc.DposSig = h.DposSig
-	enc.DposAckCountList = h.DposAckCountList
-	enc.DposAcksHash = h.DposAcksHash
-	enc.PowAnswers = h.PowAnswers
+	enc.ValidatorAddr = h.ValidatorAddr
+	enc.ValidatorSig = h.ValidatorSig
+	enc.AckCountList = h.AckCountList
+	enc.AcksHash = h.AcksHash
+	enc.BehaviorProofs = h.BehaviorProofs
 	enc.ParentHash = h.ParentHash
 	enc.UncleHash = h.UncleHash
 	enc.Coinbase = h.Coinbase
@@ -70,11 +70,11 @@ func (h Header) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON unmarshals from JSON.
 func (h *Header) UnmarshalJSON(input []byte) error {
 	type Header struct {
-		DposSigAddr      *common.Address `json:"dposMiner"        gencodec:"required"`
-		DposSig          []byte          `json:"dposSig"          gencodec:"required"`
-		DposAckCountList []*DposAckCount `json:"dposAckCountList" gencodec:"required"`
-		DposAcksHash     *common.Hash    `json:"dposAcksHash"     gencodec:"required"`
-		PowAnswers       []*PowAnswer    `json:"powAnswers"       gencodec:"required"`
+		ValidatorAddr      *common.Address `json:"validatorMiner"        gencodec:"required"`
+		ValidatorSig          []byte          `json:"validatorSig"          gencodec:"required"`
+		AckCountList []*AckCount `json:"ackCountList" gencodec:"required"`
+		AcksHash     *common.Hash    `json:"acksHash"     gencodec:"required"`
+		BehaviorProofs       []*BehaviorProof    `json:"behaviorProofs"       gencodec:"required"`
 		ParentHash       *common.Hash    `json:"parentHash"       gencodec:"required"`
 		UncleHash        *common.Hash    `json:"sha3Uncles"       gencodec:"required"`
 		Coinbase         *common.Address `json:"miner"            gencodec:"required"`
@@ -97,26 +97,26 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	if err := json.Unmarshal(input, &dec); err != nil {
 		return err
 	}
-	if dec.DposSigAddr == nil {
-		return errors.New("missing required field 'dposMiner' for Header")
+	if dec.ValidatorAddr == nil {
+		return errors.New("missing required field 'validatorMiner' for Header")
 	}
-	h.DposSigAddr = *dec.DposSigAddr
-	if dec.DposSig == nil {
-		return errors.New("missing required field 'dposSig' for Header")
+	h.ValidatorAddr = *dec.ValidatorAddr
+	if dec.ValidatorSig == nil {
+		return errors.New("missing required field 'validatorSig' for Header")
 	}
-	h.DposSig = dec.DposSig
-	if dec.DposAckCountList == nil {
-		return errors.New("missing required field 'dposAckCountList' for Header")
+	h.ValidatorSig = dec.ValidatorSig
+	if dec.AckCountList == nil {
+		return errors.New("missing required field 'ackCountList' for Header")
 	}
-	h.DposAckCountList = dec.DposAckCountList
-	if dec.DposAcksHash == nil {
-		return errors.New("missing required field 'dposAcksHash' for Header")
+	h.AckCountList = dec.AckCountList
+	if dec.AcksHash == nil {
+		return errors.New("missing required field 'acksHash' for Header")
 	}
-	h.DposAcksHash = *dec.DposAcksHash
-	if dec.PowAnswers == nil {
+	h.AcksHash = *dec.AcksHash
+	if dec.BehaviorProofs == nil {
 		return errors.New("missing required field 'powAnswers' for Header")
 	}
-	h.PowAnswers = dec.PowAnswers
+	h.BehaviorProofs = dec.BehaviorProofs
 	if dec.ParentHash == nil {
 		return errors.New("missing required field 'parentHash' for Header")
 	}

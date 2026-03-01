@@ -1,18 +1,18 @@
-// Copyright 2020 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2020 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/probechain/go-probe/consensus"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core/rawdb"
 	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/log"
@@ -74,14 +74,14 @@ func TestHeaderInsertion(t *testing.T) {
 		genesis = (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
 	)
 
-	hc, err := NewHeaderChain(db, params.AllProbeashProtocolChanges, probeash.NewFaker(), func() bool { return false })
+	hc, err := NewHeaderChain(db, params.AllPobProtocolChanges, pob.NewFaker(), func() bool { return false })
 	if err != nil {
 		t.Fatal(err)
 	}
 	// chain A: G->A1->A2...A128
-	chainA := makeHeaderChain(genesis.Header(), 128, probeash.NewFaker(), db, 10)
+	chainA := makeHeaderChain(genesis.Header(), 128, pob.NewFaker(), db, 10)
 	// chain B: G->A1->B2...B128
-	chainB := makeHeaderChain(chainA[0], 128, probeash.NewFaker(), db, 10)
+	chainB := makeHeaderChain(chainA[0], 128, pob.NewFaker(), db, 10)
 	log.Root().SetHandler(log.StdoutHandler)
 
 	// Inserting 64 headers on an empty chain, expecting

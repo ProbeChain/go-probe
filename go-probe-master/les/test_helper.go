@@ -1,18 +1,18 @@
-// Copyright 2016 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2016 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains some shares testing functionality, common to multiple
 // different files and modules being tested. Client based network and Server
@@ -34,7 +34,7 @@ import (
 	"github.com/probechain/go-probe/accounts/abi/bind/backends"
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/mclock"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/contracts/checkpointoracle/contract"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/forkid"
@@ -193,9 +193,9 @@ func testIndexers(db probedb.Database, odr light.OdrBackend, config *light.Index
 func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, indexers []*core.ChainIndexer, db probedb.Database, peers *serverPeerSet, ulcServers []string, ulcFraction int) (*clientHandler, func()) {
 	var (
 		evmux  = new(event.TypeMux)
-		engine = probeash.NewFaker()
+		engine = pob.NewFaker()
 		gspec  = core.Genesis{
-			Config:   params.AllProbeashProtocolChanges,
+			Config:   params.AllPobProtocolChanges,
 			Alloc:    core.GenesisAlloc{bankAddr: {Balance: bankFunds}},
 			GasLimit: 100000000,
 			BaseFee:  big.NewInt(params.InitialBaseFee),
@@ -226,7 +226,7 @@ func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, index
 		lesCommons: lesCommons{
 			genesis:     genesis.Hash(),
 			config:      &probeconfig.Config{LightPeers: 100, NetworkId: NetworkId},
-			chainConfig: params.AllProbeashProtocolChanges,
+			chainConfig: params.AllPobProtocolChanges,
 			iConfig:     light.TestClientIndexerConfig,
 			chainDb:     db,
 			oracle:      oracle,
@@ -255,7 +255,7 @@ func newTestClientHandler(backend *backends.SimulatedBackend, odr *LesOdr, index
 func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db probedb.Database, clock mclock.Clock) (*serverHandler, *backends.SimulatedBackend, func()) {
 	var (
 		gspec = core.Genesis{
-			Config:   params.AllProbeashProtocolChanges,
+			Config:   params.AllPobProtocolChanges,
 			Alloc:    core.GenesisAlloc{bankAddr: {Balance: bankFunds}},
 			GasLimit: 100000000,
 			BaseFee:  big.NewInt(params.InitialBaseFee),
@@ -293,7 +293,7 @@ func newTestServerHandler(blocks int, indexers []*core.ChainIndexer, db probedb.
 		lesCommons: lesCommons{
 			genesis:     genesis.Hash(),
 			config:      &probeconfig.Config{LightPeers: 100, NetworkId: NetworkId},
-			chainConfig: params.AllProbeashProtocolChanges,
+			chainConfig: params.AllPobProtocolChanges,
 			iConfig:     light.TestServerIndexerConfig,
 			chainDb:     db,
 			chainReader: simulation.Blockchain(),

@@ -1,30 +1,24 @@
-// Copyright 2017 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2017 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package keystore
 
 import (
-	"encoding/hex"
-	"fmt"
-	"github.com/probechain/go-probe/common/hexutil"
-	"github.com/probechain/go-probe/crypto"
-	"github.com/probechain/go-probe/p2p/enode"
 	"io/ioutil"
 	"math/rand"
-	"net"
 	"os"
 	"runtime"
 	"sort"
@@ -36,6 +30,7 @@ import (
 
 	"github.com/probechain/go-probe/accounts"
 	"github.com/probechain/go-probe/common"
+	"github.com/probechain/go-probe/crypto"
 	"github.com/probechain/go-probe/event"
 )
 
@@ -467,7 +462,7 @@ func checkEvents(t *testing.T, want []walletEvent, have []walletEvent) {
 }
 
 func tmpKeyStore(t *testing.T, encrypted bool) (string, *KeyStore) {
-	d, err := ioutil.TempDir("/keyStrors", "probe-keystore-test")
+	d, err := ioutil.TempDir("", "probe-keystore-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -479,41 +474,5 @@ func tmpKeyStore(t *testing.T, encrypted bool) (string, *KeyStore) {
 }
 
 func TestNewAccountsExport(t *testing.T) {
-	_, ks := tmpKeyStore(t, true)
-
-	//defer os.RemoveAll(dir)
-	pwd := "123456"
-	acc, err := ks.NewAccount(pwd)
-	if err != nil {
-		t.Fatalf("failed to create account: %v", acc)
-	}
-	json, err := ks.Export(acc, "123456", "123456")
-	if err != nil {
-		t.Fatalf("failed to export account: %v", acc)
-	}
-	dir2, ks2 := tmpKeyStore(t, true)
-	defer os.RemoveAll(dir2)
-	if _, err = ks2.Import(json, pwd, pwd); err == nil {
-		t.Errorf("importing with invalid password succeeded")
-	}
-	accKey, err := DecryptKey(json, pwd)
-	if err != nil {
-		panic(err)
-	}
-
-	address1 := accKey.Address.Hex()
-	fmt.Println("address ", address1)
-	privateKey := crypto.FromECDSA(accKey.PrivateKey)
-	fmt.Println("private key have 0x   \n", hex.EncodeToString(privateKey))
-	fmt.Println("private key have 0x   \n", hexutil.Encode(crypto.FromECDSA(accKey.PrivateKey)))
-	address2 := crypto.PubkeyToAddress(accKey.PrivateKey.PublicKey)
-	fmt.Println("address ", address2.String())
-	port := 30301
-	addr := &net.UDPAddr{
-		IP:   net.IP{127, 0, 0, 1},
-		Port: port,
-		Zone: "",
-	}
-	n := enode.NewV4(&accKey.PrivateKey.PublicKey, addr.IP, 0, addr.Port)
-	fmt.Println("address-nodeKey:", n.URLv4())
+	t.Skip("skipped: debug test with incorrect password validation logic")
 }

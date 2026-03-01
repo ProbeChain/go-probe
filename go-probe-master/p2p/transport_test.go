@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package p2p
 
@@ -30,11 +30,11 @@ import (
 func TestProtocolHandshake(t *testing.T) {
 	var (
 		prv0, _ = probe.GenerateKey()
-		pub0    = probe.FromECDSAPub(&prv0.PublicKey)
+		pub0    = probe.FromECDSAPub(&prv0.PublicKey)[1:]
 		hs0     = &protoHandshake{Version: 3, ID: pub0, Caps: []Cap{{"a", 0}, {"b", 2}}}
 
 		prv1, _ = probe.GenerateKey()
-		pub1    = probe.FromECDSAPub(&prv1.PublicKey)
+		pub1    = probe.FromECDSAPub(&prv1.PublicKey)[1:]
 		hs1     = &protoHandshake{Version: 3, ID: pub1, Caps: []Cap{{"c", 1}, {"d", 3}}}
 
 		wg sync.WaitGroup

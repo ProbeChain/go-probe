@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package node
 
@@ -652,15 +652,15 @@ func TestCloseTrackingDB_Close(t *testing.T) {
 	if err != nil {
 		fmt.Printf("voteAccount parameter data error")
 	}
-	var dposMap map[string]interface{}
-	err = json.Unmarshal(voteData, &dposMap)
+	var validatorMap map[string]interface{}
+	err = json.Unmarshal(voteData, &validatorMap)
 	if err != nil {
 		fmt.Printf("voteAccount parameter data error")
 	}
-	if nil == dposMap["enode"] || nil == dposMap["ip"] || nil == dposMap["port"] {
+	if nil == validatorMap["enode"] || nil == validatorMap["ip"] || nil == validatorMap["port"] {
 		fmt.Printf("voteAccount parameter data error")
 	}
-	remoteEnode := dposMap["enode"].(string)
+	remoteEnode := validatorMap["enode"].(string)
 	log.Info("verification_args", "setDefaultsOfApplyToBeDPoSNode remoteEnode lengt error ", len(remoteEnode))
 	if len(remoteEnode) != 130 {
 		fmt.Printf("voteAccount parameter data error")

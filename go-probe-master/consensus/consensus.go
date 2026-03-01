@@ -1,20 +1,20 @@
-// Copyright 2017 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2017 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
-// Package consensus implements different Probeum consensus engines.
+// Package consensus implements different ProbeChain consensus engines.
 package consensus
 
 import (
@@ -30,7 +30,7 @@ import (
 const (
 	// seconds to delay seal since base block not received
 	Time2waitBlock = 1
-	// seconds to delay seal since not enough dposAck
+	// seconds to delay seal since not enough ack
 	Time2delaySeal = 3
 	// deadline of seal after received a pow answer
 	Time2SealDeadline = 7
@@ -74,14 +74,14 @@ type ChainReader interface {
 
 	CheckIsProducerAccount(number uint64, owner common.Address) bool
 
-	CheckIsDposAccount(number uint64, owner common.Address) bool
+	CheckIsValidator(number uint64, owner common.Address) bool
 
 	CheckAcks(block *types.Block) bool
 }
 
 // Engine is an algorithm agnostic consensus engine.
 type Engine interface {
-	// Author retrieves the Probeum address of the account that minted the given
+	// Author retrieves the ProbeChain address of the account that minted the given
 	// block, which may be different from the header's coinbase if a consensus
 	// engine is based on signatures.
 	Author(header *types.Header) (common.Address, error)
@@ -101,11 +101,11 @@ type Engine interface {
 	// rules of a given engine.
 	VerifyUncles(chain ChainReader, block *types.Block) error
 
-	// VerifyUnclePowAnswers verifies that the given block's UnclePowAnswers  conform to the consensus
-	VerifyUnclePowAnswers(chain ChainReader, block *types.Block) error
+	// VerifyUncleBehaviorProofs verifies that the given block's UncleBehaviorProofs  conform to the consensus
+	VerifyUncleBehaviorProofs(chain ChainReader, block *types.Block) error
 
-	// VerifyDposInfo verifies that the given block's dposInfo  conform to the consensus
-	VerifyDposInfo(chain ChainReader, block *types.Block) error
+	// VerifyValidatorInfo verifies that the given block's validatorInfo  conform to the consensus
+	VerifyValidatorInfo(chain ChainReader, block *types.Block) error
 
 	// Prepare initializes the consensus fields of a block header according to the
 	// rules of a particular engine. The changes are executed inline.
@@ -125,7 +125,7 @@ type Engine interface {
 	// Note: The block header and state database might be updated to reflect any
 	// consensus rules that happen at finalization (e.g. block rewards).
 	FinalizeAndAssemble(chain ChainHeaderReader, header *types.Header, state *state.StateDB, txs []*types.Transaction,
-		uncles []*types.PowAnswer, receipts []*types.Receipt) (*types.Block, error)
+		uncles []*types.BehaviorProof, receipts []*types.Receipt) (*types.Block, error)
 
 	// Seal generates a new sealing request for the given input block and pushes
 	// the result into the given channel.
@@ -148,10 +148,3 @@ type Engine interface {
 	Close() error
 }
 
-// PoW is a consensus engine based on proof-of-work.
-type PoW interface {
-	Engine
-
-	// Hashrate returns the current mining hashrate of a PoW consensus engine.
-	Hashrate() float64
-}

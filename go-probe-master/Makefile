@@ -2,7 +2,7 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: gprobe android ios gprobe-cross evm all test clean
+.PHONY: gprobe probec android ios gprobe-cross evm all test clean
 .PHONY: gprobe-linux gprobe-linux-386 gprobe-linux-amd64 gprobe-linux-mips64 gprobe-linux-mips64le
 .PHONY: gprobe-linux-arm gprobe-linux-arm-5 gprobe-linux-arm-6 gprobe-linux-arm-7 gprobe-linux-arm64
 .PHONY: gprobe-darwin gprobe-darwin-386 gprobe-darwin-amd64
@@ -17,8 +17,14 @@ gprobe:
 	@echo "Done building."
 	@echo "Run \"$(GOBIN)/gprobe\" to launch gprobe."
 
+probec:
+	env GO111MODULE=on go build -o $(GOBIN)/probec ./probe-lang/cmd/probec
+	@echo "Done building."
+	@echo "Run \"$(GOBIN)/probec\" to launch the PROBE language compiler."
+
 all:
 	$(GORUN) build/ci.go install
+	env GO111MODULE=on go build -o $(GOBIN)/probec ./probe-lang/cmd/probec
 
 android:
 	$(GORUN) build/ci.go aar --local

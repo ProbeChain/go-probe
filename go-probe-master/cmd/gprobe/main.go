@@ -1,4 +1,4 @@
-// Copyright 2014 The go-probeum Authors
+// Copyright 2014 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -67,14 +67,6 @@ var (
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
 		utils.OverrideLondonFlag,
-		utils.ProbeashCacheDirFlag,
-		utils.ProbeashCachesInMemoryFlag,
-		utils.ProbeashCachesOnDiskFlag,
-		utils.ProbeashCachesLockMmapFlag,
-		utils.ProbeashDatasetDirFlag,
-		utils.ProbeashDatasetsInMemoryFlag,
-		utils.ProbeashDatasetsOnDiskFlag,
-		utils.ProbeashDatasetsLockMmapFlag,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
 		utils.TxPoolJournalFlag,
@@ -201,7 +193,7 @@ func init() {
 	// Initialize the CLI app and start Gprobe
 	app.Action = gprobe
 	app.HideVersion = true // we have a command to print the version
-	app.Copyright = "Copyright 2013-2021 The go-probeum Authors"
+	app.Copyright = "Copyright 2013-2021 The ProbeChain Authors"
 	app.Commands = []cli.Command{
 		// See chaincmd.go:
 		initCommand,
@@ -220,8 +212,6 @@ func init() {
 		attachCommand,
 		javascriptCommand,
 		// See misccmd.go:
-		makecacheCommand,
-		makedagCommand,
 		versionCommand,
 		versionCheckCommand,
 		licenseCommand,

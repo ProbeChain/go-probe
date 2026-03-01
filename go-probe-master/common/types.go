@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package common
 
@@ -41,11 +41,11 @@ const (
 	AddressLength = 20
 	//DPosEnodeLength is the expected length of dPos enode
 	DPosEnodeLength = 256
-	//DPosNodeLength is the expected length of dPos node
-	DPosNodeLength = 64
-	//DPosNodeIntervalConfirmPoint is the dPos node confirm point
+	//ValidatorNodeLength is the expected length of validator node
+	ValidatorNodeLength = 64
+	//DPosNodeIntervalConfirmPoint is the validator node confirm point
 	DPosNodeIntervalConfirmPoint = 64
-	//DPosNodePrefix the prefix of dPos node connection information
+	//DPosNodePrefix the prefix of validator node connection information
 	DPosNodePrefix = "enode://"
 	//LossMarkLength is the expected length of loss mark
 	LossMarkLength = 128
@@ -213,23 +213,23 @@ func (h UnprefixedHash) MarshalText() ([]byte, error) {
 
 /////////// Address
 
-// Address represents the 25 byte address of an Probeum account.
+// Address represents the 25 byte address of an ProbeChain account.
 type Address [AddressLength]byte
 
-type DposEnode [DPosEnodeLength]byte
+type ValidatorEnode [DPosEnodeLength]byte
 
 type LossMark [LossMarkLength]byte
 
 //LossType loss reporting type bits[0]: loss reporting status,bits[1~7]:loss reporting period
 type LossType byte
 
-type DPoSAccount struct {
-	Enode DposEnode
+type Validator struct {
+	Enode ValidatorEnode
 	Owner Address
 }
 
 type DPoSCandidateAccount struct {
-	Enode       DposEnode
+	Enode       ValidatorEnode
 	Owner       Address
 	VoteAccount Address
 	VoteValue   *big.Int
@@ -241,8 +241,8 @@ func BytesToAddress(b []byte) Address {
 	return a
 }
 
-func BytesToDposEnode(b []byte) DposEnode {
-	var n DposEnode
+func BytesToValidatorEnode(b []byte) ValidatorEnode {
+	var n ValidatorEnode
 	n.SetBytes(b)
 	return n
 }
@@ -265,7 +265,7 @@ func HexToAddress(s string) Address {
 }
 
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
-// or Bech32-encoded Probeum address.
+// or Bech32-encoded ProbeChain address.
 func IsHexAddress(s string) bool {
 	if hasProPrefix(s) {
 		return IsProbeAddress(s)
@@ -404,7 +404,7 @@ func (a *Address) SetBytes(b []byte) {
 	copy(a[AddressLength-len(b):], b)
 }
 
-func (n *DposEnode) SetBytes(b []byte) {
+func (n *ValidatorEnode) SetBytes(b []byte) {
 	if len(b) > len(n) {
 		b = b[len(b)-DPosEnodeLength:]
 	}
@@ -572,22 +572,22 @@ func ValidCheckAddress(v string) (c byte, err error) {
 }
 
 // UnmarshalJSON enode
-func (enode *DposEnode) UnmarshalJSON(input []byte) error {
+func (enode *ValidatorEnode) UnmarshalJSON(input []byte) error {
 	var textEnode string
 	err := json.Unmarshal(input, &textEnode)
 	if err != nil {
 		return err
 	}
-	*enode = BytesToDposEnode([]byte(textEnode))
+	*enode = BytesToValidatorEnode([]byte(textEnode))
 	return nil
 }
 
 // MarshalJSON marshals the original value
-func (enode *DposEnode) MarshalJSON() ([]byte, error) {
+func (enode *ValidatorEnode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(enode[:]))
 }
 
-func (enode *DposEnode) String() string {
+func (enode *ValidatorEnode) String() string {
 	s := string(enode[:])
 	i := strings.Index(s, DPosNodePrefix)
 	if i == -1 {
@@ -680,8 +680,8 @@ func (a *LossType) SetType(period byte) LossType {
 	return c.SetState(flag)
 }
 
-//CalcDPosNodeRoundId calculation DPos node round id
-func CalcDPosNodeRoundId(blockNumber, dPosEpoch uint64) uint64 {
+//CalcValidatorRoundId calculation Validator node round id
+func CalcValidatorRoundId(blockNumber, dPosEpoch uint64) uint64 {
 	if blockNumber == 0 {
 		return blockNumber
 	}
@@ -693,7 +693,7 @@ func CalcDPosNodeRoundId(blockNumber, dPosEpoch uint64) uint64 {
 	return (factor - factor%dPosEpoch) / dPosEpoch
 }
 
-//IsConfirmPoint calculation DPos node confirm point
+//IsConfirmPoint calculation Validator node confirm point
 func IsConfirmPoint(blockNumber, dPosEpoch uint64) bool {
 	confirmBlockNum := dPosEpoch / 2
 	if dPosEpoch > DPosNodeIntervalConfirmPoint {

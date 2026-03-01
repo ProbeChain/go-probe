@@ -1,18 +1,18 @@
-// Copyright 2016 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2016 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package params
 
@@ -44,25 +44,23 @@ var CheckpointOracles = map[common.Hash]*CheckpointOracleConfig{
 }
 
 var (
-	// MainnetChainConfig is the chain parameters to run a node on the main network.
+	// MainnetChainConfig is the chain parameters to run a node on the ProbeChain main network.
 	MainnetChainConfig = &ChainConfig{
-		ChainID:             big.NewInt(1),
-		HomesteadBlock:      big.NewInt(1_150_000),
-		DAOForkBlock:        big.NewInt(1_920_000),
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(2_463_000),
-		EIP150Hash:          common.HexToHash("0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0"),
-		EIP155Block:         big.NewInt(2_675_000),
-		EIP158Block:         big.NewInt(2_675_000),
-		ByzantiumBlock:      big.NewInt(4_370_000),
-		ConstantinopleBlock: big.NewInt(7_280_000),
-		PetersburgBlock:     big.NewInt(7_280_000),
-		IstanbulBlock:       big.NewInt(9_069_000),
-		MuirGlacierBlock:    big.NewInt(9_200_000),
-		BerlinBlock:         big.NewInt(12_244_000),
-		ShenzhenBlock:       big.NewInt(12_244_000),
-		Probeash:            new(ProbeashConfig),
-		Dpos:                new(DposConfig),
+		ChainID:             big.NewInt(1205),
+		HomesteadBlock:      big.NewInt(0),
+		EIP150Block:         big.NewInt(0),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(0),
+		StellarSpeedBlock:   big.NewInt(0),
+		Pob:                 &PobConfig{Period: 0, TickIntervalMs: 400, Epoch: 30000},
 	}
 
 	FrcMainChainConfig = &ChainConfig{
@@ -97,30 +95,44 @@ var (
 		Threshold: 2,
 	}
 
-	// AllProbeashProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Probeum core developers into the Probeash consensus.
-	//
-	// This configuration is intentionally not using keyed fields to force anyone
-	// adding flags to the config to also have to set these fields.
-	AllProbeashProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, new(DposConfig), new(ProbeashConfig), nil, nil, nil, nil}
-
-	// AllCliqueProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Probeum core developers into the Clique consensus.
-	//
-	// This configuration is intentionally not using keyed fields to force anyone
-	// adding flags to the config to also have to set these fields.
-	AllCliqueProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil, nil, &CliqueConfig{Period: 0, Epoch: 30000}, nil, nil, nil}
-
-	// AllGreatriProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Probeum core developers into the Greatri consensus.
-	AllGreatriProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, &DposConfig{Period: 0, Epoch: 30000}, nil, nil, nil, nil, nil}
-
 	// AllPobProtocolChanges contains every protocol change (EIPs) introduced
-	// and accepted by the Probeum core developers into the PoB consensus.
-	AllPobProtocolChanges = &ChainConfig{big.NewInt(1337), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil, nil, nil, &PobConfig{Period: 15, Epoch: 30000}, nil, nil}
+	// and accepted by the ProbeChain core developers into the PoB consensus.
+	AllPobProtocolChanges = &ChainConfig{
+		ChainID:             big.NewInt(1337),
+		HomesteadBlock:      big.NewInt(0),
+		EIP150Block:         big.NewInt(0),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(0),
+		Pob:                 &PobConfig{Period: 0, TickIntervalMs: 400, Epoch: 30000},
+		StellarSpeedBlock:   big.NewInt(0),
+	}
 
-	TestChainConfig = &ChainConfig{big.NewInt(1), big.NewInt(0), nil, false, big.NewInt(0), common.Hash{}, big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), big.NewInt(0), nil, nil, nil, nil, nil, nil, new(ProbeashConfig), nil, nil, nil, nil}
-	TestRules       = TestChainConfig.Rules(new(big.Int))
+	TestChainConfig = &ChainConfig{
+		ChainID:             big.NewInt(1),
+		HomesteadBlock:      big.NewInt(0),
+		EIP150Block:         big.NewInt(0),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(0),
+		ShenzhenBlock:       big.NewInt(0),
+		Pob:                 &PobConfig{Period: 0, TickIntervalMs: 400, Epoch: 30000},
+		StellarSpeedBlock:   big.NewInt(0),
+	}
+	TestRules = TestChainConfig.Rules(new(big.Int))
 )
 
 // TrustedCheckpoint represents a set of post-processed trie roots (CHT and
@@ -209,11 +221,8 @@ type ChainConfig struct {
 	EWASMBlock    *big.Int `json:"ewasmBlock,omitempty"`    // EWASM switch block (nil = no fork, 0 = already activated)
 	CatalystBlock *big.Int `json:"catalystBlock,omitempty"` // Catalyst switch block (nil = no fork, 0 = already on catalyst)
 
-	// Various consensus engines
-	Dpos     *DposConfig     `json:"dpos,omitempty"`
-	Probeash *ProbeashConfig `json:"probeash,omitempty"`
-	Clique   *CliqueConfig   `json:"clique,omitempty"`
-	Pob      *PobConfig      `json:"pob,omitempty"`
+	// Consensus engine
+	Pob *PobConfig `json:"pob,omitempty"`
 
 	// StellarSpeed sub-second block production config
 	StellarSpeed *StellarSpeedConfig `json:"stellarSpeed,omitempty"`
@@ -222,55 +231,16 @@ type ChainConfig struct {
 	Superlight *SuperlightConfig `json:"superlight,omitempty"`
 }
 
-// ProbeashConfig is the consensus engine configs for proof-of-work based sealing.
-type ProbeashConfig struct{}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *ProbeashConfig) String() string {
-	return "probeash"
-}
-
-type DposConfig struct {
-	Period   uint64               `json:"period"` // Number of seconds between blocks to enforce
-	Epoch    uint64               `json:"epoch"`  // Epoch length to reset dpos list
-	DposList []common.DPoSAccount `json:"list"`
-}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *DposConfig) String() string {
-	return "dpos"
-}
-
-// CliqueConfig is the consensus engine configs for proof-of-authority based sealing.
-type CliqueConfig struct {
-	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
-	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
-}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *CliqueConfig) String() string {
-	return "clique"
-}
-
-// GreatriConfig is the consensus engine configs for proof-of-authority based sealing.
-type GreatriConfig struct {
-	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
-	Epoch  uint64 `json:"epoch"`  // Epoch length to reset votes and checkpoint
-}
-
-// String implements the stringer interface, returning the consensus engine details.
-func (c *GreatriConfig) String() string {
-	return "greatri"
-}
 
 // PobConfig is the consensus engine configs for Proof-of-Behavior based sealing.
 type PobConfig struct {
-	Period            uint64               `json:"period"`            // Number of seconds between blocks to enforce
-	Epoch             uint64               `json:"epoch"`             // Epoch length for score checkpoints
-	InitialScore      uint64               `json:"initialScore"`      // Starting score for new validators (default 5000)
-	SlashFraction     uint64               `json:"slashFraction"`     // Slash severity in basis points
-	DemotionThreshold uint64               `json:"demotionThreshold"` // Score below which validator is demoted
-	ValidatorList     []common.DPoSAccount `json:"list"`              // Initial validators (reuse DPoSAccount)
+	Period            uint64             `json:"period"`            // Block period in seconds (0 = StellarSpeed 400ms)
+	TickIntervalMs    uint64             `json:"tickIntervalMs"`    // StellarSpeed tick interval in ms (default 400)
+	Epoch             uint64             `json:"epoch"`             // Epoch length for score checkpoints
+	InitialScore      uint64             `json:"initialScore"`      // Starting score for new validators (default 5000)
+	SlashFraction     uint64             `json:"slashFraction"`     // Slash severity in basis points
+	DemotionThreshold uint64             `json:"demotionThreshold"` // Score below which validator is demoted
+	ValidatorList     []common.Validator `json:"list"`              // Initial validators
 }
 
 // String implements the stringer interface, returning the consensus engine details.
@@ -283,7 +253,7 @@ type StellarSpeedConfig struct {
 	Enabled          bool   `json:"enabled"`          // Whether StellarSpeed mode is active
 	TickIntervalMs   uint64 `json:"tickIntervalMs"`   // Tick interval in milliseconds (default 400)
 	PipelineEnabled  bool   `json:"pipelineEnabled"`  // Begin next block prep immediately after seal
-	ReducedAckQuorum bool   `json:"reducedAckQuorum"` // Use reduced DPOS ACK quorum for fast blocks
+	ReducedAckQuorum bool   `json:"reducedAckQuorum"` // Use reduced PoB ACK quorum for fast blocks
 	MaxTxPerTick     uint64 `json:"maxTxPerTick"`     // Max transactions per tick (0 = unlimited)
 }
 
@@ -303,14 +273,9 @@ type SuperlightConfig struct {
 // String implements the fmt.Stringer interface.
 func (c *ChainConfig) String() string {
 	var engine interface{}
-	switch {
-	case c.Pob != nil:
+	if c.Pob != nil {
 		engine = c.Pob
-	case c.Probeash != nil:
-		engine = c.Probeash
-	case c.Clique != nil:
-		engine = c.Clique
-	default:
+	} else {
 		engine = "unknown"
 	}
 	return fmt.Sprintf("{ChainID: %v Homestead: %v DAO: %v DAOSupport: %v EIP150: %v EIP155: %v EIP158: %v Byzantium: %v Constantinople: %v Petersburg: %v Istanbul: %v, Muir Glacier: %v, Berlin: %v, London: %v, Shenzhen: %v, Dilithium: %v, Engine: %v}",
@@ -644,7 +609,10 @@ func (c *ChainConfig) Rules(num *big.Int) Rules {
 	}
 }
 
-// DposConfigEpoch dpos config epoch
-func (c *ChainConfig) DposConfigEpoch() uint64 {
-	return c.Dpos.Epoch
+// PobConfigEpoch returns the PoB config epoch.
+func (c *ChainConfig) PobConfigEpoch() uint64 {
+	if c.Pob != nil {
+		return c.Pob.Epoch
+	}
+	return 30000 // default
 }

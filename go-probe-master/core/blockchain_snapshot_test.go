@@ -1,18 +1,18 @@
-// Copyright 2020 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2020 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // Tests that abnormal program termination (i.e.crash) and restart can recovery
 // the snapshot properly if the snapshot is enabled.
@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/probechain/go-probe/consensus"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core/rawdb"
 	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/core/vm"
@@ -72,7 +72,7 @@ func (basic *snapshotTestBasic) prepare(t *testing.T) (*BlockChain, []*types.Blo
 	// Initialize a fresh chain
 	var (
 		genesis = (&Genesis{BaseFee: big.NewInt(params.InitialBaseFee)}).MustCommit(db)
-		engine  = probeash.NewFullFaker()
+		engine  = pob.NewFullFaker()
 		gendb   = rawdb.NewMemoryDatabase()
 
 		// Snapshot is enabled, the first snapshot is created from the Genesis.
@@ -80,7 +80,7 @@ func (basic *snapshotTestBasic) prepare(t *testing.T) (*BlockChain, []*types.Blo
 		// will happen during the block insertion.
 		cacheConfig = defaultCacheConfig
 	)
-	chain, err := NewBlockChain(db, cacheConfig, params.AllProbeashProtocolChanges, engine, vm.Config{}, nil, nil, nil, nil)
+	chain, err := NewBlockChain(db, cacheConfig, params.AllPobProtocolChanges, engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to create chain: %v", err)
 	}
@@ -223,7 +223,7 @@ func (snaptest *snapshotTest) test(t *testing.T) {
 
 	// Restart the chain normally
 	chain.Stop()
-	newchain, err := NewBlockChain(snaptest.db, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err := NewBlockChain(snaptest.db, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -259,13 +259,13 @@ func (snaptest *crashSnapshotTest) test(t *testing.T) {
 	// the crash, we do restart twice here: one after the crash and one
 	// after the normal stop. It's used to ensure the broken snapshot
 	// can be detected all the time.
-	newchain, err := NewBlockChain(newdb, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err := NewBlockChain(newdb, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
 	newchain.Stop()
 
-	newchain, err = NewBlockChain(newdb, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err = NewBlockChain(newdb, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -301,7 +301,7 @@ func (snaptest *gappedSnapshotTest) test(t *testing.T) {
 		TrieTimeLimit:  5 * time.Minute,
 		SnapshotLimit:  0,
 	}
-	newchain, err := NewBlockChain(snaptest.db, cacheConfig, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err := NewBlockChain(snaptest.db, cacheConfig, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -309,7 +309,7 @@ func (snaptest *gappedSnapshotTest) test(t *testing.T) {
 	newchain.Stop()
 
 	// Restart the chain with enabling the snapshot
-	newchain, err = NewBlockChain(snaptest.db, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err = NewBlockChain(snaptest.db, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -337,7 +337,7 @@ func (snaptest *setHeadSnapshotTest) test(t *testing.T) {
 	chain.SetHead(snaptest.setHead)
 	chain.Stop()
 
-	newchain, err := NewBlockChain(snaptest.db, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err := NewBlockChain(snaptest.db, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -368,7 +368,7 @@ func (snaptest *restartCrashSnapshotTest) test(t *testing.T) {
 	// and state committed.
 	chain.Stop()
 
-	newchain, err := NewBlockChain(snaptest.db, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err := NewBlockChain(snaptest.db, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -385,7 +385,7 @@ func (snaptest *restartCrashSnapshotTest) test(t *testing.T) {
 	// journal and latest state will be committed
 
 	// Restart the chain after the crash
-	newchain, err = NewBlockChain(snaptest.db, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err = NewBlockChain(snaptest.db, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -420,7 +420,7 @@ func (snaptest *wipeCrashSnapshotTest) test(t *testing.T) {
 		TrieTimeLimit:  5 * time.Minute,
 		SnapshotLimit:  0,
 	}
-	newchain, err := NewBlockChain(snaptest.db, config, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err := NewBlockChain(snaptest.db, config, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
@@ -436,13 +436,13 @@ func (snaptest *wipeCrashSnapshotTest) test(t *testing.T) {
 		SnapshotLimit:  256,
 		SnapshotWait:   false, // Don't wait rebuild
 	}
-	newchain, err = NewBlockChain(snaptest.db, config, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err = NewBlockChain(snaptest.db, config, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}
 	// Simulate the blockchain crash.
 
-	newchain, err = NewBlockChain(snaptest.db, nil, params.AllProbeashProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil, nil)
+	newchain, err = NewBlockChain(snaptest.db, nil, params.AllPobProtocolChanges, snaptest.engine, vm.Config{}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to recreate chain: %v", err)
 	}

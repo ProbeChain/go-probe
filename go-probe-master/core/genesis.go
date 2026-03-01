@@ -1,18 +1,18 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package core
 
@@ -162,7 +162,7 @@ func SetupGenesisBlock(db probedb.Database, genesis *Genesis, dataDir string) (*
 func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, dataDir string) (*params.ChainConfig, common.Hash, error) {
 	globalconfig.DataDir = dataDir
 	if genesis != nil && genesis.Config == nil {
-		return params.AllProbeashProtocolChanges, common.Hash{}, errGenesisNoConfig
+		return params.AllPobProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
 	// Just commit the new block if there is no stored genesis block.
 	stored := rawdb.ReadCanonicalHash(db, 0)
@@ -217,8 +217,8 @@ func SetupGenesisBlockWithOverride(db probedb.Database, genesis *Genesis, dataDi
 		rawdb.WriteChainConfig(db, stored, newcfg)
 		return newcfg, stored, nil
 	}
-	if storedcfg.Dpos != nil {
-		globalconfig.Epoch = storedcfg.Dpos.Epoch
+	if storedcfg.Pob != nil {
+		globalconfig.Epoch = storedcfg.Pob.Epoch
 	}
 	if storedcfg.Pob != nil {
 		globalconfig.Epoch = storedcfg.Pob.Epoch
@@ -250,7 +250,7 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	case ghash == params.MainnetGenesisHash:
 		return params.MainnetChainConfig
 	default:
-		return params.AllProbeashProtocolChanges
+		return params.AllPobProtocolChanges
 	}
 }
 
@@ -264,14 +264,14 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	if err != nil {
 		panic(err)
 	}
-	if g.Config != nil && g.Config.Dpos != nil {
+	if g.Config != nil && g.Config.Pob != nil {
 		if g.Number == 0 {
-			statedb.InitDPosListAccount(g.Config.Dpos.DposList)
+			statedb.InitValidatorListAccount(g.Config.Pob.ValidatorList)
 		}
 	}
 	if g.Config != nil && g.Config.Pob != nil {
 		if g.Number == 0 {
-			statedb.InitDPosListAccount(g.Config.Pob.ValidatorList)
+			statedb.InitValidatorListAccount(g.Config.Pob.ValidatorList)
 		}
 	}
 	for addr, account := range g.Alloc {
@@ -300,11 +300,11 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 		MixDigest:        g.Mixhash,
 		Coinbase:         g.Coinbase,
 		Root:             root,
-		DposSigAddr:      common.Address{},
-		DposAcksHash:     common.Hash{},
-		DposSig:          make([]byte, 65),
-		DposAckCountList: make([]*types.DposAckCount, 0),
-		PowAnswers:       make([]*types.PowAnswer, 0),
+		ValidatorAddr:      common.Address{},
+		AcksHash:     common.Hash{},
+		ValidatorSig:          make([]byte, 65),
+		AckCountList: make([]*types.AckCount, 0),
+		BehaviorProofs:       make([]*types.BehaviorProof, 0),
 	}
 
 	if g.GasLimit == 0 {
@@ -324,7 +324,7 @@ func (g *Genesis) ToBlock(db probedb.Database) *types.Block {
 	statedb.Commit(false)
 	statedb.Database().TrieDB().Commit(root, true, nil)
 
-	block := types.DposNewBlock(head, nil, nil, nil, nil,
+	block := types.ValidatorNewBlock(head, nil, nil, nil, nil,
 		trie.NewStackTrie(nil), types.BlockTypeEffect)
 
 	tmp := block.Header()
@@ -348,7 +348,7 @@ func (g *Genesis) Commit(db probedb.Database) (*types.Block, error) {
 	}
 	config := g.Config
 	if config == nil {
-		config = params.AllProbeashProtocolChanges
+		config = params.AllPobProtocolChanges
 	}
 	if err := config.CheckConfigForkOrder(); err != nil {
 		return nil, err
@@ -383,7 +383,7 @@ func GenesisBlockForTesting(db probedb.Database, addr common.Address, balance *b
 	return g.MustCommit(db)
 }
 
-// DefaultGenesisBlock returns the Probeum main net genesis block.
+// DefaultGenesisBlock returns the ProbeChain main net genesis block.
 func DefaultGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:    params.MainnetChainConfig,
@@ -400,10 +400,10 @@ func DefaultGenesisBlock() *Genesis {
 // DeveloperGenesisBlock returns the 'gprobe --dev' genesis block.
 func DeveloperGenesisBlock(period uint64, faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
-	config := *params.AllCliqueProtocolChanges
-	config.Clique = &params.CliqueConfig{
+	config := *params.AllPobProtocolChanges
+	config.Pob = &params.PobConfig{
 		Period: period,
-		Epoch:  config.Clique.Epoch,
+		Epoch:  config.Pob.Epoch,
 	}
 
 	// Assemble and return the genesis with the precompiles and faucet pre-funded

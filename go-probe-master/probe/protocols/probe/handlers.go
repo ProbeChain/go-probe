@@ -1,18 +1,18 @@
-// Copyright 2020 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2020 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package probe
 
@@ -313,28 +313,28 @@ func handleNewBlock(backend Backend, msg Decoder, peer *Peer) error {
 	return backend.Handle(peer, ann)
 }
 
-func handlePowAnswerMsg(backend Backend, msg Decoder, peer *Peer) error {
+func handleBehaviorProofMsg(backend Backend, msg Decoder, peer *Peer) error {
 	// Retrieve and decode the pow answer
-	ann := new(NewPowAnswerPacket)
+	ann := new(NewBehaviorProofPacket)
 	if err := msg.Decode(ann); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
 
 	// Mark the peer as owning the pow answer
-	peer.MarkPowAnswer(ann.PowAnswer.Id())
+	peer.MarkBehaviorProof(ann.BehaviorProof.Id())
 
 	return backend.Handle(peer, ann)
 }
 
-func handleDposAckMsg(backend Backend, msg Decoder, peer *Peer) error {
+func handleAckMsg(backend Backend, msg Decoder, peer *Peer) error {
 	// Retrieve and decode the pow answer
-	ann := new(NewDposAckPacket)
+	ann := new(NewAckPacket)
 	if err := msg.Decode(ann); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
 
 	// Mark the peer as owning the pow answer
-	peer.MarkPowAnswer(ann.DposAck.Id())
+	peer.MarkBehaviorProof(ann.Ack.Id())
 
 	return backend.Handle(peer, ann)
 }

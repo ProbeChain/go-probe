@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package probe
 
@@ -46,7 +46,7 @@ type PublicProbeumAPI struct {
 	e *Probeum
 }
 
-// NewPublicProbeumAPI creates a new Probeum protocol API for full nodes.
+// NewPublicProbeumAPI creates a new ProbeChain protocol API for full nodes.
 func NewPublicProbeumAPI(e *Probeum) *PublicProbeumAPI {
 	return &PublicProbeumAPI{e}
 }
@@ -147,7 +147,7 @@ type PrivateAdminAPI struct {
 }
 
 // NewPrivateAdminAPI creates a new API definition for the full node private
-// admin methods of the Probeum service.
+// admin methods of the ProbeChain service.
 func NewPrivateAdminAPI(probe *Probeum) *PrivateAdminAPI {
 	return &PrivateAdminAPI{probe: probe}
 }
@@ -257,7 +257,7 @@ type PublicDebugAPI struct {
 }
 
 // NewPublicDebugAPI creates a new API definition for the full node-
-// related public debug methods of the Probeum service.
+// related public debug methods of the ProbeChain service.
 func NewPublicDebugAPI(probe *Probeum) *PublicDebugAPI {
 	return &PublicDebugAPI{probe: probe}
 }
@@ -298,7 +298,7 @@ type PrivateDebugAPI struct {
 }
 
 // NewPrivateDebugAPI creates a new API definition for the full node-related
-// private debug methods of the Probeum service.
+// private debug methods of the ProbeChain service.
 func NewPrivateDebugAPI(probe *Probeum) *PrivateDebugAPI {
 	return &PrivateDebugAPI{probe: probe}
 }

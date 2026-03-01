@@ -1,20 +1,20 @@
-// Copyright 2016 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2016 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
-// Package probeclient provides a client for the Probeum RPC API.
+// Package probeclient provides a client for the ProbeChain RPC API.
 package probeclient
 
 import (
@@ -32,7 +32,7 @@ import (
 	"github.com/probechain/go-probe/rpc"
 )
 
-// Client defines typed wrappers for the Probeum RPC API.
+// Client defines typed wrappers for the ProbeChain RPC API.
 type Client struct {
 	c *rpc.Client
 }
@@ -99,8 +99,8 @@ type rpcBlock struct {
 	Hash            common.Hash       `json:"hash"`
 	Transactions    []rpcTransaction  `json:"transactions"`
 	UncleHashes     []common.Hash     `json:"uncles"`
-	PowAnswerUncles []types.PowAnswer `json:"powAnswerUncles"`
-	DposAcks        []types.DposAck   `json:"dposAcks"`
+	BehaviorProofUncles []types.BehaviorProof `json:"behaviorProofUncles"`
+	Acks        []types.Ack   `json:"acks"`
 }
 
 func (ec *Client) getBlock(ctx context.Context, method string, args ...interface{}) (*types.Block, error) {
@@ -166,18 +166,18 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 		txs[i] = tx.tx
 	}
 
-	unclePows := make([]*types.PowAnswer, len(body.PowAnswerUncles))
-	dposAcks := make([]*types.DposAck, len(body.DposAcks))
+	unclePows := make([]*types.BehaviorProof, len(body.BehaviorProofUncles))
+	acks := make([]*types.Ack, len(body.Acks))
 
-	for i, uncle := range body.PowAnswerUncles {
+	for i, uncle := range body.BehaviorProofUncles {
 		unclePows[i] = &uncle
 	}
-	for i, ack := range body.DposAcks {
-		dposAcks[i] = &ack
+	for i, ack := range body.Acks {
+		acks[i] = &ack
 	}
 
 	log.Debug("this is client getBlock ")
-	return types.NewBlockWithHeader(head).WithBodyGreatri(txs, uncles, unclePows, dposAcks), nil
+	return types.NewBlockWithHeader(head).WithBodyProofOfBehavior(txs, uncles, unclePows, acks), nil
 }
 
 // HeaderByHash returns the block header with the given hash.

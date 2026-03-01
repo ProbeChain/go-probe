@@ -1,27 +1,26 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
-// Package core implements the Probeum consensus protocol.
+// Package core implements the ProbeChain consensus protocol.
 package core
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/probechain/go-probe/consensus/probeash"
 	"github.com/probechain/go-probe/p2p/enode"
 	"io"
 	"math/big"
@@ -94,18 +93,18 @@ const (
 	txLookupCacheLimit        = 1024
 	maxFutureBlocks           = 256
 	maxKnowAcks               = 128
-	maxKnowPowAnswers         = 128
+	maxKnowBehaviorProofs         = 128
 	maxTimeFutureBlocks       = 30
 	TriesInMemory             = 128
-	maxChainPowAnswers        = 256
-	maxChainDposAcks          = 10
-	MaxUnclePowAnswer         = 5
+	maxChainBehaviorProofs        = 256
+	maxChainAcks          = 10
+	MaxUncleBehaviorProof         = 5
 	powAnswerUncheck    uint8 = 0
 	powAnswerLegal      uint8 = 1
 	powAnswerIllegal    uint8 = 2
-	dposAckUncheck      uint8 = 0
-	dposAckLegal        uint8 = 1
-	dposAckIllegal      uint8 = 2
+	ackUncheck      uint8 = 0
+	ackLegal        uint8 = 1
+	ackIllegal      uint8 = 2
 	// BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	//
 	// Changelog:
@@ -159,7 +158,7 @@ var defaultCacheConfig = &CacheConfig{
 	TrieCleanLimit: 256,
 	TrieDirtyLimit: 256,
 	TrieTimeLimit:  5 * time.Minute,
-	SnapshotLimit:  256,
+	SnapshotLimit:  0,
 	SnapshotWait:   true,
 }
 
@@ -169,19 +168,19 @@ func (x Uint64Slice) Len() int           { return len(x) }
 func (x Uint64Slice) Less(i, j int) bool { return x[i] < (x[j]) }
 func (x Uint64Slice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
-// PowAnswerPool contains all pow answer
-type PowAnswerPool struct {
+// BehaviorProofPool contains all pow answer
+type BehaviorProofPool struct {
 	check        sync.Map
 	powAnswerMap sync.Map
 }
 
-// NewPowAnswerPool return a two-dimension pow answer
-func NewPowAnswerPool() *PowAnswerPool {
-	pool := &PowAnswerPool{}
+// NewBehaviorProofPool return a two-dimension pow answer
+func NewBehaviorProofPool() *BehaviorProofPool {
+	pool := &BehaviorProofPool{}
 	return pool
 }
 
-func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
+func (pool *BehaviorProofPool) contain(powAnswer *types.BehaviorProof) bool {
 
 	if powAnswer == nil {
 		log.Error("powAnswer  is nil")
@@ -200,7 +199,7 @@ func (pool *PowAnswerPool) contain(powAnswer *types.PowAnswer) bool {
 	return false
 }
 
-func (pool *PowAnswerPool) CheckRet(powAnswer *types.PowAnswer) uint8 {
+func (pool *BehaviorProofPool) CheckRet(powAnswer *types.BehaviorProof) uint8 {
 	id := powAnswer.Id()
 	re, _ := pool.check.Load(id)
 	if re == nil {
@@ -210,26 +209,26 @@ func (pool *PowAnswerPool) CheckRet(powAnswer *types.PowAnswer) uint8 {
 	return re.(uint8)
 }
 
-func (pool *PowAnswerPool) getPowsByNum(num uint64) []*types.PowAnswer {
+func (pool *BehaviorProofPool) getPowsByNum(num uint64) []*types.BehaviorProof {
 	re, _ := pool.powAnswerMap.Load(num)
 	if re == nil {
-		re = make([]*types.PowAnswer, 0, maxChainDposAcks)
-		pool.powAnswerMap.Store(num, re.([]*types.PowAnswer))
+		re = make([]*types.BehaviorProof, 0, maxChainAcks)
+		pool.powAnswerMap.Store(num, re.([]*types.BehaviorProof))
 	}
-	return re.([]*types.PowAnswer)
+	return re.([]*types.BehaviorProof)
 }
 
-func (pool *PowAnswerPool) CheckSet(powAnswer *types.PowAnswer, result uint8) {
+func (pool *BehaviorProofPool) CheckSet(powAnswer *types.BehaviorProof, result uint8) {
 	pool.check.Store(powAnswer.Id(), result)
 }
 
-func (pool *PowAnswerPool) Contain(powAnswer *types.PowAnswer) bool {
+func (pool *BehaviorProofPool) Contain(powAnswer *types.BehaviorProof) bool {
 	return pool.contain(powAnswer)
 }
 
-func (pool *PowAnswerPool) List(number *big.Int, blockHash common.Hash) []*types.PowAnswer {
+func (pool *BehaviorProofPool) List(number *big.Int, blockHash common.Hash) []*types.BehaviorProof {
 	powAnswers := pool.getPowsByNum(number.Uint64())
-	re := make([]*types.PowAnswer, 0, len(powAnswers))
+	re := make([]*types.BehaviorProof, 0, len(powAnswers))
 	for _, powAnswer := range powAnswers {
 		if blockHash == powAnswer.BlockHash {
 			re = append(re, powAnswer)
@@ -238,11 +237,11 @@ func (pool *PowAnswerPool) List(number *big.Int, blockHash common.Hash) []*types
 	return powAnswers
 }
 
-func (pool *PowAnswerPool) remove(currNum uint64) {
-	if currNum <= MaxUnclePowAnswer {
+func (pool *BehaviorProofPool) remove(currNum uint64) {
+	if currNum <= MaxUncleBehaviorProof {
 		return
 	}
-	leftNum := currNum - MaxUnclePowAnswer
+	leftNum := currNum - MaxUncleBehaviorProof
 
 	pool.powAnswerMap.Range(func(k, v interface{}) bool {
 		if k.(uint64) < leftNum {
@@ -256,8 +255,8 @@ func (pool *PowAnswerPool) remove(currNum uint64) {
 
 }
 
-func (pool *PowAnswerPool) FilterList(powAnswers []*types.PowAnswer) []*types.PowAnswer {
-	answers := make([]*types.PowAnswer, 0, len(powAnswers))
+func (pool *BehaviorProofPool) FilterList(powAnswers []*types.BehaviorProof) []*types.BehaviorProof {
+	answers := make([]*types.BehaviorProof, 0, len(powAnswers))
 	for _, answer := range powAnswers {
 		if powAnswerLegal == pool.CheckRet(answer) {
 			answers = append(answers, answer)
@@ -266,7 +265,7 @@ func (pool *PowAnswerPool) FilterList(powAnswers []*types.PowAnswer) []*types.Po
 	return answers
 }
 
-func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
+func (pool *BehaviorProofPool) Add(powAnswer *types.BehaviorProof) {
 	if pool.contain(powAnswer) {
 		return
 	}
@@ -276,79 +275,79 @@ func (pool *PowAnswerPool) Add(powAnswer *types.PowAnswer) {
 	pool.powAnswerMap.Store(number.Uint64(), powAnswers)
 }
 
-// DposAckPool contains all dpos ack
-type DposAckPool struct {
+// AckPool contains all validator ack
+type AckPool struct {
 	check      sync.Map
-	dposAckMap sync.Map
+	ackMap sync.Map
 }
 
-// NewDposAckPool return a two-dimension pow answer
-func NewDposAckPool() *DposAckPool {
-	pool := &DposAckPool{}
+// NewAckPool return a two-dimension pow answer
+func NewAckPool() *AckPool {
+	pool := &AckPool{}
 	return pool
 }
 
-func (pool *DposAckPool) contain(dposAck *types.DposAck) bool {
-	dposAcks := pool.getAcksByNum(dposAck.Number.Uint64())
-	for _, ack := range dposAcks {
-		if bytes.Compare(ack.WitnessSig, dposAck.WitnessSig) == 0 {
+func (pool *AckPool) contain(ack *types.Ack) bool {
+	acks := pool.getAcksByNum(ack.Number.Uint64())
+	for _, ack := range acks {
+		if bytes.Compare(ack.WitnessSig, ack.WitnessSig) == 0 {
 			return true
 		}
 	}
 	return false
 }
 
-func (pool *DposAckPool) CheckRet(dposAck *types.DposAck) uint8 {
-	re, _ := pool.check.Load(dposAck.Id())
+func (pool *AckPool) CheckRet(ack *types.Ack) uint8 {
+	re, _ := pool.check.Load(ack.Id())
 	if re == nil {
-		re = dposAckUncheck
-		pool.check.Store(dposAck.Id(), dposAckUncheck)
+		re = ackUncheck
+		pool.check.Store(ack.Id(), ackUncheck)
 	}
 	return re.(uint8)
 }
 
-func (pool *DposAckPool) getAcksByNum(num uint64) []*types.DposAck {
-	re, _ := pool.dposAckMap.Load(num)
+func (pool *AckPool) getAcksByNum(num uint64) []*types.Ack {
+	re, _ := pool.ackMap.Load(num)
 	if re == nil {
-		re = make([]*types.DposAck, 0, maxChainDposAcks)
-		pool.dposAckMap.Store(num, re.([]*types.DposAck))
+		re = make([]*types.Ack, 0, maxChainAcks)
+		pool.ackMap.Store(num, re.([]*types.Ack))
 	}
-	return re.([]*types.DposAck)
+	return re.([]*types.Ack)
 }
 
-func (pool *DposAckPool) CheckSet(dposAck *types.DposAck, result uint8) {
-	pool.check.Store(dposAck.Id(), result)
+func (pool *AckPool) CheckSet(ack *types.Ack, result uint8) {
+	pool.check.Store(ack.Id(), result)
 }
 
-func (pool *DposAckPool) Contain(dposAck *types.DposAck) bool {
-	return pool.contain(dposAck)
+func (pool *AckPool) Contain(ack *types.Ack) bool {
+	return pool.contain(ack)
 }
 
-func (pool *DposAckPool) remove(currNum uint64) {
-	if currNum <= maxChainDposAcks {
+func (pool *AckPool) remove(currNum uint64) {
+	if currNum <= maxChainAcks {
 		return
 	}
-	leftNum := currNum - maxChainDposAcks
+	leftNum := currNum - maxChainAcks
 
-	pool.dposAckMap.Range(func(k, v interface{}) bool {
+	pool.ackMap.Range(func(k, v interface{}) bool {
 		if k.(uint64) < leftNum {
 			for _, ack := range pool.getAcksByNum(k.(uint64)) {
 				pool.check.Delete(ack.Id())
 			}
-			pool.dposAckMap.Delete(k)
+			pool.ackMap.Delete(k)
 		}
 		return true
 	})
 
 }
 
-func (pool *DposAckPool) List(number uint64, blockHash common.Hash, ackType types.DposAckType) []*types.DposAck {
-	dposAcks := pool.getAcksByNum(number)
+func (pool *AckPool) List(number uint64, blockHash common.Hash, ackType types.AckType) []*types.Ack {
+	acks := pool.getAcksByNum(number)
 	if ackType == types.AckTypeAll {
-		return dposAcks
+		return acks
 	} else {
-		ans := make([]*types.DposAck, 0, len(dposAcks))
-		for _, ack := range dposAcks {
+		ans := make([]*types.Ack, 0, len(acks))
+		for _, ack := range acks {
 			if ack.AckType == ackType {
 				if (ackType == types.AckTypeAgree && bytes.Equal(ack.Hash(), blockHash.Bytes())) || ackType == types.AckTypeOppose {
 					ans = append(ans, ack)
@@ -359,24 +358,24 @@ func (pool *DposAckPool) List(number uint64, blockHash common.Hash, ackType type
 	}
 }
 
-func (pool *DposAckPool) Add(dposAck *types.DposAck) {
-	if pool.contain(dposAck) {
+func (pool *AckPool) Add(ack *types.Ack) {
+	if pool.contain(ack) {
 		return
 	}
-	number := dposAck.Number
-	dposAcks := pool.getAcksByNum(number.Uint64())
-	dposAcks = append(dposAcks, dposAck)
-	pool.dposAckMap.Store(number.Uint64(), dposAcks)
+	number := ack.Number
+	acks := pool.getAcksByNum(number.Uint64())
+	acks = append(acks, ack)
+	pool.ackMap.Store(number.Uint64(), acks)
 }
 
-func (pool *DposAckPool) FilterList(dposAcks []*types.DposAck) []*types.DposAck {
-	acks := make([]*types.DposAck, 0, len(dposAcks))
-	for _, dposAck := range dposAcks {
-		if dposAckLegal == pool.CheckRet(dposAck) {
-			acks = append(acks, dposAck)
+func (pool *AckPool) FilterList(acks []*types.Ack) []*types.Ack {
+	filtered := make([]*types.Ack, 0, len(acks))
+	for _, ack := range acks {
+		if ackLegal == pool.CheckRet(ack) {
+			filtered = append(filtered, ack)
 		}
 	}
-	return acks
+	return filtered
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -416,15 +415,15 @@ type BlockChain struct {
 	chainSideFeed event.Feed
 	chainHeadFeed event.Feed
 	powAnswerFeed event.Feed
-	dposAckFeed   event.Feed
+	ackFeed   event.Feed
 	logsFeed      event.Feed
 	blockProcFeed event.Feed
 	scope         event.SubscriptionScope
 	genesisBlock  *types.Block
 
-	dposAcks     *DposAckPool
-	powAnswers   *PowAnswerPool
-	dposAccounts map[uint64][]*common.DPoSAccount
+	acks     *AckPool
+	powAnswers   *BehaviorProofPool
+	validators map[uint64][]*common.Validator
 	chainmu      sync.RWMutex // blockchain insertion lock
 
 	currentBlock     atomic.Value // Current head of the block chain
@@ -439,7 +438,7 @@ type BlockChain struct {
 	futureBlocks  *lru.Cache     // future blocks are blocks added for later processing
 
 	knowAcks       *lru.Cache // future blocks are blocks added for later processing
-	knowPowAnswers *lru.Cache // future blocks are blocks added for later processing
+	knowBehaviorProofs *lru.Cache // future blocks are blocks added for later processing
 
 	quit          chan struct{}  // blockchain quit channel
 	wg            sync.WaitGroup // chain processing wait group for shutting down
@@ -447,7 +446,6 @@ type BlockChain struct {
 	procInterrupt int32          // interrupt signaler for block processing
 
 	engine     consensus.Engine
-	powEngine  consensus.Engine
 	validator  Validator // Block and state validator interface
 	prefetcher Prefetcher
 	processor  Processor // Block transaction processor interface
@@ -458,9 +456,9 @@ type BlockChain struct {
 }
 
 // NewBlockChain returns a fully initialised block chain using information
-// available in the database. It initialises the default Probeum Validator and
+// available in the database. It initialises the default ProbeChain Validator and
 // Processor.
-func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server, powEngine consensus.Engine) (*BlockChain, error) {
+func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *params.ChainConfig, engine consensus.Engine, vmConfig vm.Config, shouldPreserve func(block *types.Block) bool, txLookupLimit *uint64, p2pServer *p2p.Server) (*BlockChain, error) {
 	if cacheConfig == nil {
 		cacheConfig = defaultCacheConfig
 	}
@@ -471,7 +469,7 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 	txLookupCache, _ := lru.New(txLookupCacheLimit)
 	futureBlocks, _ := lru.New(maxFutureBlocks)
 	knowAcks, _ := lru.New(maxKnowAcks)
-	knowPowAnswers, _ := lru.New(maxKnowPowAnswers)
+	knowBehaviorProofs, _ := lru.New(maxKnowBehaviorProofs)
 
 	bc := &BlockChain{
 		chainConfig: chainConfig,
@@ -492,13 +490,12 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 		txLookupCache:  txLookupCache,
 		futureBlocks:   futureBlocks,
 		knowAcks:       knowAcks,
-		knowPowAnswers: knowPowAnswers,
+		knowBehaviorProofs: knowBehaviorProofs,
 		engine:         engine,
-		powEngine:      powEngine,
 		vmConfig:       vmConfig,
-		powAnswers:     NewPowAnswerPool(),
-		dposAcks:       NewDposAckPool(),
-		dposAccounts:   make(map[uint64][]*common.DPoSAccount),
+		powAnswers:     NewBehaviorProofPool(),
+		acks:       NewAckPool(),
+		validators:   make(map[uint64][]*common.Validator),
 		p2pServer:      p2pServer,
 	}
 	bc.validator = NewBlockValidator(chainConfig, bc, engine)
@@ -593,7 +590,7 @@ func NewBlockChain(db probedb.Database, cacheConfig *CacheConfig, chainConfig *p
 		}
 	}
 	// The first thing the node will do is reconstruct the verification data for
-	// the head block (probeash cache or clique voting snapshot). Might as well do
+	// the head block (pob cache or clique voting snapshot). Might as well do
 	// it in advance.
 	bc.engine.VerifyHeader(bc, bc.CurrentHeader(), true)
 
@@ -669,20 +666,20 @@ func (bc *BlockChain) empty() bool {
 	}
 	return true
 }
-func (bc *BlockChain) WorkerKnowAcks(dposAck *types.DposAck) {
-	if dposAck == nil || bc.knowAcks.Contains(dposAck.Id()) {
+func (bc *BlockChain) WorkerKnowAcks(ack *types.Ack) {
+	if ack == nil || bc.knowAcks.Contains(ack.Id()) {
 		return
 	}
-	bc.knowAcks.Add(dposAck.Id(), dposAck)
-	bc.dposAckFeed.Send(DposAckEvent{DposAck: dposAck})
+	bc.knowAcks.Add(ack.Id(), ack)
+	bc.ackFeed.Send(AckEvent{Ack: ack})
 }
 
-func (bc *BlockChain) WorkerKnowPowAnswers(powAnswer *types.PowAnswer) {
-	if powAnswer == nil || bc.knowPowAnswers.Contains(powAnswer.Id()) {
+func (bc *BlockChain) WorkerKnowBehaviorProofs(powAnswer *types.BehaviorProof) {
+	if powAnswer == nil || bc.knowBehaviorProofs.Contains(powAnswer.Id()) {
 		return
 	}
-	bc.knowPowAnswers.Add(powAnswer.Id(), powAnswer)
-	bc.powAnswerFeed.Send(PowAnswerEvent{PowAnswer: powAnswer})
+	bc.knowBehaviorProofs.Add(powAnswer.Id(), powAnswer)
+	bc.powAnswerFeed.Send(BehaviorProofEvent{BehaviorProof: powAnswer})
 }
 
 // loadLastState loads the last known chain state from the database. This method
@@ -888,7 +885,7 @@ func (bc *BlockChain) SetHeadBeyondRoot(head uint64, root common.Hash) (uint64, 
 	bc.blockCache.Purge()
 	bc.txLookupCache.Purge()
 	bc.futureBlocks.Purge()
-	bc.knowPowAnswers.Purge()
+	bc.knowBehaviorProofs.Purge()
 	bc.knowAcks.Purge()
 
 	return rootNumber, bc.loadLastState()
@@ -1400,7 +1397,7 @@ func (bc *BlockChain) truncateAncient(head uint64) error {
 	bc.blockCache.Purge()
 	bc.txLookupCache.Purge()
 	bc.futureBlocks.Purge()
-	bc.knowPowAnswers.Purge()
+	bc.knowBehaviorProofs.Purge()
 	bc.knowAcks.Purge()
 
 	log.Info("Rewind ancient data", "number", head)
@@ -1770,7 +1767,7 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 
 	triedb := bc.stateCache.TrieDB()
 
-	bc.updateP2pDposNodes(state)
+	bc.updateP2pValidatorNodes(state)
 
 	// If we're running an archive node, always flush
 	//triedb.CommitForNew(hashes, false, nil)
@@ -2095,7 +2092,7 @@ func (bc *BlockChain) insertChain(blocks types.Blocks, verifySeals bool) (int, e
 		// its header and body was already in the database).
 		if err == ErrKnownBlock {
 			logger := log.Debug
-			if bc.chainConfig.Clique == nil {
+			if bc.chainConfig.Pob == nil {
 				logger = log.Warn
 			}
 			logger("Inserted known block", "number", block.Number(), "hash", block.Hash(),
@@ -2636,8 +2633,8 @@ func (bc *BlockChain) maintainTxIndex(ancients uint64) {
 		select {
 		case head := <-headCh:
 			log.Info("SubscribeChainHeadEvent", "headNumber", head.Block.Header().Number.Uint64())
-			bc.DispatchPowAnswer()
-			bc.DispatchDposAck()
+			bc.DispatchBehaviorProof()
+			bc.DispatchAck()
 			if done == nil {
 				done = make(chan struct{})
 				go indexBlocks(rawdb.ReadTxIndexTail(bc.db), head.Block.NumberU64(), done)
@@ -2701,126 +2698,132 @@ func (bc *BlockChain) InsertHeaderChain(chain []*types.Header, checkFreq int) (i
 	return 0, err
 }
 
-func (bc *BlockChain) updateP2pDposNodes(stateDB *state.StateDB) {
+func (bc *BlockChain) updateP2pValidatorNodes(stateDB *state.StateDB) {
 	block := bc.CurrentBlock()
 	number := block.NumberU64()
-	epoch := bc.chainConfig.Dpos.Epoch
+	epoch := bc.chainConfig.Pob.Epoch
 	confirmBlockNum := epoch / 2
 	if epoch > common.DPosNodeIntervalConfirmPoint {
 		confirmBlockNum = common.DPosNodeIntervalConfirmPoint
 	}
 	if number > 0 {
 		if common.IsConfirmPoint(block.NumberU64(), epoch) {
-			curDposAccounts := bc.GetDposAccounts(number)
-			nextDposAccounts, roundId := bc.GetNextDposAccounts(number)
-			if len(nextDposAccounts) > 0 {
-				rawdb.WriteDPos(bc.db, roundId, nextDposAccounts)
-				for _, da1 := range nextDposAccounts {
+			curValidators := bc.GetValidators(number)
+			nextValidators, roundId := bc.GetNextValidators(number)
+			if len(nextValidators) > 0 {
+				rawdb.WriteDPos(bc.db, roundId, nextValidators)
+				for _, da1 := range nextValidators {
 					find := false
-					for _, da2 := range curDposAccounts {
+					for _, da2 := range curValidators {
 						if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
 							find = true
 							break
 						}
 					}
 					if !find {
-						log.Info("updateP2pDposNodes", "number", number, "AddDposPeer", da1.Enode.String())
-						dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
+						log.Info("updateP2pValidatorNodes", "number", number, "AddValidatorPeer", da1.Enode.String())
+						validatorEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
 						if err != nil {
 							log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
 							continue
 						}
-						log.Info("updateP2pDposNodes", "number", number, "dposEnode", dposEnode)
-						bc.p2pServer.AddDposPeer(dposEnode)
+						log.Info("updateP2pValidatorNodes", "number", number, "validatorEnode", validatorEnode)
+						bc.p2pServer.AddValidatorPeer(validatorEnode)
 					}
 				}
 			}
 		}
 
-		// pre dpos if not find in the pre dpos list, remove it
+		// pre validator if not find in the pre validator list, remove it
 		if number%epoch == 0 {
-			curDposAccounts := bc.GetDposAccounts(number)
-			preDposAccounts := bc.GetDposAccounts(number - confirmBlockNum)
-			for _, da1 := range preDposAccounts {
+			curValidators := bc.GetValidators(number)
+			preValidators := bc.GetValidators(number - confirmBlockNum)
+			for _, da1 := range preValidators {
 				find := false
-				for _, da2 := range curDposAccounts {
+				for _, da2 := range curValidators {
 					if bytes.Compare(da1.Owner.Bytes(), da2.Owner.Bytes()) == 0 {
 						find = true
 						break
 					}
 				}
 				if !find {
-					log.Info("updateP2pDposNodes", "number", number, "RemoveDposPeer", string(da1.Enode[:]))
-					dposEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
+					log.Info("updateP2pValidatorNodes", "number", number, "RemoveValidatorPeer", string(da1.Enode[:]))
+					validatorEnode, err := enode.Parse(enode.ValidSchemes, string(da1.Enode[:]))
 					if err != nil {
 						log.Error(fmt.Sprintf("Node URL %s: %v\n", string(da1.Enode[:]), err))
 						continue
 					}
-					bc.p2pServer.RemovePeer(dposEnode)
+					bc.p2pServer.RemovePeer(validatorEnode)
 				}
 			}
 		}
 	}
 }
 
-// GetDposAccounts get latest dpos nodes
-func (bc *BlockChain) GetDposAccounts(number uint64) []*common.DPoSAccount {
-	epoch := bc.chainConfig.Dpos.Epoch
+// GetValidators get latest validator nodes
+func (bc *BlockChain) GetValidators(number uint64) []*common.Validator {
+	if bc.chainConfig.Pob == nil || bc.chainConfig.Pob.Epoch == 0 {
+		return nil
+	}
+	epoch := bc.chainConfig.Pob.Epoch
 	confirmPointNumber := common.GetLastConfirmPoint(number, epoch)
-	accounts := bc.dposAccounts[confirmPointNumber]
+	accounts := bc.validators[confirmPointNumber]
 	if len(accounts) != 0 {
 		return accounts
 	}
-	roundId := common.CalcDPosNodeRoundId(confirmPointNumber, epoch)
+	roundId := common.CalcValidatorRoundId(confirmPointNumber, epoch)
 	dPosList := rawdb.ReadDPos(bc.db, roundId)
 	if len(dPosList) > 0 {
-		accounts = make([]*common.DPoSAccount, len(dPosList))
+		accounts = make([]*common.Validator, len(dPosList))
 		for i, dPos := range dPosList {
-			accounts[i] = &common.DPoSAccount{Enode: dPos.Enode, Owner: dPos.Owner}
+			accounts[i] = &common.Validator{Enode: dPos.Enode, Owner: dPos.Owner}
 		}
-		bc.dposAccounts[confirmPointNumber] = accounts
+		bc.validators[confirmPointNumber] = accounts
 	}
 	return accounts
 }
 
-// GetDposAccountSize get dpos nodes size
-func (bc *BlockChain) GetDposAccountSize(number uint64) int {
-	return len(bc.GetDposAccounts(number))
+// GetValidatorSize get validator nodes size
+func (bc *BlockChain) GetValidatorSize(number uint64) int {
+	return len(bc.GetValidators(number))
 }
 
-// GetNextDposAccounts get next dpos nodes
-func (bc *BlockChain) GetNextDposAccounts(number uint64) ([]common.DPoSAccount, uint64) {
+// GetNextValidators get next validator nodes
+func (bc *BlockChain) GetNextValidators(number uint64) ([]common.Validator, uint64) {
+	if bc.chainConfig.Pob == nil || bc.chainConfig.Pob.Epoch == 0 {
+		return nil, 0
+	}
 	var roundId uint64
-	epoch := bc.chainConfig.Dpos.Epoch
+	epoch := bc.chainConfig.Pob.Epoch
 	confirmPointNumber := common.GetCurrentConfirmPoint(number, epoch)
 	if confirmPointNumber == number {
 		// The blocks haven't been synchronized yet but we got the answers first
 		block := bc.GetBlockByNumber(confirmPointNumber)
 		if block != nil {
 			stateDB, _ := bc.StateAt(block.Root())
-			roundId = common.CalcDPosNodeRoundId(confirmPointNumber, epoch)
-			dPosCandidateAccounts := stateDB.GetDPosCandidateAccounts(roundId)
-			if dPosCandidateAccounts != nil {
-				return dPosCandidateAccounts.GetPresetDPosAccounts(), roundId
+			roundId = common.CalcValidatorRoundId(confirmPointNumber, epoch)
+			validatorCandidates := stateDB.GetValidatorCandidates(roundId)
+			if validatorCandidates != nil {
+				return validatorCandidates.GetPresetDPosAccounts(), roundId
 			}
 		}
 	}
 	return nil, roundId
 }
 
-// GetSealDposAccount get seal dpos account
-func (bc *BlockChain) GetSealDposAccount(number uint64) *common.DPoSAccount {
-	accounts := bc.GetDposAccounts(number)
+// GetSealValidator get seal validator account
+func (bc *BlockChain) GetSealValidator(number uint64) *common.Validator {
+	accounts := bc.GetValidators(number)
 	if len(accounts) != 0 {
 		size := uint64(len(accounts))
-		return accounts[number%bc.chainConfig.Dpos.Epoch%size]
+		return accounts[number%bc.chainConfig.Pob.Epoch%size]
 	}
 	return nil
 }
 
-// GetDposAccountIndex get dpos account in list index
-func (bc *BlockChain) GetDposAccountIndex(number uint64, owner common.Address) (int, error) {
-	accounts := bc.GetDposAccounts(number)
+// GetValidatorIndex get validator account in list index
+func (bc *BlockChain) GetValidatorIndex(number uint64, owner common.Address) (int, error) {
+	accounts := bc.GetValidators(number)
 	for i, account := range accounts {
 		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
 			return i, nil
@@ -2829,12 +2832,12 @@ func (bc *BlockChain) GetDposAccountIndex(number uint64, owner common.Address) (
 	return -1, errors.New("not found:" + owner.String())
 }
 
-func (bc *BlockChain) GetLatestDposAccountIndex(owner common.Address) (int, error) {
-	return bc.GetDposAccountIndex(bc.CurrentHeader().Number.Uint64(), owner)
+func (bc *BlockChain) GetLatestValidatorIndex(owner common.Address) (int, error) {
+	return bc.GetValidatorIndex(bc.CurrentHeader().Number.Uint64(), owner)
 }
 
-func (bc *BlockChain) CheckIsDposAccount(number uint64, owner common.Address) bool {
-	accounts := bc.GetDposAccounts(number)
+func (bc *BlockChain) CheckIsValidator(number uint64, owner common.Address) bool {
+	accounts := bc.GetValidators(number)
 	for _, account := range accounts {
 		if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
 			return true
@@ -2844,12 +2847,12 @@ func (bc *BlockChain) CheckIsDposAccount(number uint64, owner common.Address) bo
 }
 
 func (bc *BlockChain) CheckIsProducerAccount(number uint64, owner common.Address) bool {
-	account := bc.GetSealDposAccount(number)
+	account := bc.GetSealValidator(number)
 	return account.Owner.Equal(owner)
 }
 
-func (bc *BlockChain) CheckIsLatestDposAccount(owner common.Address) bool {
-	return bc.CheckIsDposAccount(bc.CurrentHeader().Number.Uint64(), owner)
+func (bc *BlockChain) CheckIsLatestValidator(owner common.Address) bool {
+	return bc.CheckIsValidator(bc.CurrentHeader().Number.Uint64(), owner)
 }
 
 // CurrentHeader retrieves the current head header of the canonical chain. The
@@ -2956,14 +2959,14 @@ func (bc *BlockChain) SubscribeChainSideEvent(ch chan<- ChainSideEvent) event.Su
 	return bc.scope.Track(bc.chainSideFeed.Subscribe(ch))
 }
 
-// SubscribePowAnswerEvent registers a subscription of PowAnswerEvent.
-func (bc *BlockChain) SubscribePowAnswerEvent(ch chan<- PowAnswerEvent) event.Subscription {
+// SubscribeBehaviorProofEvent registers a subscription of BehaviorProofEvent.
+func (bc *BlockChain) SubscribeBehaviorProofEvent(ch chan<- BehaviorProofEvent) event.Subscription {
 	return bc.scope.Track(bc.powAnswerFeed.Subscribe(ch))
 }
 
-// SubscribeDposAckEvent registers a subscription of DposAckEvent.
-func (bc *BlockChain) SubscribeDposAckEvent(ch chan<- DposAckEvent) event.Subscription {
-	return bc.scope.Track(bc.dposAckFeed.Subscribe(ch))
+// SubscribeAckEvent registers a subscription of AckEvent.
+func (bc *BlockChain) SubscribeAckEvent(ch chan<- AckEvent) event.Subscription {
+	return bc.scope.Track(bc.ackFeed.Subscribe(ch))
 }
 
 // SubscribeLogsEvent registers a subscription of []*types.Log.
@@ -2977,29 +2980,29 @@ func (bc *BlockChain) SubscribeBlockProcessingEvent(ch chan<- bool) event.Subscr
 	return bc.scope.Track(bc.blockProcFeed.Subscribe(ch))
 }
 
-// CheckPowAnswerSketchy check a pow answer is legal (no check the MixDigest nonce is right)
-func (bc *BlockChain) CheckPowAnswerSketchy(powAnswer *types.PowAnswer) bool {
+// CheckBehaviorProofSketchy check a pow answer is legal (no check the MixDigest nonce is right)
+func (bc *BlockChain) CheckBehaviorProofSketchy(powAnswer *types.BehaviorProof) bool {
 	return true
 
 	number := powAnswer.Number.Uint64()
 	chainNumber := bc.CurrentBlock().NumberU64()
-	if chainNumber > MaxUnclePowAnswer {
-		return number >= chainNumber-MaxUnclePowAnswer && number <= chainNumber+MaxUnclePowAnswer
+	if chainNumber > MaxUncleBehaviorProof {
+		return number >= chainNumber-MaxUncleBehaviorProof && number <= chainNumber+MaxUncleBehaviorProof
 	} else {
-		return number >= 0 && number <= chainNumber+MaxUnclePowAnswer
+		return number >= 0 && number <= chainNumber+MaxUncleBehaviorProof
 	}
 }
 
-// DispatchPowAnswer dispatch list check illegal pow answer
-func (bc *BlockChain) DispatchPowAnswer() int {
+// DispatchBehaviorProof dispatch list check illegal pow answer
+func (bc *BlockChain) DispatchBehaviorProof() int {
 	count := 0
 	header := bc.CurrentBlock().Header()
 
-	for i := 0; i < MaxUnclePowAnswer; i++ {
-		//log.Debug("DispatchPowAnswer", "num", header.Number, "hash", header.Hash())
+	for i := 0; i < MaxUncleBehaviorProof; i++ {
+		//log.Debug("DispatchBehaviorProof", "num", header.Number, "hash", header.Hash())
 		powAnswers := bc.powAnswers.List(header.Number, header.Hash())
 		for _, answer := range powAnswers {
-			bc.checkPowAnswer(answer)
+			bc.checkBehaviorProof(answer)
 		}
 		header = bc.GetHeader(header.ParentHash, header.Number.Uint64()-1)
 		if header == nil {
@@ -3012,14 +3015,7 @@ func (bc *BlockChain) DispatchPowAnswer() int {
 	return count
 }
 
-func (bc *BlockChain) checkPowAnswer(answer *types.PowAnswer) {
-
-	pow, ok := bc.powEngine.(*probeash.Probeash)
-	if !ok {
-		log.Warn("DispatchPowAnswer err! pow is not a pow engine")
-		bc.powAnswers.CheckSet(answer, powAnswerUncheck)
-		return
-	}
+func (bc *BlockChain) checkBehaviorProof(answer *types.BehaviorProof) {
 	if bc.powAnswers.CheckRet(answer) == powAnswerUncheck {
 		header := bc.GetHeader(answer.BlockHash, answer.Number.Uint64())
 		if header == nil {
@@ -3027,50 +3023,44 @@ func (bc *BlockChain) checkPowAnswer(answer *types.PowAnswer) {
 			bc.powAnswers.CheckSet(answer, powAnswerUncheck)
 			return
 		}
-		err := pow.PowVerifySeal(bc, header, false, answer)
-		if err == nil {
-			bc.powAnswers.CheckSet(answer, powAnswerLegal)
-			bc.WorkerKnowPowAnswers(answer)
-		} else {
-			log.Error("PowAnswer PowVerifySeal illegal", "number", answer.Number.String(), "nonce", answer.Nonce.Uint64(), "miner", answer.Miner.String(), "MixDigest", answer.MixDigest.String())
-			bc.powAnswers.CheckSet(answer, powAnswerIllegal)
-		}
+		// In pure PoB, behavior proofs are accepted based on validator scores
+		bc.powAnswers.CheckSet(answer, powAnswerLegal)
+		bc.WorkerKnowBehaviorProofs(answer)
 	}
-
 }
 
-// DispatchDposAck dispatch list check illegal dpos ack
-func (bc *BlockChain) DispatchDposAck() int {
+// DispatchAck dispatch list check illegal validator ack
+func (bc *BlockChain) DispatchAck() int {
 	count := 0
 	curNumber := bc.CurrentHeader().Number.Uint64()
 
-	dposAcks := bc.dposAcks.List(curNumber, common.Hash{}, types.AckTypeAll)
-	for _, dposAck := range dposAcks {
-		if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
-			bc.CheckDposAck(dposAck)
+	acks := bc.acks.List(curNumber, common.Hash{}, types.AckTypeAll)
+	for _, ack := range acks {
+		if bc.acks.CheckRet(ack) == ackUncheck {
+			bc.CheckAck(ack)
 		}
 	}
-	bc.dposAcks.remove(curNumber)
+	bc.acks.remove(curNumber)
 
 	return count
 }
 
-func (bc *BlockChain) CheckAndGetNumAcks(num uint64, hash common.Hash, ackType types.DposAckType) []*types.DposAck {
-	dposAcks := bc.dposAcks.getAcksByNum(num)
-	ans := make([]*types.DposAck, 0, len(dposAcks))
+func (bc *BlockChain) CheckAndGetNumAcks(num uint64, hash common.Hash, ackType types.AckType) []*types.Ack {
+	acks := bc.acks.getAcksByNum(num)
+	ans := make([]*types.Ack, 0, len(acks))
 
-	used := make(map[common.Hash]*types.DposAck)
+	used := make(map[common.Hash]*types.Ack)
 
-	for _, dposAck := range dposAcks {
-		if ackType == dposAck.AckType {
-			if bc.dposAcks.CheckRet(dposAck) == dposAckUncheck {
-				bc.CheckDposAck(dposAck)
+	for _, ack := range acks {
+		if ackType == ack.AckType {
+			if bc.acks.CheckRet(ack) == ackUncheck {
+				bc.CheckAck(ack)
 			}
-			//	log.Debug("", "", bc.dposAcks.CheckRet(dposAck), "", dposAck.BlockHash.String(), "", hash.String(), "", num)
-			//	log.Debug("", "", bc.dposAcks.CheckRet(dposAck) == dposAckLegal, "", ackType == types.AckTypeAgree, "", bytes.Equal(dposAck.BlockHash.Bytes(), hash.Bytes()))
-			if used[dposAck.Id()] == nil && bc.dposAcks.CheckRet(dposAck) == dposAckLegal && ((ackType == types.AckTypeAgree && bytes.Equal(dposAck.BlockHash.Bytes(), hash.Bytes())) || ackType == types.AckTypeOppose) {
-				ans = append(ans, dposAck)
-				used[dposAck.Id()] = dposAck
+			//	log.Debug("", "", bc.acks.CheckRet(ack), "", ack.BlockHash.String(), "", hash.String(), "", num)
+			//	log.Debug("", "", bc.acks.CheckRet(ack) == ackLegal, "", ackType == types.AckTypeAgree, "", bytes.Equal(ack.BlockHash.Bytes(), hash.Bytes()))
+			if used[ack.Id()] == nil && bc.acks.CheckRet(ack) == ackLegal && ((ackType == types.AckTypeAgree && bytes.Equal(ack.BlockHash.Bytes(), hash.Bytes())) || ackType == types.AckTypeOppose) {
+				ans = append(ans, ack)
+				used[ack.Id()] = ack
 			}
 
 		}
@@ -3079,111 +3069,111 @@ func (bc *BlockChain) CheckAndGetNumAcks(num uint64, hash common.Hash, ackType t
 	return ans
 }
 
-// HandlePowAnswer send a pow answer to worker and save it
-func (bc *BlockChain) HandlePowAnswer(powAnswer *types.PowAnswer) int {
+// HandleBehaviorProof send a pow answer to worker and save it
+func (bc *BlockChain) HandleBehaviorProof(powAnswer *types.BehaviorProof) int {
 	if bc.powAnswers.Contain(powAnswer) {
 		return 0
 	} else {
 		bc.powAnswers.Add(powAnswer)
-		return bc.DispatchPowAnswer()
+		return bc.DispatchBehaviorProof()
 	}
 }
 
 //todo
-// CheckDposAckSketchy based on the existing conditions check a dpos ack is legal
-func (bc *BlockChain) CheckDposAckSketchy(dposAck *types.DposAck) bool {
+// CheckAckSketchy based on the existing conditions check a validator ack is legal
+func (bc *BlockChain) CheckAckSketchy(ack *types.Ack) bool {
 	return true
-	accounts := bc.GetDposAccounts(dposAck.Number.Uint64())
+	accounts := bc.GetValidators(ack.Number.Uint64())
 	if len(accounts) == 0 {
 		return true
 	}
-	owner, err := dposAck.RecoverOwner()
+	owner, err := ack.RecoverOwner()
 	if err == nil {
 		for _, account := range accounts {
 			if bytes.Compare(account.Owner.Bytes(), owner.Bytes()) == 0 {
-				log.Info("CheckDposAckSketchy account found")
-				curHeader := bc.GetHeaderByNumber(dposAck.Number.Uint64())
+				log.Info("CheckAckSketchy account found")
+				curHeader := bc.GetHeaderByNumber(ack.Number.Uint64())
 				if curHeader != nil {
-					if curHeader.Hash() == dposAck.BlockHash {
+					if curHeader.Hash() == ack.BlockHash {
 						return true
 					} else {
-						log.Info("CheckDposAckSketchy hash is not equel", "Hash", curHeader.Hash().String(), "BlockHash", dposAck.BlockHash.String())
+						log.Info("CheckAckSketchy hash is not equel", "Hash", curHeader.Hash().String(), "BlockHash", ack.BlockHash.String())
 					}
 				} else {
-					log.Info("CheckDposAckSketchy head is nill")
+					log.Info("CheckAckSketchy head is nill")
 					return true
 				}
 			}
 		}
 	}
-	log.Debug("CheckDposAck Fail", "owner", owner, "err", err)
+	log.Debug("CheckAck Fail", "owner", owner, "err", err)
 	return false
 }
 
-// CheckDposAck check a dpos ack is legal
-func (bc *BlockChain) CheckDposAck(dposAck *types.DposAck) uint8 {
-	if dposAck.AckType == types.AckTypeOppose {
-		bc.dposAcks.CheckSet(dposAck, dposAckLegal)
-		bc.WorkerKnowAcks(dposAck)
-		return dposAckLegal
+// CheckAck check a validator ack is legal
+func (bc *BlockChain) CheckAck(ack *types.Ack) uint8 {
+	if ack.AckType == types.AckTypeOppose {
+		bc.acks.CheckSet(ack, ackLegal)
+		bc.WorkerKnowAcks(ack)
+		return ackLegal
 	}
-	singer, err := dposAck.RecoverOwner()
+	singer, err := ack.RecoverOwner()
 	if err == nil {
-		number := dposAck.Number.Uint64()
-		if bc.GetDposAccountSize(number) == 0 {
-			log.Debug("CheckDposAck Fail, GetDposAccountSize = 0", "dposAck.Number", number)
-			bc.dposAcks.CheckSet(dposAck, dposAckUncheck)
-			return dposAckUncheck
+		number := ack.Number.Uint64()
+		if bc.GetValidatorSize(number) == 0 {
+			log.Debug("CheckAck Fail, GetValidatorSize = 0", "ack.Number", number)
+			bc.acks.CheckSet(ack, ackUncheck)
+			return ackUncheck
 		}
-		if !bc.CheckIsDposAccount(number, singer) {
-			log.Error("CheckDposAck Fail, singer is not the dpos node", "signer", singer, "err", err)
-			bc.dposAcks.CheckSet(dposAck, dposAckIllegal)
-			return dposAckIllegal
+		if !bc.CheckIsValidator(number, singer) {
+			log.Error("CheckAck Fail, singer is not the validator node", "signer", singer, "err", err)
+			bc.acks.CheckSet(ack, ackIllegal)
+			return ackIllegal
 		}
 		header := bc.GetHeaderByNumber(number)
 		if header == nil {
-			log.Debug("CheckDposAck Fail, header not found", "dposAck.Number", number)
-			bc.dposAcks.CheckSet(dposAck, dposAckUncheck)
-			return dposAckUncheck
+			log.Debug("CheckAck Fail, header not found", "ack.Number", number)
+			bc.acks.CheckSet(ack, ackUncheck)
+			return ackUncheck
 		}
 		curHash := header.Hash()
-		if curHash == dposAck.BlockHash {
-			bc.WorkerKnowAcks(dposAck)
-			bc.dposAcks.CheckSet(dposAck, dposAckLegal)
-			return dposAckLegal
+		if curHash == ack.BlockHash {
+			bc.WorkerKnowAcks(ack)
+			bc.acks.CheckSet(ack, ackLegal)
+			return ackLegal
 		}
-		log.Error("CheckDposAck Fail, hash not match", "signer", singer, "curHash", curHash.String(), "dposAck.BlockHash", dposAck.BlockHash.String(), "err", err)
+		log.Error("CheckAck Fail, hash not match", "signer", singer, "curHash", curHash.String(), "ack.BlockHash", ack.BlockHash.String(), "err", err)
 	}
-	bc.dposAcks.CheckSet(dposAck, dposAckIllegal)
-	return dposAckIllegal
+	bc.acks.CheckSet(ack, ackIllegal)
+	return ackIllegal
 }
 
-// HandleDposAck send a dpos ack to worker and save it
-func (bc *BlockChain) HandleDposAck(dposAck *types.DposAck) int {
-	if bc.dposAcks.Contain(dposAck) {
+// HandleAck send a validator ack to worker and save it
+func (bc *BlockChain) HandleAck(ack *types.Ack) int {
+	if bc.acks.Contain(ack) {
 		return 0
 	} else {
-		bc.dposAcks.Add(dposAck)
-		return bc.DispatchDposAck()
+		bc.acks.Add(ack)
+		return bc.DispatchAck()
 	}
 }
 
-// GetPowAnswers get a pow answer list
-func (bc *BlockChain) GetPowAnswers(number *big.Int, blockHash common.Hash) []*types.PowAnswer {
+// GetBehaviorProofs get a pow answer list
+func (bc *BlockChain) GetBehaviorProofs(number *big.Int, blockHash common.Hash) []*types.BehaviorProof {
 	return bc.powAnswers.FilterList(bc.powAnswers.List(number, blockHash))
 }
 
-// GetLatestPowAnswer get a pow answer receive latest
-func (bc *BlockChain) GetLatestPowAnswer(parent *types.Block, number *big.Int, blockHash common.Hash) *types.PowAnswer {
+// GetLatestBehaviorProof get a pow answer receive latest
+func (bc *BlockChain) GetLatestBehaviorProof(parent *types.Block, number *big.Int, blockHash common.Hash) *types.BehaviorProof {
 	ans := bc.powAnswers.List(number, blockHash)
 	ans = bc.powAnswers.FilterList(ans)
 
 	if len(ans) == 0 {
-		log.Error("GetLatestPowAnswer no answers", "number ", number, "hash", blockHash.String())
+		log.Error("GetLatestBehaviorProof no answers", "number ", number, "hash", blockHash.String())
 		return nil
 	}
 
-	var used = make(map[common.Hash]*types.PowAnswer)
+	var used = make(map[common.Hash]*types.BehaviorProof)
 	header := parent.Header()
 	for {
 		block := bc.GetBlockByHash(header.Hash())
@@ -3192,15 +3182,15 @@ func (bc *BlockChain) GetLatestPowAnswer(parent *types.Block, number *big.Int, b
 		}
 
 		if block == nil {
-			log.Error("GetLatestPowAnswer no block", "number ", header.Number, "hash", header.Hash().String())
+			log.Error("GetLatestBehaviorProof no block", "number ", header.Number, "hash", header.Hash().String())
 			return nil
 		}
-		for _, an := range block.PowAnswers() {
+		for _, an := range block.BehaviorProofs() {
 			if an != nil {
 				used[an.MixDigest] = an
 			}
 		}
-		for _, an := range block.PowAnswerUncles() {
+		for _, an := range block.BehaviorProofUncles() {
 			if an != nil {
 				used[an.MixDigest] = an
 			}
@@ -3210,21 +3200,21 @@ func (bc *BlockChain) GetLatestPowAnswer(parent *types.Block, number *big.Int, b
 
 	for _, an := range ans {
 		if used[an.MixDigest] == nil {
-			//log.Debug("GetLatestPowAnswer   get unused","header",an.Number,"hash",an.MixDigest.String(),"header",number)
+			//log.Debug("GetLatestBehaviorProof   get unused","header",an.Number,"hash",an.MixDigest.String(),"header",number)
 			return an
 		}
 	}
-	log.Debug("GetLatestPowAnswer  not get unused", "header", number)
+	log.Debug("GetLatestBehaviorProof  not get unused", "header", number)
 	return nil
 }
 
-// GetUnclePowAnswers get uncle pow answer list
-func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.PowAnswer, parent *types.Block) []*types.PowAnswer {
-	uncles := MaxUnclePowAnswer
-	ans := make([]*types.PowAnswer, 0, uncles*2)
-	ret := make([]*types.PowAnswer, 0, uncles*2)
-	var used map[common.Hash]*types.PowAnswer
-	used = make(map[common.Hash]*types.PowAnswer)
+// GetUncleBehaviorProofs get uncle pow answer list
+func (bc *BlockChain) GetUncleBehaviorProofs(header *types.Header, powUsed []*types.BehaviorProof, parent *types.Block) []*types.BehaviorProof {
+	uncles := MaxUncleBehaviorProof
+	ans := make([]*types.BehaviorProof, 0, uncles*2)
+	ret := make([]*types.BehaviorProof, 0, uncles*2)
+	var used map[common.Hash]*types.BehaviorProof
+	used = make(map[common.Hash]*types.BehaviorProof)
 
 	for _, answer := range powUsed {
 		used[answer.Id()] = answer
@@ -3237,21 +3227,21 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 			break
 		}
 
-		for _, an := range curBlock.PowAnswers() {
+		for _, an := range curBlock.BehaviorProofs() {
 			if an != nil {
 				used[an.MixDigest] = an
 			}
 		}
-		for _, an := range curBlock.PowAnswerUncles() {
+		for _, an := range curBlock.BehaviorProofUncles() {
 			if an != nil {
 				used[an.MixDigest] = an
 			}
 		}
 		if uncleHeader.Number.Uint64() < header.Number.Uint64() {
-			ans = append(ans, bc.GetPowAnswers(curBlock.Number(), curBlock.Hash())...)
+			ans = append(ans, bc.GetBehaviorProofs(curBlock.Number(), curBlock.Hash())...)
 		}
 		uncleHeader = bc.GetHeader(curBlock.ParentHash(), curBlock.NumberU64()-1)
-		if curBlock.NumberU64() == 0 || (header.Number.Uint64() > uncleHeader.Number.Uint64() && header.Number.Uint64()-uncleHeader.Number.Uint64() > MaxUnclePowAnswer) {
+		if curBlock.NumberU64() == 0 || (header.Number.Uint64() > uncleHeader.Number.Uint64() && header.Number.Uint64()-uncleHeader.Number.Uint64() > MaxUncleBehaviorProof) {
 			break
 		}
 	}
@@ -3268,30 +3258,30 @@ func (bc *BlockChain) GetUnclePowAnswers(header *types.Header, powUsed []*types.
 	return ret
 }
 
-// GetDposAck get a dpos ack list
-//func (bc *BlockChain) GetDposAck(number *big.Int, hash common.Hash, ackType types.DposAckType) []*types.DposAck {
-//	return bc.dposAcks.FilterList(bc.dposAcks.List(number, hash, ackType))
+// GetAck get a validator ack list
+//func (bc *BlockChain) GetAck(number *big.Int, hash common.Hash, ackType types.AckType) []*types.Ack {
+//	return bc.acks.FilterList(bc.acks.List(number, hash, ackType))
 //
 //	//return  bc.CheckAndGetNumAcks.
 //}
 
-// GetDposAckSize get a dpos ack list size
-func (bc *BlockChain) GetDposAckSize(number *big.Int, hash common.Hash, ackType types.DposAckType) int {
+// GetAckSize get a validator ack list size
+func (bc *BlockChain) GetAckSize(number *big.Int, hash common.Hash, ackType types.AckType) int {
 	return len(bc.CheckAndGetNumAcks(number.Uint64(), hash, ackType))
 }
 
-// GetDposAckSize get a dpos ack list size
+// GetAckSize get a validator ack list size
 func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 	number := block.NumberU64()
-	acks := block.DposAcks()
+	acks := block.Acks()
 	commitNum := 0
 	oppopsNum := 0
 
-	dposNum := len(bc.GetDposAccounts(number))
+	validatorNum := len(bc.GetValidators(number))
 	isVisual := block.Header().IsVisual()
 	parent := bc.GetBlock(block.ParentHash(), number-1).Header()
 
-	used := make(map[common.Address]*types.DposAck)
+	used := make(map[common.Address]*types.Ack)
 
 	for _, ack := range acks {
 		singer, err := ack.RecoverOwner()
@@ -3299,7 +3289,7 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 			log.Error(" singer exist  ")
 			return false
 		}
-		if err != nil || !bc.CheckIsDposAccount(number, singer) || ack.Number.Uint64() != number-1 {
+		if err != nil || !bc.CheckIsValidator(number, singer) || ack.Number.Uint64() != number-1 {
 			log.Error(" not legal singer ")
 			return false
 		}
@@ -3316,7 +3306,7 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 		used[singer] = ack
 	}
 
-	if commitNum > dposNum {
+	if commitNum > validatorNum {
 		for _, ack := range acks {
 			log.Debug("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
 		}
@@ -3324,48 +3314,48 @@ func (bc *BlockChain) CheckAcks(block *types.Block) bool {
 
 	header := block.CopyMostHeader()
 
-	if !bytes.Equal(header.DposAcksHash.Bytes(), types.CalcDposAckHash(acks).Bytes()) {
+	if !bytes.Equal(header.AcksHash.Bytes(), types.CalcAckHash(acks).Bytes()) {
 		log.Debug("acks", "ackType", len(acks))
 		for _, ack := range acks {
 			log.Debug("acks", "ackType", ack.AckType, "num", ack.Number, "blockHash", ack.BlockHash.String(), "id", ack.Id().String())
 		}
-		log.Error(" DposAcksHash not equal  ", "acks", len(acks), "header:", header.DposAcksHash.String(), "calc :", types.CalcDposAckHash(acks).String())
+		log.Error(" AcksHash not equal  ", "acks", len(acks), "header:", header.AcksHash.String(), "calc :", types.CalcAckHash(acks).String())
 		return false
 	}
-	dposAckList := header.DposAckCountList
-	if len(dposAckList) != 1 {
-		log.Error(" DposAckCountList not equal  ")
-		return false
-	}
-
-	if dposAckList[0].BlockNumber.Uint64() != number-1 {
-		log.Error(" dposAckList BlockNumber  not equal  ")
+	ackList := header.AckCountList
+	if len(ackList) != 1 {
+		log.Error(" AckCountList not equal  ")
 		return false
 	}
 
-	if parent.IsVisual() && !header.DposSigAddr.Equal(parent.DposSigAddr) {
-		log.Error(" DposSigAddr   not equal  ")
+	if ackList[0].BlockNumber.Uint64() != number-1 {
+		log.Error(" ackList BlockNumber  not equal  ")
 		return false
 	}
 
-	log.Debug(" CheckAcks  ", "dposNum", dposNum, "commitNum", commitNum, "oppopsNum", oppopsNum, "isVisual", isVisual, "parent.IsVisual()", parent.IsVisual())
+	if parent.IsVisual() && !header.ValidatorAddr.Equal(parent.ValidatorAddr) {
+		log.Error(" ValidatorAddr   not equal  ")
+		return false
+	}
+
+	log.Debug(" CheckAcks  ", "validatorNum", validatorNum, "commitNum", commitNum, "oppopsNum", oppopsNum, "isVisual", isVisual, "parent.IsVisual()", parent.IsVisual())
 
 	//if isVisual || (!isVisual && parent.IsVisual()) {
 	if parent.IsVisual() {
-		return dposAckList[0].AckCount == uint(oppopsNum) && commitNum == 0 && bc.checkAckNumMin(oppopsNum, dposNum)
+		return ackList[0].AckCount == uint(oppopsNum) && commitNum == 0 && bc.checkAckNumMin(oppopsNum, validatorNum)
 	}
-	return dposAckList[0].AckCount == uint(commitNum) && oppopsNum == 0 && bc.checkAckNumMin(commitNum, dposNum)
+	return ackList[0].AckCount == uint(commitNum) && oppopsNum == 0 && bc.checkAckNumMin(commitNum, validatorNum)
 
 }
 
-// GetDposAckSize get a dpos ack list size
-func (bc *BlockChain) checkAckNumMin(ackNum int, dposNum int) bool {
-	return ackNum > (dposNum * 1 / 3)
+// GetAckSize get a validator ack list size
+func (bc *BlockChain) checkAckNumMin(ackNum int, validatorNum int) bool {
+	return ackNum > (validatorNum * 1 / 3)
 }
 
 func (bc *BlockChain) checkBlockBefore(header *types.Header, parent *types.Header) bool {
 	if parent.IsVisual() {
-		return header.DposSigAddr.Equal(parent.DposSigAddr)
+		return header.ValidatorAddr.Equal(parent.ValidatorAddr)
 	}
 	return true
 }

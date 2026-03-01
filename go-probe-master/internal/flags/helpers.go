@@ -1,4 +1,4 @@
-// Copyright 2020 The go-probeum Authors
+// Copyright 2020 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -51,7 +51,7 @@ OPTIONS:
 	AppHelpTemplate = `NAME:
    {{.App.Name}} - {{.App.Usage}}
 
-   Copyright 2013-2021 The go-probeum Authors
+   Copyright 2013-2021 The ProbeChain Authors
 
 USAGE:
    {{.App.HelpName}} [options]{{if .App.Commands}} [command] [command options]{{end}} {{if .App.ArgsUsage}}{{.App.ArgsUsage}}{{else}}[arguments...]{{end}}
@@ -77,7 +77,7 @@ COPYRIGHT:
 	ClefAppHelpTemplate = `NAME:
    {{.App.Name}} - {{.App.Usage}}
 
-   Copyright 2013-2021 The go-probeum Authors
+   Copyright 2013-2021 The ProbeChain Authors
 
 USAGE:
    {{.App.HelpName}} [options]{{if .App.Commands}} command [command options]{{end}} {{if .App.ArgsUsage}}{{.App.ArgsUsage}}{{else}}[arguments...]{{end}}

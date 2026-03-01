@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -41,7 +41,7 @@ func (w *wizard) makeGenesis() {
 	genesis := &core.Genesis{
 		Timestamp:  uint64(time.Now().Unix()),
 		GasLimit:   4700000,
-		Difficulty: big.NewInt(524288),
+		Difficulty: big.NewInt(1),
 		Alloc:      make(core.GenesisAlloc),
 		Config: &params.ChainConfig{
 			HomesteadBlock:      big.NewInt(0),
@@ -54,59 +54,40 @@ func (w *wizard) makeGenesis() {
 			IstanbulBlock:       big.NewInt(0),
 		},
 	}
-	// Figure out which consensus engine to choose
+	// Configure pob consensus engine
+	genesis.Config.Pob = &params.PobConfig{
+		Period: 15,
+		Epoch:  30000,
+	}
 	fmt.Println()
-	fmt.Println("Which consensus engine to use? (default = clique)")
-	fmt.Println(" 1. Probeash - proof-of-work")
-	fmt.Println(" 2. Clique - proof-of-authority")
+	fmt.Println("How many seconds should blocks take? (default = 15)")
+	genesis.Config.Pob.Period = uint64(w.readDefaultInt(15))
 
-	choice := w.read()
-	switch {
-	case choice == "1":
-		// In case of probeash, we're pretty much done
-		genesis.Config.Probeash = new(params.ProbeashConfig)
-		genesis.ExtraData = make([]byte, 32)
+	// We need the initial list of signers
+	fmt.Println()
+	fmt.Println("Which accounts are allowed to seal? (mandatory at least one)")
 
-	case choice == "" || choice == "2":
-		// In the case of clique, configure the consensus parameters
-		genesis.Difficulty = big.NewInt(1)
-		genesis.Config.Clique = &params.CliqueConfig{
-			Period: 15,
-			Epoch:  30000,
+	var signers []common.Address
+	for {
+		if address := w.readAddress(); address != nil {
+			signers = append(signers, *address)
+			continue
 		}
-		fmt.Println()
-		fmt.Println("How many seconds should blocks take? (default = 15)")
-		genesis.Config.Clique.Period = uint64(w.readDefaultInt(15))
-
-		// We also need the initial list of signers
-		fmt.Println()
-		fmt.Println("Which accounts are allowed to seal? (mandatory at least one)")
-
-		var signers []common.Address
-		for {
-			if address := w.readAddress(); address != nil {
-				signers = append(signers, *address)
-				continue
-			}
-			if len(signers) > 0 {
-				break
+		if len(signers) > 0 {
+			break
+		}
+	}
+	// Sort the signers and embed into the extra-data section
+	for i := 0; i < len(signers); i++ {
+		for j := i + 1; j < len(signers); j++ {
+			if bytes.Compare(signers[i][:], signers[j][:]) > 0 {
+				signers[i], signers[j] = signers[j], signers[i]
 			}
 		}
-		// Sort the signers and embed into the extra-data section
-		for i := 0; i < len(signers); i++ {
-			for j := i + 1; j < len(signers); j++ {
-				if bytes.Compare(signers[i][:], signers[j][:]) > 0 {
-					signers[i], signers[j] = signers[j], signers[i]
-				}
-			}
-		}
-		genesis.ExtraData = make([]byte, 32+len(signers)*common.AddressLength+65)
-		for i, signer := range signers {
-			copy(genesis.ExtraData[32+i*common.AddressLength:], signer[:])
-		}
-
-	default:
-		log.Crit("Invalid consensus engine choice", "choice", choice)
+	}
+	genesis.ExtraData = make([]byte, 32+len(signers)*common.AddressLength+65)
+	for i, signer := range signers {
+		copy(genesis.ExtraData[32+i*common.AddressLength:], signer[:])
 	}
 	// Consensus all set, just ask for initial funds and go
 	fmt.Println()

@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package probeapi
 
@@ -34,9 +34,8 @@ import (
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/hexutil"
 	"github.com/probechain/go-probe/common/math"
-	"github.com/probechain/go-probe/consensus/clique"
 	"github.com/probechain/go-probe/consensus/misc"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/state"
 	"github.com/probechain/go-probe/core/types"
@@ -56,7 +55,7 @@ type PublicProbeumAPI struct {
 	b Backend
 }
 
-// NewPublicProbeumAPI creates a new Probeum protocol API.
+// NewPublicProbeumAPI creates a new ProbeChain protocol API.
 func NewPublicProbeumAPI(b Backend) *PublicProbeumAPI {
 	return &PublicProbeumAPI{b}
 }
@@ -472,7 +471,7 @@ func (s *PrivateAccountAPI) SignTransaction(ctx context.Context, args Transactio
 	return &SignTransactionResult{data, signed}, nil
 }
 
-// Sign calculates an Probeum ECDSA signature for:
+// Sign calculates a ProbeChain ECDSA signature for:
 // keccack256("\x19Probeum Signed Message:\n" + len(message) + message))
 //
 // Note, the produced signature conforms to the secp256k1 curve R, S and V values,
@@ -573,13 +572,13 @@ func (s *PrivateAccountAPI) Unpair(ctx context.Context, url string, pin string) 
 	}
 }
 
-// PublicBlockChainAPI provides an API to access the Probeum blockchain.
+// PublicBlockChainAPI provides an API to access the ProbeChain blockchain.
 // It offers only methods that operate on public data that is freely available to anyone.
 type PublicBlockChainAPI struct {
 	b Backend
 }
 
-// NewPublicBlockChainAPI creates a new Probeum blockchain API.
+// NewPublicBlockChainAPI creates a new ProbeChain blockchain API.
 func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 	return &PublicBlockChainAPI{b}
 }
@@ -589,18 +588,18 @@ type DPosRpcData struct {
 	Owner common.Address
 }
 
-type DPosCandidateRpcData struct {
+type ValidatorCandidateRpcData struct {
 	Enode       string
 	Owner       common.Address
 	VoteAccount common.Address
 	VoteValue   *big.Int
 }
 
-// DposAccounts the chain dpos nodes
-func (api *PublicBlockChainAPI) DposAccounts(number rpc.BlockNumber) []*DPosRpcData {
-	dposAccounts := api.b.DposAccounts(number)
-	data := make([]*DPosRpcData, 0, len(dposAccounts))
-	for _, account := range dposAccounts {
+// Validators the chain validator nodes
+func (api *PublicBlockChainAPI) Validators(number rpc.BlockNumber) []*DPosRpcData {
+	validators := api.b.Validators(number)
+	data := make([]*DPosRpcData, 0, len(validators))
+	for _, account := range validators {
 		data = append(data, &DPosRpcData{
 			Enode: string(account.Enode[:]),
 			Owner: account.Owner,
@@ -665,15 +664,15 @@ func (s *PublicBlockChainAPI) CalcLossInfoDigests(lost, benefit common.Address, 
 	return crypto.Keccak256Hash(buffer.Bytes())
 }
 
-//GetDPOSList return dPos node list
+//GetDPOSList return validator node list
 func (s *PublicBlockChainAPI) GetDPOSList(blockNumber rpc.BlockNumber) ([]*DPosRpcData, error) {
 	number := blockNumber.Int64()
 	if number < 0 {
 		return nil, errors.New("block number cannot be less than 0")
 	}
-	epoch := s.b.ChainConfig().Dpos.Epoch
+	epoch := s.b.ChainConfig().Pob.Epoch
 	confirmNumber := common.GetLastConfirmPoint(uint64(number), epoch)
-	roundId := common.CalcDPosNodeRoundId(confirmNumber, epoch)
+	roundId := common.CalcValidatorRoundId(confirmNumber, epoch)
 	dPosAccounts := rawdb.ReadDPos(s.b.ChainDb(), roundId)
 	data := make([]*DPosRpcData, 0, len(dPosAccounts))
 	for _, account := range dPosAccounts {
@@ -685,16 +684,16 @@ func (s *PublicBlockChainAPI) GetDPOSList(blockNumber rpc.BlockNumber) ([]*DPosR
 	return data, nil
 }
 
-//GetDPOSCandidate return dPos candidate node list
-func (s *PublicBlockChainAPI) GetDPOSCandidate(ctx context.Context) ([]*DPosCandidateRpcData, error) {
+//GetValidatorCandidate return validator candidate node list
+func (s *PublicBlockChainAPI) GetValidatorCandidate(ctx context.Context) ([]*ValidatorCandidateRpcData, error) {
 	state, header, err := s.b.StateAndHeaderByNumber(ctx, rpc.LatestBlockNumber)
 	if state == nil || err != nil {
 		return nil, err
 	}
-	dPosAccounts := state.GetDPosCandidateAccounts(common.CalcDPosNodeRoundId(header.Number.Uint64(), s.b.ChainConfig().Dpos.Epoch))
-	data := make([]*DPosCandidateRpcData, 0, len(dPosAccounts))
+	dPosAccounts := state.GetValidatorCandidates(common.CalcValidatorRoundId(header.Number.Uint64(), s.b.ChainConfig().Pob.Epoch))
+	data := make([]*ValidatorCandidateRpcData, 0, len(dPosAccounts))
 	for _, account := range dPosAccounts {
-		data = append(data, &DPosCandidateRpcData{
+		data = append(data, &ValidatorCandidateRpcData{
 			Enode:       account.Enode.String(),
 			Owner:       account.Owner,
 			VoteAccount: account.VoteAccount,
@@ -1238,11 +1237,11 @@ func FormatLogs(logs []vm.StructLog) []StructLogRes {
 // RPCMarshalHeader converts the given header to the RPC output .
 func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 	result := map[string]interface{}{
-		"dposSigAddr":      head.DposSigAddr,
-		"dposSig":          hexutil.Bytes(head.DposSig),
-		"dposAckCountList": head.DposAckCountList,
-		"dposAckHash":      head.DposAcksHash,
-		"powAnswers":       head.PowAnswers,
+		"validatorAddr":      head.ValidatorAddr,
+		"validatorSig":          hexutil.Bytes(head.ValidatorSig),
+		"ackCountList": head.AckCountList,
+		"ackHash":      head.AcksHash,
+		"behaviorProofs":       head.BehaviorProofs,
 		"number":           (*hexutil.Big)(head.Number),
 		"hash":             head.Hash(),
 		"parentHash":       head.ParentHash,
@@ -1301,8 +1300,8 @@ func RPCMarshalBlock(block *types.Block, inclTx bool, fullTx bool) (map[string]i
 		uncleHashes[i] = uncle.Hash()
 	}
 	fields["uncles"] = uncleHashes
-	fields["powAnswerUncles"] = block.PowAnswerUncles()
-	fields["dposAcks"] = block.DposAcks()
+	fields["behaviorProofUncles"] = block.BehaviorProofUncles()
+	fields["acks"] = block.Acks()
 	return fields, nil
 }
 
@@ -1974,14 +1973,14 @@ func (s *PublicTransactionPoolAPI) Resend(ctx context.Context, sendArgs Transact
 	return common.Hash{}, fmt.Errorf("transaction %#x not found", matchTx.Hash())
 }
 
-// PublicDebugAPI is the collection of Probeum APIs exposed over the public
+// PublicDebugAPI is the collection of ProbeChain APIs exposed over the public
 // debugging endpoint.
 type PublicDebugAPI struct {
 	b Backend
 }
 
 // NewPublicDebugAPI creates a new API definition for the public debug methods
-// of the Probeum service.
+// of the ProbeChain service.
 func NewPublicDebugAPI(b Backend) *PublicDebugAPI {
 	return &PublicDebugAPI{b: b}
 }
@@ -1999,19 +1998,19 @@ func (api *PublicDebugAPI) GetBlockRlp(ctx context.Context, number uint64) (stri
 	return fmt.Sprintf("%x", encoded), nil
 }
 
-// TestSignCliqueBlock fetches the given block number, and attempts to sign it as a clique header with the
+// TestSignPobBlock fetches the given block number, and attempts to sign it as a pob header with the
 // given address, returning the address of the recovered signature
 //
 // This is a temporary method to debug the externalsigner integration,
 // TODO: Remove this method when the integration is mature
-func (api *PublicDebugAPI) TestSignCliqueBlock(ctx context.Context, address common.Address, number uint64) (common.Address, error) {
+func (api *PublicDebugAPI) TestSignPobBlock(ctx context.Context, address common.Address, number uint64) (common.Address, error) {
 	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))
 	if block == nil {
 		return common.Address{}, fmt.Errorf("block #%d not found", number)
 	}
 	header := block.Header()
 	header.Extra = make([]byte, 32+65)
-	encoded := clique.CliqueRLP(header)
+	encoded := pob.PobRLP(header)
 
 	// Look up the wallet containing the requested signer
 	account := accounts.Account{Address: address}
@@ -2024,8 +2023,8 @@ func (api *PublicDebugAPI) TestSignCliqueBlock(ctx context.Context, address comm
 	if err != nil {
 		return common.Address{}, err
 	}
-	sealHash := clique.SealHash(header).Bytes()
-	log.Info("test signing of clique block",
+	sealHash := pob.SealHash(header).Bytes()
+	log.Info("test signing of pob block",
 		"Sealhash", fmt.Sprintf("%x", sealHash),
 		"signature", fmt.Sprintf("%x", signature))
 	pubkey, err := crypto.Ecrecover(sealHash, signature)
@@ -2047,23 +2046,19 @@ func (api *PublicDebugAPI) PrintBlock(ctx context.Context, number uint64) (strin
 	return spew.Sdump(block), nil
 }
 
-// SeedHash retrieves the seed hash of a block.
+// SeedHash is a no-op in PoB (no PoW seed hashing).
 func (api *PublicDebugAPI) SeedHash(ctx context.Context, number uint64) (string, error) {
-	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))
-	if block == nil {
-		return "", fmt.Errorf("block #%d not found", number)
-	}
-	return fmt.Sprintf("0x%x", probeash.SeedHash(number)), nil
+	return "", nil
 }
 
-// PrivateDebugAPI is the collection of Probeum APIs exposed over the private
+// PrivateDebugAPI is the collection of ProbeChain APIs exposed over the private
 // debugging endpoint.
 type PrivateDebugAPI struct {
 	b Backend
 }
 
 // NewPrivateDebugAPI creates a new API definition for the private debug methods
-// of the Probeum service.
+// of the ProbeChain service.
 func NewPrivateDebugAPI(b Backend) *PrivateDebugAPI {
 	return &PrivateDebugAPI{b: b}
 }

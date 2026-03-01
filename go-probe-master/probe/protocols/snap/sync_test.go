@@ -1,18 +1,18 @@
-// Copyright 2020 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2020 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package snap
 
@@ -29,7 +29,7 @@ import (
 
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/core/rawdb"
-	"github.com/probechain/go-probe/core/state"
+	"github.com/probechain/go-probe/core/state/snapshot"
 	"github.com/probechain/go-probe/crypto"
 	"github.com/probechain/go-probe/probedb"
 	"github.com/probechain/go-probe/light"
@@ -1349,10 +1349,10 @@ func makeAccountTrieNoStorage(n int) (*trie.Trie, entrySlice) {
 	accTrie, _ := trie.New(common.Hash{}, db)
 	var entries entrySlice
 	for i := uint64(1); i <= uint64(n); i++ {
-		value, _ := rlp.EncodeToBytes(state.Account{
+		value, _ := rlp.EncodeToBytes(snapshot.Account{
 			Nonce:    i,
 			Balance:  big.NewInt(int64(i)),
-			Root:     emptyRoot,
+			Root:     emptyRoot[:],
 			CodeHash: getCodeHash(i),
 		})
 		key := key32(i)
@@ -1394,10 +1394,10 @@ func makeBoundaryAccountTrie(n int) (*trie.Trie, entrySlice) {
 	}
 	// Fill boundary accounts
 	for i := 0; i < len(boundaries); i++ {
-		value, _ := rlp.EncodeToBytes(state.Account{
+		value, _ := rlp.EncodeToBytes(snapshot.Account{
 			Nonce:    uint64(0),
 			Balance:  big.NewInt(int64(i)),
-			Root:     emptyRoot,
+			Root:     emptyRoot[:],
 			CodeHash: getCodeHash(uint64(i)),
 		})
 		elem := &kv{boundaries[i].Bytes(), value}
@@ -1406,10 +1406,10 @@ func makeBoundaryAccountTrie(n int) (*trie.Trie, entrySlice) {
 	}
 	// Fill other accounts if required
 	for i := uint64(1); i <= uint64(n); i++ {
-		value, _ := rlp.EncodeToBytes(state.Account{
+		value, _ := rlp.EncodeToBytes(snapshot.Account{
 			Nonce:    i,
 			Balance:  big.NewInt(int64(i)),
-			Root:     emptyRoot,
+			Root:     emptyRoot[:],
 			CodeHash: getCodeHash(i),
 		})
 		elem := &kv{key32(i), value}
@@ -1442,10 +1442,10 @@ func makeAccountTrieWithStorageWithUniqueStorage(accounts, slots int, code bool)
 		stTrie, stEntries := makeStorageTrieWithSeed(uint64(slots), i, db)
 		stRoot := stTrie.Hash()
 		stTrie.Commit(nil)
-		value, _ := rlp.EncodeToBytes(state.Account{
+		value, _ := rlp.EncodeToBytes(snapshot.Account{
 			Nonce:    i,
 			Balance:  big.NewInt(int64(i)),
-			Root:     stRoot,
+			Root:     stRoot[:],
 			CodeHash: codehash,
 		})
 		elem := &kv{key, value}
@@ -1489,10 +1489,10 @@ func makeAccountTrieWithStorage(accounts, slots int, code, boundary bool) (*trie
 		if code {
 			codehash = getCodeHash(i)
 		}
-		value, _ := rlp.EncodeToBytes(state.Account{
+		value, _ := rlp.EncodeToBytes(snapshot.Account{
 			Nonce:    i,
 			Balance:  big.NewInt(int64(i)),
-			Root:     stRoot,
+			Root:     stRoot[:],
 			CodeHash: codehash,
 		})
 		elem := &kv{key, value}

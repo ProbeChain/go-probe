@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -25,7 +25,7 @@ import (
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/hexutil"
 	math2 "github.com/probechain/go-probe/common/math"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/params"
@@ -96,13 +96,13 @@ type alprobeGenesisSpecLinearPricing struct {
 // newAlprobeGenesisSpec converts a go-probeum genesis block into a Alprobe-specific
 // chain specification format.
 func newAlprobeGenesisSpec(network string, genesis *core.Genesis) (*alprobeGenesisSpec, error) {
-	// Only probeash is currently supported between go-probeum and alprobe
-	if genesis.Config.Probeash == nil {
+	// Only pob is currently supported between go-probeum and alprobe
+	if genesis.Config.Pob == nil {
 		return nil, errors.New("unsupported consensus engine")
 	}
 	// Reconstruct the chain spec in Alprobe format
 	spec := &alprobeGenesisSpec{
-		SealEngine: "Probeash",
+		SealEngine: "Pob",
 	}
 	// Some defaults
 	spec.Params.AccountStartNonce = 0
@@ -144,7 +144,7 @@ func newAlprobeGenesisSpec(network string, genesis *core.Genesis) (*alprobeGenes
 	spec.Params.DifficultyBoundDivisor = (*math2.HexOrDecimal256)(params.DifficultyBoundDivisor)
 	spec.Params.GasLimitBoundDivisor = (math2.HexOrDecimal64)(params.GasLimitBoundDivisor)
 	spec.Params.DurationLimit = (*math2.HexOrDecimal256)(params.DurationLimit)
-	spec.Params.BlockReward = (*hexutil.Big)(probeash.FrontierBlockReward)
+	spec.Params.BlockReward = (*hexutil.Big)(pob.BlockRewardPobValidator)
 
 	spec.Genesis.Nonce = types.EncodeNonce(genesis.Nonce)
 	spec.Genesis.MixHash = genesis.Mixhash
@@ -364,8 +364,8 @@ type parityChainSpecVersionedPricing struct {
 // newParityChainSpec converts a go-probeum genesis block into a Parity specific
 // chain specification format.
 func newParityChainSpec(network string, genesis *core.Genesis, bootnodes []string) (*parityChainSpec, error) {
-	// Only probeash is currently supported between go-probeum and Parity
-	if genesis.Config.Probeash == nil {
+	// Only pob is currently supported between go-probeum and Parity
+	if genesis.Config.Pob == nil {
 		return nil, errors.New("unsupported consensus engine")
 	}
 	// Reconstruct the chain spec in Parity's format
@@ -380,7 +380,7 @@ func newParityChainSpec(network string, genesis *core.Genesis, bootnodes []strin
 	spec.Engine.Probeash.Params.MinimumDifficulty = (*hexutil.Big)(params.MinimumDifficulty)
 	spec.Engine.Probeash.Params.DifficultyBoundDivisor = (*hexutil.Big)(params.DifficultyBoundDivisor)
 	spec.Engine.Probeash.Params.DurationLimit = (*hexutil.Big)(params.DurationLimit)
-	spec.Engine.Probeash.Params.BlockReward["0x0"] = hexutil.EncodeBig(probeash.FrontierBlockReward)
+	spec.Engine.Probeash.Params.BlockReward["0x0"] = hexutil.EncodeBig(pob.BlockRewardPobValidator)
 
 	// Homestead
 	spec.Engine.Probeash.Params.HomesteadTransition = hexutil.Uint64(genesis.Config.HomesteadBlock.Uint64())
@@ -559,7 +559,7 @@ func (spec *parityChainSpec) setPrecompile(address byte, data *parityChainSpecBu
 }
 
 func (spec *parityChainSpec) setByzantium(num *big.Int) {
-	spec.Engine.Probeash.Params.BlockReward[hexutil.EncodeBig(num)] = hexutil.EncodeBig(probeash.ByzantiumBlockReward)
+	spec.Engine.Probeash.Params.BlockReward[hexutil.EncodeBig(num)] = hexutil.EncodeBig(pob.BlockRewardPobValidator)
 	spec.Engine.Probeash.Params.DifficultyBombDelays[hexutil.EncodeBig(num)] = hexutil.EncodeUint64(3000000)
 	n := hexutil.Uint64(num.Uint64())
 	spec.Engine.Probeash.Params.EIP100bTransition = n
@@ -570,7 +570,7 @@ func (spec *parityChainSpec) setByzantium(num *big.Int) {
 }
 
 func (spec *parityChainSpec) setConstantinople(num *big.Int) {
-	spec.Engine.Probeash.Params.BlockReward[hexutil.EncodeBig(num)] = hexutil.EncodeBig(probeash.ConstantinopleBlockReward)
+	spec.Engine.Probeash.Params.BlockReward[hexutil.EncodeBig(num)] = hexutil.EncodeBig(pob.BlockRewardPobValidator)
 	spec.Engine.Probeash.Params.DifficultyBombDelays[hexutil.EncodeBig(num)] = hexutil.EncodeUint64(2000000)
 	n := hexutil.Uint64(num.Uint64())
 	spec.Params.EIP145Transition = n
@@ -607,8 +607,8 @@ type pyProbeumGenesisSpec struct {
 // newPyProbeumGenesisSpec converts a go-probeum genesis block into a Parity specific
 // chain specification format.
 func newPyProbeumGenesisSpec(network string, genesis *core.Genesis) (*pyProbeumGenesisSpec, error) {
-	// Only probeash is currently supported between go-probeum and pyprobeum
-	if genesis.Config.Probeash == nil {
+	// Only pob is currently supported between go-probeum and pyprobeum
+	if genesis.Config.Pob == nil {
 		return nil, errors.New("unsupported consensus engine")
 	}
 	spec := &pyProbeumGenesisSpec{

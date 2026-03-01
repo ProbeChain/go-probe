@@ -1,25 +1,23 @@
-// Copyright 2017 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2017 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // Package probeconfig contains the configuration of the ETH and LES protocols.
 package probeconfig
 
 import (
-	"github.com/probechain/go-probe/consensus/greatri"
-	"github.com/probechain/go-probe/consensus/pob"
 	"math/big"
 	"os"
 	"os/user"
@@ -29,8 +27,7 @@ import (
 
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/consensus"
-	"github.com/probechain/go-probe/consensus/clique"
-	"github.com/probechain/go-probe/consensus/probeash"
+	"github.com/probechain/go-probe/consensus/pob"
 	"github.com/probechain/go-probe/core"
 	"github.com/probechain/go-probe/log"
 	"github.com/probechain/go-probe/miner"
@@ -61,10 +58,10 @@ var LightClientGPO = gasprice.Config{
 	IgnorePrice:      gasprice.DefaultIgnorePrice,
 }
 
-// Defaults contains default settings for use on the Probeum main net.
+// Defaults contains default settings for use on the ProbeChain main net.
 var Defaults = Config{
 	SyncMode: downloader.SnapSync,
-	Probeash: probeash.Config{
+	Probeash: pob.Config{
 		CacheDir:         "probeash",
 		CachesInMem:      2,
 		CachesOnDisk:     3,
@@ -123,7 +120,7 @@ func init() {
 // Config contains configuration options for of the ETH and LES protocols.
 type Config struct {
 	// The genesis block, which is inserted if the database is empty.
-	// If nil, the Probeum main net block is used.
+	// If nil, the ProbeChain main net block is used.
 	Genesis *core.Genesis `toml:",omitempty"`
 
 	// Protocol options
@@ -175,7 +172,7 @@ type Config struct {
 	Miner miner.Config
 
 	// Probeash options
-	Probeash probeash.Config
+	Probeash pob.Config
 
 	// Transaction pool options
 	TxPool core.TxPoolConfig
@@ -211,87 +208,17 @@ type Config struct {
 	// Berlin block override (TODO: remove after the fork)
 	OverrideLondon *big.Int `toml:",omitempty"`
 
-	// Choose the consensus is pow or dpos
+	// Choose the consensus is pow or pob
 	Consensus string `toml:"-"`
 }
 
-// CreateConsensusEngine creates a consensus engine for the given chain configuration.
-func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *probeash.Config, notify []string,
-	noverify bool, db probedb.Database, powEngine consensus.Engine) consensus.Engine {
-	// If proof-of-authority is requested, set it up
-	if chainConfig.Clique != nil {
-		return clique.New(chainConfig.Clique, db)
-	}
-
-	if chainConfig.Pob != nil {
-		log.Info("CreateConsensusEngine is pob")
-		return pob.New(chainConfig.Pob, db, powEngine, chainConfig)
-	}
-
-	if chainConfig.Dpos != nil {
-		log.Info("CreateConsensusEngine is dpos")
-		return greatri.New(chainConfig.Dpos, db, powEngine, chainConfig)
-	}
-
-	// Otherwise assume proof-of-work
-	switch config.PowMode {
-	case probeash.ModeFake:
-		log.Warn("Probeash used in fake mode")
-	case probeash.ModeTest:
-		log.Warn("Probeash used in test mode")
-	case probeash.ModeShared:
-		log.Warn("Probeash used in shared mode")
-	}
-	engine := probeash.New(probeash.Config{
-		PowMode:          config.PowMode,
-		CacheDir:         stack.ResolvePath(config.CacheDir),
-		CachesInMem:      config.CachesInMem,
-		CachesOnDisk:     config.CachesOnDisk,
-		CachesLockMmap:   config.CachesLockMmap,
-		DatasetDir:       config.DatasetDir,
-		DatasetsInMem:    config.DatasetsInMem,
-		DatasetsOnDisk:   config.DatasetsOnDisk,
-		DatasetsLockMmap: config.DatasetsLockMmap,
-		NotifyFull:       config.NotifyFull,
-	}, notify, noverify)
-	engine.SetThreads(-1) // Disable CPU mining
-	return engine
-}
-func CreatePowConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *probeash.Config, notify []string,
+// CreateConsensusEngine creates a PoB consensus engine for the given chain configuration.
+func CreateConsensusEngine(stack *node.Node, chainConfig *params.ChainConfig, config *pob.Config, notify []string,
 	noverify bool, db probedb.Database) consensus.Engine {
-	// If proof-of-authority is requested, set it up
-	if chainConfig.Clique != nil {
-		return clique.New(chainConfig.Clique, db)
+	pobConfig := chainConfig.Pob
+	if pobConfig == nil {
+		pobConfig = &params.PobConfig{Period: 15, Epoch: 30000}
 	}
-
-	////2. DPOS
-	//if chainConfig.Dpos != nil {
-	//	log.Info("CreateConsensusEngine is dpos")
-	//	return greatri.New(chainConfig.Greatri, db)
-	//}
-
-	// Otherwise assume proof-of-work
-	switch config.PowMode {
-	case probeash.ModeFake:
-		log.Warn("Probeash used in fake mode")
-	case probeash.ModeTest:
-		log.Warn("Probeash used in test mode")
-	case probeash.ModeShared:
-		log.Warn("Probeash used in shared mode")
-	}
-
-	engine := probeash.New(probeash.Config{
-		PowMode:          config.PowMode,
-		CacheDir:         stack.ResolvePath(config.CacheDir),
-		CachesInMem:      config.CachesInMem,
-		CachesOnDisk:     config.CachesOnDisk,
-		CachesLockMmap:   config.CachesLockMmap,
-		DatasetDir:       config.DatasetDir,
-		DatasetsInMem:    config.DatasetsInMem,
-		DatasetsOnDisk:   config.DatasetsOnDisk,
-		DatasetsLockMmap: config.DatasetsLockMmap,
-		NotifyFull:       config.NotifyFull,
-	}, notify, noverify)
-	engine.SetThreads(-1) // Disable CPU mining
-	return engine
+	log.Info("CreateConsensusEngine: PoB")
+	return pob.New(pobConfig, db, chainConfig)
 }

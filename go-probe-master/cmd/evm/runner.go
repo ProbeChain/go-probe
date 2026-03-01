@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -233,7 +233,7 @@ func runCmd(ctx *cli.Context) error {
 	if chainConfig != nil {
 		runtimeConfig.ChainConfig = chainConfig
 	} else {
-		runtimeConfig.ChainConfig = params.AllProbeashProtocolChanges
+		runtimeConfig.ChainConfig = params.AllPobProtocolChanges
 	}
 
 	var hexInput []byte

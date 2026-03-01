@@ -1,4 +1,4 @@
-// Copyright 2018 The go-probeum Authors
+// Copyright 2018 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -249,7 +249,7 @@ var AppHelpFlagGroups = []flags.FlagGroup{
 
 func init() {
 	app.Name = "Clef"
-	app.Usage = "Manage Probeum account operations"
+	app.Usage = "Manage ProbeChain account operations"
 	app.Flags = []cli.Flag{
 		logLevelFlag,
 		keystoreFlag,
@@ -866,8 +866,8 @@ func testExternalUI(api *core.SignerAPI) {
 		time.Sleep(delay)
 		expectResponse("showerror", "Did you see the message? [yes/no]", "yes")
 	}
-	{ // Sign data test - clique header
-		api.UI.ShowInfo("Please approve the next request for signing a clique header")
+	{ // Sign data test - consensus header (clique mimetype)
+		api.UI.ShowInfo("Please approve the next request for signing a consensus header")
 		time.Sleep(delay)
 		cliqueHeader := types.Header{
 			ParentHash:  common.HexToHash("0000H45H"),
@@ -890,7 +890,7 @@ func testExternalUI(api *core.SignerAPI) {
 		}
 		addr, _ := common.NewMixedcaseAddressFromString("0x0011223344556677889900112233445566778899")
 		_, err = api.SignData(ctx, accounts.MimetypeClique, *addr, hexutil.Encode(cliqueRlp))
-		expectApprove("signdata - clique header", err)
+		expectApprove("signdata - consensus header", err)
 	}
 	{ // Sign data test - typed data
 		api.UI.ShowInfo("Please approve the next request for signing EIP-712 typed data")

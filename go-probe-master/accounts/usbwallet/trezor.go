@@ -1,18 +1,18 @@
-// Copyright 2017 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2017 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains the implementation for interacting with the Trezor hardware
 // wallets. The wire protocol spec can be found on the SatoshiLabs website:
@@ -68,7 +68,7 @@ func newTrezorDriver(logger log.Logger) driver {
 }
 
 // Status implements accounts.Wallet, always whprobeer the Trezor is opened, closed
-// or whprobeer the Probeum app was not started on it.
+// or whprobeer the ProbeChain app was not started on it.
 func (w *trezorDriver) Status() (string, error) {
 	if w.failure != nil {
 		return fmt.Sprintf("Failed: %v", w.failure), w.failure
@@ -171,7 +171,7 @@ func (w *trezorDriver) Heartbeat() error {
 }
 
 // Derive implements usbwallet.driver, sending a derivation request to the Trezor
-// and returning the Probeum address located on that derivation path.
+// and returning the ProbeChain address located on that derivation path.
 func (w *trezorDriver) Derive(path accounts.DerivationPath) (common.Address, error) {
 	return w.trezorDerive(path)
 }
@@ -190,7 +190,7 @@ func (w *trezorDriver) SignTypedMessage(path accounts.DerivationPath, domainHash
 }
 
 // trezorDerive sends a derivation request to the Trezor device and returns the
-// Probeum address located on that path.
+// ProbeChain address located on that path.
 func (w *trezorDriver) trezorDerive(derivationPath []uint32) (common.Address, error) {
 	address := new(trezor.ProbeumAddress)
 	if _, err := w.trezorExchange(&trezor.ProbeumGetAddress{AddressN: derivationPath}, address); err != nil {
@@ -248,7 +248,7 @@ func (w *trezorDriver) trezorSign(derivationPath []uint32, tx *types.Transaction
 			return common.Address{}, nil, err
 		}
 	}
-	// Extract the Probeum signature and do a sanity validation
+	// Extract the ProbeChain signature and do a sanity validation
 	if len(response.GetSignatureR()) == 0 || len(response.GetSignatureS()) == 0 || response.GetSignatureV() == 0 {
 		return common.Address{}, nil, errors.New("reply lacks signature")
 	}

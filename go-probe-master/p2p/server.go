@@ -1,20 +1,20 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
-// Package p2p implements the Probeum p2p network protocols.
+// Package p2p implements the ProbeChain p2p network protocols.
 package p2p
 
 import (
@@ -371,22 +371,22 @@ func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
 	}
 }
 
-// AddDposPeer adds the given node to the static node set. When there is room in the peer set,
+// AddValidatorPeer adds the given node to the static node set. When there is room in the peer set,
 // the server will connect to the node. If the connection fails for any reason, the server
 // will attempt to reconnect the peer.
-func (srv *Server) AddDposPeer(node *enode.Node) {
+func (srv *Server) AddValidatorPeer(node *enode.Node) {
 	if node.ID().String() != srv.Self().ID().String() {
 		srv.AddPeer(node)
 		srv.AddTrustedPeer(node)
 	}
 }
 
-// RemoveDposPeer removes a node from the static node set. It also disconnects from the given
+// RemoveValidatorPeer removes a node from the static node set. It also disconnects from the given
 // node if it is currently connected as a peer.
 //
 // This method blocks until all protocols have exited and the peer is removed. Do not use
 // RemovePeer in protocol implementations, call Disconnect on the Peer instead.
-func (srv *Server) RemoveDposPeer(node *enode.Node) {
+func (srv *Server) RemoveValidatorPeer(node *enode.Node) {
 	srv.RemovePeer(node)
 	srv.RemoveTrustedPeer(node)
 }

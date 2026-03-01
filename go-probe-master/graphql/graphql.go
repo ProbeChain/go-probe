@@ -1,18 +1,18 @@
-// Copyright 2019 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2019 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // Package graphql provides a GraphQL interface to Probeum node data.
 package graphql
@@ -71,7 +71,7 @@ func (b *Long) UnmarshalGraphQL(input interface{}) error {
 	return err
 }
 
-// Account represents an Probeum account at a particular block.
+// Account represents an ProbeChain account at a particular block.
 type Account struct {
 	backend       probeapi.Backend
 	address       common.Address
@@ -169,7 +169,7 @@ func (at *AccessTuple) StorageKeys(ctx context.Context) *[]common.Hash {
 	return at.storageKeys
 }
 
-// Transaction represents an Probeum transaction.
+// Transaction represents a ProbeChain transaction.
 // backend and hash are mandatory; all others will be fetched when required.
 type Transaction struct {
 	backend probeapi.Backend
@@ -477,7 +477,7 @@ func (t *Transaction) V(ctx context.Context) (hexutil.Big, error) {
 
 type BlockType int
 
-// Block represents an Probeum block.
+// Block represents a ProbeChain block.
 // backend, and numberOrHash are mandatory. All other fields are lazily fetched
 // when required.
 type Block struct {
@@ -916,8 +916,8 @@ func (b *Block) Account(ctx context.Context, args struct {
 // CallData encapsulates arguments to `call` or `estimateGas`.
 // All arguments are optional.
 type CallData struct {
-	From                 *common.Address // The Probeum address the call is from.
-	To                   *common.Address // The Probeum address the call is to.
+	From                 *common.Address // The ProbeChain address the call is from.
+	To                   *common.Address // The ProbeChain address the call is to.
 	Gas                  *hexutil.Uint64 // The amount of gas provided for the call.
 	GasPrice             *hexutil.Big    // The price of each unit of gas, in wei.
 	MaxFeePerGas         *hexutil.Big    // The max price of each unit of gas, in wei (1559).

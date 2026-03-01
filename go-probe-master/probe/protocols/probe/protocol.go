@@ -1,18 +1,18 @@
-// Copyright 2014 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2014 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package probe
 
@@ -63,8 +63,8 @@ const (
 	NodeDataMsg        = 0x0e
 	GetReceiptsMsg     = 0x0f
 	ReceiptsMsg        = 0x10
-	PowAnswerMsg       = 0x11
-	DposAckMsg         = 0x12
+	BehaviorProofMsg       = 0x11
+	AckMsg         = 0x12
 
 	// Protocol messages overloaded in probe/65
 	NewPooledTransactionHashesMsg = 0x08
@@ -187,14 +187,14 @@ type NewBlockPacket struct {
 	TD    *big.Int
 }
 
-// NewPowAnswerPacket is the network packet for the pow answer message.
-type NewPowAnswerPacket struct {
-	PowAnswer *types.PowAnswer
+// NewBehaviorProofPacket is the network packet for the pow answer message.
+type NewBehaviorProofPacket struct {
+	BehaviorProof *types.BehaviorProof
 }
 
-// NewDposAckPacket is the network packet for the dpos ack message.
-type NewDposAckPacket struct {
-	DposAck *types.DposAck
+// NewAckPacket is the network packet for the validator ack message.
+type NewAckPacket struct {
+	Ack *types.Ack
 }
 
 // sanityCheck verifies that the values are reasonable, as a DoS protection
@@ -243,24 +243,24 @@ type BlockBodiesRLPPacket66 struct {
 type BlockBody struct {
 	Transactions    []*types.Transaction // Transactions contained within a block
 	Uncles          []*types.Header      // Uncles contained within a block
-	PowAnswerUncles []*types.PowAnswer
-	DposAcks        []*types.DposAck
+	BehaviorProofUncles []*types.BehaviorProof
+	Acks        []*types.Ack
 }
 
 // Unpack retrieves the transactions and uncles from the range packet and returns
 // them in a split flat format that's more consistent with the internal data structures.
-func (p *BlockBodiesPacket) Unpack() ([][]*types.Transaction, [][]*types.Header, [][]*types.PowAnswer, [][]*types.DposAck) {
+func (p *BlockBodiesPacket) Unpack() ([][]*types.Transaction, [][]*types.Header, [][]*types.BehaviorProof, [][]*types.Ack) {
 	var (
 		txset           = make([][]*types.Transaction, len(*p))
 		uncleset        = make([][]*types.Header, len(*p))
-		powAnswerUncles = make([][]*types.PowAnswer, len(*p))
-		dposAcks        = make([][]*types.DposAck, len(*p))
+		powAnswerUncles = make([][]*types.BehaviorProof, len(*p))
+		acks        = make([][]*types.Ack, len(*p))
 	)
 	for i, body := range *p {
 		txset[i], uncleset[i] = body.Transactions, body.Uncles
-		powAnswerUncles[i], dposAcks[i] = body.PowAnswerUncles, body.DposAcks
+		powAnswerUncles[i], acks[i] = body.BehaviorProofUncles, body.Acks
 	}
-	return txset, uncleset, powAnswerUncles, dposAcks
+	return txset, uncleset, powAnswerUncles, acks
 }
 
 // GetNodeDataPacket represents a trie node data query.
@@ -383,8 +383,8 @@ func (*GetPooledTransactionsPacket) Kind() byte   { return GetPooledTransactions
 func (*PooledTransactionsPacket) Name() string { return "PooledTransactions" }
 func (*PooledTransactionsPacket) Kind() byte   { return PooledTransactionsMsg }
 
-func (*NewPowAnswerPacket) Name() string { return "NewPowAnswerPacket" }
-func (*NewPowAnswerPacket) Kind() byte   { return PowAnswerMsg }
+func (*NewBehaviorProofPacket) Name() string { return "NewBehaviorProofPacket" }
+func (*NewBehaviorProofPacket) Kind() byte   { return BehaviorProofMsg }
 
-func (*NewDposAckPacket) Name() string { return "NewDposAckPacket" }
-func (*NewDposAckPacket) Kind() byte   { return DposAckMsg }
+func (*NewAckPacket) Name() string { return "NewAckPacket" }
+func (*NewAckPacket) Kind() byte   { return AckMsg }

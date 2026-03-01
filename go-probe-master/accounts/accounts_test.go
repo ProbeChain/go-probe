@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 package accounts
 
@@ -22,11 +22,8 @@ import (
 	"fmt"
 	"github.com/probechain/go-probe/common"
 	"github.com/probechain/go-probe/common/hexutil"
-	"github.com/probechain/go-probe/core/types"
 	"github.com/probechain/go-probe/crypto"
 	"github.com/probechain/go-probe/p2p/enode"
-	"github.com/probechain/go-probe/rlp"
-	"log"
 	"math/big"
 	"net"
 	"testing"
@@ -34,7 +31,7 @@ import (
 
 func TestTextHash(t *testing.T) {
 	hash := TextHash([]byte("Hello Joe"))
-	want := hexutil.MustDecode("0xa080337ae51c4e064c189e113edd0ba391df9206e2f49db658bb32cf2911730b")
+	want := hexutil.MustDecode("0x6f1788b6cef82c22e7150b27ecf47b602a2a1e770a2bb6a37fda322ff0e64111")
 	if !bytes.Equal(hash, want) {
 		t.Fatalf("wrong hash: %x", hash)
 	}
@@ -156,95 +153,6 @@ func TestSign01(*testing.T) {
 	fmt.Println("recoveredAddr ", recoveredAddr.String())
 	fmt.Println("recoveredAddr2 ", recoveredAddr2.String())
 }
-func TestSign(*testing.T) {
-
-	/*//生成公私钥
-	k := byte(0x02)
-	key, err := crypto.GenerateKeyByType(k)
-	if err != nil {
-		fmt.Println("Error: ", err.Error())
-	}
-	hexPriKey := hex.EncodeToString(crypto.FromECDSA(key))
-	//不含0x的私钥65
-	fmt.Printf("private key [%d] [%v]\n", len(hexPriKey), hexPriKey)
-	//Get the address
-	address := crypto.PubkeyToAddress(key.PublicKey)
-	fmt.Printf("address[%d][%v]\n", len(address), address)
-
-	key1, _ := crypto.HexToECDSA(hexPriKey)
-	//addrtest := crypto.PubkeyToAddressForType(key1.PublicKey, k).Hex()
-	//测试数据签名
-	msg := crypto.Keccak256([]byte("foo"))
-	sig, err := crypto.Sign(msg, key1)
-	if err != nil {
-		fmt.Println("Error: ", err.Error())
-	}
-	k = sig[len(sig)-1]
-	sig = sig[:len(sig)-1]
-	recoveredPub, err := crypto.Ecrecover(msg, sig)
-	pubKey, _ := crypto.UnmarshalPubkeyForType(recoveredPub, k)
-	recoveredAddr := crypto.PubkeyToAddressForType(*pubKey, k)
-
-	// should be equal to SigToPub
-	recoveredPub2, _ := crypto.SigToPubForType(msg, sig, k)
-	recoveredAddr2 := crypto.PubkeyToAddressForType(*recoveredPub2, k)
-	//验证签名
-	//fmt.Println("addrtest ", addrtest)
-	fmt.Println("recoveredAddr ", recoveredAddr.String())
-	fmt.Println("recoveredAddr2 ", recoveredAddr2.String())*/
-
-	key, err := crypto.GenerateKey()
-	if err != nil {
-		fmt.Println("failed GenerateKey with: ", err.Error())
-	}
-
-	fmt.Println("private key have 0x   \n", hexutil.Encode(crypto.FromECDSA(key)))
-	fmt.Println("private key no 0x \n", hex.EncodeToString(crypto.FromECDSA(key)))
-
-	/*if err := crypto.SaveECDSA("privatekey", key); err != nil {
-		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
-	}*/
-
-	fmt.Println("public key have 0x   \n", hexutil.Encode(crypto.FromECDSAPub(&key.PublicKey)))
-	fmt.Println("public key no 0x \n", hex.EncodeToString(crypto.FromECDSAPub(&key.PublicKey)))
-
-	//由私钥字符串转换私钥
-	acc1Key, _ := crypto.HexToECDSA("0342875f5170623c91e184b9e91d7c1dd381d4e3a9af9ccba2e656626005baf21a")
-	address1 := crypto.PubkeyToAddress(acc1Key.PublicKey)
-	fmt.Println("address ", address1.String())
-	fmt.Println("************************** ")
-	dummyAddr := common.HexToAddress("031C98b32Cf0990eCAeB2706E3Fb70F6ad04663c199dC96463")
-	fmt.Println("dummyAddr", dummyAddr.String())
-	fmt.Println("address ", common.BytesToHash(common.FromHex("031C98b32Cf0990eCAeB2706E3Fb70F6ad04663c199dC96463")))
-	fmt.Println("priveaddress ", common.BytesToHash(common.FromHex("03faeb343468fdb38cd39114af7b6b9a3452768116fed047623c138100d9bd4e4e")))
-	/*//字节转地址
-	addr3      := common.BytesToAddress([]byte("probeum"))
-	fmt.Println("address ",addr3.String())
-
-	//字节转hash
-	hash1 := common.BytesToHash([]byte("topic1"))
-	fmt.Println("hash ",hash1.String())*/
-
-	var testAddrHex = "031C98b32Cf0990eCAeB2706E3Fb70F6ad04663c199dC96463"
-	var testPrivHex = "03faeb343468fdb38cd39114af7b6b9a3452768116fed047623c138100d9bd4e4e"
-	key1, _ := crypto.HexToECDSA(testPrivHex)
-	addrtest := common.HexToAddress(testAddrHex)
-
-	msg := crypto.Keccak256([]byte("foo"))
-	sig, err := crypto.Sign(msg, key1)
-	recoveredPub, err := crypto.Ecrecover(msg, sig)
-	pubKey, _ := crypto.UnmarshalPubkey(recoveredPub)
-	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
-
-	// should be equal to SigToPub
-	recoveredPub2, _ := crypto.SigToPub(msg, sig)
-	recoveredAddr2 := crypto.PubkeyToAddress(*recoveredPub2)
-
-	fmt.Println("addrtest ", addrtest.String())
-	fmt.Println("recoveredAddr ", recoveredAddr.String())
-	fmt.Println("recoveredAddr2 ", recoveredAddr2.String())
-}
-
 func TestHexToAddress(*testing.T) {
 	key, err := crypto.GenerateKey()
 	if err != nil {
@@ -286,20 +194,6 @@ func TestStrToHex(*testing.T) {
 	fmt.Println("address ", hexutil.Encode(emptyCodeHash2))*/
 }
 
-func TestPrivateKey(*testing.T) {
-	acc1Key, _ := crypto.HexToECDSA("00a90258933be28f5890ebd7a57e2641e63c15078a2b1cf043cba8be43c0d36f58")
-	address1 := crypto.PubkeyToAddress(acc1Key.PublicKey)
-	fmt.Println("address ", address1.String())
-}
-
-func TestEnode(*testing.T) {
-	acc1Key, _ := crypto.HexToECDSA("000e92781f2a5f582a7ce9726971ce896421080b6cb9fe33cfe892968e7d25fd85")
-	address1 := crypto.PubkeyToAddress(acc1Key.PublicKey)
-	fmt.Println("address ", address1.String())
-	nodeId := fmt.Sprintf("%x", crypto.FromECDSAPub(&acc1Key.PublicKey)[1:])
-	fmt.Println("nodeId ", nodeId)
-	fmt.Println("*************************")
-}
 
 func TestCheckValidteTest(*testing.T) {
 	var c, err2 = common.ValidCheckAddress("0x03b16d6687a30d93bef1a4d80952e8323f8758c1cd8c0c148a")
@@ -316,7 +210,7 @@ type ResolveUDPAddrTest struct {
 	err           error
 }
 
-func TestPrintDposNode(*testing.T) {
+func TestPrintValidatorNode(*testing.T) {
 	//privateKey, _ := crypto.GenerateKey()
 	privateKey, _ := crypto.HexToECDSA("7308dacbb9ba9b3c97a14ef0faac7ccfb7851ccb003936a14d36d2ced0bf7087")
 	fmt.Println("private key have 0x   \n", hexutil.Encode(crypto.FromECDSA(privateKey)))
@@ -339,39 +233,6 @@ func TestBigIntAdd(*testing.T) {
 	fmt.Printf("a = %v    b = %v   a = %v\n", a, b, a)
 }
 
-func TestJS2GOSign(*testing.T) {
-
-	//由私钥字符串转换私钥
-	acc1Key, _ := crypto.HexToECDSA("00a958379c166d74f7280e72bf4c62e53fc49efc7f74b08b8d18a5c955fa889a62")
-	address1 := crypto.PubkeyToAddress(acc1Key.PublicKey)
-	fmt.Println("address ", address1.String())
-	fmt.Println("************************** ")
-	msg3 := crypto.Keccak256([]byte("foo"))
-	sig3, _ := crypto.Sign(msg3, acc1Key)
-	fmt.Println("hexSig ", hexutil.Encode(sig3))
-
-	var testAddrHex = "0028c10835389d35319bcd8e5e21857b4832bbd77ba47af098"
-	var testPrivHex = "00a958379c166d74f7280e72bf4c62e53fc49efc7f74b08b8d18a5c955fa889a62"
-	key1, _ := crypto.HexToECDSA(testPrivHex)
-	addrtest := common.HexToAddress(testAddrHex)
-
-	msg2 := crypto.Keccak512([]byte("Some data"))
-	fmt.Println("hexSig ", string(msg2[:]))
-	msg := crypto.Keccak256([]byte("root"))
-	sig, _ := crypto.Sign(msg, key1)
-	fmt.Println("hexSig ", hexutil.Encode(sig))
-	recoveredPub, _ := crypto.Ecrecover(msg, sig)
-	pubKey, _ := crypto.UnmarshalPubkey(recoveredPub)
-	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
-
-	// should be equal to SigToPub
-	recoveredPub2, _ := crypto.SigToPub(msg, sig)
-	recoveredAddr2 := crypto.PubkeyToAddress(*recoveredPub2)
-
-	fmt.Println("addrtest ", addrtest.String())
-	fmt.Println("recoveredAddr ", recoveredAddr.String())
-	fmt.Println("recoveredAddr2 ", recoveredAddr2.String())
-}
 func TestAccounTypeFoGenrateSign(*testing.T) {
 	var testAddrHex = "007245ec242315371bA8E44BAA39e5c0AaC14De2620B6b8Cb4"
 	toAddress := common.HexToAddress(testAddrHex)
@@ -379,45 +240,6 @@ func TestAccounTypeFoGenrateSign(*testing.T) {
 	contractAddr := crypto.CreateAddress(toAddress, nonce)
 	//contractAddr = common.HexToAddress("03f112c97935863463bc34871f506A9A8c3741a1CE0f8F60c9")
 	fmt.Println("contractAddr", contractAddr.String())
-}
-func TestOfflineSign(*testing.T) {
-	var testAddrHex = "0028c10835389d35319bcd8e5e21857b4832bbd77ba47af098"
-	var testPrivHex = "00a958379c166d74f7280e72bf4c62e53fc49efc7f74b08b8d18a5c955fa889a62"
-	privateKey, _ := crypto.HexToECDSA(testPrivHex)
-	toAddress := common.HexToAddress(testAddrHex)
-
-	nonce := uint64(100)
-
-	value := big.NewInt(1000000000000000000) // in wei (1 eth)
-	gasLimit := uint64(21000)                // in units
-	gasPrice := big.NewInt(500000000000)
-
-	//toAddress := common.HexToAddress(testAddrHex)
-	data_str := "0x7f7465737432000000000000000000000000000000000000000000000000000000600057"
-	var data = common.Hex2Bytes(data_str)
-	tx := types.NewTransaction(nonce, toAddress, value, gasLimit, gasPrice, data)
-
-	chainID := big.NewInt(1668)
-
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(chainID)
-
-	/*	ts := types.Transactions{signedTx}
-		rawTxBytes := ts.GetRlp(0)*/
-	b, err := rlp.EncodeToBytes(signedTx)
-
-	rawTxHex := hex.EncodeToString(b)
-
-	fmt.Println(rawTxHex) // f86...772
-	rawTxBytess, err := hex.DecodeString(rawTxHex)
-
-	txs := new(types.Transaction)
-	rlp.DecodeBytes(rawTxBytess, &txs)
-
-	fmt.Println("tx sent:", txs.Hash().Hex())
 }
 
 func TestDigest(*testing.T) {

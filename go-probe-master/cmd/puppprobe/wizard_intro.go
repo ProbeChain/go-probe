@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ func (w *wizard) run() {
 	fmt.Println("+-----------------------------------------------------------+")
 	fmt.Println("| Welcome to puppprobe, your Probeum private network manager |")
 	fmt.Println("|                                                           |")
-	fmt.Println("| This tool lets you create a new Probeum network down to  |")
+	fmt.Println("| This tool lets you create a new ProbeChain network down to  |")
 	fmt.Println("| the genesis block, bootnodes, miners and probestats servers |")
 	fmt.Println("| without the hassle that it would normally entail.         |")
 	fmt.Println("|                                                           |")
@@ -71,7 +71,7 @@ func (w *wizard) run() {
 			log.Error("I also like to live dangerously, still no spaces, hyphens or capital letters")
 		}
 	}
-	log.Info("Administering Probeum network", "name", w.network)
+	log.Info("Administering ProbeChain network", "name", w.network)
 
 	// Load initial configurations and connect to all live servers
 	w.conf.path = filepath.Join(os.Getenv("HOME"), ".puppprobe", w.network)

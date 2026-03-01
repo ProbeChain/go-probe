@@ -1,4 +1,4 @@
-// Copyright 2017 The go-probeum Authors
+// Copyright 2017 The ProbeChain Authors
 // This file is part of go-probeum.
 //
 // go-probeum is free software: you can redistribute it and/or modify
@@ -144,7 +144,7 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gprobeConfig) {
 	return stack, cfg
 }
 
-// makeFullNode loads gprobe configuration and creates the Probeum backend.
+// makeFullNode loads gprobe configuration and creates the ProbeChain backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, probeapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
 	if ctx.GlobalIsSet(utils.OverrideLondonFlag.Name) {
@@ -166,7 +166,7 @@ func makeFullNode(ctx *cli.Context) (*node.Node, probeapi.Backend) {
 	if ctx.GlobalIsSet(utils.GraphQLEnabledFlag.Name) {
 		utils.RegisterGraphQLService(stack, backend, cfg.Node)
 	}
-	// Add the Probeum Stats daemon if requested.
+	// Add the ProbeChain Stats daemon if requested.
 	if cfg.Probestats.URL != "" {
 		utils.RegisterProbeStatsService(stack, backend, cfg.Probestats.URL)
 	}

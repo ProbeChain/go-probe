@@ -1,18 +1,18 @@
-// Copyright 2015 The go-probeum Authors
-// This file is part of the go-probeum library.
+// Copyright 2015 The ProbeChain Authors
+// This file is part of the ProbeChain.
 //
-// The go-probeum library is free software: you can redistribute it and/or modify
+// The ProbeChain is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-probeum library is distributed in the hope that it will be useful,
+// The ProbeChain is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-probeum library. If not, see <http://www.gnu.org/licenses/>.
+// along with the ProbeChain. If not, see <http://www.gnu.org/licenses/>.
 
 // Contains the block download scheduler to collect download tasks and schedule
 // them in an ordered, and throttled way.
@@ -67,8 +67,8 @@ type fetchResult struct {
 	Header          *types.Header
 	Uncles          []*types.Header
 	Transactions    types.Transactions
-	PowAnswerUncles []*types.PowAnswer
-	DposAcks        []*types.DposAck
+	BehaviorProofUncles []*types.BehaviorProof
+	Acks        []*types.Ack
 	Receipts        types.Receipts
 }
 
@@ -783,7 +783,7 @@ func (q *queue) DeliverHeaders(id string, headers []*types.Header, headerProcCh 
 // The method returns the number of blocks bodies accepted from the delivery and
 // also wakes any threads waiting for data delivery.
 func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLists [][]*types.Header,
-	powAnswerUncles [][]*types.PowAnswer, dposAcks [][]*types.DposAck) (int, error) {
+	powAnswerUncles [][]*types.BehaviorProof, acks [][]*types.Ack) (int, error) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
 	trieHasher := trie.NewStackTrie(nil)
@@ -791,19 +791,19 @@ func (q *queue) DeliverBodies(id string, txLists [][]*types.Transaction, uncleLi
 		if types.DeriveSha(types.Transactions(txLists[index]), trieHasher) != header.TxHash {
 			return errInvalidBody
 		}
-		if types.CalcPowAnswerUncleHash(powAnswerUncles[index]) != header.UncleHash {
+		if types.CalcBehaviorProofUncleHash(powAnswerUncles[index]) != header.UncleHash {
 			return errInvalidBody
 		}
 		return nil
 	}
 
-	log.Debug("DeliverBodies", "txLists", len(txLists), "uncleLists", len(uncleLists), "powAnswerUncles", len(powAnswerUncles), "dposAcks", len(dposAcks))
+	log.Debug("DeliverBodies", "txLists", len(txLists), "uncleLists", len(uncleLists), "behaviorProofUncles", len(powAnswerUncles), "acks", len(acks))
 
 	reconstruct := func(index int, result *fetchResult) {
 		result.Transactions = txLists[index]
 		result.Uncles = uncleLists[index]
-		result.PowAnswerUncles = powAnswerUncles[index]
-		result.DposAcks = dposAcks[index]
+		result.BehaviorProofUncles = powAnswerUncles[index]
+		result.Acks = acks[index]
 		result.SetBodyDone()
 	}
 	return q.deliver(id, q.blockTaskPool, q.blockTaskQueue, q.blockPendPool,
